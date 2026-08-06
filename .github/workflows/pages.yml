@@ -1,10 +1,20 @@
-name: Deploy Gradient Peaks to GitHub Pages
+name: Deploy applets to GitHub Pages
 
-# Publishes app/ as a static site. Enable it under
-# Settings -> Pages -> Source: GitHub Actions.
+# Publishes both applets under one site:
+#
+#   /                    landing page (landing/index.html)
+#   /gradient-peaks/     the calculus applet          (app/)
+#   /gradient-peaks/guide/  its illustrated guide     (docs/)
+#   /consumer-optimum/   the microeconomics applet    (consumer-optimum/)
+#
+# ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
+# "GitHub Actions". Until that is done every run fails at configure-pages.
+# It cannot be automated: creating a Pages site needs repo-administration
+# rights, and a workflow's GITHUB_TOKEN is never granted them.
+
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,21 +27,81 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Assemble the site
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+
+          # landing page at the root
+          cp landing/index.html _site/index.html
+
+          # both apps use only relative paths, so they can be moved wholesale
+          # into subfolders — the service worker scope follows along
+          mkdir -p _site/gradient-peaks
+          cp -R app/. _site/gradient-peaks/
+
+          mkdir -p _site/gradient-peaks/guide
+          cp -R docs/. _site/gradient-peaks/guide/
+          if [ -f _site/gradient-peaks/guide/guide.html ]; then
+            mv _site/gradient-peaks/guide/guide.html _site/gradient-peaks/guide/index.html
+          fi
+
+          mkdir -p _site/consumer-optimum
+          cp consumer-optimum/index.html _site/consumer-optimum/index.html
+
+          # keep the PDF guide reachable if it was committed
+          if [ -f dist/Gradient-Peaks-Guide.pdf ]; then
+            cp dist/Gradient-Peaks-Guide.pdf _site/gradient-peaks/guide/Gradient-Peaks-Guide.pdf
+          fi
+
+          # stop Jekyll from swallowing files whose names begin with _
+          touch _site/.nojekyll
+
+      - name: Check every entry point exists and is non-empty
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in \
+            _site/index.html \
+            _site/gradient-peaks/index.html \
+            _site/gradient-peaks/guide/index.html \
+            _site/consumer-optimum/index.html
+          do
+            if [ ! -s "$f" ]; then
+              echo "::error::missing or empty: $f"
+              fail=1
+            else
+              printf '%-46s %s bytes\n' "$f" "$(wc -c < "$f")"
+            fi
+          done
+          exit $fail
+
+      - uses: actions/configure-pages@v5
+        with:
+          # Left at the default. enablement: true was tried and cannot work
+          # here: it fails with "Create Pages site failed. Error: Resource not
+          # accessible by integration" because creating a Pages site requires
+          # administration rights the workflow token does not have. Enable
+          # Pages once in Settings instead (see the note at the top).
+          enablement: false
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/configure-pages@v5
-
-      - name: Upload app/
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: app
-
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
