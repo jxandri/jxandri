@@ -7,7 +7,8 @@ name: Deploy applets to GitHub Pages
 #   /gradient-peaks/guide/  its illustrated guide     (docs/)
 #   /consumer-optimum/   the microeconomics applet    (consumer-optimum/)
 #
-# Enable it once under Settings -> Pages -> Source: GitHub Actions.
+# configure-pages turns Pages on by itself (enablement: true), so there is
+# nothing to click in Settings before the first run.
 
 on:
   push:
@@ -27,7 +28,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Assemble the site
         run: |
@@ -80,6 +81,12 @@ jobs:
           exit $fail
 
       - uses: actions/configure-pages@v5
+        with:
+          # The first run failed with "Get Pages site failed ... Not Found":
+          # Pages had never been switched on for the repository. This creates
+          # the Pages site from the workflow instead of requiring a visit to
+          # Settings, and is a no-op once it exists.
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
