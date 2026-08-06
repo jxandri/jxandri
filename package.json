@@ -1,0 +1,14 @@
+{
+  "name": "gradient-peaks",
+  "version": "1.0.0",
+  "description": "A 3D sandbox for surface plots, gradients and constrained maxima of functions of two variables.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "cd app && python3 -m http.server 8000",
+    "build:standalone": "node tools/build-standalone.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
