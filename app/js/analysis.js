@@ -560,14 +560,14 @@ export class OptimumMarker {
 
     const S = field.worldSize;
 
-    const beamGeom = new THREE.CylinderGeometry(S * 0.012, S * 0.030, 1, 16, 1, true);
+    const beamGeom = new THREE.CylinderGeometry(S * 0.006, S * 0.014, 1, 16, 1, true);
     this.beamMat = new THREE.MeshBasicMaterial({
       color: 0xfff2b0, transparent: true, opacity: 0.30, toneMapped: false, fog: false,
       side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending,
     });
     this.beam = new THREE.Mesh(beamGeom, this.beamMat);
 
-    const ringGeom = new THREE.RingGeometry(S * 0.020, S * 0.028, 40);
+    const ringGeom = new THREE.RingGeometry(S * 0.011, S * 0.015, 48);
     ringGeom.rotateX(-Math.PI / 2);
     this.ringMat = new THREE.MeshBasicMaterial({
       color: 0xffe680, transparent: true, opacity: 0.95, toneMapped: false, fog: false,
@@ -575,7 +575,7 @@ export class OptimumMarker {
     });
     this.ring = new THREE.Mesh(ringGeom, this.ringMat);
 
-    const ballGeom = new THREE.SphereGeometry(S * 0.010, 16, 12);
+    const ballGeom = new THREE.SphereGeometry(S * 0.0035, 16, 12);
     this.ballMat = new THREE.MeshBasicMaterial({ color: 0xfffbe6, toneMapped: false, fog: false });
     this.ball = new THREE.Mesh(ballGeom, this.ballMat);
 
@@ -590,15 +590,31 @@ export class OptimumMarker {
 
     this.beam.position.set(wx, wy + top / 2, wz);
     this.beam.scale.set(1, top, 1);
-    this.ring.position.set(wx, wy + field.worldSize * 0.004, wz);
-    this.ball.position.set(wx, wy + field.worldSize * 0.012, wz);
+    this.ring.position.set(wx, wy + field.worldSize * 0.002, wz);
+    this.ball.position.set(wx, wy + field.worldSize * 0.005, wz);
     this.group.visible = true;
   }
 
   setVisible(v) { this.group.visible = v; }
 
-  animate(t) {
-    this.beamMat.opacity = 0.22 + 0.10 * (0.5 + 0.5 * Math.sin(t * 2.0));
+  /**
+   * @param cameraPos world position of the camera, so the beam can get out of
+   *   the way. Teleporting to the optimum lands you inside the shaft, where an
+   *   additive cylinder seen from within is an opaque wall across the screen.
+   */
+  animate(t, cameraPos) {
+    const pulse = 0.22 + 0.10 * (0.5 + 0.5 * Math.sin(t * 2.0));
+    let fade = 1;
+
+    if (cameraPos) {
+      const dx = cameraPos.x - this.beam.position.x;
+      const dz = cameraPos.z - this.beam.position.z;
+      const near = this.field.worldSize * 0.014;   // the beam's widest radius
+      fade = Math.min(1, Math.max(0, (Math.hypot(dx, dz) - near) / (near * 2.5)));
+    }
+
+    this.beamMat.opacity = pulse * fade;
+    this.beam.visible = fade > 0.02;
     this.ring.rotation.y = t * 0.6;
   }
 

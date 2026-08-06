@@ -119,6 +119,16 @@ export class Field {
   /** Unit surface normal in WORLD space (respects vertical exaggeration). */
   worldNormal(x, y, out) {
     const [fx, fy] = this.gradient(x, y);
+    return this.normalFromGrad(fx, fy, out);
+  }
+
+  /**
+   * Same, but from a gradient you already have.
+   * Callers that need both the normal and the slope should compute the gradient
+   * once and use this — evaluating f four extra times per vertex is the single
+   * biggest cost in building a high-resolution mesh.
+   */
+  normalFromGrad(fx, fy, out) {
     if (!isFinite(fx) || !isFinite(fy)) { out.set(0, 1, 0); return out; }
     // Surface (X, vex·f, −Y): normal ∝ (−vex·fx, 1, +vex·fy) in world axes.
     out.set(-fx * this.vex, 1, fy * this.vex).normalize();
@@ -173,6 +183,41 @@ export class FieldGrid {
     this.zmax = zmax;
     this.anyValid = any;
     this.computeSlopeReference();
+  }
+
+  /**
+   * Gradient at grid node (i, j), from the samples already taken.
+   *
+   * Central differences where the neighbours exist, one-sided at the edges, and
+   * an analytic fallback next to an undefined region. Differencing the grid
+   * rather than re-evaluating f is both far cheaper and better behaved for
+   * shading, because the normals then describe the mesh actually on screen.
+   */
+  gradientAt(i, j, out) {
+    const { n, w } = this;
+    const dx = (this.field.xmax - this.field.xmin) / n;
+    const dy = (this.field.ymax - this.field.ymin) / n;
+    const k = j * w + i;
+
+    let gx = NaN, gy = NaN;
+    if (this.valid[k]) {
+      const l = i > 0 && this.valid[k - 1], r = i < n && this.valid[k + 1];
+      if (l && r) gx = (this.z[k + 1] - this.z[k - 1]) / (2 * dx);
+      else if (r) gx = (this.z[k + 1] - this.z[k]) / dx;
+      else if (l) gx = (this.z[k] - this.z[k - 1]) / dx;
+
+      const d = j > 0 && this.valid[k - w], u = j < n && this.valid[k + w];
+      if (d && u) gy = (this.z[k + w] - this.z[k - w]) / (2 * dy);
+      else if (u) gy = (this.z[k + w] - this.z[k]) / dy;
+      else if (d) gy = (this.z[k] - this.z[k - w]) / dy;
+    }
+
+    if (!isFinite(gx) || !isFinite(gy)) {
+      const g = this.field.gradient(this.x(i), this.y(j));
+      gx = g[0]; gy = g[1];
+    }
+    out[0] = gx; out[1] = gy;
+    return out;
   }
 
   /**

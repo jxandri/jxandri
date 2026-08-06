@@ -6,7 +6,7 @@ import * as THREE from '../vendor/three.module.js';
 import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
-  buildSurface, buildWater, buildFeasibleWalls, recolorSurface, LocalPatch,
+  buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
   GROUP_OUTSIDE,
 } from './terrain.js';
 import { Decorations } from './decor.js';
@@ -86,7 +86,7 @@ function buildSky(radius) {
 
 // Three.js lights are in physical units and the Lambert BRDF divides by π, so
 // these numbers are ~3× what they look like they should be.
-const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x6b5f4c, 2.0);
+const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x6b5f4c, 2.35);
 const sun = new THREE.DirectionalLight(0xfff4e2, 2.7);
 sun.position.set(1, 1.4, 0.6);
 scene.add(hemi, sun, sun.target);
@@ -99,7 +99,7 @@ const state = {
   fnSrc: '(x*y)^0.5',
   feasSrc: 'x>=0 && y>=0 && x+y<=2',
   xmin: 0, xmax: 2, ymin: 0, ymax: 2,
-  res: 200,
+  res: 300,
   vex: 1,
   worldSize: 220,
 
@@ -133,7 +133,7 @@ let water = null;
 let walls = null;
 let contourLines = null;
 let contourInfo = null;
-let localPatch = null;
+let surfaceDetail = null;
 let gizmo = null;
 let tangentPlane = null;
 let optMarker = null;
@@ -185,7 +185,7 @@ function rebuild() {
   disposeTree(water);
   disposeTree(walls);
   disposeTree(contourLines);
-  if (localPatch) { disposeTree(localPatch.mesh); localPatch.dispose(); }
+  if (surfaceDetail) { disposeTree(surfaceDetail.group); surfaceDetail.dispose(); }
   if (gizmo) { disposeTree(gizmo.group); gizmo.dispose(); }
   if (tangentPlane) { disposeTree(tangentPlane.mesh); tangentPlane.dispose(); }
   if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
@@ -221,8 +221,8 @@ function rebuild() {
   walls = buildFeasibleWalls(field, grid, predicate);
   if (walls) { world.add(walls); walls.visible = state.feasible; }
 
-  localPatch = new LocalPatch(field, 64);
-  world.add(localPatch.mesh);
+  surfaceDetail = new SurfaceDetail(field, { rings: 2, segments: 96, growth: 3.4 });
+  world.add(surfaceDetail.group);
 
   gizmo = new DerivativeGizmo(field);
   world.add(gizmo.group);
@@ -313,9 +313,10 @@ function applyPalette() {
   // the colour on screen is the colour in the legend, so trade some of the
   // directional shading for fidelity to the palette.
   if (state.topo) { hemi.intensity = 3.7; sun.intensity = 1.0; }
-  else { hemi.intensity = 2.0; sun.intensity = 2.7; }
-  if (localPatch) localPatch.update(player ? player.x : field.cx, player ? player.y : field.cy,
-    localPatchRadius(), grid, state.topo, true);
+  else { hemi.intensity = 2.35; sun.intensity = 2.7; }
+  if (surfaceDetail && player) {
+    surfaceDetail.update(player.x, player.y, detailExtent(), grid, state.topo, true);
+  }
 }
 
 function applyIsolation() {
@@ -353,10 +354,16 @@ function updateContourNote() {
   }
 }
 
-function localPatchRadius() {
-  // Cover a good margin around whatever the player can see up close.
-  const metres = Math.max(state.radius * player.zoom * 6, field.worldSize * 0.02 * player.zoom);
-  return field.mathStep(Math.max(metres, field.worldSize * 1e-6));
+/**
+ * Half-width of the innermost detail ring, in math units.
+ *
+ * Seven metres at full size — comfortably past where an eye-level view resolves
+ * individual triangles — and it shrinks with the explorer so the same relative
+ * neighbourhood stays sharp at every notch of the zoom ruler.
+ */
+function detailExtent() {
+  const metres = Math.max(7 * player.zoom, field.worldSize * 1e-7);
+  return field.mathStep(metres);
 }
 
 function refreshOptimum() {
@@ -762,8 +769,8 @@ function animate() {
 
   if (sky) sky.position.copy(camera.position);
 
-  // Local high-resolution patch under the explorer.
-  localPatch.update(player.x, player.y, localPatchRadius(), grid, state.topo, false);
+  // High-resolution rings under the explorer.
+  surfaceDetail.update(player.x, player.y, detailExtent(), grid, state.topo, false);
 
   // Derivative gizmo.
   const wantGizmo = state.disc && isFinite(player.height());
@@ -786,7 +793,7 @@ function animate() {
     tangentPlane.setVisible(false);
   }
 
-  if (state.showOpt && optimum) optMarker.animate(t);
+  if (state.showOpt && optimum) optMarker.animate(t, camera.position);
 
   updateHUD(readout);
   renderer.render(scene, camera);

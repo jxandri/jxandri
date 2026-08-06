@@ -18,10 +18,55 @@ export const GROUP_OUTSIDE = 1;
 
 /* ------------------------------------------------------------- colouring */
 
-function hash2(i, j) {
-  let h = i * 374761393 + j * 668265263;
-  h = (h ^ (h >> 13)) * 1274126177;
-  return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+/* ------------------------------------------------------------------ noise */
+
+/**
+ * Coherent value noise, sampled in world metres.
+ *
+ * Sampling in *world space* rather than per grid index is what makes the
+ * colouring hold together: the main mesh and the detail patches disagree about
+ * indices but agree about position, so they produce identical colours and the
+ * seam between them disappears. It is also smooth by construction, where a
+ * per-vertex hash produced visible static as soon as you stood close enough to
+ * resolve individual vertices.
+ */
+function nhash(ix, iy, seed) {
+  let h = Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(seed, 1442695041);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
+// Quintic fade: continuous first derivative, so no creases along cell edges.
+function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+
+function valueNoise(x, y, seed) {
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const ux = fade(x - ix), uy = fade(y - iy);
+  const a = nhash(ix, iy, seed), b = nhash(ix + 1, iy, seed);
+  const c = nhash(ix, iy + 1, seed), d = nhash(ix + 1, iy + 1, seed);
+  const top = a + (b - a) * ux;
+  const bot = c + (d - c) * ux;
+  return top + (bot - top) * uy;
+}
+
+/**
+ * Fractal noise in [0,1]. `scale` is the size of the largest feature in metres.
+ *
+ * Octave count is explicit because the finest octave has to stay comfortably
+ * larger than the mesh spacing — detail finer than the triangles carrying it
+ * aliases straight back into the per-vertex speckle this replaced.
+ */
+function fbm(wx, wz, scale, seed, octaves) {
+  let f = 1 / scale, amp = 1, sum = 0, norm = 0;
+  const n = octaves || 3;
+  for (let o = 0; o < n; o++) {
+    sum += amp * valueNoise(wx * f, wz * f, seed + o * 101);
+    norm += amp;
+    amp *= 0.5;
+    f *= 2.13; // irrational-ish, to avoid octaves lining up into a grid
+  }
+  return sum / norm;
 }
 
 function smoothstep(a, b, t) {
@@ -41,40 +86,111 @@ function mixRGB(c1, c2, t, out) {
 // Realistic terrain ramp, keyed on normalised height.
 const SILT = [0.34, 0.30, 0.24];
 const SAND = [0.72, 0.67, 0.48];
-const GRASS = [0.33, 0.52, 0.21];
-const FOREST = [0.21, 0.37, 0.16];
-const ROCK = [0.44, 0.41, 0.38];
+const GRASS = [0.36, 0.56, 0.23];
+const GRASS_DRY = [0.58, 0.54, 0.26];   // sun-bleached meadow
+const GRASS_COOL = [0.24, 0.44, 0.30];  // damp, blue-green pasture
+const FOREST = [0.23, 0.40, 0.18];
+const FOREST_DEEP = [0.14, 0.26, 0.13];
 const SCREE = [0.55, 0.52, 0.48];
 const SNOW = [0.96, 0.97, 1.00];
 
+// Three rock families. Which one you are standing on varies over tens of
+// metres, which is most of what makes high ground look like anything at all.
+const ROCK_COOL = [0.44, 0.44, 0.46];   // grey granite
+const ROCK_WARM = [0.52, 0.42, 0.32];   // ochre sandstone
+const ROCK_DARK = [0.24, 0.23, 0.25];   // dark basalt
+const LICHEN = [0.42, 0.47, 0.30];
+
+const ROCK_TMP = [0, 0, 0];
+
+/**
+ * The rock colour at a point: two families blended over a long wavelength, a
+ * darker mineral in patches, and faint strata banding on the harsher ground.
+ */
+function rockTint(macro, meso, h, rugged, out) {
+  mixRGB(ROCK_COOL, ROCK_WARM, smoothstep(0.30, 0.78, macro), out);
+  mixRGB(out, ROCK_DARK, smoothstep(0.58, 0.95, meso) * 0.60, out);
+
+  // Horizontal bands, as if bedding planes were exposed by the slope.
+  const strata = 0.5 + 0.5 * Math.sin(h * 52 + macro * 7.0);
+  const k = 1 + (strata - 0.5) * 0.20 * rugged;
+  out[0] *= k; out[1] *= k; out[2] *= k;
+  return out;
+}
+
 /**
  * Biome colour for a surface point.
- * @param h  normalised height in [0,1]
- * @param z  raw height (so water level z=0 means something)
- * @param slope |grad f| divided by the surface's median slope (so 1 = typical)
- * @param n  noise in [0,1] for per-patch variation
+ *
+ * @param h      normalised height in [0,1]
+ * @param z      raw height (so the waterline at z = 0 means something)
+ * @param slope  |grad f| divided by the surface's median slope (1 = typical)
+ * @param wx,wz  world position in metres, used to sample the noise fields
  */
-export function biomeColor(h, z, slope, n, out) {
+export function biomeColor(h, z, slope, wx, wz, out) {
+  // Four scales, because terrain varies at all of them. Without the finest one
+  // a hillside seen from eye level spans less than a single noise feature and
+  // reads as one flat wash of colour.
+  const macro = fbm(wx, wz, 62, 17);        // which soil / rock: tens of metres
+  const meso = fbm(wx, wz, 15, 91);         // mottling within it
+  const veg = fbm(wx, wz, 31, 211);         // meadow / woodland patchiness
+  const fine = fbm(wx, wz, 7, 331, 2);      // ground texture at walking range
+
   const steep = smoothstep(1.35, 3.2, slope);
 
+  // How harsh this ground is: steep and high is tough, low and flat is gentle.
+  // Everything below scales its variation by this, so meadows stay calm while
+  // the summits break up into patches of different stone.
+  const rugged = Math.min(1, 0.60 * smoothstep(0.70, 2.60, slope)
+                           + 0.40 * smoothstep(0.45, 0.95, h));
+
+  // Let the biome boundaries wander instead of tracking the level curves
+  // exactly — nothing in nature changes colour along a contour, and a band that
+  // does is the giveaway that you are looking at a plot rather than a place.
+  const t = h + (macro - 0.5) * 0.13 + (meso - 0.5) * 0.05;
+
   if (z < 0) {
-    // Lake / canyon floor: silt, drying to sand near the shoreline.
-    const shore = smoothstep(-0.06, 0.0, h * 0 + z / 1 || 0);
-    mixRGB(SILT, SAND, shore * 0.6, out);
+    // Lake bed: silt, drying to sand near the shoreline.
+    mixRGB(SILT, SAND, 0.25 + macro * 0.45, out);
+  } else if (t < 0.26) {
+    mixRGB(SAND, GRASS, smoothstep(0.0, 0.12, t), out);
+    mixRGB(out, GRASS_DRY, smoothstep(0.30, 0.78, veg) * 0.55, out);
+  } else if (t < 0.62) {
+    mixRGB(GRASS, FOREST, smoothstep(0.24, 0.74, t), out);
+    // Meadows and clearings run dry and strawy; the hollows between them hold
+    // darker, denser growth.
+    mixRGB(out, GRASS_DRY, smoothstep(0.34, 0.80, veg) * 0.52, out);
+    mixRGB(out, GRASS_COOL, smoothstep(0.62, 0.20, veg) * 0.42, out);
+    mixRGB(out, FOREST_DEEP, smoothstep(0.52, 0.92, meso) * 0.45, out);
+    // Scrub and bare earth showing through at close range.
+    mixRGB(out, GRASS_DRY, smoothstep(0.58, 0.95, fine) * 0.26, out);
+  } else if (t < 0.80) {
+    mixRGB(FOREST, rockTint(macro, meso, h, rugged, ROCK_TMP), smoothstep(0.62, 0.80, t), out);
+  } else if (t < 0.90) {
+    mixRGB(rockTint(macro, meso, h, rugged, ROCK_TMP), SCREE, smoothstep(0.80, 0.90, t), out);
   } else {
-    const t = h;
-    if (t < 0.26) mixRGB(SAND, GRASS, smoothstep(0.0, 0.12, t), out);
-    else if (t < 0.62) mixRGB(GRASS, FOREST, smoothstep(0.26, 0.62, t), out);
-    else if (t < 0.79) mixRGB(FOREST, ROCK, smoothstep(0.62, 0.79, t), out);
-    else if (t < 0.89) mixRGB(ROCK, SCREE, smoothstep(0.79, 0.89, t), out);
-    else mixRGB(SCREE, SNOW, smoothstep(0.86, 0.96, t), out);
+    mixRGB(SCREE, SNOW, smoothstep(0.87, 0.97, t), out);
   }
 
   // Steep ground sheds soil and snow: push it toward bare rock.
-  mixRGB(out, ROCK, steep * 0.75, out);
+  if (steep > 0.001) {
+    mixRGB(out, rockTint(macro, meso, h, rugged, ROCK_TMP), steep * 0.78, out);
+  }
 
-  const jitter = 0.90 + 0.20 * n;
-  out[0] *= jitter; out[1] *= jitter; out[2] *= jitter;
+  // Lichen and moss colonise the gentler rock faces.
+  const lichen = smoothstep(0.62, 0.92, meso) * (1 - steep * 0.6) * rugged * 0.30;
+  if (lichen > 0.001) mixRGB(out, LICHEN, lichen, out);
+
+  // Snow lies in patches, and only where it can settle. Displacing the snow
+  // line by noise keeps the cap from being a clean band around the peak.
+  const snow = smoothstep(0.86, 1.00, t - steep * 0.12 + (meso - 0.5) * 0.10);
+  if (snow > 0.001) mixRGB(out, SNOW, snow, out);
+
+  // Finally, brightness variation. Gentle ground still breathes a little; tough
+  // ground swings hard, which is what stops a summit reading as one grey slab.
+  const amp = 0.13 + 0.34 * rugged;
+  const swing = (fine - 0.5) * 0.40 + (meso - 0.5) * 0.35 + (macro - 0.5) * 0.25;
+  const shade = 1 + swing * 2 * amp;
+  out[0] *= shade; out[1] *= shade; out[2] *= shade;
   return out;
 }
 
@@ -127,7 +243,7 @@ export function buildSurface(field, grid, predicate) {
 
   const nrm = new THREE.Vector3();
   const rgb = [0, 0, 0];
-  const wet = grid.zmin < 0 ? Math.min(1, (0 - grid.zmin) / (grid.zmax - grid.zmin)) : 0;
+  const grad = [0, 0];
 
   for (let j = 0; j <= n; j++) {
     const yy = grid.y(j);
@@ -136,16 +252,19 @@ export function buildSurface(field, grid, predicate) {
       const xx = grid.x(i);
       const z = grid.valid[k] ? grid.z[k] : 0;
 
-      positions[k * 3] = field.worldX(xx);
+      const px = field.worldX(xx), pz = field.worldZ(yy);
+      positions[k * 3] = px;
       positions[k * 3 + 1] = field.worldY(z);
-      positions[k * 3 + 2] = field.worldZ(yy);
+      positions[k * 3 + 2] = pz;
 
-      field.worldNormal(xx, yy, nrm);
+      // One gradient per vertex, reused for both the normal and the slope.
+      grid.gradientAt(i, j, grad);
+      field.normalFromGrad(grad[0], grad[1], nrm);
       normals[k * 3] = nrm.x; normals[k * 3 + 1] = nrm.y; normals[k * 3 + 2] = nrm.z;
 
-      const [fx, fy] = field.gradient(xx, yy);
-      const slope = isFinite(fx) && isFinite(fy) ? Math.hypot(fx, fy) / grid.slopeRef : 0;
-      biomeColor(grid.norm(z), z, slope, hash2(i, j), rgb);
+      const slope = isFinite(grad[0]) && isFinite(grad[1])
+        ? Math.hypot(grad[0], grad[1]) / grid.slopeRef : 0;
+      biomeColor(grid.norm(z), z, slope, px, pz, rgb);
       colors[k * 3] = rgb[0]; colors[k * 3 + 1] = rgb[1]; colors[k * 3 + 2] = rgb[2];
     }
   }
@@ -216,6 +335,7 @@ export function recolorSurface(field, grid, geometry, topographic) {
   const arr = colors.array;
   const { n, w } = grid;
   const rgb = [0, 0, 0];
+  const grad = [0, 0];
   const wet = grid.zmin < 0 ? Math.min(1, (0 - grid.zmin) / (grid.zmax - grid.zmin)) : 0;
 
   for (let j = 0; j <= n; j++) {
@@ -226,9 +346,10 @@ export function recolorSurface(field, grid, geometry, topographic) {
       if (topographic) {
         topoColor(grid.norm(z), wet, rgb);
       } else {
-        const [fx, fy] = field.gradient(grid.x(i), yy);
-        const slope = isFinite(fx) && isFinite(fy) ? Math.hypot(fx, fy) / grid.slopeRef : 0;
-        biomeColor(grid.norm(z), z, slope, hash2(i, j), rgb);
+        grid.gradientAt(i, j, grad);
+        const slope = isFinite(grad[0]) && isFinite(grad[1])
+          ? Math.hypot(grad[0], grad[1]) / grid.slopeRef : 0;
+        biomeColor(grid.norm(z), z, slope, field.worldX(grid.x(i)), field.worldZ(yy), rgb);
       }
       arr[k * 3] = rgb[0]; arr[k * 3 + 1] = rgb[1]; arr[k * 3 + 2] = rgb[2];
     }
@@ -357,97 +478,181 @@ export function buildFeasibleWalls(field, grid, predicate, heightMetres) {
 /* ------------------------------------------------------------ local patch */
 
 /**
- * A small, finely-sampled sheet that follows the player.
+ * Nested, finely-sampled sheets that follow the player.
  *
- * Without this, zooming the character down by 10^-4 would just park them on one
- * enormous flat triangle of the coarse mesh — the surface would look linear for
- * the wrong reason. The patch re-samples f at the current zoom scale, so what
- * the student sees flattening out is the actual function.
+ * Two jobs. First, close-range smoothness: the global mesh is sized to cover the
+ * whole domain, so at eye level its cells are metres across and the ground reads
+ * as facets. These rings re-sample f around the explorer at a spacing measured
+ * in centimetres, and each successive ring is a few times wider and proportionally
+ * coarser, which buys detail underfoot and coverage out to the middle distance
+ * for a fixed vertex budget.
+ *
+ * Second, the zoom demonstration: without them, shrinking the character to 10^-4
+ * would park them on one enormous flat triangle and the surface would look
+ * linear for entirely the wrong reason. The rings re-sample at the current zoom,
+ * so what flattens out is the actual function.
  */
-export class LocalPatch {
-  constructor(field, segments = 48) {
+export class SurfaceDetail {
+  /**
+   * @param rings     how many nested squares; each is `growth` times wider than
+   *                  the last, so a fixed vertex budget buys detail where the
+   *                  eye is and coverage where it is not
+   * @param segments  grid resolution of every ring
+   */
+  constructor(field, options) {
+    const o = options || {};
     this.field = field;
-    this.seg = segments;
-    this.radius = 0;      // in math units
-    this.cx = NaN;
-    this.cy = NaN;
+    this.seg = o.segments ?? 96;
+    this.growth = o.growth ?? 3.4;
+    this.extent = 0;
     this.topographic = false;
 
-    const w = segments + 1;
+    this.group = new THREE.Group();
+    this.group.name = 'surface-detail';
+    this.rings = [];
+
+    const count = o.rings ?? 2;
+    for (let r = 0; r < count; r++) this.rings.push(this._makeRing(r, count));
+    for (const ring of this.rings) this.group.add(ring.mesh);
+  }
+
+  _makeRing(index, count) {
+    const seg = this.seg;
+    const w = seg + 1;
+
     const geom = new THREE.BufferGeometry();
     geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
     geom.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
     geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
 
     const idx = [];
-    for (let j = 0; j < segments; j++) {
-      for (let i = 0; i < segments; i++) {
+    for (let j = 0; j < seg; j++) {
+      for (let i = 0; i < seg; i++) {
         const a = j * w + i, b = j * w + i + 1, c = (j + 1) * w + i, d = (j + 1) * w + i + 1;
         idx.push(a, c, b, b, c, d);
       }
     }
     geom.setIndex(idx);
 
-    this.geometry = geom;
-    this.material = new THREE.MeshStandardMaterial({
+    const material = new THREE.MeshStandardMaterial({
       vertexColors: true,
       roughness: 0.95,
       metalness: 0.0,
       side: THREE.DoubleSide,
       polygonOffset: true,
-      polygonOffsetFactor: -4,
-      polygonOffsetUnits: -8,
+      // Finer rings win over coarser ones and over the main mesh.
+      polygonOffsetFactor: -4 * (count - index),
+      polygonOffsetUnits: -8 * (count - index),
     });
-    this.mesh = new THREE.Mesh(this.geometry, this.material);
-    this.mesh.name = 'local-patch';
-    this.mesh.frustumCulled = false;
-    this.mesh.visible = false;
+
+    const mesh = new THREE.Mesh(geom, material);
+    mesh.name = `surface-detail-${index}`;
+    mesh.frustumCulled = false;
+    mesh.visible = false;
+    // Innermost ring draws last, so it is the one you see underfoot.
+    mesh.renderOrder = index;
+
+    return {
+      index,
+      mesh,
+      geometry: geom,
+      material,
+      z: new Float32Array(w * w),
+      extent: 0,
+      cx: NaN,
+      cy: NaN,
+    };
   }
 
-  /** Rebuild only when the player has drifted or the zoom level changed. */
-  update(cx, cy, radius, grid, topographic, force) {
-    const moved = !isFinite(this.cx) || Math.hypot(cx - this.cx, cy - this.cy) > radius * 0.25;
-    const resized = Math.abs(radius - this.radius) > radius * 1e-3;
-    if (!force && !moved && !resized && topographic === this.topographic) return;
+  /**
+   * @param baseExtent half-width of the innermost ring, in math units
+   */
+  update(cx, cy, baseExtent, grid, topographic, force) {
+    const paletteChanged = topographic !== this.topographic;
+    this.topographic = topographic;
+    this.extent = baseExtent;
 
-    this.cx = cx; this.cy = cy; this.radius = radius; this.topographic = topographic;
+    for (const ring of this.rings) {
+      const extent = baseExtent * Math.pow(this.growth, ring.index);
+      // Each ring only rebuilds on its own terms: the small one follows every
+      // few steps, the large one hardly ever.
+      const moved = !isFinite(ring.cx) || Math.hypot(cx - ring.cx, cy - ring.cy) > extent * 0.22;
+      const resized = Math.abs(extent - ring.extent) > extent * 1e-3;
+      if (force || moved || resized || paletteChanged) {
+        this._buildRing(ring, cx, cy, extent, grid, topographic);
+      }
+    }
+  }
 
-    const { field, seg } = this;
+  _buildRing(ring, cx, cy, extent, grid, topographic) {
+    ring.cx = cx; ring.cy = cy; ring.extent = extent;
+
+    const field = this.field;
+    const seg = this.seg;
     const w = seg + 1;
-    const pos = this.geometry.getAttribute('position');
-    const nor = this.geometry.getAttribute('normal');
-    const colAttr = this.geometry.getAttribute('color');
-    const P = pos.array, N = nor.array, C = colAttr.array;
+    const step = (2 * extent) / seg;
 
+    const pos = ring.geometry.getAttribute('position');
+    const nor = ring.geometry.getAttribute('normal');
+    const colAttr = ring.geometry.getAttribute('color');
+    const P = pos.array, N = nor.array, C = colAttr.array;
+    const Z = ring.z;
+
+    // Pass 1: sample f once per vertex.
+    let anyValid = false;
+    for (let j = 0; j < w; j++) {
+      const yy = cy + (j - seg / 2) * step;
+      for (let i = 0; i < w; i++) {
+        const xx = cx + (i - seg / 2) * step;
+        const z = field.height(xx, yy);
+        if (isFinite(z)) { Z[j * w + i] = z; anyValid = true; }
+        else Z[j * w + i] = NaN;
+      }
+    }
+
+    // Pass 2: positions, normals and colours, with gradients differenced from
+    // the samples above rather than costing four more evaluations each.
     const nrm = new THREE.Vector3();
     const rgb = [0, 0, 0];
     const wet = grid.zmin < 0 ? Math.min(1, (0 - grid.zmin) / (grid.zmax - grid.zmin)) : 0;
-    // Gradient step scaled to the patch, so normals stay meaningful when tiny.
-    const h = radius * 1e-3;
-    let anyValid = false;
 
     for (let j = 0; j < w; j++) {
-      const yy = cy + (j / seg - 0.5) * 2 * radius;
+      const yy = cy + (j - seg / 2) * step;
       for (let i = 0; i < w; i++) {
-        const xx = cx + (i / seg - 0.5) * 2 * radius;
         const k = j * w + i;
-        const z = field.height(xx, yy);
-        const zz = isFinite(z) ? z : 0;
-        if (isFinite(z)) anyValid = true;
+        const xx = cx + (i - seg / 2) * step;
+        const raw = Z[k];
+        const zz = isFinite(raw) ? raw : 0;
 
-        P[k * 3] = field.worldX(xx);
+        const px = field.worldX(xx), pz = field.worldZ(yy);
+        P[k * 3] = px;
         P[k * 3 + 1] = field.worldY(zz);
-        P[k * 3 + 2] = field.worldZ(yy);
+        P[k * 3 + 2] = pz;
 
-        field.worldNormal(xx, yy, nrm);
+        let gx, gy;
+        const l = i > 0 && isFinite(Z[k - 1]), r = i < seg && isFinite(Z[k + 1]);
+        if (l && r) gx = (Z[k + 1] - Z[k - 1]) / (2 * step);
+        else if (r) gx = (Z[k + 1] - zz) / step;
+        else if (l) gx = (zz - Z[k - 1]) / step;
+
+        const d = j > 0 && isFinite(Z[k - w]), u = j < seg && isFinite(Z[k + w]);
+        if (d && u) gy = (Z[k + w] - Z[k - w]) / (2 * step);
+        else if (u) gy = (Z[k + w] - zz) / step;
+        else if (d) gy = (zz - Z[k - w]) / step;
+
+        if (!isFinite(gx) || !isFinite(gy)) {
+          const g = field.gradient(xx, yy, step * 0.5);
+          gx = g[0]; gy = g[1];
+        }
+
+        field.normalFromGrad(gx, gy, nrm);
         N[k * 3] = nrm.x; N[k * 3 + 1] = nrm.y; N[k * 3 + 2] = nrm.z;
 
         if (topographic) {
           topoColor(grid.norm(zz), wet, rgb);
         } else {
-          const [fx, fy] = field.gradient(xx, yy, h);
-          const slope = isFinite(fx) && isFinite(fy) ? Math.hypot(fx, fy) / grid.slopeRef : 0;
-          biomeColor(grid.norm(zz), zz, slope, hash2(i, j), rgb);
+          const slope = isFinite(gx) && isFinite(gy) ? Math.hypot(gx, gy) / grid.slopeRef : 0;
+          biomeColor(grid.norm(zz), zz, slope, px, pz, rgb);
         }
         C[k * 3] = rgb[0]; C[k * 3 + 1] = rgb[1]; C[k * 3 + 2] = rgb[2];
       }
@@ -456,30 +661,33 @@ export class LocalPatch {
     pos.needsUpdate = true;
     nor.needsUpdate = true;
     colAttr.needsUpdate = true;
-    this.geometry.computeBoundingSphere();
-    this.mesh.visible = anyValid;
+    ring.geometry.computeBoundingSphere();
+    ring.mesh.visible = anyValid;
 
-    // Float the patch just clear of the coarse mesh.
+    // Float the ring just clear of what it covers.
     //
-    // Depth-buffer tricks are not enough here: the two surfaces differ by real
+    // Depth-buffer tricks alone are not enough: the surfaces differ by real
     // geometry, and the chord error of a coarse cell can be centimetres. Once
     // the explorer is a fraction of a millimetre tall, centimetres is a chasm
-    // and the coarse triangles would swallow the patch. So measure the actual
-    // gap and lift by it.
+    // and the coarser triangles would swallow the ring. So measure the gap.
     let gap = 0;
     const probes = [[0, 0], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]];
-    for (const [px, py] of probes) {
-      const sx = cx + px * radius, sy = cy + py * radius;
+    for (const [dx, dy] of probes) {
+      const sx = cx + dx * extent, sy = cy + dy * extent;
       const coarse = grid.meshHeight(sx, sy);
       const exact = field.height(sx, sy);
       if (isFinite(coarse) && isFinite(exact)) gap = Math.max(gap, coarse - exact);
     }
-    const worldRadius = radius * field.S;
-    this.mesh.position.y = field.worldY(gap) + worldRadius * 0.004;
+    const worldExtent = extent * field.S;
+    const rank = this.rings.length - ring.index;
+    ring.mesh.position.y = field.worldY(gap) + worldExtent * 0.0012 + this.field.worldSize * 1e-5 * rank;
   }
 
   dispose() {
-    this.geometry.dispose();
-    this.material.dispose();
+    for (const ring of this.rings) {
+      ring.geometry.dispose();
+      ring.material.dispose();
+    }
+    this.rings = [];
   }
 }

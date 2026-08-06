@@ -156,12 +156,37 @@ meshes standing on the surface, placed at the height of the *rendered triangle*
 rather than of `f` itself so nothing floats or sinks. The surface stays exactly as
 smooth as `f` is.
 
-**A high-resolution patch follows the explorer.** Without it, zooming down to
+**Nested detail rings follow the explorer.** The global mesh has to span the whole
+domain, so at eye level its cells are close to a metre across and the ground reads
+as facets. Two nested squares — roughly 7 m and 24 m across — re-sample `f` around
+the explorer at centimetre spacing, each rebuilding on its own movement threshold
+so the small one can follow every few steps while the large one hardly ever moves.
+Both rings together rebuild in about 10 ms.
+
+They also carry the zoom demonstration: without them, shrinking the character to
 10⁻⁴ would park the student on a single enormous flat triangle and the surface
-would look linear for entirely the wrong reason. The patch re-samples `f` at the
-current zoom, and is lifted clear of the coarse mesh by the measured gap between
-them. Depth is logarithmic, because the zoom ruler spans five orders of magnitude
-and a conventional depth buffer cannot.
+would look linear for entirely the wrong reason. Each ring is lifted clear of what
+it covers by the *measured* gap, since the two surfaces differ by real geometry and
+no depth-buffer trick can bridge centimetres when the explorer is a fraction of a
+millimetre tall. Depth is logarithmic, because the zoom ruler spans five orders of
+magnitude and a conventional depth buffer cannot.
+
+**Surface colour comes from coherent noise sampled in world space,** at four
+scales: which rock or soil you are on (~60 m), mottling within it (~15 m), meadow
+and woodland patchiness (~30 m), and ground texture at walking range (~7 m). Two
+consequences matter. Sampling by *position* rather than by vertex index means the
+global mesh and the detail rings compute identical colours and the seam between
+them vanishes — and it is smooth by construction, where a per-vertex hash turned
+into visible static as soon as you stood close enough to resolve single vertices.
+Low-frequency noise also displaces the biome boundaries, so they wander instead of
+tracking the level curves; a colour band that follows a contour exactly is the
+giveaway that you are looking at a plot rather than at a place.
+
+**How much the colour varies scales with how harsh the ground is.** A "ruggedness"
+term built from slope and altitude drives the amplitude, so meadows stay calm while
+summits break into patches of granite, sandstone and basalt, with lichen on the
+gentler faces, strata banding on the steep ones, and a snow line broken up by noise
+rather than ringing the peak like a contour.
 
 ---
 
