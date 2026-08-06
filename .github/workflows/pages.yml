@@ -7,8 +7,10 @@ name: Deploy applets to GitHub Pages
 #   /gradient-peaks/guide/  its illustrated guide     (docs/)
 #   /consumer-optimum/   the microeconomics applet    (consumer-optimum/)
 #
-# configure-pages turns Pages on by itself (enablement: true), so there is
-# nothing to click in Settings before the first run.
+# ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
+# "GitHub Actions". Until that is done every run fails at configure-pages.
+# It cannot be automated: creating a Pages site needs repo-administration
+# rights, and a workflow's GITHUB_TOKEN is never granted them.
 
 on:
   push:
@@ -82,11 +84,12 @@ jobs:
 
       - uses: actions/configure-pages@v5
         with:
-          # The first run failed with "Get Pages site failed ... Not Found":
-          # Pages had never been switched on for the repository. This creates
-          # the Pages site from the workflow instead of requiring a visit to
-          # Settings, and is a no-op once it exists.
-          enablement: true
+          # Left at the default. enablement: true was tried and cannot work
+          # here: it fails with "Create Pages site failed. Error: Resource not
+          # accessible by integration" because creating a Pages site requires
+          # administration rights the workflow token does not have. Enable
+          # Pages once in Settings instead (see the note at the top).
+          enablement: false
 
       - uses: actions/upload-pages-artifact@v3
         with:
