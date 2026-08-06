@@ -823,8 +823,13 @@ withLoading(() => {
 });
 animate();
 
-if ('serviceWorker' in navigator) {
+// Offline caching, where the browser allows it. Opened straight off the disk as
+// a file:// page there is no origin to register against and this simply does not
+// apply, so failure here is never worth reporting.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is a bonus */ });
+    try {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    } catch (err) { /* no origin, nothing to cache */ }
   });
 }

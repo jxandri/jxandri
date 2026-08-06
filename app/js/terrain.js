@@ -678,9 +678,12 @@ export class SurfaceDetail {
       const exact = field.height(sx, sy);
       if (isFinite(coarse) && isFinite(exact)) gap = Math.max(gap, coarse - exact);
     }
+    // Separation is measured against the ring's own size, never against the
+    // world. An absolute epsilon is invisible at 1:1 and catastrophic at
+    // 1:10000, where it would stand taller than the explorer and bury them.
     const worldExtent = extent * field.S;
     const rank = this.rings.length - ring.index;
-    ring.mesh.position.y = field.worldY(gap) + worldExtent * 0.0012 + this.field.worldSize * 1e-5 * rank;
+    ring.mesh.position.y = field.worldY(gap) + worldExtent * 0.0009 * (1 + rank);
   }
 
   dispose() {

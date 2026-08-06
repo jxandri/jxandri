@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gradient Peaks — Complete Guide</title>
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<section class="cover">
+  <div class="eyebrow">Teaching guide &amp; user manual</div>
+  <h1>Gradient Peaks</h1>
+  <p class="sub">A 3D sandbox for surface plots of functions of two variables —
+  walk on the graph of <em>f(x,&nbsp;y)</em>, read its partial derivatives off the
+  ground, and find the maximum over a feasible set.</p>
+  <img src="figs/fig-terrain.png" alt="A landscape generated from a function of two variables">
+  <div class="foot">
+    <p><b>Written for someone who has never installed or run a program like this before.</b><br>
+    Every step is spelled out. Nothing here requires you to write code.</p>
+    <p style="margin-top:4mm">Version 1.0 &middot; Runs on Windows, macOS, Linux, iPad, iPhone and Android &middot; No installation required</p>
+  </div>
+</section>
+
+<!-- ============================================================== TOC -->
+<section class="toc">
+  <h2>What is in this guide</h2>
+  <ol>
+    <li>Start here — the sixty-second version
+      <span class="desc">What you received, and how to open it right now.</span></li>
+    <li>Will it run on my computer?
+      <span class="desc">Requirements, and how to check them in ten seconds.</span></li>
+    <li>Your first five minutes
+      <span class="desc">A guided walk through the opening screen.</span></li>
+    <li>The control panel, one control at a time
+      <span class="desc">Every checkbox, slider and box, and what it is for.</span></li>
+    <li>Writing your own functions
+      <span class="desc">The complete notation, with worked examples and common mistakes.</span></li>
+    <li>Writing feasible sets
+      <span class="desc">Turning constraints into a country with borders.</span></li>
+    <li>Nine classroom activities
+      <span class="desc">One prepared lesson for each feature of the program.</span></li>
+    <li>Giving it to your students
+      <span class="desc">Four ways to distribute it, from easiest to most permanent.</span></li>
+    <li>Installing it as an app
+      <span class="desc">On a phone, a tablet, or a laptop, with no app store.</span></li>
+    <li>When something goes wrong
+      <span class="desc">Symptoms, causes and fixes.</span></li>
+    <li>Making it run faster on an old computer
+      <span class="desc">Which settings to lower, and in what order.</span></li>
+    <li>What is inside, and licensing
+      <span class="desc">For the curious, and for your IT department.</span></li>
+  </ol>
+  <p style="margin-top:6mm"><strong>Appendix A</strong> — Keyboard reference card (print this one page for the lab)<br>
+  <strong>Appendix B</strong> — Every file you received, and what it does</p>
+</section>
+
+<!-- =========================================================== PART 1 -->
+<h1 class="part"><span class="num">1</span>Start here — the sixty-second version</h1>
+
+<p>You have been given a folder called <code>Gradient-Peaks</code>. If it arrived as a
+<code>.zip</code> file, you must <strong>unzip it first</strong> — see the box below. Inside are
+these items:</p>
+
+<table>
+  <tr><th style="width:52mm">Item</th><th>What it is</th></tr>
+  <tr>
+    <td class="k"><code>Gradient-Peaks.html</code></td>
+    <td><strong>The program.</strong> Double-click it and it opens in your web browser and runs.
+        This one file contains everything. It does not need the internet.</td>
+  </tr>
+  <tr>
+    <td class="k"><code>Gradient-Peaks-Guide.pdf</code></td>
+    <td>This document.</td>
+  </tr>
+  <tr>
+    <td class="k"><code>website/</code></td>
+    <td>A folder holding the same program split into its separate parts. You only need this
+        if you want to <em>publish it on the internet</em> for your students (Part 8) or install
+        it as an app (Part 9).</td>
+  </tr>
+  <tr>
+    <td class="k"><code>README.txt</code></td>
+    <td>A one-page plain-text summary of what you are reading now.</td>
+  </tr>
+</table>
+
+<div class="warn">
+  <span class="label">Unzip it first — do not run it from inside the zip</span>
+  <p>Double-clicking a <code>.zip</code> file often shows you the contents without actually
+  extracting them, and programs run from that preview will misbehave.</p>
+  <p><strong>Windows:</strong> right-click the <code>.zip</code> → <em>Extract All…</em> → <em>Extract</em>.
+  <br><strong>macOS:</strong> double-click the <code>.zip</code>. A normal folder appears next to it.
+  Use that folder.</p>
+</div>
+
+<h2>Open it</h2>
+
+<ol class="steps">
+  <li><strong>Double-click <code>Gradient-Peaks.html</code>.</strong></li>
+  <li>Your web browser opens. You will see a dark screen with a small spinning circle
+      and the words <em>Building the terrain…</em> for one to three seconds.</li>
+  <li>A green and grey mountain appears, seen from the air, with a control panel down
+      the left-hand side. <strong>That is it. It is running.</strong></li>
+</ol>
+
+<p>There is nothing to install, no account to create, and no internet connection needed.
+The program is not "downloading" anything — it is drawing the mountain from the formula
+<code>f(x,y) = (x*y)^0.5</code>, which you can see typed in the box at the top of the panel.</p>
+
+<div class="tip">
+  <span class="label">If it opens in a browser you do not like</span>
+  <p>Any modern browser works, but <strong>Google Chrome</strong> and <strong>Microsoft Edge</strong>
+  give the smoothest result. To choose one: right-click <code>Gradient-Peaks.html</code> →
+  <em>Open with</em> → pick your browser. On macOS the menu item is the same;
+  hold <kbd>Control</kbd> and click if you have no right mouse button.</p>
+</div>
+
+<div class="warn">
+  <span class="label">One thing that will not work, and why</span>
+  <p>Inside the <code>website/</code> folder there is another file called <code>index.html</code>.
+  <strong>Double-clicking that one gives you a blank screen.</strong> That is not a fault. Browsers
+  refuse, for security reasons, to let a page opened directly from your hard drive load its
+  own separate program files. The single <code>Gradient-Peaks.html</code> avoids the problem by
+  having everything already inside it.</p>
+  <p>Use <code>Gradient-Peaks.html</code> on your own machine. Use the <code>website/</code>
+  folder only when you publish it to a web address (Part 8).</p>
+</div>
+
+<!-- =========================================================== PART 2 -->
+<h1 class="part"><span class="num">2</span>Will it run on my computer?</h1>
+
+<p>Almost certainly yes. The program needs a graphics feature called <strong>WebGL</strong>, which
+every browser has had since about 2013.</p>
+
+<table>
+  <tr><th style="width:38mm">You need</th><th>Details</th></tr>
+  <tr><td class="k">A computer or phone</td>
+      <td>Roughly 2014 or later. It has been kept deliberately small — under one megabyte —
+          so it runs on school laptops and cheap tablets.</td></tr>
+  <tr><td class="k">A modern browser</td>
+      <td>Chrome, Edge, Firefox or Safari, updated within the last few years.</td></tr>
+  <tr><td class="k">Nothing else</td>
+      <td>No internet, no Java, no Flash, no plug-in, no administrator password.</td></tr>
+</table>
+
+<h3>Checking in ten seconds</h3>
+<p>Open <code>Gradient-Peaks.html</code>. If you see a mountain, you are done — that
+<em>is</em> the test. If you see a blank or black screen instead, go to Part 10.</p>
+
+<div class="tip">
+  <span class="label">A note about school and university computers</span>
+  <p>Because this is an ordinary web page, it does not trigger the software-installation
+  restrictions that lock down most institutional machines. There is no installer and no
+  <code>.exe</code>. If your students can open a web page, they can run this.</p>
+</div>
+
+<!-- =========================================================== PART 3 -->
+<h1 class="part"><span class="num">3</span>Your first five minutes</h1>
+
+<figure>
+  <img src="figs/fig-open.png" alt="The opening screen">
+  <figcaption><b>Figure 1.</b> The opening screen. The control panel is on the left. Along the
+  top, the readout always shows where you are: <code>x</code>, <code>y</code>, and the height
+  <code>z = f(x,y)</code>. At the bottom, the current view mode and scale. You begin in the air,
+  looking at the whole surface.</figcaption>
+</figure>
+
+<h2>Step one: look at the whole surface</h2>
+<p>You start as a <strong>drone</strong>, hovering above the plot. This first view is deliberate: before
+you go down and stand on the surface, you should see it as what it is — the graph of a function.</p>
+
+<h2>Step two: take control of the mouse</h2>
+<p><strong>Click once anywhere on the mountain.</strong> The message <em>"Click to look around"</em>
+disappears and your mouse pointer vanishes. This is normal and is exactly how a 3D game
+behaves: your mouse now turns your head instead of moving a pointer.</p>
+
+<p>Move the mouse to look around. Press <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to fly.
+Press <kbd>Space</kbd> to rise and <kbd>Ctrl</kbd> to descend. Hold <kbd>Shift</kbd> to go faster.</p>
+
+<div class="key">
+  <span class="label">The single most important key</span>
+  <p><kbd>Esc</kbd> gives you your mouse pointer back. If you ever feel trapped, press
+  <kbd>Esc</kbd>. Nothing is lost. Click the scene again to resume looking around.</p>
+</div>
+
+<h2>Step three: go and stand on it</h2>
+<p>Press <kbd>2</kbd>. You drop onto the surface behind a small orange-jacketed explorer, who
+is exactly <strong>1.80 metres tall</strong>. That figure is the ruler for everything else in the
+scene: the trees, the boulders, and the measuring circle you will meet in a moment are all sized
+against a person.</p>
+
+<p>Walk with <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>. Watch the numbers along the top
+change as you move. <strong>That readout is the whole point of walking</strong>: the student feels
+the slope in their hands while watching <code>z</code> climb.</p>
+
+<p>Press <kbd>1</kbd> to see through the explorer's own eyes, <kbd>3</kbd> to go back to the drone,
+and <kbd>2</kbd> to return to the over-the-shoulder view.</p>
+
+<h2>Step four: get the panel back</h2>
+<p>Press <kbd>Esc</kbd> to release the mouse, then press <kbd>Tab</kbd> to hide or show the control
+panel. You can also click the <kbd>‹</kbd> button in its top corner, or the <kbd>☰</kbd> button that
+replaces it.</p>
+
+<div class="warn">
+  <span class="label">Keyboard shortcuts pause while you type</span>
+  <p>When your cursor is inside a text box, the letter keys type letters — they do not trigger
+  shortcuts. So typing <code>x*y</code> will not accidentally toggle three settings. Press
+  <kbd>Enter</kbd> when you have finished typing to apply what you wrote and leave the box.</p>
+</div>
+
+<!-- =========================================================== PART 4 -->
+<h1 class="part"><span class="num">4</span>The control panel, one control at a time</h1>
+
+<div class="panel-fig">
+  <img src="figs/fig-panel.png" alt="The full control panel">
+  <figcaption style="font-size:8.2pt"><b>Figure 2.</b> The complete control panel.</figcaption>
+</div>
+
+<h2>Function</h2>
+<p><strong><code>f(x, y) =</code></strong> — the formula that becomes the landscape. Type a new one
+and press <kbd>Enter</kbd>. Part 5 explains the notation in full.</p>
+<p><strong>— examples —</strong> — a menu of ready-made functions. Choosing one loads it and sets a
+sensible domain. This is the fastest way to explore.</p>
+<p>If what you type does not make sense, a red message appears underneath naming the problem and
+the character where it went wrong. <strong>The mountain you already had stays on screen</strong> —
+a typing mistake never destroys your work.</p>
+
+<h2>Domain</h2>
+<p><strong>x min, x max, y min, y max</strong> — the rectangle of the plane you are plotting over.
+The default is the square from 0 to 2 in both directions.</p>
+<p><strong>Mesh resolution</strong> — how finely the surface is divided into triangles. Higher is
+smoother but slower to build. 300 is the default; lower it to 100 or 80 on an old computer.</p>
+<p><strong>Vertical exaggeration</strong> — stretches the landscape upward for looks. <strong>Leave this
+at 1.0 for teaching.</strong> At any other value the picture is stretched but the numbers on screen
+remain the true, unstretched ones, which is exactly the sort of mismatch that confuses students.
+It exists for functions so flat you cannot see them at all.</p>
+<p><strong>Rebuild terrain</strong> — applies the function and domain. Pressing <kbd>Enter</kbd> in
+any of the boxes does the same thing.</p>
+
+<h2>Feasible set</h2>
+<p><strong>constraints</strong> — the inequalities that define where the student is allowed to look
+for the maximum. Part 6 covers the notation.</p>
+<p><strong>Show frontier walls</strong> <kbd>F</kbd> — draws glowing walls along the border of the
+feasible region, standing on the surface. This is the "frontier of the country".</p>
+<p><strong>Make the outside translucent</strong> <kbd>G</kbd> — everything outside the feasible set
+fades to a ghost, so only the permitted region is solid. Turning both of these on is the clearest
+way to pose a constrained optimisation problem.</p>
+
+<h2>Map &amp; terrain</h2>
+<p><strong>Level curves</strong> <kbd>C</kbd> — draws the contour lines on the surface, at round-numbered
+heights. The spacing chosen (for example <code>Δz = 0.2</code>) is shown next to the checkbox. You can
+walk along them.</p>
+<p><strong>Topographic colours</strong> <kbd>M</kbd> — repaints the surface in the standard hypsometric
+palette of a paper map: blues below zero, then green, yellow, tan, brown and white with height.
+Combine with <kbd>T</kbd> (look straight down) to turn the 3D scene into the flat map students
+already know.</p>
+<p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off. The scenery sits
+<em>on top of</em> the surface and never changes its shape.</p>
+<p><strong>Water in the depressions</strong> — a translucent lake surface at height zero, so any
+region where <code>f &lt; 0</code> fills with water.</p>
+<p><strong>Decoration density</strong> — how much scenery. Turn it down to speed things up.</p>
+<p><strong>Shadows</strong> — prettier, noticeably slower. Off by default.</p>
+
+<h2>Derivatives</h2>
+<p><strong>Highlight neighbourhood</strong> <kbd>H</kbd> — lights up a disc on the surface centred on
+the explorer. This is the neighbourhood in which all the rates of change are measured.</p>
+<p><strong>Radius</strong> — 1 metre or 2 metres, measured against the 1.80 m explorer.</p>
+<p><strong><span class="swatch" style="background:#2f7bff"></span>∂f/∂x arrow</strong> <kbd>X</kbd> —
+a blue arrow drawn <em>along the surface</em> in the direction of increasing <code>x</code>.</p>
+<p><strong><span class="swatch" style="background:#ff3b30"></span>∂f/∂y arrow</strong> <kbd>Y</kbd> —
+the same in red, for increasing <code>y</code>.</p>
+<p><strong><span class="swatch" style="background:#14d6c8"></span>Gradient ∇f</strong> <kbd>V</kbd> —
+in teal and at double width, pointing in the steepest uphill direction.</p>
+<p>Each one adds a badge to the top of the screen showing two numbers: the
+<strong>instantaneous</strong> derivative at the explorer's feet, and the <strong>average</strong> rate
+of change over the radius of the disc. Watching those two numbers converge as you shrink the
+radius is a lesson in itself.</p>
+<p><strong><span class="swatch" style="background:#ffc531"></span>Directional derivative</strong>
+<kbd>B</kbd> — freezes the explorer and lets you swing a direction vector <strong>u</strong> around
+the rim with the mouse. The badge shows D<sub>u</sub>f and the angle. To look around while in this
+mode, hold the <strong>right</strong> mouse button.</p>
+<p><strong>Tangent plane</strong> <kbd>P</kbd> — draws the flat plane that best matches the surface
+at the explorer's feet.</p>
+
+<h2>Zoom-in ruler</h2>
+<p>Shrinks the explorer by a factor of ten per notch: 1.8 m, then 18 cm, 1.8 cm, 1.8 mm, and finally
+0.18 mm. The camera, the walking speed and the measuring disc all shrink with them, so from the
+explorer's point of view nothing changes — but the patch of surface they occupy gets a hundred,
+a thousand, ten thousand times smaller. Activity 8 in Part 7 explains why this matters.</p>
+
+<h2>Optimisation</h2>
+<p><strong>Show optimum</strong> <kbd>O</kbd> — finds the highest point of the surface within the
+feasible set and marks it with a golden ring and a shaft of light you can see from anywhere.
+The report underneath gives the maximum value, where it is, whether it sits in the
+<em>interior</em> or on the <em>boundary</em>, and the size of the gradient there.</p>
+<p><strong>Teleport to the optimum</strong> — puts the explorer on that spot instantly.</p>
+
+<h2>View</h2>
+<p><strong>First person</strong> <kbd>1</kbd>, <strong>Third person</strong> <kbd>2</kbd>,
+<strong>Drone</strong> <kbd>3</kbd>. <strong>Look straight down</strong> <kbd>T</kbd> flies the drone
+directly overhead, which projects the surface onto the plane <code>z = 0</code> — the flat map view.
+<strong>Return to the centre</strong> <kbd>R</kbd> rescues an explorer who has wandered off.</p>
+
+<!-- =========================================================== PART 5 -->
+<h1 class="part"><span class="num">5</span>Writing your own functions</h1>
+
+<p>Type into the <code>f(x, y) =</code> box and press <kbd>Enter</kbd>. The notation is the ordinary
+one you would use in a calculator or a spreadsheet, with two conveniences added.</p>
+
+<h2>The rules</h2>
+<table class="compact">
+  <tr><th style="width:34mm">Symbol</th><th>Meaning</th><th>Example</th></tr>
+  <tr><td class="k"><code>+ - * /</code></td><td>add, subtract, multiply, divide</td><td><code>x/2 - y</code></td></tr>
+  <tr><td class="k"><code>^</code></td><td>raise to a power</td><td><code>x^2</code>, <code>x^0.5</code>, <code>x^-1</code></td></tr>
+  <tr><td class="k"><code>( )</code></td><td>grouping</td><td><code>(x+y)^2</code></td></tr>
+  <tr><td class="k"><code>| |</code></td><td>absolute value</td><td><code>|x-y|</code></td></tr>
+  <tr><td class="k"><code>pi</code>, <code>e</code></td><td>the usual constants</td><td><code>sin(pi*x)</code></td></tr>
+</table>
+
+<div class="tip">
+  <span class="label">Two conveniences</span>
+  <p><strong>You may leave out the multiplication sign.</strong> <code>2x</code> means
+  <code>2*x</code>, <code>x y</code> means <code>x*y</code>, and <code>3(x+y)</code> means
+  <code>3*(x+y)</code>.</p>
+  <p><strong>Powers bind tightest.</strong> <code>-x^2</code> is <code>-(x^2)</code>, not
+  <code>(-x)^2</code> — the same convention as in your lecture notes.</p>
+</div>
+
+<h3>Functions you can use</h3>
+<p><code>sin</code> <code>cos</code> <code>tan</code> <code>asin</code> <code>acos</code>
+<code>atan</code> <code>atan2</code> <code>sinh</code> <code>cosh</code> <code>tanh</code>
+<code>exp</code> <code>ln</code> <code>log</code> <code>log2</code> <code>log10</code>
+<code>sqrt</code> <code>cbrt</code> <code>abs</code> <code>sign</code> <code>floor</code>
+<code>ceil</code> <code>round</code> <code>min</code> <code>max</code> <code>pow</code>
+<code>hypot</code> <code>mod</code> <code>clamp</code> <code>step</code> <code>gauss</code></p>
+<p><code>hypot(a,b)</code> is <code>sqrt(a^2+b^2)</code>. <code>gauss(t)</code> is the bell curve
+<code>e^(-t²/2)</code>; <code>gauss(t, centre, width)</code> shifts and stretches it.</p>
+
+<h2>Examples that work</h2>
+<table class="compact">
+  <tr><th style="width:62mm">Type this</th><th>You get</th></tr>
+  <tr><td class="k"><code>(x*y)^0.5</code></td><td>The Cobb–Douglas surface. Undefined unless <code>x</code> and <code>y</code> are both positive or both negative.</td></tr>
+  <tr><td class="k"><code>x^0.3*y^0.7</code></td><td>Cobb–Douglas with unequal shares.</td></tr>
+  <tr><td class="k"><code>1-x^2-y^2</code></td><td>A dome. One clean interior maximum at the origin.</td></tr>
+  <tr><td class="k"><code>x^2-y^2</code></td><td>A saddle. Useful for showing a point where the gradient vanishes but there is no maximum.</td></tr>
+  <tr><td class="k"><code>sin(3x)*cos(3y)/2</code></td><td>An egg carton: many local maxima.</td></tr>
+  <tr><td class="k"><code>0.6*sin(2x)+0.4*cos(3y)+0.3*x*y</code></td><td>Rolling hills with lakes. The prettiest one to walk in.</td></tr>
+  <tr><td class="k"><code>-(x^2+y^2)^0.5+1</code></td><td>A cone. The tip is a maximum where the function is <em>not</em> differentiable — see Activity 8.</td></tr>
+  <tr><td class="k"><code>x*y*exp(-(x^2+y^2))</code></td><td>Four alternating peaks and troughs.</td></tr>
+</table>
+
+<h2>Mistakes, and what the program tells you</h2>
+<table class="compact">
+  <tr><th style="width:34mm">You type</th><th style="width:56mm">You see</th><th>The fix</th></tr>
+  <tr><td class="k"><code>sin(x</code></td><td>Missing ")" after sin( (at character 6)</td><td>Close the bracket.</td></tr>
+  <tr><td class="k"><code>x*yy</code></td><td>Unknown name "yy" (at character 3)</td><td>Only <code>x</code> and <code>y</code> are variables.</td></tr>
+  <tr><td class="k"><code>2+</code></td><td>Unexpected end of expression</td><td>Something is missing after the <code>+</code>.</td></tr>
+  <tr><td class="k"><code>sin</code></td><td>"sin" is a function — write sin(...)</td><td>Give it an argument.</td></tr>
+</table>
+
+<div class="key">
+  <span class="label">Where a function is undefined, there is simply no ground</span>
+  <p><code>(x*y)^0.5</code> has no real value when <code>x</code> and <code>y</code> have opposite
+  signs. Plot it over a domain that crosses the axes and two quadrants come out <strong>empty</strong> —
+  and the explorer will not walk into them. A note appears at the bottom of the screen telling you
+  what fraction of the domain is undefined. This is not a bug to be worked around; it is a
+  genuinely useful picture of a function's domain.</p>
+</div>
+
+<!-- =========================================================== PART 6 -->
+<h1 class="part"><span class="num">6</span>Writing feasible sets</h1>
+
+<p>The <strong>constraints</strong> box takes inequalities in <code>x</code> and <code>y</code>. Whatever
+satisfies them is the feasible set — the region in which the maximum must be found.</p>
+
+<table class="compact">
+  <tr><th style="width:34mm">Symbol</th><th>Meaning</th></tr>
+  <tr><td class="k"><code>&lt;=</code> <code>&gt;=</code></td><td>less than or equal, greater than or equal</td></tr>
+  <tr><td class="k"><code>&lt;</code> <code>&gt;</code></td><td>strictly less, strictly greater</td></tr>
+  <tr><td class="k"><code>&amp;&amp;</code></td><td><strong>and</strong> — both conditions must hold</td></tr>
+  <tr><td class="k"><code>||</code></td><td><strong>or</strong> — either will do</td></tr>
+  <tr><td class="k"><code>!</code></td><td><strong>not</strong></td></tr>
+</table>
+
+<p>You may chain comparisons the way you would write them by hand: <code>0 &lt;= x &lt;= 1</code>
+means exactly what it looks like. Leaving the box empty means "no constraint at all".</p>
+
+<h2>Examples</h2>
+<table class="compact">
+  <tr><th style="width:62mm">Type this</th><th>You get</th></tr>
+  <tr><td class="k"><code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code></td><td>A triangle — the classic budget set.</td></tr>
+  <tr><td class="k"><code>x^2+y^2&lt;=1</code></td><td>A disc of radius 1.</td></tr>
+  <tr><td class="k"><code>x+y&lt;=2 &amp;&amp; 2x+y&lt;=3 &amp;&amp; x&gt;=0 &amp;&amp; y&gt;=0</code></td><td>Two budget lines at once: a four-sided region.</td></tr>
+  <tr><td class="k"><code>x*y&gt;=0.3 &amp;&amp; x+y&lt;=2.5</code></td><td>A curved constraint against a straight one.</td></tr>
+  <tr><td class="k"><code>0&lt;=x&lt;=1.5 &amp;&amp; 0&lt;=y&lt;=1.5</code></td><td>A rectangle, written with chained comparisons.</td></tr>
+</table>
+
+<figure>
+  <img src="figs/fig-feasible.png" alt="The feasible set isolated">
+  <figcaption><b>Figure 3.</b> <code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code> with both feasible-set
+  switches on. The permitted triangle is solid ground with its scenery; everything outside has
+  faded to a ghost. The shaft of light marks the constrained maximum.</figcaption>
+</figure>
+
+<!-- =========================================================== PART 7 -->
+<h1 class="part"><span class="num">7</span>Nine classroom activities</h1>
+
+<p>One for each feature. Each takes five to ten minutes and ends with something the students
+can state in words.</p>
+
+<h2>Activity 1 — A function is a landscape</h2>
+<p><strong>Set up:</strong> the program as it opens.</p>
+<p><strong>Do:</strong> Look at the surface from the drone. Press <kbd>2</kbd> and walk uphill. Ask the
+class to call out what <code>z</code> is doing as you climb, and then to say what
+<code>z</code> <em>is</em>.</p>
+<p><strong>The point:</strong> the height of the ground under your feet is the value of the function
+at the point you are standing on. Everything else in the course is a statement about this landscape.</p>
+
+<h2>Activity 2 — Smooth surfaces, rough scenery</h2>
+<p><strong>Do:</strong> From the air, note that the mountain looks perfectly smooth. Now turn
+<strong>Vegetation, rocks &amp; snow</strong> off and on.</p>
+<p><strong>The point:</strong> The trees and boulders are placed <em>on</em> the surface; they never
+change its shape. A differentiable function has no corners no matter how close you look — but real
+mountains are covered in things that do. Being able to separate the two is worth a minute of
+discussion.</p>
+
+<h2>Activity 3 — Where you are allowed to stand</h2>
+<p><strong>Set up:</strong> constraints <code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code>.
+Turn on <strong>Show frontier walls</strong> and <strong>Make the outside translucent</strong>.</p>
+<p><strong>Do:</strong> Walk to the wall and try to see over it. Ask: where on this triangle is the
+ground highest?</p>
+<p><strong>The point:</strong> A constrained optimisation problem is a question about a region, not
+about a formula. Students who can see the region rarely get the geometry wrong afterwards.</p>
+
+<h2>Activity 4 — The same surface from three heights</h2>
+<p><strong>Do:</strong> Switch between <kbd>1</kbd>, <kbd>2</kbd> and <kbd>3</kbd>, then press
+<kbd>T</kbd> to look straight down.</p>
+<p><strong>The point:</strong> The top-down view is the flat picture in the textbook. Showing students
+that it is the <em>same object</em> seen from above dissolves a surprising amount of confusion about
+contour diagrams.</p>
+
+<h2>Activity 5 — Level curves are paths you can walk</h2>
+<p><strong>Set up:</strong> turn on <strong>Level curves</strong> <kbd>C</kbd> and
+<strong>Topographic colours</strong> <kbd>M</kbd>.</p>
+<p><strong>Do:</strong> Stand on a contour line and walk <em>along</em> it, watching <code>z</code> in the
+readout. Then walk across the lines and watch it change quickly.</p>
+<p><strong>The point:</strong> A level curve is where the function does not change. Walking one and
+watching the number hold still makes that concrete. Press <kbd>T</kbd> afterwards and the same lines
+become an ordinary contour map.</p>
+
+<figure>
+  <img src="figs/fig-topo.png" alt="Top-down topographic view">
+  <figcaption><b>Figure 4.</b> The same landscape from directly overhead with contour lines and
+  map colours on. This is the picture in the textbook — and the students have just been standing
+  in it.</figcaption>
+</figure>
+
+<h2>Activity 6 — Reading the partial derivatives off the ground</h2>
+<p><strong>Set up:</strong> <code>f(x,y) = (x*y)^0.5</code>. Turn on
+<strong>∂f/∂x</strong> <kbd>X</kbd>, <strong>∂f/∂y</strong> <kbd>Y</kbd> and
+<strong>Gradient</strong> <kbd>V</kbd>. Walk to roughly <code>(1, 1)</code>.</p>
+<p><strong>Do:</strong> Read the three badges. At <code>(1,1)</code> they say <code>∂f/∂x = 0.500</code>,
+<code>∂f/∂y = 0.500</code>, <code>‖∇f‖ = 0.707</code>. Check by hand: the partial derivatives of
+<code>√(xy)</code> at <code>(1,1)</code> are both <code>½</code>, and <code>√(¼+¼) = 0.707</code>.</p>
+<p><strong>Then:</strong> point out that the teal gradient arrow sits exactly between the blue and red
+ones, and that it is the steepest way up. Walk to a different point and watch all three swing round.</p>
+<p><strong>The point:</strong> the gradient is not an algebraic accident, it is a direction you can
+see and walk in.</p>
+
+<figure>
+  <img src="figs/fig-arrows.png" alt="Derivative arrows drawn on the surface">
+  <figcaption><b>Figure 5.</b> The three arrows, drawn following the curve of the ground rather than
+  as straight lines through the air. Blue is ∂f/∂x, red is ∂f/∂y, and the double-width teal arrow
+  is the gradient. Here the red arrow has almost no length, because ∂f/∂y is nearly zero — so the
+  gradient points along the blue one.</figcaption>
+</figure>
+
+<h2>Activity 7 — Every other direction</h2>
+<p><strong>Set up:</strong> turn on <strong>Directional derivative</strong> <kbd>B</kbd>.</p>
+<p><strong>Do:</strong> The explorer freezes. Swing the mouse slowly and watch D<sub>u</sub>f in the
+badge. Find the direction where it is largest — it lands on the gradient. Find where it is zero.</p>
+<p><strong>The point:</strong> The direction of zero directional derivative is the level curve, at right
+angles to the gradient. Students usually learn that as a formula; here they find it by hand in about
+fifteen seconds.</p>
+
+<h2>Activity 8 — Why differentiable means "flat if you look closely"</h2>
+<p><strong>Set up:</strong> turn on <strong>Tangent plane</strong> <kbd>P</kbd>. Leave the zoom ruler at 1:1.</p>
+<p><strong>Do:</strong> Note that the yellow plane matches the surface underfoot but peels away from it
+a few metres out. Now drag the <strong>Zoom-in ruler</strong> one notch at a time and watch what
+happens.</p>
+<p><strong>The point:</strong> by 1:1000 the surface and its tangent plane are indistinguishable. That
+<em>is</em> differentiability: not a formula, but the fact that a small enough piece of the surface is a
+plane. Follow it with the cone <code>-(x^2+y^2)^0.5+1</code> and zoom in on the tip — it stays a point
+however far you go. That is what a non-differentiable point looks like.</p>
+
+<div class="two-up">
+  <figure>
+    <img src="figs/fig-zoom0.png" alt="Tangent plane at full scale">
+    <figcaption><b>Figure 6a.</b> At 1:1 the tangent plane (yellow) clearly leaves the surface.</figcaption>
+  </figure>
+  <figure>
+    <img src="figs/fig-zoom3.png" alt="Tangent plane at 1:1000">
+    <figcaption><b>Figure 6b.</b> The same spot with the explorer shrunk to 1.8&nbsp;mm. The surface has
+    become its tangent plane.</figcaption>
+  </figure>
+</div>
+
+<h2>Activity 9 — The maximum, and why the gradient is not zero there</h2>
+<p><strong>Set up:</strong> <code>f(x,y) = (x*y)^0.5</code>, constraints
+<code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code>, <strong>Show frontier walls</strong> on,
+<strong>Show optimum</strong> <kbd>O</kbd> on.</p>
+<p><strong>Do:</strong> Read the report. It says the maximum is <code>1.0000</code> at
+<code>(1.0000, 1.0000)</code>, that it lies <strong>on the boundary of the feasible set</strong>, and that
+<code>‖∇f‖</code> there is <code>0.7071</code> — <em>not</em> zero. Teleport there, turn on the gradient
+arrow, and see it pointing straight at the wall.</p>
+<p><strong>Then:</strong> switch the feasible set off and press <kbd>O</kbd> again. The maximum jumps to
+the far corner of the domain.</p>
+<p><strong>The point — and it is the reason this program exists:</strong> at an unconstrained maximum
+the ground goes flat and the gradient dies. At a <em>constrained</em> maximum it need not: the ground is
+still climbing, and what stops you is the border. Students who have stood at that spot and seen the
+gradient arrow jammed against the wall do not later write "set the gradient to zero" on a constrained
+problem.</p>
+
+<!-- =========================================================== PART 8 -->
+<h1 class="part"><span class="num">8</span>Giving it to your students</h1>
+
+<p>Four ways, easiest first. Option A needs nothing at all; option D gives you a permanent web
+address. All four are free.</p>
+
+<h2>Option A — Send them the file</h2>
+<p>Email <code>Gradient-Peaks.html</code> as an attachment, or drop it in your course folder,
+or put it on a USB stick. Students double-click it. That is the whole procedure.</p>
+<div class="warn">
+  <span class="label">One caution about email</span>
+  <p>Some mail systems strip or block <code>.html</code> attachments. If it does not arrive, put the
+  file in a shared drive (OneDrive, Google Drive, Dropbox) and send the link instead — but tell
+  students to <strong>download</strong> it and then open it, not to preview it in the browser, since
+  some drive previewers will show the file's text rather than run it.</p>
+</div>
+
+<h2>Option B — Upload it to your course page</h2>
+<p>Moodle, Canvas, Blackboard and their relatives all accept a file upload. Add
+<code>Gradient-Peaks.html</code> as a resource. Students click it and it runs.</p>
+
+<h2>Option C — Netlify Drop: a real web address in about two minutes</h2>
+<p>This gives you a link you can put on a slide. No account is needed to start.</p>
+<ol class="steps">
+  <li>Go to <code>app.netlify.com/drop</code> in your browser.</li>
+  <li>Drag the <strong><code>website</code></strong> folder — the whole folder, not the files inside
+      it — onto the dashed box on that page.</li>
+  <li>Wait a few seconds. You are given an address like
+      <code>https://cheerful-lion-12ab34.netlify.app</code>.</li>
+  <li>Open it to check, then share it. Anyone with the link can use it, on any device.</li>
+</ol>
+<p>Create a free account within 24 hours if you want to keep the address permanently or give it a
+friendlier name.</p>
+
+<h2>Option D — GitHub Pages: permanent, free, and version-controlled</h2>
+<p>More steps, but the address never expires and updating it later is easy. If the project already
+lives in a GitHub repository:</p>
+<ol class="steps">
+  <li>Open the repository on <code>github.com</code>.</li>
+  <li>Click <strong>Settings</strong> (the tab along the top of the repository, not your account settings).</li>
+  <li>In the left sidebar, click <strong>Pages</strong>.</li>
+  <li>Under <strong>Source</strong>, choose <strong>GitHub Actions</strong>.</li>
+  <li>The workflow already included in the project (<code>.github/workflows/pages.yml</code>) publishes
+      the <code>app/</code> folder automatically on every push to the main branch.</li>
+  <li>After a minute or two the same Pages screen shows your address, of the form
+      <code>https://&lt;your-username&gt;.github.io/&lt;repository&gt;/</code>.</li>
+</ol>
+
+<div class="tip">
+  <span class="label">Which folder do I upload?</span>
+  <p>For options C and D you publish the <strong><code>website/</code></strong> folder, because a real
+  web server can serve its separate files correctly. Option A and B use the single
+  <code>Gradient-Peaks.html</code> instead. Both contain the same program.</p>
+</div>
+
+<!-- =========================================================== PART 9 -->
+<h1 class="part"><span class="num">9</span>Installing it as an app</h1>
+
+<p>Once the program is at a web address (options C or D above), it can be installed like an app —
+its own icon, its own window, no browser bar, and it works offline afterwards. There is no app store
+involved, no payment, and no developer account.</p>
+
+<table>
+  <tr><th style="width:34mm">Device</th><th>How</th></tr>
+  <tr><td class="k">iPhone / iPad</td>
+      <td>Open the address in <strong>Safari</strong> (this does not work in Chrome on iOS). Tap the
+      <strong>Share</strong> button — the square with an arrow — then scroll down and tap
+      <strong>Add to Home Screen</strong>.</td></tr>
+  <tr><td class="k">Android</td>
+      <td>Open the address in <strong>Chrome</strong>. Tap the three-dot menu, then
+      <strong>Install app</strong> or <strong>Add to Home screen</strong>.</td></tr>
+  <tr><td class="k">Windows</td>
+      <td>Open in <strong>Chrome</strong> or <strong>Edge</strong>. Click the small install icon at the
+      right-hand end of the address bar (a monitor with an arrow), then <strong>Install</strong>.</td></tr>
+  <tr><td class="k">macOS</td>
+      <td>In Chrome or Edge, the same install icon. In <strong>Safari</strong>, choose
+      <strong>File → Add to Dock</strong>.</td></tr>
+</table>
+
+<p>After installing, the program keeps a copy of itself on the device. Students can use it on the bus
+with no signal.</p>
+
+<!-- ========================================================== PART 10 -->
+<h1 class="part"><span class="num">10</span>When something goes wrong</h1>
+
+<table>
+  <tr><th style="width:44mm">What you see</th><th style="width:48mm">Why</th><th>What to do</th></tr>
+
+  <tr><td><strong>A blank white or black page</strong>, and you opened <code>website/index.html</code></td>
+      <td>Browsers will not let a page opened from your hard drive load its own separate files.</td>
+      <td>Open <code>Gradient-Peaks.html</code> instead. That is what it is for.</td></tr>
+
+  <tr><td><strong>Stuck on "Building the terrain…"</strong> for more than about 20 seconds</td>
+      <td>The mesh resolution is too high for this computer, or the function is very slow to evaluate.</td>
+      <td>Reload the page. Drag <strong>Mesh resolution</strong> down to 100 before changing anything else.</td></tr>
+
+  <tr><td><strong>The mouse pointer disappeared</strong> and you cannot click anything</td>
+      <td>Nothing is wrong — the program has taken the mouse so it can turn your head.</td>
+      <td>Press <kbd>Esc</kbd>.</td></tr>
+
+  <tr><td><strong>Typing in the function box toggles settings</strong></td>
+      <td>Your cursor is not actually inside the box.</td>
+      <td>Click directly into the box first. While it holds the cursor, letters type normally.</td></tr>
+
+  <tr><td><strong>A red message under the function box</strong></td>
+      <td>The formula could not be read. The message names the character where it failed.</td>
+      <td>See the mistakes table in Part 5. The previous landscape is still on screen and still usable.</td></tr>
+
+  <tr><td><strong>Large parts of the terrain are missing</strong></td>
+      <td>The function has no real value there — for instance <code>sqrt</code> of a negative number.</td>
+      <td>Nothing to fix. Change the domain if you want a complete surface; the note at the bottom of
+      the screen tells you how much is undefined.</td></tr>
+
+  <tr><td><strong>Everything is jerky</strong></td>
+      <td>The computer's graphics are struggling.</td>
+      <td>Part 11, in the order given there.</td></tr>
+
+  <tr><td><strong>The explorer will not move</strong></td>
+      <td><strong>Directional derivative</strong> is on. It freezes the explorer on purpose.</td>
+      <td>Turn it off with <kbd>B</kbd>.</td></tr>
+
+  <tr><td><strong>The screen is filled with a solid colour</strong></td>
+      <td>The camera is inside the terrain or hard against a frontier wall.</td>
+      <td>Press <kbd>R</kbd> to return to the centre, or <kbd>3</kbd> to fly out as the drone.</td></tr>
+
+  <tr><td><strong>"WebGL is not available"</strong> or similar</td>
+      <td>Hardware graphics are switched off in the browser.</td>
+      <td>In Chrome or Edge: Settings → System → turn on <em>Use graphics acceleration when available</em>,
+      then restart the browser. On very locked-down machines, ask IT.</td></tr>
+</table>
+
+<!-- ========================================================== PART 11 -->
+<h1 class="part"><span class="num">11</span>Making it run faster on an old computer</h1>
+
+<p>Change these in order and stop as soon as it feels smooth. The first two cost you almost nothing.</p>
+
+<ol class="steps">
+  <li><strong>Turn off Shadows</strong> — if it is on, this is the biggest single saving.</li>
+  <li><strong>Decoration density to 0.3, or to 0</strong> — the scenery is the most expensive
+      part of the picture and none of the mathematics depends on it.</li>
+  <li><strong>Mesh resolution to 150, then 100</strong> — the surface gets slightly more angular
+      close up, but every number stays exactly as accurate.</li>
+  <li><strong>Make the browser window smaller</strong> — cost grows with the number of pixels, so a
+      half-size window is roughly twice as fast.</li>
+  <li><strong>Turn off Level curves</strong> while walking, and back on when you need them.</li>
+</ol>
+
+<div class="tip">
+  <span class="label">Accuracy is never what you are trading away</span>
+  <p>Every setting in this part changes only how the landscape is <em>drawn</em>. The derivatives,
+  the gradient and the optimum are computed from the formula itself, so the numbers on screen are
+  identical at the lowest settings and the highest.</p>
+</div>
+
+<!-- ========================================================== PART 12 -->
+<h1 class="part"><span class="num">12</span>What is inside, and licensing</h1>
+
+<p>For colleagues and for IT departments who want to know what they are being asked to allow.</p>
+
+<h3>It is an ordinary web page</h3>
+<p>No installer, no background service, no administrator rights. It never sends anything anywhere: it
+has no network code at all beyond loading its own files. Nothing is collected, stored or transmitted.</p>
+
+<h3>Nothing typed by a student is executed as code</h3>
+<p>The formula box is read by a purpose-built mathematical parser. It can produce a number and nothing
+else — there is no <code>eval</code> anywhere in the program. A student cannot type something into the
+function box that makes the program do anything other than draw a surface.</p>
+
+<h3>The mathematics is honest</h3>
+<p>The horizontal and vertical scales are the same, so the slope you see is the slope the program
+reports. (The vertical exaggeration slider deliberately breaks that, which is why it is labelled
+"visual only" and defaults to off.) The optimum is found by scanning the feasible set and then
+refining the best candidates, and every trial point must satisfy the constraints — which is why
+a boundary maximum is found correctly.</p>
+
+<h3>Licence</h3>
+<p>The program is released under the MIT licence: use it, change it, and give it to your students
+freely. It uses one external library, <strong>three.js</strong> (also MIT, © three.js authors), whose
+licence text travels with the files in <code>website/vendor/</code>.</p>
+
+<!-- ======================================================== APPENDIX A -->
+<h1 class="part">Appendix A — Keyboard reference card</h1>
+<p>One page. Print it and leave it next to the projector.</p>
+
+<table>
+  <tr><th style="width:40mm">Key</th><th>Does</th></tr>
+  <tr><td class="k"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Walk or fly</td></tr>
+  <tr><td class="k"><kbd>Shift</kbd></td><td>Hold to move faster</td></tr>
+  <tr><td class="k"><kbd>Space</kbd> / <kbd>Ctrl</kbd></td><td>Drone up / down</td></tr>
+  <tr><td class="k">mouse</td><td>Look around (click the scene first)</td></tr>
+  <tr><td class="k"><kbd>Esc</kbd></td><td><strong>Release the mouse pointer</strong></td></tr>
+  <tr><td class="k"><kbd>Tab</kbd></td><td>Hide or show the control panel</td></tr>
+  <tr><td class="k"><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>First person / third person / drone</td></tr>
+  <tr><td class="k"><kbd>T</kbd></td><td>Look straight down (map view)</td></tr>
+  <tr><td class="k"><kbd>R</kbd></td><td>Return to the centre</td></tr>
+  <tr><td class="k"><kbd>C</kbd></td><td>Level curves</td></tr>
+  <tr><td class="k"><kbd>M</kbd></td><td>Topographic colours</td></tr>
+  <tr><td class="k"><kbd>F</kbd></td><td>Frontier walls of the feasible set</td></tr>
+  <tr><td class="k"><kbd>G</kbd></td><td>Make everything outside translucent</td></tr>
+  <tr><td class="k"><kbd>H</kbd></td><td>Highlight the neighbourhood disc</td></tr>
+  <tr><td class="k"><kbd>X</kbd></td><td><span class="swatch" style="background:#2f7bff"></span>∂f/∂x arrow</td></tr>
+  <tr><td class="k"><kbd>Y</kbd></td><td><span class="swatch" style="background:#ff3b30"></span>∂f/∂y arrow</td></tr>
+  <tr><td class="k"><kbd>V</kbd></td><td><span class="swatch" style="background:#14d6c8"></span>Gradient ∇f</td></tr>
+  <tr><td class="k"><kbd>B</kbd></td><td><span class="swatch" style="background:#ffc531"></span>Directional derivative (freezes the explorer)</td></tr>
+  <tr><td class="k"><kbd>P</kbd></td><td>Tangent plane</td></tr>
+  <tr><td class="k"><kbd>O</kbd></td><td>Show the optimum</td></tr>
+  <tr><td class="k"><kbd>Enter</kbd></td><td>In a text box: apply what you typed</td></tr>
+</table>
+
+<p><strong>On a phone or tablet:</strong> drag on the left half of the screen to walk, drag on the
+right half to look around.</p>
+
+<!-- ======================================================== APPENDIX B -->
+<h1 class="part">Appendix B — Every file you received</h1>
+
+<table class="compact">
+  <tr><th style="width:52mm">File</th><th>What it does</th></tr>
+  <tr><td class="k"><code>Gradient-Peaks.html</code></td><td>The whole program in one file. Double-click to run.</td></tr>
+  <tr><td class="k"><code>Gradient-Peaks-Guide.pdf</code></td><td>This guide.</td></tr>
+  <tr><td class="k"><code>README.txt</code></td><td>A one-page summary.</td></tr>
+  <tr><td class="k"><code>website/index.html</code></td><td>The page structure and the control panel.</td></tr>
+  <tr><td class="k"><code>website/css/style.css</code></td><td>How the panel and readouts look.</td></tr>
+  <tr><td class="k"><code>website/js/mathexpr.js</code></td><td>Reads what you type into a mathematical expression.</td></tr>
+  <tr><td class="k"><code>website/js/field.js</code></td><td>Converts between mathematical coordinates and metres; computes gradients.</td></tr>
+  <tr><td class="k"><code>website/js/terrain.js</code></td><td>Builds the surface, its colours, the water and the frontier walls.</td></tr>
+  <tr><td class="k"><code>website/js/decor.js</code></td><td>Scatters the trees, rocks, grass and snow.</td></tr>
+  <tr><td class="k"><code>website/js/analysis.js</code></td><td>Level curves, derivative arrows, tangent plane, and the optimiser.</td></tr>
+  <tr><td class="k"><code>website/js/player.js</code></td><td>The explorer, the drone, and the three cameras.</td></tr>
+  <tr><td class="k"><code>website/js/main.js</code></td><td>Puts the scene together and wires up the controls.</td></tr>
+  <tr><td class="k"><code>website/vendor/</code></td><td>three.js, the 3D graphics library, with its licence.</td></tr>
+  <tr><td class="k"><code>website/sw.js</code></td><td>Lets an installed copy work offline.</td></tr>
+  <tr><td class="k"><code>website/manifest.webmanifest</code></td><td>Tells a phone the name and icon to use when installing.</td></tr>
+  <tr><td class="k"><code>tools/build-standalone.mjs</code></td><td>Optional. Rebuilds <code>Gradient-Peaks.html</code> if you change the source.</td></tr>
+</table>
+
+<p style="margin-top:8mm; color:#5c6b7a; font-size:9pt; text-align:center">
+Gradient Peaks — built for teaching the geometry of functions of two variables.<br>
+Everything in this guide was checked against the running program.</p>
+
+</body>
+</html>

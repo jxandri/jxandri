@@ -16,7 +16,17 @@ Everything runs in the browser. No install, no plugin, no account.
 
 ## Running it
 
-Any static web server works, because the app is just files.
+**The quickest way** — open `dist/Gradient-Peaks.html`. That is the whole
+application inlined into one file: double-click it and it runs, with no server,
+no network and no install. It is what you hand to someone who does not code.
+
+`docs/` holds the source of **`dist/Gradient-Peaks-Guide.pdf`**, a 25-page
+illustrated manual written for a complete beginner — installing, every control,
+the expression syntax, nine classroom activities, publishing it for a class, and
+troubleshooting.
+
+**For development**, serve `app/` — any static web server works, because the app
+is just files.
 
 ```sh
 cd app
@@ -24,8 +34,13 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-It must be served over `http://` or `https://`, not opened as a `file://` path —
-ES modules and the service worker both require an origin.
+`app/index.html` must be served over `http://` or `https://`, not opened as a
+`file://` path — ES modules and the service worker both require an origin. That
+restriction is exactly why `dist/Gradient-Peaks.html` exists; rebuild it with:
+
+```sh
+npm install esbuild && npm run build:standalone
+```
 
 ---
 
