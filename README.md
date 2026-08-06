@@ -10,7 +10,9 @@ dressed as real terrain — forest, rock, snow, lakes — so that the abstract o
 feet, partial derivatives drawn on the ground around you, and a shaft of light
 marking the constrained optimum.
 
-Everything runs in the browser. No install, no plugin, no account.
+Everything runs in the browser. No install, no plugin, no account. The interface
+is available in **English and Spanish**, switchable at any time from the panel or
+pinned with `?lang=es` / `?lang=en` on the URL.
 
 ---
 
@@ -20,10 +22,11 @@ Everything runs in the browser. No install, no plugin, no account.
 application inlined into one file: double-click it and it runs, with no server,
 no network and no install. It is what you hand to someone who does not code.
 
-`docs/` holds the source of **`dist/Gradient-Peaks-Guide.pdf`**, a 25-page
-illustrated manual written for a complete beginner — installing, every control,
-the expression syntax, nine classroom activities, publishing it for a class, and
-troubleshooting.
+`docs/` holds the source of the illustrated manual, built in both languages:
+**`dist/Gradient-Peaks-Guide.pdf`** and **`dist/Gradient-Peaks-Guia.pdf`**. Each
+is ~25 pages written for a complete beginner — installing, every control, the
+expression syntax, nine classroom activities, publishing it for a class, and
+troubleshooting — and each is screenshotted in its own language.
 
 **For development**, serve `app/` — any static web server works, because the app
 is just files.
@@ -138,6 +141,7 @@ app/
   index.html          markup and the control panel
   css/style.css
   js/
+    i18n.js           English and Spanish strings, and the language switch
     mathexpr.js       expression compiler: text -> closure tree, no eval()
     field.js          math space <-> world space, gradients, sampling grid
     terrain.js        surface mesh, biome & topographic colour, water, walls
@@ -153,7 +157,14 @@ A few decisions worth knowing about:
 
 **Nothing is `eval`'d.** Student input is parsed by a hand-written recursive
 descent parser into a tree of closures. A typo produces an error message with a
-character position; it cannot produce code.
+character position; it cannot produce code. Those diagnostics carry a key and
+parameters rather than a fixed English sentence, so they are translated along
+with the rest of the interface.
+
+**Switching language never recomputes anything.** `applyStatic()` walks
+`data-i18n` attributes for the markup; the handful of strings the program
+composes itself — the mode pill, the optimum report, a visible parse error — are
+re-rendered from cached state, so you can switch mid-demonstration.
 
 **The world scale is uniform.** The domain maps to a fixed world size and the
 height uses that same factor, so `∂f/∂x` means the same number in world metres as

@@ -15,6 +15,9 @@ import {
   maximize, OptimumMarker,
 } from './analysis.js';
 import { Player, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
+import {
+  LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
+} from './i18n.js';
 
 /* ------------------------------------------------------------ utilities */
 
@@ -159,7 +162,7 @@ function rebuild() {
   let fn, pred;
   try {
     fn = compile(state.fnSrc);
-    $('err-fn').hidden = true;
+    clearError('err-fn');
   } catch (err) {
     showError('err-fn', err);
     return false;
@@ -167,14 +170,14 @@ function rebuild() {
   try {
     pred = compilePredicate(state.feasSrc);
     pred(0, 0);
-    $('err-feas').hidden = true;
+    clearError('err-feas');
   } catch (err) {
     showError('err-feas', err);
     return false;
   }
 
   if (!(state.xmax > state.xmin) || !(state.ymax > state.ymin)) {
-    showError('err-fn', new Error('Domain is empty — check that x max > x min and y max > y min.'));
+    showError('err-fn', localError('err.emptyDomain'));
     return false;
   }
 
@@ -206,7 +209,7 @@ function rebuild() {
   field.zBottom = grid.zmin;
 
   if (!grid.anyValid) {
-    showError('err-fn', new Error('f(x,y) is undefined everywhere on this domain.'));
+    showError('err-fn', localError('err.undefinedEverywhere'));
     return false;
   }
 
@@ -266,22 +269,41 @@ function rebuild() {
   return true;
 }
 
+const lastError = { 'err-fn': null, 'err-feas': null };
+
+function clearError(elementId) {
+  lastError[elementId] = null;
+  $(elementId).hidden = true;
+}
+
 function showError(elementId, err) {
+  lastError[elementId] = err;
   const el = $(elementId);
-  const msg = err instanceof MathExprError && err.position !== undefined
-    ? `${err.message} (at character ${err.position + 1})`
-    : err.message || String(err);
+  let msg;
+  if (err instanceof MathExprError) {
+    msg = err.code ? t(err.code, err.params) : err.message;
+    if (err.position !== undefined) msg += ' ' + t('err.at', { pos: err.position + 1 });
+  } else {
+    msg = err.i18n ? t(err.i18n) : (err.message || String(err));
+  }
   el.textContent = msg;
   el.hidden = false;
+}
+
+/** An error carrying a translation key rather than a fixed English sentence. */
+function localError(key) {
+  const e = new Error(t(key));
+  e.i18n = key;
+  return e;
 }
 
 function reportStats() {
   const parts = [];
   if (surface.stats.undefinedFraction > 0.005) {
-    parts.push(`f is undefined on ${Math.round(surface.stats.undefinedFraction * 100)}% of the domain`);
+    parts.push(t('msg.undefinedFrac', { pct: Math.round(surface.stats.undefinedFraction * 100) }));
   }
   if (state.feasible && surface.stats.insideTris === 0) {
-    parts.push('the feasible set is empty here');
+    parts.push(t('msg.emptyFeasible'));
   }
   setMessage(parts.join(' · '));
 }
@@ -367,6 +389,13 @@ function detailExtent() {
 }
 
 function refreshOptimum() {
+  if (state.showOpt && field) {
+    optimum = maximize(field, state.feasible ? predicate : () => true, { coarse: 180, restarts: 8 });
+  }
+  renderOptimum();
+}
+
+function renderOptimum() {
   const report = $('opt-report');
   const goto = $('btn-goto');
 
@@ -374,18 +403,15 @@ function refreshOptimum() {
     if (optMarker) optMarker.setVisible(false);
     $('r-opt').hidden = true;
     goto.disabled = true;
-    report.textContent = 'Maximise f over the feasible set.';
+    report.textContent = t('opt.idle');
     return;
   }
-
-  const pred = state.feasible ? predicate : () => true;
-  optimum = maximize(field, pred, { coarse: 180, restarts: 8 });
 
   if (!optimum) {
     optMarker.setVisible(false);
     $('r-opt').hidden = true;
     goto.disabled = true;
-    report.textContent = 'No feasible point found on this domain.';
+    report.textContent = t('opt.none');
     return;
   }
 
@@ -393,16 +419,18 @@ function refreshOptimum() {
   goto.disabled = false;
 
   const where = state.feasible
-    ? (optimum.interior ? 'interior of the feasible set' : 'boundary of the feasible set')
-    : 'domain';
+    ? t(optimum.interior ? 'opt.interior' : 'opt.boundary')
+    : t('opt.domain');
   report.innerHTML =
-    `max f = <b>${fmt(optimum.z, 4)}</b>\n` +
-    `at (x, y) = (${fmt(optimum.x, 4)}, ${fmt(optimum.y, 4)})\n` +
-    `on the ${where}\n` +
-    `‖∇f‖ there = ${fmt(optimum.gradMag, 4)}`;
+    `${t('opt.max')} <b>${fmt(optimum.z, 4)}</b>\n` +
+    `${t('opt.at')} (${fmt(optimum.x, 4)}, ${fmt(optimum.y, 4)})\n` +
+    `${t('opt.on')} ${where}\n` +
+    `${t('opt.gradthere')} ${fmt(optimum.gradMag, 4)}`;
 
   const pill = $('r-opt');
-  pill.textContent = `max ${fmt(optimum.z, 3)} at (${fmt(optimum.x, 2)}, ${fmt(optimum.y, 2)})`;
+  pill.textContent = t('opt.pill', {
+    v: fmt(optimum.z, 3), x: fmt(optimum.x, 2), y: fmt(optimum.y, 2),
+  });
   pill.hidden = false;
 }
 
@@ -549,7 +577,7 @@ function readInput() {
 function setMode(mode) {
   player.setMode(mode);
   for (const b of document.querySelectorAll('.mode')) b.classList.toggle('active', b.dataset.mode === mode);
-  $('r-mode').textContent = mode === MODE_FIRST ? 'First person' : mode === MODE_THIRD ? 'Third person' : 'Drone';
+  $('r-mode').textContent = t(mode === MODE_FIRST ? 'view.first' : mode === MODE_THIRD ? 'view.third' : 'view.drone');
   $('crosshair').hidden = !(pointerLocked && mode === MODE_FIRST);
 }
 
@@ -673,11 +701,7 @@ function wireUI() {
     state.zoomStep = parseInt(e.target.value, 10);
     const z = Math.pow(10, -state.zoomStep);
     player.setZoom(z);
-    $('lbl-zoom').textContent = state.zoomStep === 0 ? '1 : 1' : `1 : 10^${state.zoomStep}`;
-    $('r-zoom').textContent = state.zoomStep === 0
-      ? 'scale 1 : 1'
-      : `explorer ${(1.8 * z).toPrecision(2)} m tall`;
-    updateRuler();
+    updateZoomLabels();
   });
 
   bindCheck('t-opt', 'showOpt', () => withLoading(refreshOptimum));
@@ -696,7 +720,36 @@ function wireUI() {
     b.addEventListener('click', () => setMode(b.dataset.mode));
   }
 
-  updateRuler();
+  updateZoomLabels();
+}
+
+function wireLanguage() {
+  const sel = $('lang-select');
+  for (const { code, label } of LANGUAGES) {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+
+  setLanguage(detectLanguage());
+  sel.value = getLanguage();
+  sel.addEventListener('change', () => setLanguage(sel.value));
+
+  // applyStatic() only reaches the markup. Anything the program composes for
+  // itself — the mode pill, the optimum report, a visible parse error — has to
+  // be rebuilt by hand, without recomputing the terrain or the optimiser.
+  onLanguageChange(() => {
+    sel.value = getLanguage();
+    if (player) setMode(player.mode);
+    updateZoomLabels();
+    updateContourNote();
+    renderOptimum();
+    if (surface) reportStats();
+    for (const id of ['err-fn', 'err-feas']) {
+      if (lastError[id]) showError(id, lastError[id]);
+    }
+  });
 }
 
 /** Turning on an arrow implies you want the neighbourhood shown. */
@@ -704,6 +757,15 @@ function ensureDisc() {
   if (state.showDx || state.showDy || state.showGrad || state.showDir) {
     if (!state.disc) { state.disc = true; $('t-disc').checked = true; }
   }
+}
+
+function updateZoomLabels() {
+  const z = Math.pow(10, -state.zoomStep);
+  $('lbl-zoom').textContent = state.zoomStep === 0 ? '1 : 1' : `1 : 10^${state.zoomStep}`;
+  $('r-zoom').textContent = state.zoomStep === 0
+    ? t('hud.scale11')
+    : t('hud.tall', { h: (1.8 * z).toPrecision(2) });
+  updateRuler();
 }
 
 function updateRuler() {
@@ -725,14 +787,14 @@ const chipEls = {
 
 function setChip(el, on, label, value, avg) {
   el.hidden = !on;
-  if (on) el.innerHTML = `${label} <b>${value}</b> <i>avg ${avg}</i>`;
+  if (on) el.innerHTML = `${label} <b>${value}</b> <i>${t('hud.avg')} ${avg}</i>`;
 }
 
 function updateHUD(readout) {
   const z = player.height();
   $('r-x').textContent = fmt(player.x, 3);
   $('r-y').textContent = fmt(player.y, 3);
-  $('r-z').textContent = isFinite(z) ? fmt(z, 3) : 'undefined';
+  $('r-z').textContent = isFinite(z) ? fmt(z, 3) : t('hud.undefined');
 
   if (!readout) {
     for (const k in chipEls) chipEls[k].hidden = true;
@@ -746,8 +808,8 @@ function updateHUD(readout) {
   if (state.showDir) {
     const deg = ((readout.dirAngle ?? state.dirAngle) * 180 / Math.PI).toFixed(0);
     chipEls.dir.hidden = false;
-    chipEls.dir.innerHTML =
-      `D<sub>u</sub>f <b>${fmt(readout.dirSlope, 3)}</b> <i>avg ${fmt(readout.avgDir, 3)} · u at ${deg}°</i>`;
+    chipEls.dir.innerHTML = `D<sub>u</sub>f <b>${fmt(readout.dirSlope, 3)}</b> ` +
+      `<i>${t('hud.avg')} ${fmt(readout.avgDir, 3)} · ${t('hud.uat', { deg })}</i>`;
   } else {
     chipEls.dir.hidden = true;
   }
@@ -811,6 +873,7 @@ function onResize() {
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
 
+wireLanguage();
 wireUI();
 onResize();
 

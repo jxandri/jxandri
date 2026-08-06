@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Gradient Peaks — Guía completa</title>
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<!-- ============================================================ PORTADA -->
+<section class="cover">
+  <div class="eyebrow">Guía docente y manual de uso</div>
+  <h1>Gradient Peaks</h1>
+  <p class="sub">Un entorno 3D para gráficas de superficie de funciones de dos
+  variables: camine sobre la gráfica de <em>f(x,&nbsp;y)</em>, lea sus derivadas
+  parciales sobre el terreno y encuentre el máximo sobre un conjunto factible.</p>
+  <img src="figs-es/fig-terrain.png" alt="Un paisaje generado a partir de una función de dos variables">
+  <div class="foot">
+    <p><b>Escrita para alguien que nunca ha instalado ni ejecutado un programa como este.</b><br>
+    Cada paso está explicado. Nada de lo que aparece aquí exige escribir código.</p>
+    <p style="margin-top:4mm">Versión 1.0 &middot; Funciona en Windows, macOS, Linux, iPad, iPhone y Android &middot; No requiere instalación</p>
+  </div>
+</section>
+
+<!-- ============================================================ ÍNDICE -->
+<section class="toc">
+  <h2>Contenido de esta guía</h2>
+  <ol>
+    <li>Empiece aquí — la versión de sesenta segundos
+      <span class="desc">Qué recibió y cómo abrirlo ahora mismo.</span></li>
+    <li>¿Funcionará en mi computador?
+      <span class="desc">Requisitos, y cómo comprobarlos en diez segundos.</span></li>
+    <li>Sus primeros cinco minutos
+      <span class="desc">Un recorrido guiado por la pantalla inicial.</span></li>
+    <li>El panel de control, control por control
+      <span class="desc">Cada casilla, cada deslizador y cada caja, y para qué sirve.</span></li>
+    <li>Cómo escribir sus propias funciones
+      <span class="desc">La notación completa, con ejemplos y errores frecuentes.</span></li>
+    <li>Cómo escribir conjuntos factibles
+      <span class="desc">Convertir restricciones en un país con fronteras.</span></li>
+    <li>Nueve actividades para la clase
+      <span class="desc">Una lección preparada para cada función del programa.</span></li>
+    <li>Cómo entregárselo a sus estudiantes
+      <span class="desc">Cuatro formas de distribuirlo, de la más fácil a la más permanente.</span></li>
+    <li>Instalarlo como aplicación
+      <span class="desc">En un teléfono, una tableta o un portátil, sin tienda de aplicaciones.</span></li>
+    <li>Cuando algo sale mal
+      <span class="desc">Síntomas, causas y soluciones.</span></li>
+    <li>Cómo hacerlo más rápido en un computador viejo
+      <span class="desc">Qué ajustes bajar, y en qué orden.</span></li>
+    <li>Qué hay por dentro, y licencia
+      <span class="desc">Para los curiosos y para el departamento de sistemas.</span></li>
+  </ol>
+  <p style="margin-top:6mm"><strong>Apéndice A</strong> — Tarjeta de atajos de teclado (imprima esa página para el aula)<br>
+  <strong>Apéndice B</strong> — Todos los archivos que recibió, y qué hace cada uno</p>
+</section>
+
+<!-- =========================================================== PARTE 1 -->
+<h1 class="part"><span class="num">1</span>Empiece aquí — la versión de sesenta segundos</h1>
+
+<p>Usted recibió una carpeta llamada <code>Gradient-Peaks</code>. Si llegó como un archivo
+<code>.zip</code>, <strong>primero debe descomprimirla</strong> — vea el recuadro más abajo.
+Dentro encontrará esto:</p>
+
+<table>
+  <tr><th style="width:52mm">Elemento</th><th>Qué es</th></tr>
+  <tr>
+    <td class="k"><code>Gradient-Peaks.html</code></td>
+    <td><strong>El programa.</strong> Haga doble clic y se abre en su navegador y funciona.
+        Este único archivo lo contiene todo. No necesita internet.</td>
+  </tr>
+  <tr>
+    <td class="k"><code>Gradient-Peaks-Guia.pdf</code></td>
+    <td>Este documento.</td>
+  </tr>
+  <tr>
+    <td class="k"><code>website/</code></td>
+    <td>Una carpeta con el mismo programa dividido en sus partes. Solo la necesita si quiere
+        <em>publicarlo en internet</em> para sus estudiantes (parte 8) o instalarlo como
+        aplicación (parte 9).</td>
+  </tr>
+  <tr>
+    <td class="k"><code>LEEME.txt</code></td>
+    <td>Un resumen de una página, en texto simple, de lo que está leyendo ahora.</td>
+  </tr>
+</table>
+
+<div class="warn">
+  <span class="label">Descomprima primero — no lo ejecute desde dentro del zip</span>
+  <p>Hacer doble clic en un archivo <code>.zip</code> a menudo le muestra el contenido sin
+  extraerlo realmente, y los programas ejecutados desde esa vista previa se comportan mal.</p>
+  <p><strong>Windows:</strong> clic derecho sobre el <code>.zip</code> → <em>Extraer todo…</em> → <em>Extraer</em>.
+  <br><strong>macOS:</strong> doble clic sobre el <code>.zip</code>. Al lado aparece una carpeta
+  normal. Use esa carpeta.</p>
+</div>
+
+<h2>Ábralo</h2>
+
+<ol class="steps">
+  <li><strong>Haga doble clic en <code>Gradient-Peaks.html</code>.</strong></li>
+  <li>Se abre su navegador. Verá una pantalla oscura con un pequeño círculo girando y las
+      palabras <em>Construyendo el terreno…</em> durante uno a tres segundos.</li>
+  <li>Aparece una montaña verde y gris, vista desde el aire, con un panel de control a la
+      izquierda. <strong>Eso es todo. Ya está funcionando.</strong></li>
+</ol>
+
+<p>No hay nada que instalar, ninguna cuenta que crear y ninguna conexión a internet necesaria.
+El programa no está «descargando» nada: está dibujando la montaña a partir de la fórmula
+<code>f(x,y) = (x*y)^0.5</code>, que puede ver escrita en la caja superior del panel.</p>
+
+<div class="tip">
+  <span class="label">El programa habla español</span>
+  <p>Si su navegador está configurado en español, el programa aparece en español
+  automáticamente. También puede cambiarlo en cualquier momento con el selector
+  <strong>Español / English</strong> en la esquina superior del panel, sin perder nada de lo
+  que esté haciendo.</p>
+  <p>Y si publica el programa en una dirección web (parte 8), puede añadirle
+  <code>?lang=es</code> al final del enlace para que a sus estudiantes les abra en español
+  sin importar cómo tengan configurado el navegador.</p>
+</div>
+
+<div class="tip">
+  <span class="label">Si se abre en un navegador que no le gusta</span>
+  <p>Cualquier navegador moderno sirve, pero <strong>Google Chrome</strong> y
+  <strong>Microsoft Edge</strong> dan el resultado más fluido. Para elegir uno: clic derecho
+  sobre <code>Gradient-Peaks.html</code> → <em>Abrir con</em> → elija su navegador. En macOS
+  la opción es la misma; mantenga <kbd>Control</kbd> y haga clic si no tiene botón derecho.</p>
+</div>
+
+<div class="warn">
+  <span class="label">Una cosa que no va a funcionar, y por qué</span>
+  <p>Dentro de la carpeta <code>website/</code> hay otro archivo llamado <code>index.html</code>.
+  <strong>Hacer doble clic en ese le dará una pantalla en blanco.</strong> No es una falla. Por
+  razones de seguridad, los navegadores no permiten que una página abierta directamente desde
+  su disco duro cargue sus propios archivos de programa por separado. El archivo único
+  <code>Gradient-Peaks.html</code> evita el problema porque ya lo lleva todo dentro.</p>
+  <p>En su propio computador use <code>Gradient-Peaks.html</code>. Use la carpeta
+  <code>website/</code> solo cuando lo publique en una dirección web (parte 8).</p>
+</div>
+
+<!-- =========================================================== PARTE 2 -->
+<h1 class="part"><span class="num">2</span>¿Funcionará en mi computador?</h1>
+
+<p>Casi con seguridad, sí. El programa necesita una función gráfica llamada <strong>WebGL</strong>,
+que todos los navegadores tienen desde alrededor de 2013.</p>
+
+<table>
+  <tr><th style="width:38mm">Necesita</th><th>Detalles</th></tr>
+  <tr><td class="k">Un computador o teléfono</td>
+      <td>De 2014 en adelante, aproximadamente. Se mantuvo deliberadamente pequeño —menos de un
+          megabyte— para que funcione en portátiles escolares y tabletas económicas.</td></tr>
+  <tr><td class="k">Un navegador moderno</td>
+      <td>Chrome, Edge, Firefox o Safari, actualizado en los últimos años.</td></tr>
+  <tr><td class="k">Nada más</td>
+      <td>Sin internet, sin Java, sin Flash, sin complementos, sin contraseña de administrador.</td></tr>
+</table>
+
+<h3>Comprobarlo en diez segundos</h3>
+<p>Abra <code>Gradient-Peaks.html</code>. Si ve una montaña, ya está — <em>esa</em> es la prueba.
+Si en cambio ve una pantalla en blanco o negra, vaya a la parte 10.</p>
+
+<div class="tip">
+  <span class="label">Una nota sobre los computadores de colegios y universidades</span>
+  <p>Como se trata de una página web corriente, no activa las restricciones de instalación de
+  software que bloquean la mayoría de las máquinas institucionales. No hay instalador ni
+  <code>.exe</code>. Si sus estudiantes pueden abrir una página web, pueden usar esto.</p>
+</div>
+
+<!-- =========================================================== PARTE 3 -->
+<h1 class="part"><span class="num">3</span>Sus primeros cinco minutos</h1>
+
+<figure>
+  <img src="figs-es/fig-open.png" alt="La pantalla inicial">
+  <figcaption><b>Figura 1.</b> La pantalla inicial. El panel de control está a la izquierda.
+  Arriba, la lectura muestra siempre dónde se encuentra: <code>x</code>, <code>y</code> y la
+  altura <code>z = f(x,y)</code>. Abajo, el modo de vista y la escala actuales. Usted empieza
+  en el aire, mirando toda la superficie.</figcaption>
+</figure>
+
+<h2>Paso uno: mire la superficie completa</h2>
+<p>Usted empieza como un <strong>dron</strong>, sobrevolando la gráfica. Esta primera vista es
+deliberada: antes de bajar y pararse sobre la superficie, conviene verla como lo que es —la
+gráfica de una función.</p>
+
+<h2>Paso dos: tome el control del ratón</h2>
+<p><strong>Haga un clic en cualquier parte de la montaña.</strong> El mensaje
+<em>«Haga clic para mirar alrededor»</em> desaparece y el puntero del ratón se esfuma. Es
+normal, y es exactamente como se comporta un juego en 3D: ahora el ratón gira su cabeza en
+lugar de mover un puntero.</p>
+
+<p>Mueva el ratón para mirar alrededor. Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>
+para volar. <kbd>Espacio</kbd> sube y <kbd>Ctrl</kbd> baja. Mantenga <kbd>Shift</kbd> para ir
+más rápido.</p>
+
+<div class="key">
+  <span class="label">La tecla más importante de todas</span>
+  <p><kbd>Esc</kbd> le devuelve el puntero del ratón. Si en algún momento se siente atrapado,
+  presione <kbd>Esc</kbd>. No se pierde nada. Vuelva a hacer clic en la escena para seguir
+  mirando alrededor.</p>
+</div>
+
+<h2>Paso tres: bájese y párese sobre ella</h2>
+<p>Presione <kbd>2</kbd>. Usted cae sobre la superficie, detrás de un pequeño explorador de
+chaqueta naranja que mide exactamente <strong>1,80 metros</strong>. Esa figura es la regla de
+todo lo demás en la escena: los árboles, las rocas y el círculo de medición que verá en un
+momento están dimensionados con respecto a una persona.</p>
+
+<p>Camine con <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>. Observe cómo cambian los
+números de arriba a medida que se mueve. <strong>Esa lectura es el propósito de caminar</strong>:
+el estudiante siente la pendiente en las manos mientras ve subir <code>z</code>.</p>
+
+<p>Presione <kbd>1</kbd> para ver por los ojos del propio explorador, <kbd>3</kbd> para volver al
+dron y <kbd>2</kbd> para regresar a la vista por encima del hombro.</p>
+
+<h2>Paso cuatro: recupere el panel</h2>
+<p>Presione <kbd>Esc</kbd> para soltar el ratón y luego <kbd>Tab</kbd> para ocultar o mostrar el
+panel de control. También puede usar el botón <kbd>‹</kbd> de su esquina, o el botón
+<kbd>☰</kbd> que lo reemplaza.</p>
+
+<div class="warn">
+  <span class="label">Los atajos de teclado se detienen mientras usted escribe</span>
+  <p>Cuando el cursor está dentro de una caja de texto, las letras escriben letras: no activan
+  atajos. Así, escribir <code>x*y</code> no cambiará por accidente tres ajustes. Presione
+  <kbd>Enter</kbd> al terminar de escribir para aplicar lo escrito y salir de la caja.</p>
+</div>
+
+<!-- =========================================================== PARTE 4 -->
+<h1 class="part"><span class="num">4</span>El panel de control, control por control</h1>
+
+<div class="panel-fig">
+  <img src="figs-es/fig-panel.png" alt="El panel de control completo">
+  <figcaption style="font-size:8.2pt"><b>Figura 2.</b> El panel de control completo.</figcaption>
+</div>
+
+<h2>Función</h2>
+<p><strong><code>f(x, y) =</code></strong> — la fórmula que se convierte en el paisaje. Escriba
+una nueva y presione <kbd>Enter</kbd>. La parte 5 explica la notación completa.</p>
+<p><strong>— ejemplos —</strong> — un menú de funciones ya preparadas. Elegir una la carga y
+ajusta un dominio razonable. Es la forma más rápida de explorar.</p>
+<p>Si lo que escribe no tiene sentido, aparece debajo un mensaje rojo que nombra el problema y
+el carácter donde falló. <strong>La montaña que ya tenía permanece en pantalla</strong>: un error
+de escritura nunca destruye su trabajo.</p>
+
+<h2>Dominio</h2>
+<p><strong>x mín, x máx, y mín, y máx</strong> — el rectángulo del plano sobre el que está
+graficando. Por defecto es el cuadrado de 0 a 2 en ambas direcciones.</p>
+<p><strong>Resolución de la malla</strong> — en cuántos triángulos se divide la superficie. Más
+alta es más suave pero más lenta de construir. 300 es el valor por defecto; bájela a 100 o a 80
+en un computador viejo.</p>
+<p><strong>Exageración vertical</strong> — estira el paisaje hacia arriba, por estética.
+<strong>Déjela en 1.0 para enseñar.</strong> Con cualquier otro valor la imagen queda estirada
+pero los números en pantalla siguen siendo los verdaderos, sin estirar, que es justamente el
+tipo de desajuste que confunde a los estudiantes. Existe para funciones tan planas que de otro
+modo no se verían.</p>
+<p><strong>Reconstruir el terreno</strong> — aplica la función y el dominio. Presionar
+<kbd>Enter</kbd> en cualquiera de las cajas hace lo mismo.</p>
+
+<h2>Conjunto factible</h2>
+<p><strong>restricciones</strong> — las desigualdades que definen dónde puede el estudiante
+buscar el máximo. La parte 6 cubre la notación.</p>
+<p><strong>Mostrar los muros de la frontera</strong> <kbd>F</kbd> — dibuja muros luminosos a lo
+largo del borde de la región factible, parados sobre la superficie. Es la «frontera del país».</p>
+<p><strong>Volver translúcido lo que está afuera</strong> <kbd>G</kbd> — todo lo que queda fuera
+del conjunto factible se desvanece hasta volverse un fantasma, de modo que solo la región
+permitida es sólida. Activar ambas cosas es la manera más clara de plantear un problema de
+optimización con restricciones.</p>
+
+<h2>Mapa y terreno</h2>
+<p><strong>Curvas de nivel</strong> <kbd>C</kbd> — dibuja las curvas de nivel sobre la superficie,
+a alturas redondas. El espaciamiento elegido (por ejemplo <code>Δz = 0.2</code>) aparece junto a
+la casilla. Se puede caminar sobre ellas.</p>
+<p><strong>Colores topográficos</strong> <kbd>M</kbd> — repinta la superficie con la paleta
+hipsométrica estándar de un mapa de papel: azules por debajo de cero, y luego verde, amarillo,
+ocre, café y blanco con la altura. Combínelo con <kbd>T</kbd> (mirar desde arriba) y la escena
+3D se convierte en el mapa plano que los estudiantes ya conocen.</p>
+<p><strong>Vegetación, rocas y nieve</strong> — enciende y apaga el decorado. El decorado se
+apoya <em>encima</em> de la superficie y nunca cambia su forma.</p>
+<p><strong>Agua en las depresiones</strong> — una lámina de agua translúcida a la altura cero, de
+modo que toda región donde <code>f &lt; 0</code> se llena de agua.</p>
+<p><strong>Densidad de la decoración</strong> — cuánto decorado. Bájela para ganar velocidad.</p>
+<p><strong>Sombras</strong> — más bonito, notablemente más lento. Apagadas por defecto.</p>
+
+<h2>Derivadas</h2>
+<p><strong>Resaltar la vecindad</strong> <kbd>H</kbd> — ilumina un disco sobre la superficie
+centrado en el explorador. Esa es la vecindad en la que se miden todas las razones de cambio.</p>
+<p><strong>Radio</strong> — 1 metro o 2 metros, medidos contra el explorador de 1,80 m.</p>
+<p><strong><span class="swatch" style="background:#2f7bff"></span>Flecha ∂f/∂x</strong> <kbd>X</kbd> —
+una flecha azul dibujada <em>sobre la superficie</em> en la dirección en que crece <code>x</code>.</p>
+<p><strong><span class="swatch" style="background:#ff3b30"></span>Flecha ∂f/∂y</strong> <kbd>Y</kbd> —
+lo mismo en rojo, para <code>y</code> creciente.</p>
+<p><strong><span class="swatch" style="background:#14d6c8"></span>Gradiente ∇f</strong> <kbd>V</kbd> —
+en color turquesa y con el doble de ancho, apunta en la dirección de máxima subida.</p>
+<p>Cada una añade una etiqueta en la parte superior de la pantalla con dos números: la derivada
+<strong>instantánea</strong> a los pies del explorador y la razón de cambio <strong>promedio</strong>
+a lo largo del radio del disco. Ver cómo esos dos números se acercan al reducir el radio es ya
+una lección en sí misma.</p>
+<p><strong><span class="swatch" style="background:#ffc531"></span>Derivada direccional</strong>
+<kbd>B</kbd> — deja inmóvil al explorador y le permite girar un vector dirección
+<strong>u</strong> sobre el borde con el ratón. La etiqueta muestra D<sub>u</sub>f y el ángulo.
+Para mirar alrededor en este modo, mantenga presionado el botón <strong>derecho</strong>.</p>
+<p><strong>Plano tangente</strong> <kbd>P</kbd> — dibuja el plano que mejor se ajusta a la
+superficie a los pies del explorador.</p>
+
+<h2>Regla de acercamiento</h2>
+<p>Reduce al explorador un factor de diez por muesca: 1,8 m, luego 18 cm, 1,8 cm, 1,8 mm y
+finalmente 0,18 mm. La cámara, la velocidad al caminar y el disco de medición se reducen con él,
+así que desde el punto de vista del explorador nada cambia — pero el trozo de superficie que
+ocupa se vuelve cien, mil, diez mil veces más pequeño. La actividad 8 de la parte 7 explica por
+qué esto importa.</p>
+
+<h2>Optimización</h2>
+<p><strong>Mostrar el óptimo</strong> <kbd>O</kbd> — encuentra el punto más alto de la superficie
+dentro del conjunto factible y lo marca con un anillo dorado y un haz de luz visible desde
+cualquier parte. El informe de abajo da el valor máximo, dónde está, si queda en el
+<em>interior</em> o en la <em>frontera</em>, y el tamaño del gradiente allí.</p>
+<p><strong>Teletransportarse al óptimo</strong> — lleva al explorador a ese punto al instante.</p>
+
+<h2>Vista</h2>
+<p><strong>Primera persona</strong> <kbd>1</kbd>, <strong>Tercera persona</strong> <kbd>2</kbd>,
+<strong>Dron</strong> <kbd>3</kbd>. <strong>Mirar desde arriba</strong> <kbd>T</kbd> lleva el dron
+justo encima, lo que proyecta la superficie sobre el plano <code>z = 0</code>: la vista de mapa
+plano. <strong>Volver al centro</strong> <kbd>R</kbd> rescata a un explorador que se haya
+perdido.</p>
+
+<!-- =========================================================== PARTE 5 -->
+<h1 class="part"><span class="num">5</span>Cómo escribir sus propias funciones</h1>
+
+<p>Escriba en la caja <code>f(x, y) =</code> y presione <kbd>Enter</kbd>. La notación es la
+corriente, la que usaría en una calculadora o en una hoja de cálculo, con dos comodidades
+añadidas.</p>
+
+<h2>Las reglas</h2>
+<table class="compact">
+  <tr><th style="width:34mm">Símbolo</th><th>Significado</th><th>Ejemplo</th></tr>
+  <tr><td class="k"><code>+ - * /</code></td><td>sumar, restar, multiplicar, dividir</td><td><code>x/2 - y</code></td></tr>
+  <tr><td class="k"><code>^</code></td><td>elevar a una potencia</td><td><code>x^2</code>, <code>x^0.5</code>, <code>x^-1</code></td></tr>
+  <tr><td class="k"><code>( )</code></td><td>agrupación</td><td><code>(x+y)^2</code></td></tr>
+  <tr><td class="k"><code>| |</code></td><td>valor absoluto</td><td><code>|x-y|</code></td></tr>
+  <tr><td class="k"><code>pi</code>, <code>e</code></td><td>las constantes de siempre</td><td><code>sin(pi*x)</code></td></tr>
+</table>
+
+<div class="warn">
+  <span class="label">Use punto decimal, no coma</span>
+  <p>Escriba <code>0.5</code>, no <code>0,5</code>. La coma se usa para separar los argumentos de
+  una función, como en <code>max(x, y)</code>, así que <code>0,5</code> se leería como dos
+  números distintos.</p>
+</div>
+
+<div class="tip">
+  <span class="label">Dos comodidades</span>
+  <p><strong>Puede omitir el signo de multiplicación.</strong> <code>2x</code> significa
+  <code>2*x</code>, <code>x y</code> significa <code>x*y</code> y <code>3(x+y)</code> significa
+  <code>3*(x+y)</code>.</p>
+  <p><strong>Las potencias se agrupan primero.</strong> <code>-x^2</code> es
+  <code>-(x^2)</code>, no <code>(-x)^2</code>: la misma convención de sus apuntes de clase.</p>
+</div>
+
+<h3>Funciones disponibles</h3>
+<p><code>sin</code> <code>cos</code> <code>tan</code> <code>asin</code> <code>acos</code>
+<code>atan</code> <code>atan2</code> <code>sinh</code> <code>cosh</code> <code>tanh</code>
+<code>exp</code> <code>ln</code> <code>log</code> <code>log2</code> <code>log10</code>
+<code>sqrt</code> <code>cbrt</code> <code>abs</code> <code>sign</code> <code>floor</code>
+<code>ceil</code> <code>round</code> <code>min</code> <code>max</code> <code>pow</code>
+<code>hypot</code> <code>mod</code> <code>clamp</code> <code>step</code> <code>gauss</code></p>
+<p>Los nombres están en inglés porque son los mismos que usan las calculadoras y las hojas de
+cálculo: <code>sqrt</code> es la raíz cuadrada, <code>ln</code> el logaritmo natural y
+<code>abs</code> el valor absoluto. <code>hypot(a,b)</code> es <code>sqrt(a^2+b^2)</code>.
+<code>gauss(t)</code> es la campana <code>e^(-t²/2)</code>; <code>gauss(t, centro, ancho)</code>
+la desplaza y la estira.</p>
+
+<h2>Ejemplos que funcionan</h2>
+<table class="compact">
+  <tr><th style="width:62mm">Escriba esto</th><th>Obtiene</th></tr>
+  <tr><td class="k"><code>(x*y)^0.5</code></td><td>La superficie de Cobb–Douglas. No está definida a menos que <code>x</code> y <code>y</code> sean ambos positivos o ambos negativos.</td></tr>
+  <tr><td class="k"><code>x^0.3*y^0.7</code></td><td>Cobb–Douglas con participaciones desiguales.</td></tr>
+  <tr><td class="k"><code>1-x^2-y^2</code></td><td>Una cúpula. Un único máximo interior limpio en el origen.</td></tr>
+  <tr><td class="k"><code>x^2-y^2</code></td><td>Una silla de montar. Útil para mostrar un punto donde el gradiente se anula sin que haya máximo.</td></tr>
+  <tr><td class="k"><code>sin(3x)*cos(3y)/2</code></td><td>Un cartón de huevos: muchos máximos locales.</td></tr>
+  <tr><td class="k"><code>0.6*sin(2x)+0.4*cos(3y)+0.3*x*y</code></td><td>Colinas onduladas con lagos. La más bonita para caminar.</td></tr>
+  <tr><td class="k"><code>-(x^2+y^2)^0.5+1</code></td><td>Un cono. La punta es un máximo donde la función <em>no</em> es diferenciable — vea la actividad 8.</td></tr>
+  <tr><td class="k"><code>x*y*exp(-(x^2+y^2))</code></td><td>Cuatro picos y valles alternados.</td></tr>
+</table>
+
+<h2>Errores, y lo que el programa le dice</h2>
+<table class="compact">
+  <tr><th style="width:34mm">Usted escribe</th><th style="width:56mm">Usted ve</th><th>La solución</th></tr>
+  <tr><td class="k"><code>sin(x</code></td><td>Falta un «)» después de sin( (en el carácter 6)</td><td>Cierre el paréntesis.</td></tr>
+  <tr><td class="k"><code>x*yy</code></td><td>Nombre desconocido «yy» (en el carácter 3)</td><td>Solo <code>x</code> y <code>y</code> son variables.</td></tr>
+  <tr><td class="k"><code>2+</code></td><td>La expresión termina antes de tiempo</td><td>Falta algo después del <code>+</code>.</td></tr>
+  <tr><td class="k"><code>sin</code></td><td>«sin» es una función: escriba sin(...)</td><td>Déle un argumento.</td></tr>
+</table>
+
+<div class="key">
+  <span class="label">Donde la función no está definida, sencillamente no hay suelo</span>
+  <p><code>(x*y)^0.5</code> no tiene valor real cuando <code>x</code> y <code>y</code> tienen
+  signos opuestos. Grafíquela sobre un dominio que cruce los ejes y dos cuadrantes saldrán
+  <strong>vacíos</strong>, y el explorador no podrá caminar hacia ellos. Abajo aparece un aviso
+  que le dice qué fracción del dominio queda indefinida. Esto no es un defecto que haya que
+  sortear: es una imagen genuinamente útil del dominio de una función.</p>
+</div>
+
+<!-- =========================================================== PARTE 6 -->
+<h1 class="part"><span class="num">6</span>Cómo escribir conjuntos factibles</h1>
+
+<p>La caja <strong>restricciones</strong> recibe desigualdades en <code>x</code> y <code>y</code>.
+Todo lo que las satisface es el conjunto factible: la región donde debe hallarse el máximo.</p>
+
+<table class="compact">
+  <tr><th style="width:34mm">Símbolo</th><th>Significado</th></tr>
+  <tr><td class="k"><code>&lt;=</code> <code>&gt;=</code></td><td>menor o igual, mayor o igual</td></tr>
+  <tr><td class="k"><code>&lt;</code> <code>&gt;</code></td><td>estrictamente menor, estrictamente mayor</td></tr>
+  <tr><td class="k"><code>&amp;&amp;</code></td><td><strong>y</strong> — ambas condiciones deben cumplirse</td></tr>
+  <tr><td class="k"><code>||</code></td><td><strong>o</strong> — basta con cualquiera</td></tr>
+  <tr><td class="k"><code>!</code></td><td><strong>no</strong></td></tr>
+</table>
+
+<p>Puede encadenar comparaciones tal como las escribiría a mano: <code>0 &lt;= x &lt;= 1</code>
+significa exactamente lo que parece. Dejar la caja vacía significa «sin ninguna restricción».</p>
+
+<h2>Ejemplos</h2>
+<table class="compact">
+  <tr><th style="width:62mm">Escriba esto</th><th>Obtiene</th></tr>
+  <tr><td class="k"><code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code></td><td>Un triángulo — el conjunto presupuestal clásico.</td></tr>
+  <tr><td class="k"><code>x^2+y^2&lt;=1</code></td><td>Un disco de radio 1.</td></tr>
+  <tr><td class="k"><code>x+y&lt;=2 &amp;&amp; 2x+y&lt;=3 &amp;&amp; x&gt;=0 &amp;&amp; y&gt;=0</code></td><td>Dos rectas de presupuesto a la vez: una región de cuatro lados.</td></tr>
+  <tr><td class="k"><code>x*y&gt;=0.3 &amp;&amp; x+y&lt;=2.5</code></td><td>Una restricción curva contra una recta.</td></tr>
+  <tr><td class="k"><code>0&lt;=x&lt;=1.5 &amp;&amp; 0&lt;=y&lt;=1.5</code></td><td>Un rectángulo, escrito con comparaciones encadenadas.</td></tr>
+</table>
+
+<figure>
+  <img src="figs-es/fig-feasible.png" alt="El conjunto factible aislado">
+  <figcaption><b>Figura 3.</b> <code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code> con las dos
+  casillas del conjunto factible activadas. El triángulo permitido es suelo sólido con su
+  decorado; todo lo de afuera se ha vuelto un fantasma. El haz de luz marca el máximo con
+  restricciones.</figcaption>
+</figure>
+
+<!-- =========================================================== PARTE 7 -->
+<h1 class="part"><span class="num">7</span>Nueve actividades para la clase</h1>
+
+<p>Una por cada función del programa. Cada una toma de cinco a diez minutos y termina en algo que
+los estudiantes pueden enunciar con palabras.</p>
+
+<h2>Actividad 1 — Una función es un paisaje</h2>
+<p><strong>Preparación:</strong> el programa tal como se abre.</p>
+<p><strong>Haga:</strong> mire la superficie desde el dron. Presione <kbd>2</kbd> y camine cuesta
+arriba. Pida a la clase que diga en voz alta qué está haciendo <code>z</code> mientras sube, y
+luego que diga qué <em>es</em> <code>z</code>.</p>
+<p><strong>La idea:</strong> la altura del suelo bajo sus pies es el valor de la función en el
+punto donde está parado. Todo lo demás en el curso es una afirmación sobre este paisaje.</p>
+
+<h2>Actividad 2 — Superficies suaves, decorado rugoso</h2>
+<p><strong>Haga:</strong> desde el aire, note que la montaña se ve perfectamente suave. Ahora
+apague y encienda <strong>Vegetación, rocas y nieve</strong>.</p>
+<p><strong>La idea:</strong> los árboles y las rocas están colocados <em>sobre</em> la superficie;
+nunca cambian su forma. Una función diferenciable no tiene esquinas por más que uno se acerque,
+pero las montañas reales están cubiertas de cosas que sí las tienen. Poder separar ambas cosas
+merece un minuto de discusión.</p>
+
+<h2>Actividad 3 — Dónde está permitido pararse</h2>
+<p><strong>Preparación:</strong> restricciones <code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code>.
+Active <strong>Mostrar los muros de la frontera</strong> y <strong>Volver translúcido lo que está
+afuera</strong>.</p>
+<p><strong>Haga:</strong> camine hasta el muro e intente mirar por encima. Pregunte: ¿en qué punto
+de este triángulo está más alto el suelo?</p>
+<p><strong>La idea:</strong> un problema de optimización con restricciones es una pregunta sobre
+una región, no sobre una fórmula. Los estudiantes que pueden ver la región rara vez se equivocan
+después en la geometría.</p>
+
+<h2>Actividad 4 — La misma superficie desde tres alturas</h2>
+<p><strong>Haga:</strong> alterne entre <kbd>1</kbd>, <kbd>2</kbd> y <kbd>3</kbd>, y luego presione
+<kbd>T</kbd> para mirar desde arriba.</p>
+<p><strong>La idea:</strong> la vista desde arriba es la imagen plana del libro de texto.
+Mostrarles que es el <em>mismo objeto</em> visto desde otro punto disuelve una cantidad
+sorprendente de confusión sobre los diagramas de curvas de nivel.</p>
+
+<h2>Actividad 5 — Las curvas de nivel son caminos que se pueden recorrer</h2>
+<p><strong>Preparación:</strong> active <strong>Curvas de nivel</strong> <kbd>C</kbd> y
+<strong>Colores topográficos</strong> <kbd>M</kbd>.</p>
+<p><strong>Haga:</strong> párese sobre una curva de nivel y camine <em>a lo largo</em> de ella,
+vigilando <code>z</code> en la lectura. Luego cruce las curvas y vea cómo cambia rápidamente.</p>
+<p><strong>La idea:</strong> una curva de nivel es donde la función no cambia. Recorrer una y ver
+el número quieto lo vuelve concreto. Presione <kbd>T</kbd> después y esas mismas curvas se
+convierten en un mapa de contornos corriente.</p>
+
+<figure>
+  <img src="figs-es/fig-topo.png" alt="Vista topográfica desde arriba">
+  <figcaption><b>Figura 4.</b> El mismo paisaje visto justo desde arriba, con curvas de nivel y
+  colores de mapa. Esta es la imagen del libro de texto — y los estudiantes acaban de estar
+  parados dentro de ella.</figcaption>
+</figure>
+
+<h2>Actividad 6 — Leer las derivadas parciales sobre el terreno</h2>
+<p><strong>Preparación:</strong> <code>f(x,y) = (x*y)^0.5</code>. Active
+<strong>∂f/∂x</strong> <kbd>X</kbd>, <strong>∂f/∂y</strong> <kbd>Y</kbd> y
+<strong>Gradiente</strong> <kbd>V</kbd>. Camine hasta cerca de <code>(1, 1)</code>.</p>
+<p><strong>Haga:</strong> lea las tres etiquetas. En <code>(1,1)</code> dicen
+<code>∂f/∂x = 0.500</code>, <code>∂f/∂y = 0.500</code>, <code>‖∇f‖ = 0.707</code>. Compruébelo a
+mano: las derivadas parciales de <code>√(xy)</code> en <code>(1,1)</code> valen ambas
+<code>½</code>, y <code>√(¼+¼) = 0.707</code>.</p>
+<p><strong>Luego:</strong> señale que la flecha turquesa del gradiente queda exactamente entre la
+azul y la roja, y que es la forma más empinada de subir. Camine a otro punto y vea cómo giran
+las tres.</p>
+<p><strong>La idea:</strong> el gradiente no es un accidente algebraico, es una dirección que se
+puede ver y recorrer.</p>
+
+<figure>
+  <img src="figs-es/fig-arrows.png" alt="Flechas de las derivadas dibujadas sobre la superficie">
+  <figcaption><b>Figura 5.</b> Las tres flechas, dibujadas siguiendo la curvatura del suelo y no
+  como rectas en el aire. La azul es ∂f/∂x, la roja es ∂f/∂y y la turquesa de doble ancho es el
+  gradiente. Aquí la flecha roja casi no tiene longitud, porque ∂f/∂y es casi cero — de modo que
+  el gradiente apunta a lo largo de la azul.</figcaption>
+</figure>
+
+<h2>Actividad 7 — Todas las demás direcciones</h2>
+<p><strong>Preparación:</strong> active <strong>Derivada direccional</strong> <kbd>B</kbd>.</p>
+<p><strong>Haga:</strong> el explorador queda inmóvil. Gire el ratón despacio y observe
+D<sub>u</sub>f en la etiqueta. Encuentre la dirección en que es mayor: cae sobre el gradiente.
+Encuentre dónde vale cero.</p>
+<p><strong>La idea:</strong> la dirección de derivada direccional nula es la curva de nivel,
+perpendicular al gradiente. Los estudiantes suelen aprender eso como una fórmula; aquí lo
+encuentran con la mano en unos quince segundos.</p>
+
+<h2>Actividad 8 — Por qué «diferenciable» significa «plano si uno se acerca lo suficiente»</h2>
+<p><strong>Preparación:</strong> active <strong>Plano tangente</strong> <kbd>P</kbd>. Deje la regla
+de acercamiento en 1:1.</p>
+<p><strong>Haga:</strong> note que el plano amarillo coincide con la superficie bajo los pies pero
+se despega de ella unos metros más allá. Ahora arrastre la <strong>regla de acercamiento</strong>
+una muesca a la vez y observe lo que ocurre.</p>
+<p><strong>La idea:</strong> en 1:1000 la superficie y su plano tangente son indistinguibles. Eso
+<em>es</em> la diferenciabilidad: no una fórmula, sino el hecho de que un trozo suficientemente
+pequeño de la superficie es un plano. Continúe con el cono <code>-(x^2+y^2)^0.5+1</code> y
+acérquese a la punta: sigue siendo un pico por más que se acerque. Así se ve un punto no
+diferenciable.</p>
+
+<div class="two-up">
+  <figure>
+    <img src="figs-es/fig-zoom0.png" alt="Plano tangente a escala real">
+    <figcaption><b>Figura 6a.</b> En 1:1 el plano tangente (amarillo) se separa claramente de la
+    superficie.</figcaption>
+  </figure>
+  <figure>
+    <img src="figs-es/fig-zoom3.png" alt="Plano tangente en 1:1000">
+    <figcaption><b>Figura 6b.</b> El mismo punto con el explorador reducido a 1,8&nbsp;mm. La
+    superficie se ha vuelto su plano tangente.</figcaption>
+  </figure>
+</div>
+
+<h2>Actividad 9 — El máximo, y por qué allí el gradiente no es cero</h2>
+<p><strong>Preparación:</strong> <code>f(x,y) = (x*y)^0.5</code>, restricciones
+<code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code>, <strong>Mostrar los muros de la
+frontera</strong> activado, <strong>Mostrar el óptimo</strong> <kbd>O</kbd> activado.</p>
+<p><strong>Haga:</strong> lea el informe. Dice que el máximo es <code>1.0000</code> en
+<code>(1.0000, 1.0000)</code>, que queda <strong>en la frontera del conjunto factible</strong>, y
+que <code>‖∇f‖</code> allí vale <code>0.7071</code> — <em>no</em> cero. Teletranspórtese hasta
+allí, active la flecha del gradiente y véala apuntando directo contra el muro.</p>
+<p><strong>Luego:</strong> desactive el conjunto factible y presione <kbd>O</kbd> otra vez. El
+máximo salta a la esquina lejana del dominio.</p>
+<p><strong>La idea — y es la razón por la que existe este programa:</strong> en un máximo sin
+restricciones el suelo se aplana y el gradiente muere. En un máximo <em>con restricciones</em> no
+tiene por qué: el suelo sigue subiendo, y lo que lo detiene a usted es la frontera. Los
+estudiantes que han estado parados en ese punto y han visto la flecha del gradiente clavada
+contra el muro no vuelven a escribir «igualo el gradiente a cero» en un problema con
+restricciones.</p>
+
+<!-- =========================================================== PARTE 8 -->
+<h1 class="part"><span class="num">8</span>Cómo entregárselo a sus estudiantes</h1>
+
+<p>Cuatro maneras, de la más fácil a la más elaborada. La opción A no requiere nada; la opción D
+le da una dirección web permanente. Las cuatro son gratuitas.</p>
+
+<h2>Opción A — Envíeles el archivo</h2>
+<p>Envíe <code>Gradient-Peaks.html</code> como adjunto de correo, o déjelo en la carpeta del curso,
+o póngalo en una memoria USB. Los estudiantes hacen doble clic. Ese es todo el procedimiento.</p>
+<div class="warn">
+  <span class="label">Una advertencia sobre el correo</span>
+  <p>Algunos sistemas de correo eliminan o bloquean los adjuntos <code>.html</code>. Si no llega,
+  ponga el archivo en una unidad compartida (OneDrive, Google Drive, Dropbox) y envíe el enlace —
+  pero dígales a los estudiantes que lo <strong>descarguen</strong> y luego lo abran, no que lo
+  vean en la vista previa del navegador, porque algunos visores muestran el texto del archivo en
+  lugar de ejecutarlo.</p>
+</div>
+
+<h2>Opción B — Súbalo a la página del curso</h2>
+<p>Moodle, Canvas, Blackboard y sus parientes aceptan subir un archivo. Añada
+<code>Gradient-Peaks.html</code> como recurso. Los estudiantes hacen clic y funciona.</p>
+
+<h2>Opción C — Netlify Drop: una dirección web real en unos dos minutos</h2>
+<p>Esto le da un enlace que puede poner en una diapositiva. No hace falta crear una cuenta para
+empezar.</p>
+<ol class="steps">
+  <li>Vaya a <code>app.netlify.com/drop</code> en su navegador.</li>
+  <li>Arrastre la carpeta <strong><code>website</code></strong> —la carpeta entera, no los
+      archivos de adentro— sobre el recuadro punteado de esa página.</li>
+  <li>Espere unos segundos. Le entregan una dirección del estilo
+      <code>https://cheerful-lion-12ab34.netlify.app</code>.</li>
+  <li>Ábrala para comprobar y compártala. Cualquiera con el enlace puede usarla, en cualquier
+      dispositivo.</li>
+</ol>
+<p>Cree una cuenta gratuita dentro de las 24 horas si quiere conservar la dirección de forma
+permanente o ponerle un nombre más amable. Recuerde que puede añadir <code>?lang=es</code> al
+final del enlace para que abra en español.</p>
+
+<h2>Opción D — GitHub Pages: permanente, gratuita y con control de versiones</h2>
+<p>Más pasos, pero la dirección no caduca y actualizarla después es fácil. Si el proyecto ya vive
+en un repositorio de GitHub:</p>
+<ol class="steps">
+  <li>Abra el repositorio en <code>github.com</code>.</li>
+  <li>Haga clic en <strong>Settings</strong> (la pestaña de arriba del repositorio, no los ajustes
+      de su cuenta).</li>
+  <li>En la barra lateral izquierda, haga clic en <strong>Pages</strong>.</li>
+  <li>En <strong>Source</strong>, elija <strong>GitHub Actions</strong>.</li>
+  <li>El flujo de trabajo ya incluido en el proyecto (<code>.github/workflows/pages.yml</code>)
+      publica la carpeta <code>app/</code> automáticamente en cada envío a la rama principal.</li>
+  <li>Al cabo de uno o dos minutos, esa misma pantalla de Pages le muestra su dirección, de la
+      forma <code>https://&lt;su-usuario&gt;.github.io/&lt;repositorio&gt;/</code>.</li>
+</ol>
+
+<div class="tip">
+  <span class="label">¿Qué carpeta debo subir?</span>
+  <p>Para las opciones C y D se publica la carpeta <strong><code>website/</code></strong>, porque un
+  servidor web de verdad sí puede entregar correctamente sus archivos por separado. Las opciones
+  A y B usan en cambio el archivo único <code>Gradient-Peaks.html</code>. Ambos contienen el mismo
+  programa.</p>
+</div>
+
+<!-- =========================================================== PARTE 9 -->
+<h1 class="part"><span class="num">9</span>Instalarlo como aplicación</h1>
+
+<p>Una vez que el programa está en una dirección web (opciones C o D de arriba), se puede instalar
+como una aplicación: con su propio ícono, su propia ventana, sin barra del navegador, y funciona
+sin conexión después. No hay tienda de aplicaciones de por medio, ni pago, ni cuenta de
+desarrollador.</p>
+
+<table>
+  <tr><th style="width:34mm">Dispositivo</th><th>Cómo</th></tr>
+  <tr><td class="k">iPhone / iPad</td>
+      <td>Abra la dirección en <strong>Safari</strong> (esto no funciona en Chrome en iOS). Toque el
+      botón <strong>Compartir</strong> —el cuadrado con una flecha—, baje y toque
+      <strong>Añadir a pantalla de inicio</strong>.</td></tr>
+  <tr><td class="k">Android</td>
+      <td>Abra la dirección en <strong>Chrome</strong>. Toque el menú de tres puntos y luego
+      <strong>Instalar aplicación</strong> o <strong>Añadir a pantalla principal</strong>.</td></tr>
+  <tr><td class="k">Windows</td>
+      <td>Abra en <strong>Chrome</strong> o <strong>Edge</strong>. Haga clic en el pequeño ícono de
+      instalación al final de la barra de direcciones (un monitor con una flecha) y luego en
+      <strong>Instalar</strong>.</td></tr>
+  <tr><td class="k">macOS</td>
+      <td>En Chrome o Edge, el mismo ícono de instalación. En <strong>Safari</strong>, elija
+      <strong>Archivo → Añadir al Dock</strong>.</td></tr>
+</table>
+
+<p>Después de instalarlo, el programa guarda una copia de sí mismo en el dispositivo. Los
+estudiantes pueden usarlo en el bus sin señal.</p>
+
+<!-- ========================================================== PARTE 10 -->
+<h1 class="part"><span class="num">10</span>Cuando algo sale mal</h1>
+
+<table>
+  <tr><th style="width:44mm">Lo que usted ve</th><th style="width:48mm">Por qué</th><th>Qué hacer</th></tr>
+
+  <tr><td><strong>Una página en blanco o negra</strong>, y usted abrió <code>website/index.html</code></td>
+      <td>Los navegadores no permiten que una página abierta desde el disco duro cargue sus propios
+      archivos por separado.</td>
+      <td>Abra <code>Gradient-Peaks.html</code> en su lugar. Para eso existe.</td></tr>
+
+  <tr><td><strong>Se queda en «Construyendo el terreno…»</strong> más de unos 20 segundos</td>
+      <td>La resolución de la malla es demasiado alta para este computador, o la función es muy
+      lenta de evaluar.</td>
+      <td>Recargue la página. Baje <strong>Resolución de la malla</strong> a 100 antes de cambiar
+      cualquier otra cosa.</td></tr>
+
+  <tr><td><strong>Desapareció el puntero del ratón</strong> y no puede hacer clic en nada</td>
+      <td>No pasa nada malo: el programa tomó el ratón para poder girar su cabeza.</td>
+      <td>Presione <kbd>Esc</kbd>.</td></tr>
+
+  <tr><td><strong>Escribir en la caja de la función activa ajustes</strong></td>
+      <td>El cursor no está realmente dentro de la caja.</td>
+      <td>Haga clic directamente dentro de la caja primero. Mientras tenga el cursor, las letras se
+      escriben con normalidad.</td></tr>
+
+  <tr><td><strong>Un mensaje rojo bajo la caja de la función</strong></td>
+      <td>No se pudo leer la fórmula. El mensaje nombra el carácter donde falló.</td>
+      <td>Vea la tabla de errores de la parte 5. El paisaje anterior sigue en pantalla y sigue
+      siendo utilizable.</td></tr>
+
+  <tr><td><strong>Faltan trozos grandes del terreno</strong></td>
+      <td>La función no tiene valor real allí — por ejemplo, <code>sqrt</code> de un número
+      negativo.</td>
+      <td>No hay nada que corregir. Cambie el dominio si quiere una superficie completa; el aviso
+      de abajo le dice cuánto queda indefinido.</td></tr>
+
+  <tr><td><strong>Todo se mueve a saltos</strong></td>
+      <td>La tarjeta gráfica del computador no da abasto.</td>
+      <td>Parte 11, en el orden que allí se indica.</td></tr>
+
+  <tr><td><strong>El explorador no se mueve</strong></td>
+      <td><strong>Derivada direccional</strong> está activada. Deja inmóvil al explorador a
+      propósito.</td>
+      <td>Desactívela con <kbd>B</kbd>.</td></tr>
+
+  <tr><td><strong>La pantalla está llena de un color sólido</strong></td>
+      <td>La cámara está dentro del terreno o pegada contra un muro de la frontera.</td>
+      <td>Presione <kbd>R</kbd> para volver al centro, o <kbd>3</kbd> para salir volando con el
+      dron.</td></tr>
+
+  <tr><td><strong>«WebGL is not available»</strong> o algo parecido</td>
+      <td>La aceleración gráfica está desactivada en el navegador.</td>
+      <td>En Chrome o Edge: Configuración → Sistema → active <em>Usar aceleración de gráficos
+      cuando esté disponible</em> y reinicie el navegador. En máquinas muy restringidas, consulte
+      con sistemas.</td></tr>
+</table>
+
+<!-- ========================================================== PARTE 11 -->
+<h1 class="part"><span class="num">11</span>Cómo hacerlo más rápido en un computador viejo</h1>
+
+<p>Cambie estas cosas en orden y deténgase apenas se sienta fluido. Las dos primeras casi no le
+cuestan nada.</p>
+
+<ol class="steps">
+  <li><strong>Apague las sombras</strong> — si estaban encendidas, este es el mayor ahorro
+      individual.</li>
+  <li><strong>Densidad de la decoración a 0.3, o a 0</strong> — el decorado es la parte más cara de
+      la imagen y ninguna de las matemáticas depende de él.</li>
+  <li><strong>Resolución de la malla a 150, luego a 100</strong> — la superficie se ve un poco más
+      angulosa de cerca, pero todos los números siguen siendo igual de exactos.</li>
+  <li><strong>Achique la ventana del navegador</strong> — el costo crece con el número de píxeles,
+      así que una ventana de la mitad del tamaño es más o menos el doble de rápida.</li>
+  <li><strong>Apague las curvas de nivel</strong> mientras camina, y vuelva a activarlas cuando las
+      necesite.</li>
+</ol>
+
+<div class="tip">
+  <span class="label">Lo que nunca se sacrifica es la exactitud</span>
+  <p>Todos los ajustes de esta parte cambian solo cómo se <em>dibuja</em> el paisaje. Las
+  derivadas, el gradiente y el óptimo se calculan a partir de la fórmula misma, así que los
+  números en pantalla son idénticos con los ajustes más bajos y con los más altos.</p>
+</div>
+
+<!-- ========================================================== PARTE 12 -->
+<h1 class="part"><span class="num">12</span>Qué hay por dentro, y licencia</h1>
+
+<p>Para colegas y para los departamentos de sistemas que quieran saber qué se les está pidiendo
+permitir.</p>
+
+<h3>Es una página web corriente</h3>
+<p>Sin instalador, sin servicio en segundo plano, sin permisos de administrador. Nunca envía nada
+a ninguna parte: no tiene código de red más allá de cargar sus propios archivos. No se recoge, ni
+se almacena, ni se transmite nada.</p>
+
+<h3>Nada de lo que escribe un estudiante se ejecuta como código</h3>
+<p>La caja de la fórmula la lee un analizador matemático hecho a propósito. Solo puede producir un
+número y nada más: no hay ningún <code>eval</code> en todo el programa. Un estudiante no puede
+escribir algo en la caja de la función que haga al programa hacer otra cosa que dibujar una
+superficie.</p>
+
+<h3>Las matemáticas son honestas</h3>
+<p>Las escalas horizontal y vertical son iguales, de modo que la pendiente que usted ve es la
+pendiente que el programa reporta. (El deslizador de exageración vertical rompe eso a propósito,
+y por eso está rotulado como «solo visual» y viene desactivado.) El óptimo se halla recorriendo el
+conjunto factible y refinando después los mejores candidatos, y todo punto de prueba debe
+satisfacer las restricciones — que es la razón por la que un máximo en la frontera se encuentra
+correctamente.</p>
+
+<h3>Licencia</h3>
+<p>El programa se publica bajo la licencia MIT: úselo, modifíquelo y entrégueselo a sus estudiantes
+libremente. Usa una biblioteca externa, <strong>three.js</strong> (también MIT, © los autores de
+three.js), cuyo texto de licencia viaja con los archivos en <code>website/vendor/</code>.</p>
+
+<!-- ======================================================== APÉNDICE A -->
+<h1 class="part">Apéndice A — Tarjeta de atajos de teclado</h1>
+<p>Una página. Imprímala y déjela junto al proyector.</p>
+
+<table>
+  <tr><th style="width:40mm">Tecla</th><th>Hace</th></tr>
+  <tr><td class="k"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Caminar o volar</td></tr>
+  <tr><td class="k"><kbd>Shift</kbd></td><td>Mantener para ir más rápido</td></tr>
+  <tr><td class="k"><kbd>Espacio</kbd> / <kbd>Ctrl</kbd></td><td>Dron sube / baja</td></tr>
+  <tr><td class="k">ratón</td><td>Mirar alrededor (haga clic en la escena primero)</td></tr>
+  <tr><td class="k"><kbd>Esc</kbd></td><td><strong>Soltar el puntero del ratón</strong></td></tr>
+  <tr><td class="k"><kbd>Tab</kbd></td><td>Ocultar o mostrar el panel de control</td></tr>
+  <tr><td class="k"><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>Primera persona / tercera persona / dron</td></tr>
+  <tr><td class="k"><kbd>T</kbd></td><td>Mirar desde arriba (vista de mapa)</td></tr>
+  <tr><td class="k"><kbd>R</kbd></td><td>Volver al centro</td></tr>
+  <tr><td class="k"><kbd>C</kbd></td><td>Curvas de nivel</td></tr>
+  <tr><td class="k"><kbd>M</kbd></td><td>Colores topográficos</td></tr>
+  <tr><td class="k"><kbd>F</kbd></td><td>Muros de la frontera del conjunto factible</td></tr>
+  <tr><td class="k"><kbd>G</kbd></td><td>Volver translúcido todo lo de afuera</td></tr>
+  <tr><td class="k"><kbd>H</kbd></td><td>Resaltar el disco de la vecindad</td></tr>
+  <tr><td class="k"><kbd>X</kbd></td><td><span class="swatch" style="background:#2f7bff"></span>Flecha ∂f/∂x</td></tr>
+  <tr><td class="k"><kbd>Y</kbd></td><td><span class="swatch" style="background:#ff3b30"></span>Flecha ∂f/∂y</td></tr>
+  <tr><td class="k"><kbd>V</kbd></td><td><span class="swatch" style="background:#14d6c8"></span>Gradiente ∇f</td></tr>
+  <tr><td class="k"><kbd>B</kbd></td><td><span class="swatch" style="background:#ffc531"></span>Derivada direccional (deja inmóvil al explorador)</td></tr>
+  <tr><td class="k"><kbd>P</kbd></td><td>Plano tangente</td></tr>
+  <tr><td class="k"><kbd>O</kbd></td><td>Mostrar el óptimo</td></tr>
+  <tr><td class="k"><kbd>Enter</kbd></td><td>En una caja de texto: aplicar lo escrito</td></tr>
+</table>
+
+<p><strong>En un teléfono o una tableta:</strong> arrastre en la mitad izquierda de la pantalla
+para caminar, y en la mitad derecha para mirar alrededor.</p>
+
+<!-- ======================================================== APÉNDICE B -->
+<h1 class="part">Apéndice B — Todos los archivos que recibió</h1>
+
+<table class="compact">
+  <tr><th style="width:52mm">Archivo</th><th>Qué hace</th></tr>
+  <tr><td class="k"><code>Gradient-Peaks.html</code></td><td>Todo el programa en un solo archivo. Doble clic para ejecutarlo.</td></tr>
+  <tr><td class="k"><code>Gradient-Peaks-Guia.pdf</code></td><td>Esta guía.</td></tr>
+  <tr><td class="k"><code>Gradient-Peaks-Guide.pdf</code></td><td>La misma guía en inglés.</td></tr>
+  <tr><td class="k"><code>LEEME.txt</code></td><td>Un resumen de una página.</td></tr>
+  <tr><td class="k"><code>website/index.html</code></td><td>La estructura de la página y el panel de control.</td></tr>
+  <tr><td class="k"><code>website/css/style.css</code></td><td>El aspecto del panel y de las lecturas.</td></tr>
+  <tr><td class="k"><code>website/js/i18n.js</code></td><td>Los textos en español y en inglés, y el cambio de idioma.</td></tr>
+  <tr><td class="k"><code>website/js/mathexpr.js</code></td><td>Convierte lo que usted escribe en una expresión matemática.</td></tr>
+  <tr><td class="k"><code>website/js/field.js</code></td><td>Convierte entre coordenadas matemáticas y metros; calcula gradientes.</td></tr>
+  <tr><td class="k"><code>website/js/terrain.js</code></td><td>Construye la superficie, sus colores, el agua y los muros de la frontera.</td></tr>
+  <tr><td class="k"><code>website/js/decor.js</code></td><td>Reparte los árboles, las rocas, el pasto y la nieve.</td></tr>
+  <tr><td class="k"><code>website/js/analysis.js</code></td><td>Curvas de nivel, flechas de derivadas, plano tangente y el optimizador.</td></tr>
+  <tr><td class="k"><code>website/js/player.js</code></td><td>El explorador, el dron y las tres cámaras.</td></tr>
+  <tr><td class="k"><code>website/js/main.js</code></td><td>Arma la escena y conecta los controles.</td></tr>
+  <tr><td class="k"><code>website/vendor/</code></td><td>three.js, la biblioteca de gráficos 3D, con su licencia.</td></tr>
+  <tr><td class="k"><code>website/sw.js</code></td><td>Permite que una copia instalada funcione sin conexión.</td></tr>
+  <tr><td class="k"><code>website/manifest.webmanifest</code></td><td>Le dice al teléfono qué nombre e ícono usar al instalarlo.</td></tr>
+  <tr><td class="k"><code>tools/build-standalone.mjs</code></td><td>Opcional. Reconstruye <code>Gradient-Peaks.html</code> si usted cambia el código.</td></tr>
+</table>
+
+<p style="margin-top:8mm; color:#5c6b7a; font-size:9pt; text-align:center">
+Gradient Peaks — hecho para enseñar la geometría de las funciones de dos variables.<br>
+Todo lo que aparece en esta guía fue verificado contra el programa en funcionamiento.</p>
+
+</body>
+</html>

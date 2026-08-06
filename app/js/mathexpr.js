@@ -56,11 +56,19 @@ const FUNCS = {
   }],
 };
 
+/**
+ * A parse failure.
+ *
+ * `message` stays English for logs; `code` and `params` let the interface
+ * render the same diagnostic in whatever language the student is using.
+ */
 export class MathExprError extends Error {
-  constructor(message, position) {
+  constructor(message, position, code, params) {
     super(message);
     this.name = 'MathExprError';
     this.position = position;
+    this.code = code;
+    this.params = params || {};
   }
 }
 
@@ -113,7 +121,7 @@ function tokenize(src) {
       continue;
     }
 
-    throw new MathExprError(`Unexpected character "${c}"`, i);
+    throw new MathExprError(`Unexpected character "${c}"`, i, 'p.badChar', { c });
   }
   tokens.push({ type: 'end', pos: src.length });
   return tokens;
@@ -139,7 +147,7 @@ class Parser {
 
   expect(type, what) {
     const t = this.peek();
-    if (t.type !== type) throw new MathExprError(`Expected ${what}`, t.pos);
+    if (t.type !== type) throw new MathExprError(`Expected ${what}`, t.pos, 'p.unexpected', { what });
     return this.next();
   }
 
@@ -251,14 +259,14 @@ class Parser {
 
     if (t.type === '(') {
       const inner = this.parseOr();
-      if (this.peek().type !== ')') throw new MathExprError('Missing ")"', this.peek().pos);
+      if (this.peek().type !== ')') throw new MathExprError('Missing ")"', this.peek().pos, 'p.missingParen');
       this.next();
       return inner;
     }
 
     if (t.type === '|') { // |expr| absolute value
       const inner = this.parseOr();
-      if (this.peek().type !== '|') throw new MathExprError('Missing closing "|"', this.peek().pos);
+      if (this.peek().type !== '|') throw new MathExprError('Missing closing "|"', this.peek().pos, 'p.missingBar');
       this.next();
       return (x, y) => Math.abs(inner(x, y));
     }
@@ -268,20 +276,21 @@ class Parser {
 
       if (this.peek().type === '(') {
         const spec = FUNCS[name];
-        if (!spec) throw new MathExprError(`Unknown function "${name}"`, t.pos);
+        if (!spec) throw new MathExprError(`Unknown function "${name}"`, t.pos, 'p.unknownFn', { name });
         this.next();
         const args = [];
         if (this.peek().type !== ')') {
           args.push(this.parseOr());
           while (this.peek().type === ',') { this.next(); args.push(this.parseOr()); }
         }
-        if (this.peek().type !== ')') throw new MathExprError(`Missing ")" after ${name}(`, this.peek().pos);
+        if (this.peek().type !== ')') throw new MathExprError(`Missing ")" after ${name}(`, this.peek().pos, 'p.missingCall', { name });
         this.next();
 
         const [minA, maxA, impl] = spec;
         if (args.length < minA || args.length > maxA) {
           const want = minA === maxA ? `${minA}` : `${minA} to ${maxA}`;
-          throw new MathExprError(`${name}() takes ${want} argument(s), got ${args.length}`, t.pos);
+          throw new MathExprError(`${name}() takes ${want} argument(s), got ${args.length}`, t.pos,
+            'p.arity', { name, want, got: args.length });
         }
         if (args.length === 1) { const a = args[0]; return (x, y) => impl(a(x, y)); }
         if (args.length === 2) { const a = args[0], b = args[1]; return (x, y) => impl(a(x, y), b(x, y)); }
@@ -294,13 +303,13 @@ class Parser {
       if (vi === 1) { this.usesVar.y = true; return (x, y) => y; }
 
       if (name in CONSTANTS) { const v = CONSTANTS[name]; return () => v; }
-      if (FUNCS[name]) throw new MathExprError(`"${name}" is a function — write ${name}(...)`, t.pos);
-      throw new MathExprError(`Unknown name "${name}"`, t.pos);
+      if (FUNCS[name]) throw new MathExprError(`"${name}" is a function — write ${name}(...)`, t.pos, 'p.isFunction', { name });
+      throw new MathExprError(`Unknown name "${name}"`, t.pos, 'p.unknownName', { name });
     }
 
-    if (t.type === 'op') throw new MathExprError(`Unexpected operator "${t.value}"`, t.pos);
-    if (t.type === 'end') throw new MathExprError('Unexpected end of expression', t.pos);
-    throw new MathExprError(`Unexpected "${t.type}"`, t.pos);
+    if (t.type === 'op') throw new MathExprError(`Unexpected operator "${t.value}"`, t.pos, 'p.badOperator', { op: t.value });
+    if (t.type === 'end') throw new MathExprError('Unexpected end of expression', t.pos, 'p.eof');
+    throw new MathExprError(`Unexpected "${t.type}"`, t.pos, 'p.unexpected', { what: t.type });
   }
 }
 
@@ -309,11 +318,11 @@ class Parser {
  * Throws MathExprError with a .position on bad input.
  */
 export function compile(src, varNames = ['x', 'y']) {
-  if (typeof src !== 'string' || src.trim() === '') throw new MathExprError('Expression is empty', 0);
+  if (typeof src !== 'string' || src.trim() === '') throw new MathExprError('Expression is empty', 0, 'p.empty');
   const parser = new Parser(tokenize(src), varNames);
   const fn = parser.parseOr();
   const t = parser.peek();
-  if (t.type !== 'end') throw new MathExprError('Unexpected trailing input', t.pos);
+  if (t.type !== 'end') throw new MathExprError('Unexpected trailing input', t.pos, 'p.trailing');
   fn.usesX = !!parser.usesVar.x;
   fn.usesY = !!parser.usesVar.y;
   return fn;

@@ -20,20 +20,20 @@
   <div class="hud-block">
     <span class="hud-label">x</span><span id="r-x" class="hud-val">0.000</span>
     <span class="hud-label">y</span><span id="r-y" class="hud-val">0.000</span>
-    <span class="hud-label">z = f(x,y)</span><span id="r-z" class="hud-val">0.000</span>
+    <span class="hud-label" data-i18n="hud.z">z = f(x,y)</span><span id="r-z" class="hud-val">0.000</span>
   </div>
   <div class="hud-block" id="hud-derivs">
-    <span class="chip chip-dx" id="c-dx" hidden>∂f/∂x <b>—</b> <i>avg —</i></span>
-    <span class="chip chip-dy" id="c-dy" hidden>∂f/∂y <b>—</b> <i>avg —</i></span>
-    <span class="chip chip-grad" id="c-grad" hidden>‖∇f‖ <b>—</b> <i>avg —</i></span>
-    <span class="chip chip-dir" id="c-dir" hidden>D<sub>u</sub>f <b>—</b> <i>avg —</i></span>
+    <span class="chip chip-dx" id="c-dx" hidden></span>
+    <span class="chip chip-dy" id="c-dy" hidden></span>
+    <span class="chip chip-grad" id="c-grad" hidden></span>
+    <span class="chip chip-dir" id="c-dir" hidden></span>
   </div>
 </div>
 
 <div id="hud-bottom" class="hud">
-  <span id="r-mode" class="pill">Third person</span>
-  <span id="r-zoom" class="pill">scale 1 : 1</span>
-  <span id="r-opt" class="pill" hidden>max —</span>
+  <span id="r-mode" class="pill" data-i18n="view.third">Third person</span>
+  <span id="r-zoom" class="pill" data-i18n="hud.scale11">scale 1 : 1</span>
+  <span id="r-opt" class="pill" hidden></span>
   <span id="r-msg" class="pill pill-warn" hidden></span>
 </div>
 
@@ -43,149 +43,152 @@
 <aside id="panel">
   <header id="panel-head">
     <h1>Gradient&nbsp;Peaks</h1>
-    <button id="panel-toggle" title="Hide panel (Tab)" aria-label="Hide panel">‹</button>
+    <div class="head-tools">
+      <select id="lang-select" aria-label="Language"></select>
+      <button id="panel-toggle" data-i18n-title="panel.hide" title="Hide panel (Tab)" aria-label="Hide panel">‹</button>
+    </div>
   </header>
 
   <div id="panel-body">
 
     <section>
-      <h2>Function</h2>
+      <h2 data-i18n="sec.function">Function</h2>
       <label class="field">
-        <span>f(x, y) =</span>
+        <span data-i18n="fn.label">f(x, y) =</span>
         <input id="in-fn" type="text" spellcheck="false" autocomplete="off" value="(x*y)^0.5">
       </label>
       <select id="preset-fn" class="preset">
-        <option value="">— examples —</option>
-        <option value="(x*y)^0.5">Cobb–Douglas  (x·y)^0.5</option>
-        <option value="x^0.3*y^0.7">Cobb–Douglas  x^0.3·y^0.7</option>
-        <option value="1-x^2-y^2">Paraboloid  1 − x² − y²</option>
-        <option value="x^2-y^2">Saddle  x² − y²</option>
-        <option value="sin(3x)*cos(3y)/2">Egg carton  sin(3x)·cos(3y)/2</option>
-        <option value="2*gauss(hypot(x-0.4,y-0.4),0,0.5)+1.3*gauss(hypot(x+0.6,y+0.5),0,0.4)">Two peaks (Gaussians)</option>
-        <option value="0.6*sin(2x)+0.4*cos(3y)+0.3*x*y">Rolling hills</option>
-        <option value="-(x^2+y^2)^0.5+1">Cone  1 − √(x²+y²)</option>
-        <option value="(1-x)^2+100*(y-x^2)^2">Rosenbrock (try maximising!)</option>
-        <option value="x*y*exp(-(x^2+y^2))">x·y·e^−(x²+y²)</option>
+        <option value="" data-i18n="fn.examples">— examples —</option>
+        <option value="(x*y)^0.5" data-i18n="fn.cobb05">Cobb–Douglas  (x·y)^0.5</option>
+        <option value="x^0.3*y^0.7" data-i18n="fn.cobb37">Cobb–Douglas  x^0.3·y^0.7</option>
+        <option value="1-x^2-y^2" data-i18n="fn.paraboloid">Paraboloid  1 − x² − y²</option>
+        <option value="x^2-y^2" data-i18n="fn.saddle">Saddle  x² − y²</option>
+        <option value="sin(3x)*cos(3y)/2" data-i18n="fn.eggcarton">Egg carton  sin(3x)·cos(3y)/2</option>
+        <option value="2*gauss(hypot(x-0.4,y-0.4),0,0.5)+1.3*gauss(hypot(x+0.6,y+0.5),0,0.4)" data-i18n="fn.twopeaks">Two peaks (Gaussians)</option>
+        <option value="0.6*sin(2x)+0.4*cos(3y)+0.3*x*y" data-i18n="fn.hills">Rolling hills</option>
+        <option value="-(x^2+y^2)^0.5+1" data-i18n="fn.cone">Cone  1 − √(x²+y²)</option>
+        <option value="(1-x)^2+100*(y-x^2)^2" data-i18n="fn.rosenbrock">Rosenbrock (try maximising!)</option>
+        <option value="x*y*exp(-(x^2+y^2))" data-i18n="fn.xyexp">x·y·e^−(x²+y²)</option>
       </select>
       <div id="err-fn" class="err" hidden></div>
     </section>
 
     <section>
-      <h2>Domain</h2>
+      <h2 data-i18n="sec.domain">Domain</h2>
       <div class="grid4">
-        <label class="field mini"><span>x min</span><input id="in-xmin" type="number" step="any" value="0"></label>
-        <label class="field mini"><span>x max</span><input id="in-xmax" type="number" step="any" value="2"></label>
-        <label class="field mini"><span>y min</span><input id="in-ymin" type="number" step="any" value="0"></label>
-        <label class="field mini"><span>y max</span><input id="in-ymax" type="number" step="any" value="2"></label>
+        <label class="field mini"><span data-i18n="dom.xmin">x min</span><input id="in-xmin" type="number" step="any" value="0"></label>
+        <label class="field mini"><span data-i18n="dom.xmax">x max</span><input id="in-xmax" type="number" step="any" value="2"></label>
+        <label class="field mini"><span data-i18n="dom.ymin">y min</span><input id="in-ymin" type="number" step="any" value="0"></label>
+        <label class="field mini"><span data-i18n="dom.ymax">y max</span><input id="in-ymax" type="number" step="any" value="2"></label>
       </div>
       <label class="range">
-        <span>Mesh resolution <b id="lbl-res">300</b></span>
+        <span><span data-i18n="dom.res">Mesh resolution</span> <b id="lbl-res">300</b></span>
         <input id="in-res" type="range" min="80" max="600" step="20" value="300">
       </label>
       <label class="range">
-        <span>Vertical exaggeration <b id="lbl-vex">1.0×</b></span>
+        <span><span data-i18n="dom.vex">Vertical exaggeration</span> <b id="lbl-vex">1.0×</b></span>
         <input id="in-vex" type="range" min="0.2" max="4" step="0.1" value="1">
       </label>
-      <p class="note">Exaggeration is visual only — every number shown is the true value.</p>
-      <button id="btn-apply" class="primary">Rebuild terrain</button>
+      <p class="note" data-i18n="dom.vexnote">Exaggeration is visual only — every number shown is the true value.</p>
+      <button id="btn-apply" class="primary" data-i18n="dom.rebuild">Rebuild terrain</button>
     </section>
 
     <section>
-      <h2>Feasible set</h2>
+      <h2 data-i18n="sec.feasible">Feasible set</h2>
       <label class="field">
-        <span>constraints</span>
+        <span data-i18n="feas.label">constraints</span>
         <input id="in-feas" type="text" spellcheck="false" autocomplete="off" value="x>=0 &amp;&amp; y>=0 &amp;&amp; x+y<=2">
       </label>
       <select id="preset-feas" class="preset">
-        <option value="">— examples —</option>
-        <option value="x>=0 &amp;&amp; y>=0 &amp;&amp; x+y<=2">Triangle  x,y ≥ 0, x+y ≤ 2</option>
-        <option value="x^2+y^2<=1">Disc  x² + y² ≤ 1</option>
-        <option value="x>=0.2 &amp;&amp; x<=1.4 &amp;&amp; y>=0.2 &amp;&amp; y<=1.4">Rectangle</option>
-        <option value="x+y<=2 &amp;&amp; 2x+y<=3 &amp;&amp; x>=0 &amp;&amp; y>=0">Two budget lines</option>
-        <option value="x*y>=0.3 &amp;&amp; x+y<=2.5">x·y ≥ 0.3, x+y ≤ 2.5</option>
+        <option value="" data-i18n="feas.examples">— examples —</option>
+        <option value="x>=0 &amp;&amp; y>=0 &amp;&amp; x+y<=2" data-i18n="feas.triangle">Triangle  x,y ≥ 0, x+y ≤ 2</option>
+        <option value="x^2+y^2<=1" data-i18n="feas.disc">Disc  x² + y² ≤ 1</option>
+        <option value="x>=0.2 &amp;&amp; x<=1.4 &amp;&amp; y>=0.2 &amp;&amp; y<=1.4" data-i18n="feas.rect">Rectangle</option>
+        <option value="x+y<=2 &amp;&amp; 2x+y<=3 &amp;&amp; x>=0 &amp;&amp; y>=0" data-i18n="feas.two">Two budget lines</option>
+        <option value="x*y>=0.3 &amp;&amp; x+y<=2.5" data-i18n="feas.curved">x·y ≥ 0.3, x+y ≤ 2.5</option>
       </select>
       <div id="err-feas" class="err" hidden></div>
-      <label class="check"><input id="t-feas" type="checkbox"><span>Show frontier walls <kbd>F</kbd></span></label>
-      <label class="check"><input id="t-isolate" type="checkbox"><span>Make the outside translucent <kbd>G</kbd></span></label>
+      <label class="check"><input id="t-feas" type="checkbox"><span><span data-i18n="feas.walls">Show frontier walls</span> <kbd>F</kbd></span></label>
+      <label class="check"><input id="t-isolate" type="checkbox"><span><span data-i18n="feas.isolate">Make the outside translucent</span> <kbd>G</kbd></span></label>
     </section>
 
     <section>
-      <h2>Map &amp; terrain</h2>
-      <label class="check"><input id="t-contours" type="checkbox"><span>Level curves <kbd>C</kbd></span></label>
-      <label class="check"><input id="t-topo" type="checkbox"><span>Topographic colours <kbd>M</kbd></span></label>
-      <label class="check"><input id="t-decor" type="checkbox" checked><span>Vegetation, rocks &amp; snow</span></label>
-      <label class="check"><input id="t-water" type="checkbox" checked><span>Water in the depressions</span></label>
+      <h2 data-i18n="sec.map">Map &amp; terrain</h2>
+      <label class="check"><input id="t-contours" type="checkbox"><span><span data-i18n="map.contours">Level curves</span> <kbd>C</kbd></span></label>
+      <label class="check"><input id="t-topo" type="checkbox"><span><span data-i18n="map.topo">Topographic colours</span> <kbd>M</kbd></span></label>
+      <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
+      <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
       <label class="range">
-        <span>Decoration density <b id="lbl-den">1.0×</b></span>
+        <span><span data-i18n="map.density">Decoration density</span> <b id="lbl-den">1.0×</b></span>
         <input id="in-den" type="range" min="0" max="2" step="0.1" value="1">
       </label>
-      <label class="check"><input id="t-shadow" type="checkbox"><span>Shadows (costs performance)</span></label>
+      <label class="check"><input id="t-shadow" type="checkbox"><span><span data-i18n="map.shadows">Shadows (costs performance)</span></span></label>
     </section>
 
     <section>
-      <h2>Derivatives</h2>
-      <label class="check"><input id="t-disc" type="checkbox"><span>Highlight neighbourhood <kbd>H</kbd></span></label>
+      <h2 data-i18n="sec.deriv">Derivatives</h2>
+      <label class="check"><input id="t-disc" type="checkbox"><span><span data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
       <label class="range">
-        <span>Radius <b id="lbl-rad">2 m</b></span>
+        <span><span data-i18n="deriv.radius">Radius</span> <b id="lbl-rad">2 m</b></span>
         <input id="in-rad" type="range" min="1" max="2" step="1" value="2">
       </label>
-      <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i>∂f/∂x arrow <kbd>X</kbd></span></label>
-      <label class="check"><input id="t-dy" type="checkbox"><span><i class="sw sw-dy"></i>∂f/∂y arrow <kbd>Y</kbd></span></label>
-      <label class="check"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i>Gradient ∇f <kbd>V</kbd></span></label>
-      <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i>Directional derivative <kbd>B</kbd></span></label>
-      <p class="note" id="note-dir" hidden>The explorer is frozen — move the mouse to swing <b>u</b> around the rim.</p>
-      <label class="check"><input id="t-tangent" type="checkbox"><span>Tangent plane <kbd>P</kbd></span></label>
+      <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i><span data-i18n="deriv.dx">∂f/∂x arrow</span> <kbd>X</kbd></span></label>
+      <label class="check"><input id="t-dy" type="checkbox"><span><i class="sw sw-dy"></i><span data-i18n="deriv.dy">∂f/∂y arrow</span> <kbd>Y</kbd></span></label>
+      <label class="check"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i><span data-i18n="deriv.grad">Gradient ∇f</span> <kbd>V</kbd></span></label>
+      <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i><span data-i18n="deriv.dir">Directional derivative</span> <kbd>B</kbd></span></label>
+      <p class="note" id="note-dir" hidden data-i18n-html="deriv.dirnote">The explorer is frozen — move the mouse to swing <b>u</b> around the rim.</p>
+      <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
     </section>
 
     <section>
-      <h2>Zoom-in ruler</h2>
+      <h2 data-i18n="sec.zoom">Zoom-in ruler</h2>
       <label class="range">
-        <span>Explorer scale <b id="lbl-zoom">1 : 1</b></span>
+        <span><span data-i18n="zoom.scale">Explorer scale</span> <b id="lbl-zoom">1 : 1</b></span>
         <input id="in-zoom" type="range" min="0" max="4" step="1" value="0">
       </label>
       <div id="ruler"></div>
-      <p class="note">Each notch shrinks the explorer ten-fold. Turn on the tangent plane and watch a differentiable surface become a plane.</p>
+      <p class="note" data-i18n="zoom.note">Each notch shrinks the explorer ten-fold. Turn on the tangent plane and watch a differentiable surface become a plane.</p>
     </section>
 
     <section>
-      <h2>Optimisation</h2>
-      <label class="check"><input id="t-opt" type="checkbox"><span>Show optimum <kbd>O</kbd></span></label>
-      <div id="opt-report" class="report">Maximise f over the feasible set.</div>
-      <button id="btn-goto" class="ghost" disabled>Teleport to the optimum</button>
+      <h2 data-i18n="sec.opt">Optimisation</h2>
+      <label class="check"><input id="t-opt" type="checkbox"><span><span data-i18n="opt.show">Show optimum</span> <kbd>O</kbd></span></label>
+      <div id="opt-report" class="report" data-i18n="opt.idle">Maximise f over the feasible set.</div>
+      <button id="btn-goto" class="ghost" disabled data-i18n="opt.goto">Teleport to the optimum</button>
     </section>
 
     <section>
-      <h2>View</h2>
+      <h2 data-i18n="sec.view">View</h2>
       <div class="modes">
-        <button data-mode="first" class="mode">First person <kbd>1</kbd></button>
-        <button data-mode="third" class="mode active">Third person <kbd>2</kbd></button>
-        <button data-mode="drone" class="mode">Drone <kbd>3</kbd></button>
+        <button data-mode="first" class="mode"><span data-i18n="view.first">First person</span> <kbd>1</kbd></button>
+        <button data-mode="third" class="mode active"><span data-i18n="view.third">Third person</span> <kbd>2</kbd></button>
+        <button data-mode="drone" class="mode"><span data-i18n="view.drone">Drone</span> <kbd>3</kbd></button>
       </div>
-      <button id="btn-top" class="ghost">Look straight down <kbd>T</kbd></button>
-      <button id="btn-reset" class="ghost">Return to the centre <kbd>R</kbd></button>
+      <button id="btn-top" class="ghost"><span data-i18n="view.top">Look straight down</span> <kbd>T</kbd></button>
+      <button id="btn-reset" class="ghost"><span data-i18n="view.reset">Return to the centre</span> <kbd>R</kbd></button>
     </section>
 
     <section>
-      <h2>Help</h2>
+      <h2 data-i18n="sec.help">Help</h2>
       <div class="help">
-        <p><b>Move</b> W A S D · <b>run</b> Shift · <b>look</b> mouse<br>
-        <b>Drone up/down</b> Space / Ctrl<br>
-        <b>Release the mouse</b> Esc · <b>hide this panel</b> Tab</p>
-        <p class="note">Write functions with <code>+ − * / ^</code>, and
-        <code>sin cos tan exp ln sqrt abs min max hypot gauss</code>.
-        Implicit products work: <code>2x</code>, <code>x y</code>.
-        Constraints combine with <code>&amp;&amp;</code>, <code>||</code>, and
-        chained comparisons like <code>0&lt;=x&lt;=1</code>.</p>
+        <p><b data-i18n="help.move">Move</b> W A S D · <b data-i18n="help.run">run</b> Shift ·
+        <b data-i18n="help.look">look</b> <span data-i18n="help.mouse">mouse</span><br>
+        <b data-i18n="help.updown">Drone up/down</b> Space / Ctrl<br>
+        <b data-i18n="help.release">Release the mouse</b> Esc · <b data-i18n="help.hide">hide this panel</b> Tab</p>
+        <p class="note" data-i18n-html="help.syntax"></p>
       </div>
     </section>
   </div>
 </aside>
 
-<button id="panel-show" hidden title="Show panel (Tab)">☰</button>
+<button id="panel-show" hidden data-i18n-title="panel.show" title="Show panel (Tab)">☰</button>
 
-<div id="click-catch" hidden><div class="cc-inner"><b>Click to look around</b><span>Esc releases the mouse</span></div></div>
+<div id="click-catch" hidden><div class="cc-inner">
+  <b data-i18n="cc.click">Click to look around</b>
+  <span data-i18n="cc.esc">Esc releases the mouse</span>
+</div></div>
 
-<div id="loading"><div class="spin"></div><span id="loading-msg">Building the terrain…</span></div>
+<div id="loading"><div class="spin"></div><span id="loading-msg" data-i18n="loading">Building the terrain…</span></div>
 
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.js" } }

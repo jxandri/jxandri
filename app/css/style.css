@@ -264,3 +264,13 @@ button:disabled { opacity: .45; cursor: default; }
   #panel { transition: none; }
   .spin { animation-duration: 2s; }
 }
+
+/* Language selector in the panel header. */
+.head-tools { display: flex; align-items: center; gap: 6px; }
+#lang-select {
+  background: rgba(255, 255, 255, .06); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 6px; font-family: var(--font); font-size: 11px; cursor: pointer;
+}
+#lang-select:focus { outline: none; border-color: var(--accent); }
+#lang-select option { background: var(--panel-solid); }

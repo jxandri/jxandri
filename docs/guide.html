@@ -109,6 +109,17 @@ The program is not "downloading" anything — it is drawing the mountain from th
 <code>f(x,y) = (x*y)^0.5</code>, which you can see typed in the box at the top of the panel.</p>
 
 <div class="tip">
+  <span class="label">English and Spanish</span>
+  <p>The program follows your browser: if that is set to Spanish, it opens in Spanish. You can
+  switch at any time with the <strong>English / Español</strong> selector in the top corner of
+  the control panel, without losing whatever you are in the middle of.</p>
+  <p>If you publish it to a web address (Part 8), adding <code>?lang=es</code> to the end of the
+  link makes it open in Spanish for your students whatever their browser is set to — and
+  <code>?lang=en</code> forces English. <b>A Spanish edition of this guide is included as
+  <code>Gradient-Peaks-Guia.pdf</code>.</b></p>
+</div>
+
+<div class="tip">
   <span class="label">If it opens in a browser you do not like</span>
   <p>Any modern browser works, but <strong>Google Chrome</strong> and <strong>Microsoft Edge</strong>
   give the smoothest result. To choose one: right-click <code>Gradient-Peaks.html</code> →
@@ -216,6 +227,11 @@ replaces it.</p>
   <img src="figs/fig-panel.png" alt="The full control panel">
   <figcaption style="font-size:8.2pt"><b>Figure 2.</b> The complete control panel.</figcaption>
 </div>
+
+<h2>Language</h2>
+<p>The selector beside the panel title switches the whole interface between
+<strong>English</strong> and <strong>Español</strong> — including the error messages the parser
+produces. Nothing is recomputed, so you can switch mid-demonstration.</p>
 
 <h2>Function</h2>
 <p><strong><code>f(x, y) =</code></strong> — the formula that becomes the landscape. Type a new one
@@ -741,7 +757,8 @@ right half to look around.</p>
   <tr><th style="width:52mm">File</th><th>What it does</th></tr>
   <tr><td class="k"><code>Gradient-Peaks.html</code></td><td>The whole program in one file. Double-click to run.</td></tr>
   <tr><td class="k"><code>Gradient-Peaks-Guide.pdf</code></td><td>This guide.</td></tr>
-  <tr><td class="k"><code>README.txt</code></td><td>A one-page summary.</td></tr>
+  <tr><td class="k"><code>README.txt</code> / <code>LEEME.txt</code></td><td>A one-page summary, in English and Spanish.</td></tr>
+  <tr><td class="k"><code>website/js/i18n.js</code></td><td>The English and Spanish text, and the language switch.</td></tr>
   <tr><td class="k"><code>website/index.html</code></td><td>The page structure and the control panel.</td></tr>
   <tr><td class="k"><code>website/css/style.css</code></td><td>How the panel and readouts look.</td></tr>
   <tr><td class="k"><code>website/js/mathexpr.js</code></td><td>Reads what you type into a mathematical expression.</td></tr>
