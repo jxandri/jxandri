@@ -274,6 +274,10 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 }
 .tool:hover{border-color:var(--accent); color:var(--accent-ink)}
 .tool:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.tool[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--surface)}
+:root[data-theme="dark"] .tool[aria-pressed="true"]{color:#08171A}
+@media (prefers-color-scheme:dark){.tool[aria-pressed="true"]{color:#08171A}}
+:root[data-theme="light"] .tool[aria-pressed="true"]{color:#fff}
 
 .canvas-wrap{position:relative; width:100%; background:var(--surface)}
 .canvas-wrap canvas{display:block; width:100%; height:100%; touch-action:none}
@@ -509,11 +513,11 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         <section class="viewport">
           <div class="vp-bar">
             <span class="vp-title" id="t-vp3d">Superficie 3D · z = u(x, y)</span>
-            <div class="vp-tools">
-              <button type="button" class="tool" data-view="xz">X–Z</button>
-              <button type="button" class="tool" data-view="yz">Y–Z</button>
-              <button type="button" class="tool" data-view="xy">X–Y</button>
-              <button type="button" class="tool" data-view="iso">ISO</button>
+            <div class="vp-tools" role="group" aria-label="Proyección">
+              <button type="button" class="tool" data-view="xz" aria-pressed="false">X–Z</button>
+              <button type="button" class="tool" data-view="xy" aria-pressed="false">X–Y</button>
+              <button type="button" class="tool" data-view="yz" aria-pressed="false">Y–Z</button>
+              <button type="button" class="tool" data-view="iso" aria-pressed="true">3D</button>
             </div>
           </div>
           <div class="canvas-wrap" id="wrap3d">
@@ -935,21 +939,40 @@ function contactCount(st, level){
 /* ==========================================================================
    4. Hypsometric colour ramp
    --------------------------------------------------------------------------
-   The original applet tinted level curves with three piecewise-linear channel
-   functions whose lightness dipped in the middle, so two different utility
-   levels could land on nearly the same tone. These stops keep L* rising
-   monotonically from deep water to snow, so the ramp reads as terrain *and*
-   as an ordered magnitude — it survives greyscale and colour-vision deficits.
+   Blue and green at the bottom, yellow and orange through the middle, then
+   bright red into crimson and deep brown at the top. The top end darkens, so
+   height is not recoverable from lightness alone up there — the colour bar and
+   the numeric readout carry that, and every curve drawn on the map gets a
+   white casing so it stays visible against the dark browns.
    ========================================================================== */
 const TERRAIN = [
-  [0.00,  19,  43,  56],
-  [0.16,  30,  83,  80],
-  [0.33,  60, 122,  78],
-  [0.52, 122, 154,  70],
-  [0.70, 196, 174,  85],
-  [0.86, 232, 206, 146],
-  [1.00, 247, 235, 210]
+  [0.00,  11,  47, 168],
+  [0.13,  28, 116, 224],
+  [0.26,  18, 166, 160],
+  [0.38,  31, 168,  60],
+  [0.50, 154, 203,  30],
+  [0.60, 244, 208,  27],
+  [0.70, 247, 146,  19],
+  [0.80, 242,  58,  12],
+  [0.87, 238,  13,  20],
+  [0.94, 158,  11,  41],
+  [1.00,  63,  26,  11]
 ];
+
+/* Marks drawn on top of the map. These sit on saturated ground in both
+   themes, so they are fixed bright hues plus a casing rather than theme
+   tokens — none of them reuses a hue the ramp passes through. */
+const MARK = {
+  budget:"#00D5F0",     // budget line and the bundle on it
+  bundle:"#00E9FF",
+  tangent:"#FF3DCB",    // slope of the indifference curve at P
+  optimum:"#C15CFF",    // the true optimum, revealed
+  grad:"#FFFFFF",
+  dx:"#3D9BFF",
+  dy:"#FF7AB8",
+  casing:"rgba(6,9,14,.62)",
+  white:"#FFFFFF"
+};
 function terrainRGB(t){
   t = t <= 0 ? 0 : t >= 1 ? 1 : t;
   let i = 0;
@@ -967,7 +990,9 @@ const SHADED = new Array(TSTEPS * SSTEPS);
 for(let i = 0; i < TSTEPS; i++){
   const c = terrainRGB(i / (TSTEPS - 1));
   for(let s = 0; s < SSTEPS; s++){
-    const k = 0.45 + 0.55 * (s / (SSTEPS - 1));
+    /* a higher ambient floor than a plain Lambert term, so the crimson and
+       brown end of the ramp keeps its chroma instead of crushing to black */
+    const k = 0.58 + 0.42 * (s / (SSTEPS - 1));
     SHADED[i*SSTEPS + s] = `rgb(${Math.round(c[0]*k)},${Math.round(c[1]*k)},${Math.round(c[2]*k)})`;
   }
 }
@@ -1115,60 +1140,61 @@ function draw2d(st){
   for(let y = gy; y < st.ymax; y += gy){ ctx.moveTo(b.x0, SY(y)); ctx.lineTo(b.x1, SY(y)); }
   ctx.stroke();
 
-  const strokeSegs = (segs, colour, width, withHalo) => {
+  /* casings, outermost first: a dark rim then a white one, so a curve tinted
+     anywhere on the ramp — deep blue or deep brown — stays readable over any
+     part of the map */
+  const strokeSegs = (segs, colour, width, casings) => {
     if(!segs.length) return;
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    if(withHalo){
-      ctx.strokeStyle = halo; ctx.lineWidth = width + 3;
+    const pass = (col, wd) => {
+      ctx.strokeStyle = col; ctx.lineWidth = wd;
       ctx.beginPath();
       for(let i = 0; i < segs.length; i += 4){
         ctx.moveTo(SX(segs[i]), SY(segs[i+1])); ctx.lineTo(SX(segs[i+2]), SY(segs[i+3]));
       }
       ctx.stroke();
-    }
-    ctx.strokeStyle = colour; ctx.lineWidth = width;
-    ctx.beginPath();
-    for(let i = 0; i < segs.length; i += 4){
-      ctx.moveTo(SX(segs[i]), SY(segs[i+1])); ctx.lineTo(SX(segs[i+2]), SY(segs[i+3]));
-    }
-    ctx.stroke();
+    };
+    if(casings === 2){ pass(MARK.casing, width + 5); pass(MARK.white, width + 2.5); }
+    else if(casings === 1){ pass(MARK.casing, width + 3); }
+    pass(colour, width);
   };
 
   /* --- trace of swept level curves --- */
   if(st.layers.trace && st.trace.length){
     for(const tr of st.trace){
-      ctx.globalAlpha = 0.5;
-      strokeSegs(tr.segs, terrainCSS(tr.t), 1.5, false);
+      ctx.globalAlpha = 0.55;
+      strokeSegs(tr.segs, terrainCSS(tr.t), 1.5, 1);
     }
     ctx.globalAlpha = 1;
   }
 
   /* --- indifference curve through P --- */
   if(st.layers.curveP && Number.isFinite(st.uP)){
-    strokeSegs(marchingSquares(st.field, st.uP), dark ? "#E7EEF1" : "#14181B", 1.6, true);
+    strokeSegs(marchingSquares(st.field, st.uP), MARK.white, 1.8, 1);
   }
 
   /* --- the swept level curve --- */
   if(st.layers.level && Number.isFinite(st.level)){
     const tNorm = (st.level - st.field.cMin) / ((st.field.cMax - st.field.cMin) || 1);
-    strokeSegs(marchingSquares(st.field, st.level), terrainCSS(tNorm), 3, true);
+    strokeSegs(marchingSquares(st.field, st.level), terrainCSS(tNorm), 3.5, 2);
   }
 
   /* --- budget line --- */
   ctx.lineCap = "butt";
-  ctx.strokeStyle = accent; ctx.lineWidth = 2;
+  ctx.strokeStyle = MARK.casing; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(SX(0), SY(yInt)); ctx.lineTo(SX(tMax), SY(0)); ctx.stroke();
+  ctx.strokeStyle = MARK.budget; ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.moveTo(SX(0), SY(yInt)); ctx.lineTo(SX(tMax), SY(0)); ctx.stroke();
 
   /* --- tangent to the indifference curve at P --- */
   if(st.layers.tangent && Number.isFinite(st.mrs) && st.mrs > 0){
-    const slope = -st.mrs;
     const xi = st.P[0] + st.P[1] / st.mrs;
-    ctx.strokeStyle = dark ? "#DD8BEE" : "#8E2F9E";
-    ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
-    ctx.beginPath();
-    ctx.moveTo(SX(0), SY(st.P[1] + st.mrs * st.P[0]));
-    ctx.lineTo(SX(xi), SY(0));
-    ctx.stroke(); ctx.setLineDash([]);
+    const y0 = st.P[1] + st.mrs * st.P[0];
+    const line = () => { ctx.beginPath(); ctx.moveTo(SX(0), SY(y0)); ctx.lineTo(SX(xi), SY(0)); ctx.stroke(); };
+    ctx.setLineDash([6,4]);
+    ctx.strokeStyle = MARK.casing; ctx.lineWidth = 4.5; line();
+    ctx.strokeStyle = MARK.tangent; ctx.lineWidth = 2; line();
+    ctx.setLineDash([]);
   }
 
   /* --- gradient and partials at P --- */
@@ -1176,37 +1202,47 @@ function draw2d(st){
     const X0 = SX(x0), Y0 = SY(y0), X1 = SX(x1), Y1 = SY(y1);
     const a = Math.atan2(Y1-Y0, X1-X0), L = Math.hypot(X1-X0, Y1-Y0);
     if(L < 3) return;
-    ctx.strokeStyle = colour; ctx.fillStyle = colour; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(X0,Y0); ctx.lineTo(X1,Y1); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(X1,Y1);
-    ctx.lineTo(X1 - 8*Math.cos(a-0.4), Y1 - 8*Math.sin(a-0.4));
-    ctx.lineTo(X1 - 8*Math.cos(a+0.4), Y1 - 8*Math.sin(a+0.4));
-    ctx.closePath(); ctx.fill();
+    const shaft = () => { ctx.beginPath(); ctx.moveTo(X0,Y0); ctx.lineTo(X1,Y1); ctx.stroke(); };
+    const head = () => {
+      ctx.beginPath(); ctx.moveTo(X1,Y1);
+      ctx.lineTo(X1 - 9*Math.cos(a-0.4), Y1 - 9*Math.sin(a-0.4));
+      ctx.lineTo(X1 - 9*Math.cos(a+0.4), Y1 - 9*Math.sin(a+0.4));
+      ctx.closePath();
+    };
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.strokeStyle = MARK.casing; ctx.lineWidth = 5.5; shaft(); head(); ctx.stroke();
+    ctx.strokeStyle = colour; ctx.fillStyle = colour; ctx.lineWidth = 2.2; shaft(); head(); ctx.fill();
   };
   if(Number.isFinite(st.dux) && Number.isFinite(st.duy)){
     const g = Math.hypot(st.dux, st.duy) || 1;
     const L = st.xmax * 0.16;
-    if(st.layers.gradient) arrow(st.P[0], st.P[1], st.P[0] + st.dux/g*L, st.P[1] + st.duy/g*L, ink);
+    if(st.layers.gradient) arrow(st.P[0], st.P[1], st.P[0] + st.dux/g*L, st.P[1] + st.duy/g*L, MARK.grad);
     if(st.layers.partials){
-      arrow(st.P[0], st.P[1], st.P[0] + st.dux/g*L, st.P[1], "#2C6EBF");
-      arrow(st.P[0], st.P[1], st.P[0], st.P[1] + st.duy/g*L, "#B23A2E");
+      arrow(st.P[0], st.P[1], st.P[0] + st.dux/g*L, st.P[1], MARK.dx);
+      arrow(st.P[0], st.P[1], st.P[0], st.P[1] + st.duy/g*L, MARK.dy);
     }
   }
 
   /* --- the true optimum --- */
   if(st.layers.optimum && st.opt){
     const X = SX(st.opt.x), Y = SY(st.opt.y);
-    ctx.strokeStyle = optCol; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(X, Y, 8, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(X-12,Y); ctx.lineTo(X+12,Y); ctx.moveTo(X,Y-12); ctx.lineTo(X,Y+12); ctx.stroke();
+    const cross = () => {
+      ctx.beginPath(); ctx.arc(X, Y, 8.5, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(X-13,Y); ctx.lineTo(X+13,Y); ctx.moveTo(X,Y-13); ctx.lineTo(X,Y+13);
+      ctx.stroke();
+    };
+    ctx.strokeStyle = MARK.casing; ctx.lineWidth = 5; cross();
+    ctx.strokeStyle = MARK.optimum; ctx.lineWidth = 2.4; cross();
   }
 
   /* --- the chosen bundle --- */
   const PX = SX(st.P[0]), PY = SY(st.P[1]);
-  ctx.fillStyle = surf; ctx.strokeStyle = accent; ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.arc(PX, PY, 6.5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = accent;
+  ctx.fillStyle = MARK.casing;
+  ctx.beginPath(); ctx.arc(PX, PY, 9.5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = MARK.white; ctx.strokeStyle = MARK.bundle; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(PX, PY, 7, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = MARK.bundle;
   ctx.beginPath(); ctx.arc(PX, PY, 2.5, 0, Math.PI*2); ctx.fill();
 
   ctx.restore();
@@ -1241,8 +1277,18 @@ function draw2d(st){
    ========================================================================== */
 const view3d = {
   az:-0.95, el:0.52, dist:4.0,
+  ortho:false, canonical:"iso",
   mesh:null, meshKey:"",
-  N_IDLE:64, N_DRAG:40, dragging:false
+  N_IDLE:84, N_DRAG:40, dragging:false
+};
+
+/* The three orthogonal projections, plus the free perspective view. Each names
+   the plane the surface is projected onto and the pair of axes left in frame. */
+const VIEWS = {
+  xz : { az:-Math.PI/2, el:0,          ortho:true,  plane:"y = 0" },
+  xy : { az:-Math.PI/2, el:Math.PI/2,  ortho:true,  plane:"z = 0" },
+  yz : { az:0,          el:0,          ortho:true,  plane:"x = 0" },
+  iso: { az:-0.95,      el:0.52,       ortho:false, plane:null    }
 };
 
 /* Infeasible bundles keep their terrain hue but are washed toward the panel
@@ -1257,7 +1303,7 @@ function fadedPalette(dark){
   for(let i = 0; i < TSTEPS; i++){
     const c = terrainRGB(i/(TSTEPS-1));
     for(let s = 0; s < SSTEPS; s++){
-      const k = 0.45 + 0.55*(s/(SSTEPS-1));
+      const k = 0.58 + 0.42*(s/(SSTEPS-1));
       const r = c[0]*k + (g[0] - c[0]*k)*w;
       const gg = c[1]*k + (g[1] - c[1]*k)*w;
       const bb = c[2]*k + (g[2] - c[2]*k)*w;
@@ -1292,8 +1338,12 @@ function buildMesh(st, n){
   return view3d.mesh;
 }
 
+/* One camera for both projections. Perspective is the default exploring view;
+   orthographic is what the three axis buttons switch to, because "project
+   orthogonally onto y = 0" only means anything without a perspective divide —
+   with one, parallel edges still converge and lengths are not comparable. */
 function camera(w, h){
-  const { az, el, dist } = view3d;
+  const { az, el, dist, ortho } = view3d;
   const tgt = [0, 0, 0.55];
   const eye = [
     tgt[0] + dist*Math.cos(el)*Math.cos(az),
@@ -1304,18 +1354,40 @@ function camera(w, h){
   const norm = a => { const l = Math.hypot(a[0],a[1],a[2]) || 1; return [a[0]/l,a[1]/l,a[2]/l]; };
   const cross = (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
   const f = norm(sub(tgt, eye));
-  const r = norm(cross(f, [0,0,1]));
+  /* looking straight down, world-up is parallel to the view direction and the
+     usual cross product collapses — swing the reference to +y so the top-down
+     projection comes out with x to the right and y up */
+  const ref = Math.abs(f[2]) > 0.999 ? [0,1,0] : [0,0,1];
+  const r = norm(cross(f, ref));
   const up = cross(r, f);
-  const focal = 2.7, scale = Math.min(w, h) * 0.43;
+  const focal = 2.7;
+  const m = Math.min(w, h);
+  const scale = ortho ? m * 0.36 : m * 0.43;
   return {
-    eye, f, r, up, focal, scale, w, h,
+    eye, f, r, up, focal, scale, ortho, w, h,
     project(x,y,z){
       const dx = x-eye[0], dy = y-eye[1], dz = z-eye[2];
       const cz = dx*f[0] + dy*f[1] + dz*f[2];
       const cx = dx*r[0] + dy*r[1] + dz*r[2];
       const cy = dx*up[0] + dy*up[1] + dz*up[2];
+      if(ortho) return [w/2 + cx*scale, h/2 - cy*scale, cz];
       const k = focal / Math.max(cz, 0.05) * scale;
       return [w/2 + cx*k, h/2 - cy*k, cz];
+    },
+    /* screen point -> a world ray, for picking the surface under the pointer */
+    ray(mx, my){
+      if(ortho){
+        const a = (mx - w/2) / scale, b2 = -(my - h/2) / scale;
+        return {
+          o:[eye[0] + a*r[0] + b2*up[0], eye[1] + a*r[1] + b2*up[1], eye[2] + a*r[2] + b2*up[2]],
+          d:[f[0], f[1], f[2]]
+        };
+      }
+      const a = (mx - w/2) / (focal * scale), b2 = -(my - h/2) / (focal * scale);
+      return {
+        o:[eye[0], eye[1], eye[2]],
+        d:[a*r[0] + b2*up[0] + f[0], a*r[1] + b2*up[1] + f[1], a*r[2] + b2*up[2] + f[2]]
+      };
     }
   };
 }
@@ -1382,15 +1454,43 @@ function draw3d(st){
   /* ---- overlay primitives, sorted with the same key ---- */
   const ov = [];
   const toNorm = (x,y,z) => [ x/st.xmax*2-1, y/st.ymax*2-1, clamp((z - M.cMin)/M.span, -0.08, 1.08)*1.25 ];
-  const addSeg = (p0, p1, colour, width, bias) => {
+  const addSeg = (p0, p1, colour, width, bias, cas) => {
     const A = cam.project(p0[0],p0[1],p0[2]), B = cam.project(p1[0],p1[1],p1[2]);
     if(A[2] <= 0.05 || B[2] <= 0.05) return;
-    ov.push({ d:(A[2]+B[2])*0.5 - (bias || 0.012), k:"s", x0:A[0], y0:A[1], x1:B[0], y1:B[1], c:colour, wd:width });
+    ov.push({ d:(A[2]+B[2])*0.5 - (bias || 0.012), k:"s",
+      x0:A[0], y0:A[1], x1:B[0], y1:B[1], c:colour, wd:width, cas:cas || 0 });
+  };
+  /* A cased curve cannot be drawn segment by segment: the next segment's casing
+     paints over the previous segment's core and the line comes out beaded. So
+     bucket a curve's segments by depth and stroke each bucket as one path —
+     casing, then white, then core — which keeps occlusion against the surface
+     roughly right while the casing stays behind every core. */
+  const addPath = (pairs, colour, width, cas, bias) => {
+    const proj = [];
+    let dmin = Infinity, dmax = -Infinity;
+    for(const [a0, a1] of pairs){
+      const A = cam.project(a0[0],a0[1],a0[2]), B = cam.project(a1[0],a1[1],a1[2]);
+      if(A[2] <= 0.05 || B[2] <= 0.05) continue;
+      const d = (A[2] + B[2]) * 0.5 - (bias || 0.012);
+      proj.push([A[0], A[1], B[0], B[1], d]);
+      if(d < dmin) dmin = d;
+      if(d > dmax) dmax = d;
+    }
+    if(!proj.length) return;
+    /* One entry for the whole curve, keyed at its nearest point, so every
+       casing goes down before any core. Splitting it by depth does not help:
+       wherever two batches meet, the nearer one's casing eats the farther
+       one's core and the line beads. The cost is that the curve is never
+       occluded by the surface — which costs nothing here, because an
+       indifference curve on a quasi-concave surface never hides behind it. */
+    ov.push({ d:dmin - 0.001, k:"p", segs:proj, c:colour, wd:width, cas:cas || 0 });
   };
   const addDot = (p, colour, r, ring) => {
     const A = cam.project(p[0],p[1],p[2]);
     if(A[2] <= 0.05) return;
-    ov.push({ d:A[2] - 0.05, k:"d", x:A[0], y:A[1], c:colour, r, ring });
+    /* a generous bias: the bundle and the optimum are the two things the
+       student is looking for, so they always sit on top of the surface */
+    ov.push({ d:A[2] - 0.3, k:"d", x:A[0], y:A[1], c:colour, r, ring });
   };
 
   /* floor grid */
@@ -1433,6 +1533,7 @@ function draw3d(st){
   /* budget curve lifted onto the surface — the "walk along the ridge" view */
   if(st.layers.budgetCurve){
     const tMax = st.I/st.px, K = 220;
+    const pairs = [];
     let prev = null;
     for(let k = 0; k <= K; k++){
       const t = tMax*k/K, [x,y] = onLine(st, t);
@@ -1440,13 +1541,14 @@ function draw3d(st){
       const v = st.u(x,y);
       if(!Number.isFinite(v)){ prev = null; continue; }
       const p = toNorm(x,y,v);
-      if(prev) addSeg(prev, p, accent, 3, 0.02);
+      if(prev) pairs.push([prev, p]);
       prev = p;
     }
+    addPath(pairs, MARK.budget, 3.5, 1, 0.05);
     /* its shadow on the floor = the textbook budget line */
     const y0 = st.I/st.py, x1 = st.I/st.px;
     if(y0 <= st.ymax && x1 <= st.xmax)
-      addSeg([-1, y0/st.ymax*2-1, 0], [x1/st.xmax*2-1, -1, 0], accent, 1.5, 0);
+      addSeg([-1, y0/st.ymax*2-1, 0], [x1/st.xmax*2-1, -1, 0], MARK.budget, 2, 0, 1);
   }
 
   /* the swept level curve, drawn on the surface */
@@ -1454,18 +1556,20 @@ function draw3d(st){
     const tNorm = (st.level - st.field.cMin)/((st.field.cMax - st.field.cMin) || 1);
     const col = terrainCSS(tNorm);
     const segs = marchingSquares(st.field, st.level);
-    for(let i = 0; i < segs.length; i += 4){
-      addSeg(toNorm(segs[i],segs[i+1],st.level), toNorm(segs[i+2],segs[i+3],st.level), col, 3, 0.02);
-    }
+    const pairs = [];
+    for(let i = 0; i < segs.length; i += 4)
+      pairs.push([toNorm(segs[i],segs[i+1],st.level), toNorm(segs[i+2],segs[i+3],st.level)]);
+    addPath(pairs, col, 4, 2, 0.05);
   }
 
   /* indifference curve through P */
   if(st.layers.curveP && Number.isFinite(st.uP)){
-    const col = dark ? "#E7EEF1" : "#14181B";
+    const col = MARK.white;
     const segs = marchingSquares(st.field, st.uP);
-    for(let i = 0; i < segs.length; i += 4){
-      addSeg(toNorm(segs[i],segs[i+1],st.uP), toNorm(segs[i+2],segs[i+3],st.uP), col, 1.6, 0.02);
-    }
+    const pairs = [];
+    for(let i = 0; i < segs.length; i += 4)
+      pairs.push([toNorm(segs[i],segs[i+1],st.uP), toNorm(segs[i+2],segs[i+3],st.uP)]);
+    addPath(pairs, col, 2, 1, 0.05);
   }
 
   /* gradient at P, lifted */
@@ -1473,17 +1577,17 @@ function draw3d(st){
     const g = Math.hypot(st.dux, st.duy) || 1, L = st.xmax*0.18;
     const x2 = clamp(st.P[0] + st.dux/g*L, 0, st.xmax), y2 = clamp(st.P[1] + st.duy/g*L, 0, st.ymax);
     const v2 = st.u(x2,y2);
-    if(Number.isFinite(v2)) addSeg(toNorm(st.P[0],st.P[1],st.uP), toNorm(x2,y2,v2), dark ? "#E7EEF1" : "#14181B", 2.5, 0.03);
+    if(Number.isFinite(v2)) addSeg(toNorm(st.P[0],st.P[1],st.uP), toNorm(x2,y2,v2), MARK.grad, 2.5, 0.03, 1);
   }
 
   /* markers */
   if(st.layers.optimum && st.opt && Number.isFinite(st.opt.u))
-    addDot(toNorm(st.opt.x, st.opt.y, st.opt.u), optCol, 6, surf);
+    addDot(toNorm(st.opt.x, st.opt.y, st.opt.u), MARK.optimum, 6.5, MARK.casing);
   if(Number.isFinite(st.uP)){
-    addDot(toNorm(st.P[0], st.P[1], st.uP), accent, 6, surf);
+    addDot(toNorm(st.P[0], st.P[1], st.uP), MARK.bundle, 6.5, MARK.casing);
     /* drop line to the floor makes the 2D↔3D correspondence unmistakable */
     const p = toNorm(st.P[0], st.P[1], st.uP);
-    addSeg([p[0],p[1],0], p, accent, 1, 0.02);
+    addSeg([p[0],p[1],0], p, MARK.bundle, 1.5, 0.02, 1);
   }
   ov.sort((a,b) => b.d - a.d);
 
@@ -1502,8 +1606,24 @@ function draw3d(st){
   };
   const drawOv = o => {
     if(o.k === "s"){
-      ctx.strokeStyle = o.c; ctx.lineWidth = o.wd;
-      ctx.beginPath(); ctx.moveTo(o.x0,o.y0); ctx.lineTo(o.x1,o.y1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(o.x0,o.y0); ctx.lineTo(o.x1,o.y1);
+      if(o.cas === 2){
+        ctx.strokeStyle = MARK.casing; ctx.lineWidth = o.wd + 4.5; ctx.stroke();
+        ctx.strokeStyle = MARK.white;  ctx.lineWidth = o.wd + 2.2; ctx.stroke();
+      } else if(o.cas === 1){
+        ctx.strokeStyle = MARK.casing; ctx.lineWidth = o.wd + 2.5; ctx.stroke();
+      }
+      ctx.strokeStyle = o.c; ctx.lineWidth = o.wd; ctx.stroke();
+    } else if(o.k === "p"){
+      ctx.beginPath();
+      for(const s of o.segs){ ctx.moveTo(s[0],s[1]); ctx.lineTo(s[2],s[3]); }
+      if(o.cas === 2){
+        ctx.strokeStyle = MARK.casing; ctx.lineWidth = o.wd + 4.5; ctx.stroke();
+        ctx.strokeStyle = MARK.white;  ctx.lineWidth = o.wd + 1.8; ctx.stroke();
+      } else if(o.cas === 1){
+        ctx.strokeStyle = MARK.casing; ctx.lineWidth = o.wd + 2.5; ctx.stroke();
+      }
+      ctx.strokeStyle = o.c; ctx.lineWidth = o.wd; ctx.stroke();
     } else if(o.k === "d"){
       ctx.fillStyle = o.ring; ctx.beginPath(); ctx.arc(o.x,o.y,o.r+2.5,0,Math.PI*2); ctx.fill();
       ctx.fillStyle = o.c;    ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,Math.PI*2); ctx.fill();
@@ -1523,14 +1643,18 @@ function draw3d(st){
   }
 
   /* ---- axis labels pinned to the projected corners ---- */
+  /* an axis pointing straight at the camera collapses to a point on screen —
+     in the X–Z projection there is no y to label, and so on. Measure how far a
+     unit step along each world axis moves on screen and drop the flat ones. */
+  const onScreen = i => Math.hypot(cam.r[i], cam.up[i]) > 0.06;
   ctx.font = `italic 14px ${css("--f-display") || "serif"}`;
   ctx.fillStyle = ink3; ctx.textAlign = "center"; ctx.textBaseline = "middle";
   const lx = cam.project(1.18,-1,0), ly = cam.project(-1,1.18,0), lz = cam.project(-1,-1,1.4);
-  if(lx[2] > 0.05) ctx.fillText("x", lx[0], lx[1]);
-  if(ly[2] > 0.05) ctx.fillText("y", ly[0], ly[1]);
-  if(lz[2] > 0.05) ctx.fillText("u", lz[0], lz[1]);
+  if(lx[2] > 0.05 && onScreen(0)) ctx.fillText("x", lx[0], lx[1]);
+  if(ly[2] > 0.05 && onScreen(1)) ctx.fillText("y", ly[0], ly[1]);
+  if(lz[2] > 0.05 && onScreen(2)) ctx.fillText("u", lz[0], lz[1]);
 
-  if(st.layers.floor){
+  if(st.layers.floor && onScreen(2)){
     const haloBg = dark ? "rgba(15,23,26,.8)" : "rgba(223,229,232,.85)";
     ctx.font = `10.5px ${css("--f-mono") || "monospace"}`;
     ctx.textAlign = "right"; ctx.textBaseline = "middle";
@@ -1556,13 +1680,7 @@ function draw3d(st){
    lands exactly where the student sees the cursor touch the terrain. */
 function pick3d(st, mx, my, w, h){
   const cam = camera(w, h);
-  const a = (mx - w/2) / (cam.focal * cam.scale);
-  const b = -(my - h/2) / (cam.focal * cam.scale);
-  const dir = [
-    a*cam.r[0] + b*cam.up[0] + cam.f[0],
-    a*cam.r[1] + b*cam.up[1] + cam.f[1],
-    a*cam.r[2] + b*cam.up[2] + cam.f[2]
-  ];
+  const { o:origin, d:dir } = cam.ray(mx, my);
   const span = (st.field.cMax - st.field.cMin) || 1;
   const surfZ = (nx, ny) => {
     const x = (nx+1)/2*st.xmax, y = (ny+1)/2*st.ymax;
@@ -1571,7 +1689,7 @@ function pick3d(st, mx, my, w, h){
     if(!Number.isFinite(v)) return null;
     return clamp((v - st.field.cMin)/span, -0.08, 1.08) * 1.25;
   };
-  const at = t => [cam.eye[0]+dir[0]*t, cam.eye[1]+dir[1]*t, cam.eye[2]+dir[2]*t];
+  const at = t => [origin[0]+dir[0]*t, origin[1]+dir[1]*t, origin[2]+dir[2]*t];
   let prevT = null, prevSign = null;
   const T0 = 0.1, T1 = view3d.dist * 3.2, STEPS = 420;
   for(let k = 0; k <= STEPS; k++){
@@ -1580,7 +1698,9 @@ function pick3d(st, mx, my, w, h){
     const z = surfZ(p[0], p[1]);
     if(z === null){ prevT = null; prevSign = null; continue; }
     const s = Math.sign(p[2] - z);
-    if(prevSign !== null && s !== prevSign && s <= 0){
+    /* either direction counts: in a side projection the ray runs level with the
+       terrain and can just as easily surface from underneath it */
+    if(prevSign !== null && s !== prevSign && s !== 0){
       let lo = prevT, hi = t;
       for(let q = 0; q < 40; q++){
         const mid = (lo+hi)/2, pm = at(mid), zm = surfZ(pm[0], pm[1]);
@@ -1631,6 +1751,7 @@ const STR = {
     tangencyOK:"tangencia", tangencyNear:"casi", tangencyOff:"lejos",
     kindInterior:"interior", kindKink:"vértice", kindCornerX:"esquina en x", kindCornerY:"esquina en y",
     lock:"Bloqueado",
+    projOnto:"Proyección ortogonal sobre el plano", projFree:"Vista 3D libre (perspectiva)",
     missBundle:"Coloca P en la canasta óptima.",
     missLevel:"Sube la curva de indiferencia hasta que roce la recta.",
     hintBundle:"Sube por la recta mientras el color bajo P siga aclarándose.",
@@ -1676,6 +1797,7 @@ const STR = {
     tangencyOK:"tangent", tangencyNear:"close", tangencyOff:"far",
     kindInterior:"interior", kindKink:"kink", kindCornerX:"corner on x", kindCornerY:"corner on y",
     lock:"Locked",
+    projOnto:"Orthogonal projection onto the plane", projFree:"Free 3D view (perspective)",
     missBundle:"Put P on the optimal bundle.",
     missLevel:"Raise the indifference curve until it just grazes the line.",
     hintBundle:"Climb along the line while the colour under P keeps getting lighter.",
@@ -1887,6 +2009,7 @@ function applyLang(){
     el.textContent = t[el.dataset.layerLabel];
   });
   buildTray();
+  syncViewButtons();
   updateScrubLabel();
   paintReadouts();
 }
@@ -1998,11 +2121,29 @@ function onDomainChange(){
 }
 
 /* --- pointer interaction --------------------------------------------------- */
-function setPointFromModel(x, y){
+/* A dragged point only carries information along the axes the current view can
+   actually express: in the Y–Z projection x is collapsed to a point, so the
+   hit's x is just where the ray happened to cross the surface and must be
+   ignored. useX / useY default to true for the 2D panel and perspective. */
+function setPointFromModel(x, y, useX = true, useY = true){
   if(st.method === "bundle"){
-    st.P = onLine(st, clamp(x, 0, st.I/st.px));
+    const tMax = st.I / st.px;
+    let t;
+    if(useX && useY){
+      /* closest point on the budget line, so a drag in any direction reads */
+      const s = st.px / st.py;
+      t = (x + (y - st.I/st.py) * (-s)) / (1 + s*s);
+    } else if(useX){
+      t = x;
+    } else {
+      t = (st.I - st.py * y) / st.px;
+    }
+    st.P = onLine(st, clamp(t, 0, tMax));
   } else {
-    st.P = [clamp(x, 0, st.xmax), clamp(y, 0, st.ymax)];
+    st.P = [
+      useX ? clamp(x, 0, st.xmax) : st.P[0],
+      useY ? clamp(y, 0, st.ymax) : st.P[1]
+    ];
   }
   clampState(); syncScrubFromState();
 }
@@ -2028,10 +2169,17 @@ function attach2d(){
     }
     render();
   };
-  cv.addEventListener("pointerdown", ev => { down = true; cv.setPointerCapture(ev.pointerId); handle(ev); });
+  cv.addEventListener("pointerdown", ev => {
+    down = true; view3d.dragging = true;
+    cv.setPointerCapture(ev.pointerId); handle(ev);
+  });
   cv.addEventListener("pointermove", ev => { if(down) handle(ev); });
-  cv.addEventListener("pointerup",  ev => { down = false; try{ cv.releasePointerCapture(ev.pointerId); }catch(_){} });
-  cv.addEventListener("pointercancel", () => { down = false; });
+  cv.addEventListener("pointerup",  ev => {
+    down = false; view3d.dragging = false;
+    try{ cv.releasePointerCapture(ev.pointerId); }catch(_){}
+    render();
+  });
+  cv.addEventListener("pointercancel", () => { down = false; view3d.dragging = false; render(); });
 
   cv.addEventListener("keydown", ev => {
     const stepX = st.xmax/120, stepY = st.ymax/120;
@@ -2053,8 +2201,12 @@ function attach2d(){
   });
 }
 
+/* true when a world axis still has screen extent under the current camera */
+const axisLive = (cam, i) => Math.hypot(cam.r[i], cam.up[i]) > 0.06;
+
 function attach3d(){
   const cv = $("c3d");
+  const cam3 = (w,h) => camera(w,h);
   let mode = null, lastX = 0, lastY = 0;
   const local = ev => {
     const r = cv.getBoundingClientRect();
@@ -2071,19 +2223,25 @@ function attach3d(){
     mode = (p[2] > 0.05 && Math.hypot(p[0]-mx, p[1]-my) < 18) ? "point" : "orbit";
     lastX = ev.clientX; lastY = ev.clientY;
     view3d.dragging = true;
-    if(mode === "point"){ const hit = pick3d(st, mx, my, w, h); if(hit) setPointFromModel(hit[0], hit[1]); }
+    if(mode === "point"){
+      const hit = pick3d(st, mx, my, w, h);
+      if(hit) setPointFromModel(hit[0], hit[1], axisLive(cam,0), axisLive(cam,1));
+    }
     render();
   });
   cv.addEventListener("pointermove", ev => {
     if(!mode) return;
     if(mode === "orbit"){
       view3d.az -= (ev.clientX - lastX) * 0.008;
-      view3d.el = clamp(view3d.el + (ev.clientY - lastY) * 0.006, -0.25, 1.45);
+      view3d.el = clamp(view3d.el + (ev.clientY - lastY) * 0.006, -0.35, Math.PI/2);
       lastX = ev.clientX; lastY = ev.clientY;
+      /* orbiting away from a canonical projection un-presses its button, but
+         keeps whichever projection type is active */
+      if(view3d.canonical){ view3d.canonical = null; syncViewButtons(); }
     } else {
       const [mx,my,w,h] = local(ev);
       const hit = pick3d(st, mx, my, w, h);
-      if(hit) setPointFromModel(hit[0], hit[1]);
+      if(hit) setPointFromModel(hit[0], hit[1], axisLive(cam3(w,h),0), axisLive(cam3(w,h),1));
     }
     render();
   });
@@ -2105,23 +2263,37 @@ function attach3d(){
     let h = true;
     if(ev.key === "ArrowLeft") view3d.az -= 0.08;
     else if(ev.key === "ArrowRight") view3d.az += 0.08;
-    else if(ev.key === "ArrowUp") view3d.el = clamp(view3d.el + 0.06, -0.25, 1.45);
-    else if(ev.key === "ArrowDown") view3d.el = clamp(view3d.el - 0.06, -0.25, 1.45);
+    else if(ev.key === "ArrowUp") view3d.el = clamp(view3d.el + 0.06, -0.35, Math.PI/2);
+    else if(ev.key === "ArrowDown") view3d.el = clamp(view3d.el - 0.06, -0.35, Math.PI/2);
     else if(ev.key === "+" || ev.key === "=") view3d.dist = clamp(view3d.dist*0.92, 2.2, 12);
     else if(ev.key === "-") view3d.dist = clamp(view3d.dist*1.08, 2.2, 12);
     else h = false;
-    if(h){ ev.preventDefault(); render(); }
+    if(h){
+      ev.preventDefault();
+      if(view3d.canonical){ view3d.canonical = null; syncViewButtons(); }
+      render();
+    }
   });
 
   document.querySelectorAll(".tool[data-view]").forEach(b => {
     b.addEventListener("click", () => {
-      const v = b.dataset.view;
-      if(v === "xz"){ view3d.az = -Math.PI/2; view3d.el = 0.02; }
-      else if(v === "yz"){ view3d.az = 0; view3d.el = 0.02; }
-      else if(v === "xy"){ view3d.az = -Math.PI/2; view3d.el = 1.45; }
-      else { view3d.az = -0.95; view3d.el = 0.52; view3d.dist = 4.6; }
-      render();
+      const v = VIEWS[b.dataset.view];
+      view3d.az = v.az; view3d.el = v.el; view3d.ortho = v.ortho;
+      view3d.canonical = b.dataset.view;
+      if(b.dataset.view === "iso") view3d.dist = 4.0;
+      syncViewButtons(); render();
     });
+  });
+}
+
+function syncViewButtons(){
+  const t = T();
+  document.querySelectorAll(".tool[data-view]").forEach(b => {
+    const k = b.dataset.view;
+    b.setAttribute("aria-pressed", String(view3d.canonical === k));
+    const plane = VIEWS[k].plane;
+    b.title = plane ? `${t.projOnto} ${plane}` : t.projFree;
+    b.setAttribute("aria-label", b.title);
   });
 }
 
@@ -2134,7 +2306,9 @@ function pushTrace(){
 
 function attachScrub(){
   const s = $("scrub");
+  s.addEventListener("change", () => { view3d.dragging = false; render(); });
   s.addEventListener("input", () => {
+    view3d.dragging = true;
     const v = parseFloat(s.value);
     if(st.method === "level"){
       st.level = st.field.cMin + (st.field.cMax - st.field.cMin) * v;

@@ -23,6 +23,30 @@ the other follows.
 Both panels are draggable. In 3D the pointer is ray-marched into the height
 field, so the bundle lands where the cursor visually touches the terrain.
 
+## Camera
+
+Four buttons above the 3D panel. Three are true **orthographic** projections —
+no perspective divide, so parallel edges stay parallel and equal world steps are
+equal screen steps:
+
+| Button | Projects onto | Axes in frame |
+|---|---|---|
+| `X–Z` | the plane `y = 0` | x right, u up |
+| `X–Y` | the plane `z = 0` | x right, y up |
+| `Y–Z` | the plane `x = 0` | y right, u up |
+| `3D` | — | free perspective, orbit and zoom |
+
+`X–Z` is the one to reach for: the lifted budget curve projects to a single
+arch whose peak *is* the optimum, so "find the best affordable bundle" becomes
+"find the top of this hill". `X–Y` reproduces the 2D diagram exactly, which
+makes the correspondence between the two panels concrete. In both side views an
+indifference curve, being a level set, projects to a horizontal line.
+
+Dragging or arrow-keying away from a canonical view releases the button but
+keeps the projection type. Dragging the bundle works in every view: the app
+uses only the coordinates the active projection can express, so a horizontal
+drag in `Y–Z` moves along y rather than along the collapsed x axis.
+
 ## Layers
 
 Utility map, background contours, the swept level curve, the indifference curve
@@ -58,17 +82,24 @@ Everything is hand-rolled so the page stays self-contained:
 | Level curves | Marching squares over a 141×141 sampled field, with saddle disambiguation and NaN-cell skipping. |
 | Optimum | Dense scan then golden-section refinement along the budget line, then classification into interior / kink / corner. Robust where a first-order condition finds nothing. |
 | 3D surface | Painter's algorithm on canvas 2D. A height field sorts exactly by centroid depth, overlays composite without a depth buffer, and there is no shader or context-loss failure mode. |
-| 3D picking | Ray-march the unprojected pointer ray against the height field, then bisect. |
+| 3D picking | Ray-march the unprojected pointer ray against the height field, then bisect. Crossings count in both directions, since in a side projection the ray runs level with the terrain and can surface from underneath it. |
+| Cased curves | A curve on the surface is emitted as one batched path keyed at its nearest point, not segment by segment. Drawn per segment, each casing overpaints its neighbour's core and the line comes out beaded; splitting by depth just moves the seam. |
 
 ## Changes from the GeoGebra original
 
 Beyond the visual rebuild, several things behave differently on purpose:
 
 - **Colour ramp.** The original tinted level curves with three piecewise-linear
-  channel functions (`redfun`, `greenfun`, `bluefun`) whose lightness dipped in
-  the middle, so two different utility levels could land on nearly the same
-  tone. The replacement ramp keeps L\* rising monotonically from deep water to
-  snow, so it reads as terrain *and* as an ordered magnitude.
+  channel functions (`redfun`, `greenfun`, `bluefun`). The replacement runs blue
+  and green at the bottom, yellow and orange through the middle, then bright red
+  into crimson and deep brown at the top. Because the top end darkens, height is
+  not recoverable from lightness alone up there — the colour bar and the numeric
+  readouts carry that instead, and every curve drawn on the map gets a white
+  casing so it stays legible against the dark browns.
+- **Marks.** The bundle, the budget line, the tangent, the gradient, the
+  partials and the revealed optimum are fixed bright hues with a dark casing,
+  none of them reusing a hue the ramp passes through, so they read against any
+  part of the map in either theme.
 - **Colour range.** `uMIN`/`uMAX` were read off two domain corners
   (`f(x_C,y_C)`, `f(x_G,y_G)`). For `ln(x) + y` that lower corner is −∞ and the
   ramp collapses. The rewrite takes the 2nd percentile of the sampled field.
