@@ -1,0 +1,103 @@
+========================================================================
+  GRADIENT PEAKS
+  Un entorno 3D para graficas de superficie de funciones de dos variables
+========================================================================
+
+QUE HACER AHORA MISMO
+---------------------
+
+  1. Si esto llego como archivo .zip, DESCOMPRIMALO PRIMERO.
+       Windows: clic derecho en el .zip -> "Extraer todo..." -> Extraer
+       macOS:   doble clic en el .zip; use la carpeta que aparece
+
+  2. Haga doble clic en:   Gradient-Peaks.html
+
+  3. Se abre en su navegador y funciona. Esa es toda la instalacion.
+     Sin cuenta, sin complementos, sin conexion a internet.
+
+  Lea Gradient-Peaks-Guia.pdf para todo lo demas. Esta escrita para
+  alguien que nunca ha ejecutado un programa como este.
+
+
+IDIOMA
+------
+
+  El programa sigue la configuracion de su navegador: si esta en
+  espanol, abre en espanol. Tambien puede cambiarlo con el selector
+  Espanol / English en la esquina superior del panel.
+
+  Si lo publica en una direccion web, agregue ?lang=es al final del
+  enlace para que abra en espanol sin importar como tengan sus
+  estudiantes configurado el navegador.
+
+
+QUE HAY EN ESTA CARPETA
+-----------------------
+
+  Gradient-Peaks.html
+      EL PROGRAMA. Un solo archivo autocontenido. Doble clic y listo.
+
+  Gradient-Peaks-Guia.pdf
+      La guia completa en espanol: como abrirlo, cada control
+      explicado, como escribir sus propias funciones y restricciones,
+      diez actividades listas para la clase, como publicarlo para sus
+      estudiantes, y que hacer cuando algo sale mal.
+
+  Gradient-Peaks-Guide.pdf
+      La misma guia en ingles.
+
+  website/
+      El mismo programa dividido en archivos separados. Use esta
+      carpeta SOLO para publicarlo en una direccion web (parte 8 de la
+      guia) o instalarlo como aplicacion en un telefono (parte 9).
+
+      NOTA: hacer doble clic en website/index.html da una pantalla en
+      blanco. Es lo esperado: los navegadores no dejan que una pagina
+      abierta desde el disco duro cargue sus propios archivos por
+      separado. Use Gradient-Peaks.html.
+
+  tools/build-standalone.mjs
+      Opcional. Reconstruye Gradient-Peaks.html si edita el codigo.
+
+
+CONTROLES RAPIDOS
+-----------------
+
+  W A S D    caminar / volar        Esc    soltar el puntero del raton
+  raton      mirar alrededor        Tab    ocultar o mostrar el panel
+  Shift      ir mas rapido          1 2 3  primera / tercera / dron
+  Espacio Ctrl  dron sube / baja    T      mirar desde arriba (mapa)
+                                    R      volver al centro
+
+  C curvas de nivel   M colorear por altura  F muros de la frontera
+  X flecha df/dx      Y flecha df/dy         V gradiente
+  B derivada direccional                     P plano tangente
+  O mostrar el optimo                        H resaltar la vecindad
+  J la curva de nivel bajo sus pies      K su recta tangente
+
+  La lectura de arriba muestra siempre x, y, z = f(x,y) y RMS, el
+  valor absoluto de la pendiente de la curva de nivel, |df/dx entre
+  df/dy|.
+
+  El dron vuela nivelado: W A S D lo desplazan sobre el plano (x,y) y
+  Espacio / Ctrl fijan su altitud. El haz que cuelga de el cae recto
+  y marca el punto del dominio sobre el que esta.
+
+  En un telefono: arrastre la mitad IZQUIERDA para caminar y la
+  mitad DERECHA para mirar.
+
+
+REQUISITOS
+----------
+
+  Cualquier computador, tableta o telefono de 2014 en adelante, con un
+  navegador razonablemente actual (Chrome, Edge, Firefox o Safari).
+  Nada mas. Tamano total: menos de un megabyte.
+
+
+LICENCIA
+--------
+
+  MIT. Uselo, modifiquelo y entreguelo a sus estudiantes libremente.
+  Usa three.js (tambien MIT, (c) los autores de three.js); su licencia
+  viaja con los archivos en website/vendor/.
