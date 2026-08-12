@@ -14,7 +14,8 @@ import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
   maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo,
 } from './analysis.js';
-import { Player, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
+import { Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
+import { ParametricWalker, ImplicitWalker } from './walker.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
@@ -138,6 +139,12 @@ const state = {
   zoom: 1,             // continuous, and never above 1
   showOpt: false,
 
+  charStyle: 'explorer',
+  shape: '',           // named parametric surface, '' = whatever is typed
+  pa: 1, pb: 0.4,      // its two parameters
+  inside: false,       // walk the other side of an orientable surface
+  upAxis: 'normal',    // 'normal' | 'x' | 'y' | 'z'
+
   // Consumer problem: the same machinery, wearing the vocabulary of demand
   // theory. Nothing about the mathematics changes — a budget set is a feasible
   // set and an indifference curve is a level curve — but a student meeting
@@ -166,6 +173,24 @@ let optimum = null;
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let decorations = new Decorations();
 let player = null;
+
+/* ---------------------------------------- standing on a non-graph surface */
+
+// The heightfield explorer cannot be reused here: it is built around a Field,
+// and a torus has none. These three hold the equivalent for a parametric or
+// implicit surface — where the walker is, the character standing there, and a
+// camera that has to work without a global "up".
+let walker = null;
+let altHiker = null;
+const altView = {
+  mode: MODE_DRONE,
+  pitch: -0.1,          // first person only; third person stays level
+  camYaw: 0.6,          // third person: where the fixed camera sits
+  camDist: 0,
+  camHeight: 0,
+  scale: 1,             // world units per unit of the surface's own coordinates
+  charScale: 1,         // world units per unit of the character
+};
 
 const world = new THREE.Group();
 scene.add(world);
@@ -200,16 +225,114 @@ function clearGraphWorld() {
 }
 
 /**
- * Build an implicit or parametric surface.
+ * The named parametric surfaces, as formulas rather than as special cases.
  *
- * Neither is the graph of a function, so none of the heightfield machinery
- * applies: the explorer, the derivative disc, the contours and the optimiser are
- * all torn down and the view is handed to the drone.
+ * Each entry writes its X, Y, Z and its parameter rectangle into the same boxes
+ * a student would type into, so choosing "Torus" is a worked example of writing
+ * one rather than a hidden mode. `wrap` says which parameter directions close
+ * up, which is what lets you walk right round a torus and stops you walking off
+ * the edge of a Möbius strip.
+ *
+ * `sides` records what the surface is: two-sided, one-sided, or a
+ * three-dimensional immersion of something that only embeds in four. That is
+ * not decoration — it decides whether the inside/outside toggle means anything.
+ */
+const SHAPES = {
+  sphere: (a) => ({
+    X: `${a}*cos(u)*sin(v)`, Y: `${a}*sin(u)*sin(v)`, Z: `${a}*cos(v)`,
+    umin: 0, umax: 6.28319, vmin: 0.001, vmax: 3.14059,
+    wrapU: true, wrapV: false, sides: 2, labels: ['shape.radius', null],
+  }),
+  torus: (a, b) => ({
+    X: `(${a}+${b}*cos(v))*cos(u)`, Y: `(${a}+${b}*cos(v))*sin(u)`, Z: `${b}*sin(v)`,
+    umin: 0, umax: 6.28319, vmin: 0, vmax: 6.28319,
+    wrapU: true, wrapV: true, sides: 2, labels: ['shape.radius', 'shape.tube'],
+  }),
+  // The tractrix of revolution: constant negative curvature, and the classical
+  // answer to "what does a hyperbolic plane look like".
+  pseudo: (a) => ({
+    X: `${a}*cos(u)/cosh(v)`, Y: `${a}*sin(u)/cosh(v)`, Z: `${a}*(v-tanh(v))`,
+    umin: 0, umax: 6.28319, vmin: -3, vmax: 3,
+    wrapU: true, wrapV: false, sides: 2, labels: ['shape.radius', null],
+  }),
+  hyper1: (a, b) => ({
+    X: `${a}*cosh(v)*cos(u)`, Y: `${a}*cosh(v)*sin(u)`, Z: `${b}*sinh(v)`,
+    umin: 0, umax: 6.28319, vmin: -1.5, vmax: 1.5,
+    wrapU: true, wrapV: false, sides: 2, labels: ['shape.radius', 'shape.pb'],
+  }),
+  catenoid: (a) => ({
+    X: `${a}*cosh(v)*cos(u)`, Y: `${a}*cosh(v)*sin(u)`, Z: `${a}*v`,
+    umin: 0, umax: 6.28319, vmin: -1.6, vmax: 1.6,
+    wrapU: true, wrapV: false, sides: 2, labels: ['shape.waist', null],
+  }),
+  helicoid: (a, b) => ({
+    X: `v*cos(u)`, Y: `v*sin(u)`, Z: `${b}*u`,
+    umin: -6.28319, umax: 6.28319, vmin: -Number(a), vmax: Number(a),
+    wrapU: false, wrapV: false, sides: 2, labels: ['shape.radius', 'shape.pitch'],
+  }),
+  mobius: (a, b) => ({
+    X: `(${a}+v*cos(u/2))*cos(u)`, Y: `(${a}+v*cos(u/2))*sin(u)`, Z: `v*sin(u/2)`,
+    umin: 0, umax: 6.28319, vmin: -Number(b), vmax: Number(b),
+    wrapU: true, wrapV: false, sides: 1, labels: ['shape.radius', 'shape.width'],
+  }),
+  // The figure-eight immersion: the bottle really does pass through itself
+  // here, because an embedding needs a fourth dimension to get out of the way.
+  klein: (a) => ({
+    X: `(${a}+cos(u/2)*sin(v)-sin(u/2)*sin(2*v))*cos(u)`,
+    Y: `(${a}+cos(u/2)*sin(v)-sin(u/2)*sin(2*v))*sin(u)`,
+    Z: `sin(u/2)*sin(v)+cos(u/2)*sin(2*v)`,
+    umin: 0, umax: 6.28319, vmin: 0, vmax: 6.28319,
+    wrapU: true, wrapV: true, sides: 1, immersed: true, labels: ['shape.radius', null],
+  }),
+  cross: (a) => ({
+    X: `${a}*cos(u)*sin(2*v)`, Y: `${a}*sin(u)*sin(2*v)`, Z: `${a}*(cos(v)^2-cos(u)^2*sin(v)^2)`,
+    umin: 0, umax: 6.28319, vmin: 0, vmax: 3.14159,
+    wrapU: true, wrapV: false, sides: 1, immersed: true, labels: ['shape.radius', null],
+  }),
+};
+
+/** Write the chosen named surface into the parametric boxes. */
+function applyShape() {
+  const make = SHAPES[state.shape];
+  $('grp-shapeparams').hidden = !make;
+  if (!make) { $('note-orientable').textContent = ''; return; }
+
+  const spec = make(state.pa.toFixed(2), state.pb.toFixed(2));
+  $('in-px').value = spec.X;
+  $('in-py').value = spec.Y;
+  $('in-pz').value = spec.Z;
+  $('in-umin').value = spec.umin.toFixed(4);
+  $('in-umax').value = spec.umax.toFixed(4);
+  $('in-vmin').value = spec.vmin.toFixed(4);
+  $('in-vmax').value = spec.vmax.toFixed(4);
+  Object.assign(state, {
+    pxSrc: spec.X, pySrc: spec.Y, pzSrc: spec.Z,
+    umin: spec.umin, umax: spec.umax, vmin: spec.vmin, vmax: spec.vmax,
+    wrapU: spec.wrapU, wrapV: spec.wrapV, sides: spec.sides,
+  });
+
+  $('lbl-pa-name').textContent = t(spec.labels[0] || 'shape.pa');
+  $('lbl-pb-name').textContent = t(spec.labels[1] || 'shape.pb');
+  $('in-pb').parentElement.hidden = !spec.labels[1];
+
+  const note = spec.sides === 1 ? t('shape.nonorientable') : t('shape.orientable');
+  $('note-orientable').textContent = spec.immersed ? `${note} ${t('shape.immersion')}` : note;
+  $('t-inside').disabled = spec.sides === 1;
+}
+
+/**
+ * Build an implicit or parametric surface, and something to stand on it.
+ *
+ * Neither is the graph of a function, so the heightfield machinery — contours,
+ * partial derivatives, the optimiser — is torn down. The explorer is not: a
+ * walker that knows the surface's own geometry takes over, and the view can be
+ * the drone, the explorer's own eyes, or a level camera watching them.
  */
 function rebuildAlternate() {
   clearGraphWorld();
   disposeTree(altSurface);
   altSurface = null;
+  walker = null;
 
   const ws = state.worldSize;
   const common = { sx: state.sx, sy: state.sy, sz: state.sz, res: 0 };
@@ -229,6 +352,16 @@ function rebuildAlternate() {
       });
       if (!built) { setMessage(t('surf.empty')); return false; }
       altSurface = built.mesh;
+      walker = new ImplicitWalker(F, {
+        ...common, scale: ws / span,
+        bounds: {
+          xmin: state.xmin, xmax: state.xmax,
+          ymin: state.ymin, ymax: state.ymax,
+          zmin: state.zmin, zmax: state.zmax,
+        },
+      });
+      altView.scale = ws / span;
+      landWalkerOnMesh();
     } else {
       const X = compile(state.pxSrc, ['u', 'v']);
       const Y = compile(state.pySrc, ['u', 'v']);
@@ -242,6 +375,12 @@ function rebuildAlternate() {
       });
       if (!built) { setMessage(t('surf.empty')); return false; }
       altSurface = built.mesh;
+      walker = new ParametricWalker({ X, Y, Z }, {
+        ...common, scale: ws / 4,
+        umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
+        wrapU: !!state.wrapU, wrapV: !!state.wrapV,
+      });
+      altView.scale = ws / 4;
     }
   } catch (err) {
     showError(state.surfaceKind === 'implicit' ? 'err-implicit' : 'err-param', err);
@@ -261,8 +400,74 @@ function rebuildAlternate() {
   sun.target.position.set(0, 0, 0);
 
   if (player) player.group.visible = false;
+  ensureAltHiker();
+  applyOrientation();
   frameAlternate();
   return true;
+}
+
+/**
+ * Drop the implicit walker onto an actual vertex of the mesh.
+ *
+ * F = 0 says nothing about where the surface is, only which points are on it,
+ * so there is no natural starting point to guess. The mesher has just found
+ * several thousand of them; borrow one and Newton-polish it.
+ */
+function landWalkerOnMesh() {
+  if (!walker || !altSurface) return;
+  const pos = altSurface.geometry.getAttribute('position');
+  if (!pos || pos.count === 0) return;
+  const i = Math.floor(pos.count / 2) * 3;
+  walker.placeAtWorld(new THREE.Vector3(pos.array[i], pos.array[i + 1], pos.array[i + 2]));
+}
+
+/** The character that stands on a non-graph surface. */
+function ensureAltHiker() {
+  if (altHiker) { disposeTree(altHiker); altHiker = null; }
+  altHiker = buildCharacter(state.charStyle);
+  altHiker.visible = false;
+  world.add(altHiker);
+}
+
+function applyOrientation() {
+  if (walker) walker.sign = state.inside ? -1 : 1;
+  $('fld-orient').hidden = state.surfaceKind === 'graph';
+}
+
+/**
+ * Stand the character on the surface, facing along the walker's heading.
+ *
+ * The basis is (side, up, −forward) because the character models look down
+ * their own −Z. `up` is normally the surface normal — which is what makes a
+ * sphere feel like a planet — but can be pinned to a world axis instead, for
+ * students who find a tumbling horizon harder to read than a fixed one.
+ */
+const _hbasis = new THREE.Matrix4();
+function placeAltHiker() {
+  if (!walker || !altHiker) return null;
+  const p = walker.position(new THREE.Vector3());
+  const { n, fwd, side } = walker.frame();
+
+  let up = n;
+  if (state.upAxis !== 'normal') {
+    const axis = state.upAxis === 'x' ? new THREE.Vector3(1, 0, 0)
+      : state.upAxis === 'y' ? new THREE.Vector3(0, 0, -1)   // math y is world −Z
+        : new THREE.Vector3(0, 1, 0);
+    up = axis.multiplyScalar(walker.sign);
+  }
+
+  // Re-orthogonalise: pinning "up" to an axis leaves the heading out of plane.
+  const f = fwd.clone().addScaledVector(up, -fwd.dot(up));
+  if (f.lengthSq() < 1e-12) f.copy(side);
+  f.normalize();
+  const sd = new THREE.Vector3().crossVectors(up, f).normalize();
+
+  _hbasis.makeBasis(sd, up, f.clone().negate());
+  altHiker.position.copy(p);
+  altHiker.quaternion.setFromRotationMatrix(_hbasis);
+  altHiker.scale.setScalar(state.zoom * altView.charScale);
+  altHiker.visible = altView.mode !== MODE_FIRST;
+  return { p, up, fwd: f, side: sd };
 }
 
 /** Put the drone where the whole alternate surface is in shot. */
@@ -278,6 +483,12 @@ function frameAlternate() {
   altCam.dist = dist;
   altCam.yaw = 0;
   altCam.pitch = -elev;
+  altView.camDist = dist * 0.85;
+  altView.camHeight = (b ? b.center.y : 0) + r * 0.25;
+  // A torus has no metres. The explorer is sized against the surface instead —
+  // about a fourteenth of its radius, which is roughly a person against a
+  // small hill and keeps them visible without dwarfing the shape.
+  altView.charScale = r / 14;
 }
 
 function rebuild() {
@@ -285,6 +496,8 @@ function rebuild() {
 
   disposeTree(altSurface);
   altSurface = null;
+  walker = null;
+  if (altHiker) altHiker.visible = false;
   if (player) player.group.visible = true;
 
   // --- parse first, so a typo never destroys a working scene -------------
@@ -627,9 +840,17 @@ canvas.addEventListener('contextmenu', (e) => e.preventDefault());
  */
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  if (state.surfaceKind !== 'graph' || !player) return;
   const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   const steps = (e.deltaY * unit) / 500;
+
+  // Watching a walker on a torus from a fixed camera, the thing you need to
+  // zoom is the camera, not the walker. Everywhere else the wheel is the
+  // explorer's scale, as it is on the heightfield.
+  if (state.surfaceKind !== 'graph' && walker && altView.mode === MODE_THIRD) {
+    altView.camDist = Math.max(state.worldSize * 0.02,
+      Math.min(state.worldSize * 20, altView.camDist * Math.exp(steps * 1.1)));
+    return;
+  }
   // Wheel down (positive deltaY) shrinks the explorer, which magnifies the
   // surface — the same direction as zooming out of a map does not apply here,
   // so follow the pinch: apart means bigger explorer, closer look at nothing.
@@ -638,15 +859,62 @@ canvas.addEventListener('wheel', (e) => {
 
 $('click-catch').addEventListener('click', () => canvas.requestPointerLock());
 
+/**
+ * Click the surface to stand on it.
+ *
+ * An implicit surface has no natural "centre of the domain" to start from, and
+ * a parametric one's parameter origin is an arbitrary artefact of how it was
+ * written. Picking the spot is both the simplest interface and the honest one:
+ * the student chooses a point, and the program lands them on it.
+ *
+ * The raycast returns the parameter pair straight from the mesh for parametric
+ * surfaces — the uv attribute carries the real (u, v) — and a world point for
+ * implicit ones, which Newton then pulls exactly onto F = 0.
+ */
+const picker = new THREE.Raycaster();
+const pickPt = new THREE.Vector2();
+canvas.addEventListener('pointerdown', (e) => {
+  if (state.surfaceKind === 'graph' || !walker || !altSurface || pointerLocked) return;
+  if (e.button !== 0) return;
+  const r = canvas.getBoundingClientRect();
+  pickPt.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  picker.setFromCamera(pickPt, camera);
+  const hit = picker.intersectObject(altSurface, false)[0];
+  if (!hit) return;
+  if (walker.placeAtUV && hit.uv) walker.placeAtUV(hit.uv.x, hit.uv.y);
+  else if (walker.placeAtWorld) walker.placeAtWorld(hit.point);
+  if (altView.mode === MODE_DRONE) setMode(MODE_THIRD);
+  setMessage('');
+});
+
 document.addEventListener('pointerlockchange', () => {
   pointerLocked = document.pointerLockElement === canvas;
-  $('click-catch').hidden = pointerLocked;
-  $('crosshair').hidden = !(pointerLocked && player && player.mode === MODE_FIRST);
+  const cc = $('click-catch');
+  if (cc) cc.hidden = pointerLocked;
+  const first = state.surfaceKind === 'graph'
+    ? (player && player.mode === MODE_FIRST)
+    : altView.mode === MODE_FIRST;
+  $('crosshair').hidden = !(pointerLocked && first);
 });
 
 document.addEventListener('mousemove', (e) => {
-  if (!pointerLocked || !player) return;
+  if (!pointerLocked) return;
   const dx = e.movementX || 0, dy = e.movementY || 0;
+
+  if (state.surfaceKind !== 'graph') {
+    if (!walker || altView.mode === MODE_DRONE) return;
+    if (altView.mode === MODE_FIRST) {
+      // Turning is a rotation of the heading *in the tangent plane*, which is
+      // the only thing "turn left" can mean on a surface with no fixed up.
+      walker.turn(-dx * 0.0022);
+      altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * 0.0022));
+    } else {
+      altView.camYaw -= dx * 0.004;
+      altView.camHeight += dy * altView.camDist * 0.002;
+    }
+    return;
+  }
+  if (!player) return;
 
   // In directional-derivative mode the mouse steers the direction vector u.
   // Hold the right button to look around instead.
@@ -722,6 +990,15 @@ function readInput() {
 /* ------------------------------------------------------------ UI wiring */
 
 function setMode(mode) {
+  if (state.surfaceKind !== 'graph') {
+    altView.mode = mode;
+    for (const b of document.querySelectorAll('.mode')) b.classList.toggle('active', b.dataset.mode === mode);
+    $('r-mode').textContent = t(mode === MODE_FIRST ? 'view.first' : mode === MODE_THIRD ? 'view.third' : 'view.drone');
+    $('crosshair').hidden = !(pointerLocked && mode === MODE_FIRST);
+    $('fld-dronecam').hidden = true;
+    if (altHiker) altHiker.visible = mode !== MODE_FIRST;
+    return;
+  }
   player.setMode(mode);
   for (const b of document.querySelectorAll('.mode')) b.classList.toggle('active', b.dataset.mode === mode);
   $('r-mode').textContent = t(mode === MODE_FIRST ? 'view.first' : mode === MODE_THIRD ? 'view.third' : 'view.drone');
@@ -749,7 +1026,9 @@ function applySurfaceKindUI() {
     const el = $(id);
     if (el) { el.style.opacity = graph ? '' : '0.4'; el.style.pointerEvents = graph ? '' : 'none'; }
   }
-  for (const b of document.querySelectorAll('.mode')) b.disabled = !graph;
+  // Walking works on all three kinds of surface, so the view buttons stay live.
+  $('fld-orient').hidden = graph;
+  $('note-alt').hidden = graph;
 }
 
 /**
@@ -1033,7 +1312,31 @@ function wireUI() {
     applyInputs();
   });
 
-  $('sel-style').addEventListener('change', (e) => player.setStyle(e.target.value));
+  $('sel-style').addEventListener('change', (e) => {
+    state.charStyle = e.target.value;
+    if (player) player.setStyle(state.charStyle);
+    if (state.surfaceKind !== 'graph') ensureAltHiker();
+  });
+
+  $('sel-shape').addEventListener('change', (e) => {
+    state.shape = e.target.value;
+    applyShape();
+    if (state.shape) applyInputs();
+  });
+
+  for (const [id, key, lbl] of [['in-pa', 'pa', 'lbl-pa'], ['in-pb', 'pb', 'lbl-pb']]) {
+    $(id).addEventListener('input', (ev) => {
+      state[key] = parseFloat(ev.target.value);
+      $(lbl).textContent = state[key].toFixed(2);
+    });
+    $(id).addEventListener('change', () => { applyShape(); applyInputs(); });
+  }
+
+  bindCheck('t-inside', 'inside', () => {
+    if (walker) walker.flip();
+  });
+
+  $('sel-up').addEventListener('change', (e) => { state.upAxis = e.target.value; });
   $('sel-dronecam').addEventListener('change', (e) => player.setDroneView(e.target.value));
 
   $('btn-top').addEventListener('click', () => { player.topDown(camera); setMode(MODE_DRONE); });
@@ -1133,7 +1436,7 @@ function updateZoomLabels() {
 /** The one place the explorer's scale is set, whatever asked for it. */
 function applyZoom(z) {
   state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
-  if (player) player.setZoom(state.zoom);
+  if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
   const dial = $('in-zoom');
   dial.value = String(-Math.log10(state.zoom));
   updateZoomLabels();
@@ -1185,7 +1488,19 @@ function updateRMS(readout) {
 
 function updateHUD(readout) {
   if (state.surfaceKind !== 'graph') {
-    $('r-x').textContent = '—'; $('r-y').textContent = '—'; $('r-z').textContent = '—';
+    // No f, so no height and no MRS — but there is still a point on a surface,
+    // and where it is is exactly what a student loses track of on a torus.
+    if (walker && walker.p) {
+      $('r-x').textContent = fmt(walker.p.x, 3);
+      $('r-y').textContent = fmt(walker.p.y, 3);
+      $('r-z').textContent = fmt(walker.p.z, 3);
+    } else if (walker) {
+      $('r-x').textContent = `u ${fmt(walker.u, 3)}`;
+      $('r-y').textContent = `v ${fmt(walker.v, 3)}`;
+      $('r-z').textContent = walker.sign > 0 ? '+n' : '−n';
+    } else {
+      $('r-x').textContent = '—'; $('r-y').textContent = '—'; $('r-z').textContent = '—';
+    }
     $('r-rms').textContent = '—';
     for (const k in chipEls) chipEls[k].hidden = true;
     return;
@@ -1221,6 +1536,20 @@ function updateHUD(readout) {
 // there is nothing to stand on, so the drone simply circles it.
 const altCam = { yaw: 0, pitch: -0.5, dist: 400 };
 
+let altWalkPhase = 0;
+
+/** The same walk cycle the heightfield explorer uses, driven by distance. */
+function animateAltHiker(dt, moving) {
+  if (!altHiker) return;
+  const p = altHiker.userData.parts;
+  if (!p) return;
+  const swing = moving ? 0.75 * Math.sin(altWalkPhase) : 0;
+  if (!p.stiffLegs) { p.legL.rotation.x = swing; p.legR.rotation.x = -swing; }
+  p.armL.rotation.x = -swing * 0.8;
+  p.armR.rotation.x = swing * 0.8;
+  p.hips.position.y = p.hipsY + (moving ? Math.abs(Math.sin(altWalkPhase)) * 0.045 : 0);
+}
+
 const clock = new THREE.Clock();
 const curveRGB = [0, 0, 0];
 
@@ -1231,15 +1560,57 @@ function animate() {
 
   if (state.surfaceKind !== 'graph') {
     const inp = readInput();
-    altCam.yaw -= inp.right * dt * 1.2;
-    altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch + inp.up * dt * 1.2));
-    altCam.dist *= Math.exp(-inp.forward * dt * (inp.sprint ? 2.2 : 0.9));
-    const r = altCam.dist;
-    const cp = Math.cos(altCam.pitch);
-    camera.position.set(Math.sin(altCam.yaw) * cp * r, -Math.sin(altCam.pitch) * r, Math.cos(altCam.yaw) * cp * r);
-    camera.lookAt(0, 0, 0);
-    camera.near = Math.max(0.05, r * 1e-4);
-    camera.far = r * 20;
+
+    if (altView.mode === MODE_DRONE || !walker) {
+      if (altHiker) altHiker.visible = !!walker;
+      if (walker) placeAltHiker();
+      altCam.yaw -= inp.right * dt * 1.2;
+      altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch + inp.up * dt * 1.2));
+      altCam.dist *= Math.exp(-inp.forward * dt * (inp.sprint ? 2.2 : 0.9));
+      const r = altCam.dist;
+      const cp = Math.cos(altCam.pitch);
+      camera.position.set(Math.sin(altCam.yaw) * cp * r, -Math.sin(altCam.pitch) * r, Math.cos(altCam.yaw) * cp * r);
+      camera.lookAt(0, 0, 0);
+      camera.near = Math.max(0.05, r * 1e-4);
+      camera.far = r * 20;
+    } else {
+      // Walking. Speed is in world metres, so a step feels the same whatever
+      // the surface's own parameterisation happens to be doing.
+      const speed = 4.2 * state.zoom * altView.charScale * (inp.sprint ? 2.6 : 1);
+      const dist = speed * dt;
+      if (Math.abs(inp.forward) > 1e-4 || Math.abs(inp.right) > 1e-4) {
+        walker.move(dist, inp.forward, inp.right);
+        altWalkPhase += (dist / (0.85 * state.zoom * altView.charScale)) * Math.PI;
+      }
+      const stance = placeAltHiker();
+      animateAltHiker(dt, Math.abs(inp.forward) + Math.abs(inp.right) > 1e-4);
+
+      const eye = 1.66 * state.zoom * altView.charScale;
+      if (altView.mode === MODE_FIRST) {
+        // Up is the surface normal, so the horizon tilts with the ground —
+        // which on a sphere is exactly right and on a Möbius strip is the
+        // whole point.
+        const q = new THREE.Quaternion().setFromRotationMatrix(
+          new THREE.Matrix4().makeBasis(stance.side, stance.up, stance.fwd.clone().negate()),
+        );
+        q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), altView.pitch));
+        camera.position.copy(stance.p).addScaledVector(stance.up, eye);
+        camera.quaternion.copy(q);
+      } else {
+        // Third person from a camera that holds a fixed height and circles the
+        // surface. Static in the sense that matters: it never rolls with the
+        // explorer, so their tumbling is visible as tumbling.
+        const d = altView.camDist || (altCam.dist * 0.55);
+        camera.position.set(
+          Math.sin(altView.camYaw) * d, altView.camHeight, Math.cos(altView.camYaw) * d,
+        );
+        camera.up.set(0, 1, 0);
+        camera.lookAt(stance.p);
+      }
+      camera.near = Math.max(1e-4, 0.02 * state.zoom * altView.charScale);
+      camera.far = Math.max(altCam.dist, altView.camDist) * 20 + state.worldSize * 8;
+    }
+
     camera.updateProjectionMatrix();
     if (sky) sky.position.copy(camera.position);
     updateHUD(null);
@@ -1325,6 +1696,7 @@ window.addEventListener('orientationchange', onResize);
 wireLanguage();
 wireUI();
 applyVocabulary();
+applyShape();
 applySurfaceKindUI();
 onResize();
 
