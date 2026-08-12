@@ -826,7 +826,11 @@ function toggleCheckbox(id) {
 
 canvas.addEventListener('mousedown', (e) => {
   if (e.button === 2) rightDown = true;
-  if (!pointerLocked) canvas.requestPointerLock();
+  // On a surface with no explorer placed yet, a left click means "stand here",
+  // not "give me the mouse". Taking the pointer as well would hide the cursor
+  // the moment you tried to aim the next one.
+  const placing = state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE;
+  if (!pointerLocked && !(placing && e.button === 0)) canvas.requestPointerLock();
 });
 window.addEventListener('mouseup', (e) => { if (e.button === 2) rightDown = false; });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -843,12 +847,21 @@ canvas.addEventListener('wheel', (e) => {
   const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   const steps = (e.deltaY * unit) / 500;
 
-  // Watching a walker on a torus from a fixed camera, the thing you need to
-  // zoom is the camera, not the walker. Everywhere else the wheel is the
-  // explorer's scale, as it is on the heightfield.
-  if (state.surfaceKind !== 'graph' && walker && altView.mode === MODE_THIRD) {
-    altView.camDist = Math.max(state.worldSize * 0.02,
-      Math.min(state.worldSize * 20, altView.camDist * Math.exp(steps * 1.1)));
+  // The wheel zooms whichever camera is on screen. Orbiting a torus, or
+  // watching a walker on one from a fixed camera, the thing that needs to move
+  // is the camera; only in first person — where the camera is the explorer's
+  // own eyes — does scale mean the explorer's size, as it does on a graph.
+  if (state.surfaceKind !== 'graph') {
+    const k = Math.exp(steps * 0.6);
+    if (walker && altView.mode === MODE_THIRD) {
+      altView.camDist = Math.max(state.worldSize * 0.02,
+        Math.min(state.worldSize * 20, altView.camDist * k));
+    } else if (altView.mode === MODE_DRONE) {
+      altCam.dist = Math.max(state.worldSize * 0.02,
+        Math.min(state.worldSize * 20, altCam.dist * k));
+    } else {
+      applyZoom(state.zoom * Math.pow(10, -steps * (e.ctrlKey ? 1.6 : 1)));
+    }
     return;
   }
   // Wheel down (positive deltaY) shrinks the explorer, which magnifies the

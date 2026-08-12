@@ -1,6 +1,17 @@
 /* Gradient Peaks — interface styling.
    Dark, low-contrast chrome so the terrain stays the bright thing on screen. */
 
+/*
+ * The `hidden` attribute is implemented by the browser as nothing more than
+ * `[hidden] { display: none }` in its own stylesheet, and any author rule that
+ * sets `display` outranks it. Several elements here are both toggled with
+ * `hidden` and given a display — the click-to-look overlay is `display: grid` —
+ * so while "hidden" they stayed laid out across the whole viewport, swallowing
+ * every click and every wheel event meant for the scene. One rule closes the
+ * whole class of bug, and it has to come first so nothing later outranks it.
+ */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #0d1117;
   --panel: rgba(17, 22, 30, 0.92);
@@ -232,6 +243,7 @@ button:disabled { opacity: .45; cursor: default; }
   position: fixed; inset: 0; z-index: 4; display: grid; place-items: center;
   background: rgba(6, 9, 14, .35); cursor: pointer;
 }
+
 .cc-inner {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   background: rgba(10, 14, 20, .82); border: 1px solid var(--line);
