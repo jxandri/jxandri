@@ -200,8 +200,8 @@
       <h2 data-i18n="sec.deriv">Derivatives</h2>
       <label class="check"><input id="t-disc" type="checkbox"><span><span data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
       <label class="range">
-        <span><span data-i18n="deriv.radius">Radius</span> <b id="lbl-rad">2 m</b></span>
-        <input id="in-rad" type="range" min="1" max="2" step="1" value="2">
+        <span><span data-i18n="deriv.radius">Radius</span> <b id="lbl-rad">3 m</b></span>
+        <input id="in-rad" type="range" min="0.5" max="12" step="0.5" value="3">
       </label>
       <p class="note" data-i18n="deriv.arcnote">The radius is arc length — the distance actually walked over the surface, not on the flat floor underneath. On a steep slope the patch therefore covers less of the (x, y) plane, and the rim is no longer a circle.</p>
       <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i><span data-i18n="deriv.dx">∂f/∂x arrow</span> <kbd>X</kbd></span></label>
@@ -223,10 +223,10 @@
       <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
       <label class="range">
         <span><span data-i18n="zoom.scale">Explorer scale</span> <b id="lbl-zoom">1 : 1</b></span>
-        <input id="in-zoom" type="range" min="0" max="4" step="0.01" value="0">
+        <input id="in-zoom" type="range" min="-1" max="4" step="0.01" value="0">
       </label>
       <div id="ruler"></div>
-      <p class="note" data-i18n="zoom.note">The dial only shrinks the explorer, never enlarges them. Turn on the tangent plane and slide it down: a differentiable surface becomes indistinguishable from its plane.</p>
+      <p class="note" data-i18n="zoom.note">Slide right and the explorer shrinks, down to 0.18 mm; slide left and they grow to ten times life size. The mouse wheel does the same thing, the way it zooms a map — a trackpad pinch works too. Turn on the tangent plane and slide right: a differentiable surface becomes indistinguishable from its plane.</p>
     </section>
 
     <section id="sec-opt">

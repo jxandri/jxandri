@@ -127,7 +127,7 @@ const state = {
   shadows: false,
 
   disc: false,
-  radius: 2,
+  radius: 3,
   showDx: false,
   showDy: false,
   showGrad: false,
@@ -609,6 +609,24 @@ canvas.addEventListener('mousedown', (e) => {
 window.addEventListener('mouseup', (e) => { if (e.button === 2) rightDown = false; });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
+/**
+ * The wheel drives the scale, the way it drives the zoom of a map.
+ *
+ * A trackpad pinch arrives as a wheel event with ctrlKey set and a much finer
+ * delta, and the three deltaMode units (pixels, lines, pages) differ by about
+ * an order of magnitude each, so normalise before using any of it.
+ */
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (state.surfaceKind !== 'graph' || !player) return;
+  const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+  const steps = (e.deltaY * unit) / 500;
+  // Wheel down (positive deltaY) shrinks the explorer, which magnifies the
+  // surface — the same direction as zooming out of a map does not apply here,
+  // so follow the pinch: apart means bigger explorer, closer look at nothing.
+  applyZoom(state.zoom * Math.pow(10, -steps * (e.ctrlKey ? 1.6 : 1)));
+}, { passive: false });
+
 $('click-catch').addEventListener('click', () => canvas.requestPointerLock());
 
 document.addEventListener('pointerlockchange', () => {
@@ -859,16 +877,12 @@ function wireUI() {
   });
 
   $('in-rad').addEventListener('input', (e) => {
-    state.radius = parseInt(e.target.value, 10);
+    state.radius = parseFloat(e.target.value);
     $('lbl-rad').textContent = `${state.radius} m`;
   });
 
   $('in-zoom').addEventListener('input', (e) => {
-    // The dial reads in decades of shrinkage and starts at zero, so the
-    // explorer can only ever get smaller — which is the whole point of it.
-    state.zoom = Math.pow(10, -parseFloat(e.target.value));
-    player.setZoom(state.zoom);
-    updateZoomLabels();
+    applyZoom(Math.pow(10, -parseFloat(e.target.value)));
   });
 
   bindCheck('t-opt', 'showOpt', () => withLoading(refreshOptimum));
@@ -969,24 +983,42 @@ function ensureDisc() {
   }
 }
 
+const ZOOM_MIN = 1e-4;   // explorer 0.18 mm tall
+const ZOOM_MAX = 10;     // explorer 18 m tall
+
 function updateZoomLabels() {
   const z = state.zoom;
   const decades = -Math.log10(z);
-  $('lbl-zoom').textContent = decades < 0.005 ? '1 : 1' : `1 : ${Math.round(1 / z).toLocaleString()}`;
-  $('r-zoom').textContent = decades < 0.005
+  // Below 1:1 the explorer shrinks and the ratio reads 1 : n; above it they
+  // grow and it reads n : 1, the way a map scale does in either direction.
+  $('lbl-zoom').textContent = Math.abs(decades) < 0.005
+    ? '1 : 1'
+    : decades > 0
+      ? `1 : ${Math.round(1 / z).toLocaleString()}`
+      : `${z >= 10 ? Math.round(z) : z.toPrecision(2)} : 1`;
+  $('r-zoom').textContent = Math.abs(decades) < 0.005
     ? t('hud.scale11')
     : t('hud.tall', { h: (1.8 * z).toPrecision(2) });
   updateRuler();
+}
+
+/** The one place the explorer's scale is set, whatever asked for it. */
+function applyZoom(z) {
+  state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  if (player) player.setZoom(state.zoom);
+  const dial = $('in-zoom');
+  dial.value = String(-Math.log10(state.zoom));
+  updateZoomLabels();
 }
 
 function updateRuler() {
   const el = $('ruler');
   el.innerHTML = '';
   const decades = -Math.log10(state.zoom);
-  for (let i = 0; i <= 4; i++) {
+  for (let i = -1; i <= 4; i++) {
     const s = document.createElement('span');
-    s.textContent = i === 0 ? '1.8 m' : `10^-${i}`;
-    // The dial is continuous now, so highlight the decade it is nearest to.
+    s.textContent = i === 0 ? '1.8 m' : i < 0 ? '×10' : `10^-${i}`;
+    // The dial is continuous, so highlight the decade it is nearest to.
     if (Math.abs(decades - i) < 0.5) s.className = 'on';
     el.appendChild(s);
   }
@@ -1123,7 +1155,7 @@ function animate() {
 
   if (state.tangent && isFinite(player.height())) {
     tangentPlane.update(player.x, player.y, state.radius * player.zoom,
-      Math.max(player.extraLift, surfaceDetail.topLift * 1.6));
+      Math.max(player.extraLift, surfaceDetail.topLift * 2.6));
   } else {
     tangentPlane.setVisible(false);
   }

@@ -92,7 +92,7 @@ const STRINGS = {
 
     'sec.zoom': 'Tangent plane & scale',
     'zoom.scale': 'Explorer scale',
-    'zoom.note': 'The dial only shrinks the explorer, never enlarges them. Turn on the tangent plane and slide it down: a differentiable surface becomes indistinguishable from its plane.',
+    'zoom.note': 'Slide right and the explorer shrinks, down to 0.18 mm; slide left and they grow to ten times life size. The mouse wheel does the same thing, the way it zooms a map — a trackpad pinch works too. Turn on the tangent plane and slide right: a differentiable surface becomes indistinguishable from its plane.',
 
     'sec.opt': 'Optimisation',
     'opt.show': 'Show optimum',
@@ -242,7 +242,7 @@ const STRINGS = {
 
     'sec.zoom': 'Plano tangente y escala',
     'zoom.scale': 'Escala del explorador',
-    'zoom.note': 'El dial solo reduce al explorador, nunca lo agranda. Active el plano tangente y bájelo: una superficie diferenciable se vuelve indistinguible de su plano.',
+    'zoom.note': 'Deslice a la derecha y el explorador se encoge, hasta 0,18 mm; deslice a la izquierda y crece hasta diez veces su tamaño natural. La rueda del ratón hace lo mismo, como al acercar un mapa, y el gesto de pellizco del trackpad también. Active el plano tangente y deslice a la derecha: una superficie diferenciable se vuelve indistinguible de su plano.',
 
     'sec.opt': 'Optimización',
     'opt.show': 'Mostrar el óptimo',

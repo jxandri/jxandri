@@ -632,7 +632,7 @@ export class DerivativeGizmo {
   update(cx, cy, opts) {
     const field = this.field;
     const L = opts.radiusMetres;                       // arc length, in metres
-    const width = L * 0.045;
+    const width = L * 0.020;                           // shaft half-width
 
     // A representative math radius, only for sizing the lift and the sagitta
     // probe. Each direction gets its own exact radius below.
@@ -644,7 +644,7 @@ export class DerivativeGizmo {
     // surface themselves (the clearance the caller hands us).
     const sag = field.chordSag(cx, cy, rTypical, this.rings, 8);
     const lift = Math.max(field.worldSize * 1.5e-4, L * 0.02,
-      sag * 1.35, (opts.clearance || 0) * 1.6);
+      sag * 1.35, (opts.clearance || 0) * 2.6);
     this.lift = lift;
 
     this._updateDisc(cx, cy, L, lift);
@@ -701,10 +701,13 @@ export class DerivativeGizmo {
   _arm(arrow, cx, cy, ux, uy, L, width, lift, rKnown) {
     const field = this.field;
     const r = rKnown ?? field.arcRadius(cx, cy, ux, uy, L);
-    const headWidth = width * 2.7;
-    // A head proportioned to its own width, not to the arrow's length: that is
-    // what stops a short arrow ending in a bulb and a long one in a pinprick.
-    const headLen = Math.min(headWidth * 1.9, L * 0.4);
+    // Draughtsman's proportions: the head is a little over twice the width of
+    // the shaft and about as long again, so it reads as a barb on a long thin
+    // line rather than as a dart with a stub behind it. Tied to the shaft's own
+    // width, not to the arrow's length, so a 1 m arrow and a 10 m arrow look
+    // like the same arrow at different sizes.
+    const headWidth = width * 2.2;
+    const headLen = Math.min(headWidth * 1.5, L * 0.14);
     const rShaft = field.arcRadius(cx, cy, ux, uy, L - headLen);
     arrow.update(field, cx, cy, ux, uy, r, Math.min(rShaft, r), width, headWidth, lift);
     return r;
