@@ -1683,12 +1683,24 @@ function renderTopDown(rect) {
   const w = Math.round(rect.width * dpr);
   const h = Math.round(rect.height * dpr);
 
+  // Fog is calibrated for a camera standing on the terrain, and this one is
+  // four world-widths above it: leaving it on washes the map to nearly the
+  // colour of the sky. The sky sphere follows the main camera, so it has to be
+  // brought along too or the pass looks through the back of it.
+  const fog = scene.fog;
+  const skyAt = sky ? sky.position.clone() : null;
+  scene.fog = null;
+  if (sky) sky.position.copy(topCam.position);
+
   renderer.setScissorTest(true);
   renderer.setViewport(x, y, w, h);
   renderer.setScissor(x, y, w, h);
   renderer.render(scene, topCam);
   renderer.setScissorTest(false);
   renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
+
+  scene.fog = fog;
+  if (sky && skyAt) sky.position.copy(skyAt);
 }
 
 /* ------------------------------------------------------------- the loop */
