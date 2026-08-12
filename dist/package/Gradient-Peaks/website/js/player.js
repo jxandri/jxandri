@@ -219,7 +219,7 @@ const STYLES = {
 export const CHARACTER_STYLES = Object.keys(STYLES);
 
 /** Build a character of the given style, 1.8 m tall with its origin at the feet. */
-function buildCharacter(style) {
+export function buildCharacter(style) {
   const root = new THREE.Group();
   const make = STYLES[style] || STYLES.explorer;
   const parts = make(root);

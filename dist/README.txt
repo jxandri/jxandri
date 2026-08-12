@@ -75,6 +75,29 @@ QUICK CONTROLS
   On a phone: drag the LEFT half to walk, the RIGHT half to look.
 
 
+THE LAB — A SECOND LAYOUT
+-------------------------
+
+  Inside website/ there is also lab.html. It is the same program
+  with a narrower control rail, a full-screen button, and a panel in
+  the corner showing the flat map your textbook draws: the domain
+  from above, the same level curves in the same colours, and the
+  explorer as a dot. Walk in the 3D view and the dot walks on the
+  map. Part 10 of the guide explains it.
+
+  You can also switch between the two from the link at the bottom
+  of the Help section in either one.
+
+
+SURFACES THAT ARE NOT GRAPHS
+----------------------------
+
+  The "Kind of surface" menu also does implicit surfaces
+  F(x,y,z) = 0 and parametric ones r(u,v), with nine named ones
+  ready to go: sphere, torus, pseudosphere, hyperboloid, catenoid,
+  helicoid, Moebius strip, Klein bottle and cross-cap. Click the
+  surface to put the explorer on it and walk. Part 8 of the guide.
+
 REQUIREMENTS
 ------------
 

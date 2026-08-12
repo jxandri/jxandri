@@ -87,6 +87,31 @@ CONTROLES RAPIDOS
   mitad DERECHA para mirar.
 
 
+EL LABORATORIO — UNA SEGUNDA PRESENTACION
+-----------------------------------------
+
+  Dentro de website/ tambien esta lab.html. Es el mismo programa
+  con una barra de controles mas angosta, un boton de pantalla
+  completa y un panel en la esquina que muestra el mapa plano que
+  dibuja su libro: el dominio visto desde arriba, las mismas curvas
+  de nivel en los mismos colores y el explorador como un punto.
+  Camine en la vista 3D y el punto camina sobre el mapa. La parte 10
+  de la guia lo explica.
+
+  Tambien puede pasar de una a otra por el enlace del final de la
+  seccion de Ayuda en cualquiera de las dos.
+
+
+SUPERFICIES QUE NO SON GRAFICAS
+-------------------------------
+
+  El menu "Tipo de superficie" tambien hace superficies implicitas
+  F(x,y,z) = 0 y parametricas r(u,v), con nueve con nombre listas
+  para usar: esfera, toro, pseudoesfera, hiperboloide, catenoide,
+  helicoide, banda de Moebius, botella de Klein y cross-cap. Haga
+  clic sobre la superficie para poner al explorador encima y camine.
+  Parte 8 de la guia.
+
 REQUISITOS
 ----------
 

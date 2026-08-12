@@ -40,6 +40,12 @@
       <span class="desc">Turning constraints into a country with borders.</span></li>
     <li>Ten classroom activities
       <span class="desc">One prepared lesson for each feature of the program.</span></li>
+    <li>Surfaces that are not graphs
+      <span class="desc">Spheres, tori and Möbius strips — and how to walk on them.</span></li>
+    <li>The consumer problem
+      <span class="desc">The same mathematics, in the vocabulary of demand theory.</span></li>
+    <li>The Lab — the flat map beside the scene
+      <span class="desc">The textbook picture and the solid one, driven by the same state.</span></li>
     <li>Giving it to your students
       <span class="desc">Four ways to distribute it, from easiest to most permanent.</span></li>
     <li>Installing it as an app
@@ -76,8 +82,8 @@ these items:</p>
   <tr>
     <td class="k"><code>website/</code></td>
     <td>A folder holding the same program split into its separate parts. You only need this
-        if you want to <em>publish it on the internet</em> for your students (Part 8) or install
-        it as an app (Part 9).</td>
+        if you want to <em>publish it on the internet</em> for your students (Part 11) or install
+        it as an app (Part 12).</td>
   </tr>
   <tr>
     <td class="k"><code>README.txt</code></td>
@@ -113,7 +119,7 @@ The program is not "downloading" anything — it is drawing the mountain from th
   <p>The program follows your browser: if that is set to Spanish, it opens in Spanish. You can
   switch at any time with the <strong>English / Español</strong> selector in the top corner of
   the control panel, without losing whatever you are in the middle of.</p>
-  <p>If you publish it to a web address (Part 8), adding <code>?lang=es</code> to the end of the
+  <p>If you publish it to a web address (Part 11), adding <code>?lang=es</code> to the end of the
   link makes it open in Spanish for your students whatever their browser is set to — and
   <code>?lang=en</code> forces English. <b>A Spanish edition of this guide is included as
   <code>Gradient-Peaks-Guia.pdf</code>.</b></p>
@@ -135,7 +141,7 @@ The program is not "downloading" anything — it is drawing the mountain from th
   own separate program files. The single <code>Gradient-Peaks.html</code> avoids the problem by
   having everything already inside it.</p>
   <p>Use <code>Gradient-Peaks.html</code> on your own machine. Use the <code>website/</code>
-  folder only when you publish it to a web address (Part 8).</p>
+  folder only when you publish it to a web address (Part 11).</p>
 </div>
 
 <!-- =========================================================== PART 2 -->
@@ -157,7 +163,7 @@ every browser has had since about 2013.</p>
 
 <h3>Checking in ten seconds</h3>
 <p>Open <code>Gradient-Peaks.html</code>. If you see a mountain, you are done — that
-<em>is</em> the test. If you see a blank or black screen instead, go to Part 10.</p>
+<em>is</em> the test. If you see a blank or black screen instead, go to Part 13.</p>
 
 <div class="tip">
   <span class="label">A note about school and university computers</span>
@@ -660,7 +666,171 @@ equals the price ratio, and both are visible in the same frame: the tangent to t
 the frontier wall lie flat against each other.</p>
 
 <!-- =========================================================== PART 8 -->
-<h1 class="part"><span class="num">8</span>Giving it to your students</h1>
+<h1 class="part"><span class="num">8</span>Surfaces that are not graphs</h1>
+
+<p>Everything so far has been a <em>graph</em>: one height <code>z</code> above every point
+<code>(x, y)</code>. That is a strong restriction, and most of the surfaces a geometry course
+cares about break it. A sphere has two heights above the same point. A torus has four. A Möbius
+strip has no consistent notion of "up" at all.</p>
+
+<p>The <strong>Kind of surface</strong> menu at the top of the panel offers two other ways of
+writing one down.</p>
+
+<h2>Implicit — F(x, y, z) = 0</h2>
+<p>Every point of space where one equation is satisfied. <code>x^2+y^2+z^2-1</code> is the unit
+sphere; <code>(sqrt(x^2+y^2)-1)^2+z^2-0.16</code> is a torus. There is no height function, so no
+level curves and no <code>∂f/∂x</code> — but there <em>is</em> a normal, namely <code>∇F</code>,
+and where the normal exists you can stand.</p>
+
+<h2>Parametric — r(u, v)</h2>
+<p>A sheet swept out by two parameters. The <strong>Named surface</strong> menu fills in nine of
+them with dials for their own parameters — sphere, torus, pseudosphere, hyperboloid of one sheet,
+catenoid, helicoid, Möbius strip, Klein bottle and cross-cap. Choosing one writes its formulas
+into the same <code>X(u,v)</code>, <code>Y(u,v)</code>, <code>Z(u,v)</code> boxes you could have
+typed them into, so a named surface is a worked example rather than a hidden mode. Edit them
+afterwards and see what happens.</p>
+
+<h2>Standing on one</h2>
+<p><strong>Click the surface.</strong> That is the whole interface. An implicit surface has no
+natural starting point, and a parametric one's parameter origin is an artefact of how somebody
+wrote it down, so the honest thing is to let you choose. The explorer lands exactly where you
+clicked and the view drops to third person.</p>
+
+<p>Then <kbd>W</kbd> <kbd>S</kbd> walk, <kbd>A</kbd> <kbd>D</kbd> step sideways, the mouse turns,
+and the wheel pulls the camera back. <kbd>1</kbd> is the explorer's own eyes, <kbd>2</kbd> the
+camera watching them, <kbd>3</kbd> the drone.</p>
+
+<p><strong>Up is the normal to the tangent plane.</strong> That single choice is what makes a
+sphere feel like a planet rather than a ball you are sliding around on: the horizon tilts with the
+ground, because on a sphere it does. <strong>Which way is up</strong> can pin it to a world axis
+instead, for a student who finds a tumbling horizon harder to read than a fixed one.</p>
+
+<div class="warn">
+  <span class="label">Walking is done properly, and that costs something worth knowing</span>
+  <p>A step of a given length in the parameters is <em>not</em> a step of a given length on the
+  surface — near the pole of a sphere, a step in longitude covers almost no ground. Moving at a
+  constant speed therefore means solving the first fundamental form
+  <code>[E F; F G](du,dv)ᵀ = (r<sub>u</sub>·w, r<sub>v</sub>·w)ᵀ</code> at every step. On an
+  implicit surface there is no chart at all: the step is taken in the tangent plane and then
+  pulled back onto <code>F = 0</code> by Newton's method along <code>∇F</code>. Neither is
+  expensive, and both are why the explorer stays on the surface instead of drifting off it.</p>
+</div>
+
+<h2>Inside, outside, and one-sided surfaces</h2>
+<p><strong>Walk on the inside</strong> flips which side of the surface the explorer stands on.
+On a sphere or a torus that is a real choice: the surface has two sides, and you can be on either.
+The note under the menu says which kind of surface you have picked.</p>
+
+<p>On a <strong>Möbius strip</strong> the toggle is greyed out, and the reason is the lesson. The
+strip has only one side. Walk one full lap and the explorer comes back <em>upside down</em>,
+standing on what you would have called the other face, without ever having crossed an edge. That
+is what non-orientable means, and it is much harder to disbelieve when you have just walked it.</p>
+
+<p>The <strong>Klein bottle</strong> and the <strong>cross-cap</strong> carry a second warning:
+they are three-dimensional <em>immersions</em>. The surface passes through itself, because the
+true embedding needs a fourth dimension to get out of the way. Walking through the intersection is
+the price of drawing it in a room.</p>
+
+<h2>Activity — one lap of a Möbius strip</h2>
+<p><strong>Set up:</strong> Parametric → Möbius strip. Click the middle of the band. Third person.</p>
+<p><strong>Do:</strong> Note which way the explorer's head points relative to the camera. Hold
+<kbd>W</kbd> and walk all the way around the band, watching the readout — the <code>u</code>
+figure climbs to 2π and wraps back to zero. Look at the explorer.</p>
+<p><strong>The point:</strong> nothing was flipped, nothing crossed an edge, and the explorer is
+upside down. "This surface has one side" stops being a phrase to memorise.</p>
+
+<!-- =========================================================== PART 9 -->
+<h1 class="part"><span class="num">9</span>The consumer problem</h1>
+
+<p>Tick <strong>Consumer problem</strong> at the top of the panel and the program starts speaking
+economics. Nothing about the mathematics changes — that is exactly the point being made — but the
+words on screen become the ones a microeconomics course uses.</p>
+
+<table class="compact">
+  <tr><th style="width:52mm">In general</th><th>In the consumer problem</th></tr>
+  <tr><td>the function <code>f(x, y)</code></td><td>the utility function <code>u(x, y)</code></td></tr>
+  <tr><td>the feasible set</td><td>the budget set</td></tr>
+  <tr><td>level curves</td><td>indifference curves</td></tr>
+  <tr><td><code>RMS</code> in the readout</td><td><code>MRS</code>, the marginal rate of substitution</td></tr>
+  <tr><td>the constrained maximum</td><td>the consumer's optimal bundle</td></tr>
+</table>
+
+<h2>The dials</h2>
+<p><strong>Utility function</strong> — Cobb–Douglas, CES, perfect substitutes, or quasi-linear.
+<strong>Share a</strong> is the exponent, the weight, or the elasticity parameter, depending which
+you chose; the label changes to say which. <strong>price of x</strong>, <strong>price of y</strong>
+and <strong>income</strong> are what they say.</p>
+
+<p>Changing any of them rewrites two boxes you can see: the utility goes into
+<code>f(x, y) =</code> and the budget set into the constraints box as
+<code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; p<sub>x</sub>*x+p<sub>y</sub>*y&lt;=m</code>. The
+domain is reframed on the budget set so the frontier is visible rather than jammed against the
+edge of the world. Nothing is hidden: a student can read the formula the dials produced, change it
+by hand, and see that "the consumer problem" is one particular <code>f</code> over one particular
+feasible set.</p>
+
+<h2>Activity — tangency, walked</h2>
+<p><strong>Set up:</strong> Consumer problem on, Cobb–Douglas, <code>a = 0.5</code>,
+<code>p<sub>x</sub> = p<sub>y</sub> = 1</code>, <code>m = 2</code>. Turn on
+<strong>Show optimum</strong>, <strong>Indifference curve you are standing on</strong> and its
+<strong>tangent line</strong>.</p>
+<p><strong>Do:</strong> Read the report: the maximum is <code>1.0000</code> at
+<code>(1.0000, 1.0000)</code>, on the boundary. Teleport there. Read <code>MRS</code>: it is
+<code>1.000</code>, and so is <code>p<sub>x</sub>/p<sub>y</sub></code>. Look at the tangent to the
+indifference curve and at the budget wall: they lie flat against each other.</p>
+<p><strong>Then:</strong> set <code>p<sub>x</sub> = 3</code>. The optimum moves to
+<code>(0.333, 1.000)</code> — the textbook <code>m/2p<sub>x</sub></code>, <code>m/2p<sub>y</sub></code>
+— and at that bundle <code>MRS</code> is <code>3</code>, the new price ratio. Ask the class to
+predict the next one before you turn the dial.</p>
+<p><strong>The point:</strong> "MRS equals the price ratio at the optimum" is usually a line of
+algebra. Here it is a picture of two lines lying on top of each other, at a spot the student
+walked to.</p>
+
+<!-- =========================================================== PART 10 -->
+<h1 class="part"><span class="num">10</span>The Lab — the flat map beside the scene</h1>
+
+<p>There is a second version of the program, <code>lab.html</code>, reached from the link at the
+bottom of the Help section (and back again from the same place). It is the same program, with the
+same controls doing the same things. Two differences.</p>
+
+<p><strong>The controls get out of the way.</strong> The rail is narrower and quieter, the
+<kbd>Tab</kbd> key hides it entirely, and the <kbd>⛶</kbd> button beside the language toggle goes
+full screen so the browser's own tabs and address bar disappear too. What is left is the surface.</p>
+
+<p><strong>A panel in the corner shows the picture your textbook draws.</strong> The domain seen
+from above, with the same level curves in the same colours, the same tangent line in the same
+magenta, and the explorer as an exaggerated dot. Everything on it is the same state as the scene
+behind it, so walking in the 3D view walks the dot on the map.</p>
+
+<h2>What the panel can show</h2>
+<p><strong>Heat map on the level-curve ramp</strong> — the default. The background is coloured by
+the same ten-colour ramp as the contours and the surface, so a colour means the same height in all
+three places.</p>
+<p><strong>Classical heat map</strong> — blue through green to red, the palette a student will
+have met on every other heat map. Deliberately different, so the two cannot be confused.</p>
+<p><strong>Looking straight down at the surface</strong> — not a drawing at all, but the scene
+itself rendered from directly overhead into the same rectangle. Trees, water, frontier walls and
+the explorer, seen as a map. This is the honest version of "project the surface onto
+<code>z = 0</code>"; the drawn modes are the idealised one.</p>
+<p><strong>Nothing</strong> — hide the panel.</p>
+
+<p><strong>Panel opacity</strong> and <strong>Panel size</strong> do what they say. The default is
+a third of the window's height by a fifth of its width. The panel never intercepts a click: it is
+a readout, not a control, and the mouse goes straight through it to the scene.</p>
+
+<h2>Activity — the same curve, twice</h2>
+<p><strong>Set up:</strong> the Lab, any function with real relief, level curves on, the curve
+under your feet on, third person.</p>
+<p><strong>Do:</strong> Walk along the contour under the explorer's feet, in the 3D view, staying
+at the same height. Watch the dot on the panel: it traces a closed loop, and <code>z</code> in the
+readout does not move.</p>
+<p><strong>Then:</strong> walk straight up the gradient instead, crossing contour after contour.
+On the panel the dot cuts across the rings.</p>
+<p><strong>The point:</strong> the flat picture in the textbook and the hillside under your feet
+are the same object. Most students are told this. Here they can watch it.</p>
+
+<!-- =========================================================== PART 11 -->
+<h1 class="part"><span class="num">11</span>Giving it to your students</h1>
 
 <p>Four ways, easiest first. Option A needs nothing at all; option D gives you a permanent web
 address. All four are free.</p>
@@ -714,8 +884,8 @@ lives in a GitHub repository:</p>
   <code>Gradient-Peaks.html</code> instead. Both contain the same program.</p>
 </div>
 
-<!-- =========================================================== PART 9 -->
-<h1 class="part"><span class="num">9</span>Installing it as an app</h1>
+<!-- =========================================================== PART 12 -->
+<h1 class="part"><span class="num">12</span>Installing it as an app</h1>
 
 <p>Once the program is at a web address (options C or D above), it can be installed like an app —
 its own icon, its own window, no browser bar, and it works offline afterwards. There is no app store
@@ -742,7 +912,7 @@ involved, no payment, and no developer account.</p>
 with no signal.</p>
 
 <!-- ========================================================== PART 10 -->
-<h1 class="part"><span class="num">10</span>When something goes wrong</h1>
+<h1 class="part"><span class="num">13</span>When something goes wrong</h1>
 
 <table>
   <tr><th style="width:44mm">What you see</th><th style="width:48mm">Why</th><th>What to do</th></tr>
@@ -774,7 +944,7 @@ with no signal.</p>
 
   <tr><td><strong>Everything is jerky</strong></td>
       <td>The computer's graphics are struggling.</td>
-      <td>Part 11, in the order given there.</td></tr>
+      <td>Part 14, in the order given there.</td></tr>
 
   <tr><td><strong>The explorer will not move</strong></td>
       <td><strong>Directional derivative</strong> is on. It freezes the explorer on purpose.</td>
@@ -791,7 +961,7 @@ with no signal.</p>
 </table>
 
 <!-- ========================================================== PART 11 -->
-<h1 class="part"><span class="num">11</span>Making it run faster on an old computer</h1>
+<h1 class="part"><span class="num">14</span>Making it run faster on an old computer</h1>
 
 <p>Change these in order and stop as soon as it feels smooth. The first two cost you almost nothing.</p>
 
@@ -814,7 +984,7 @@ with no signal.</p>
 </div>
 
 <!-- ========================================================== PART 12 -->
-<h1 class="part"><span class="num">12</span>What is inside, and licensing</h1>
+<h1 class="part"><span class="num">15</span>What is inside, and licensing</h1>
 
 <p>For colleagues and for IT departments who want to know what they are being asked to allow.</p>
 

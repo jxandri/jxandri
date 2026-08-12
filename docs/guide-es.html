@@ -40,6 +40,12 @@
       <span class="desc">Convertir restricciones en un país con fronteras.</span></li>
     <li>Diez actividades para la clase
       <span class="desc">Una lección preparada para cada función del programa.</span></li>
+    <li>Superficies que no son gráficas
+      <span class="desc">Esferas, toros y bandas de Möbius, y cómo caminar sobre ellas.</span></li>
+    <li>El problema del consumidor
+      <span class="desc">La misma matemática, en el vocabulario de la teoría de la demanda.</span></li>
+    <li>El Laboratorio — el mapa plano junto a la escena
+      <span class="desc">La figura del libro y la sólida, movidas por el mismo estado.</span></li>
     <li>Cómo entregárselo a sus estudiantes
       <span class="desc">Cuatro formas de distribuirlo, de la más fácil a la más permanente.</span></li>
     <li>Instalarlo como aplicación
@@ -76,8 +82,8 @@ Dentro encontrará esto:</p>
   <tr>
     <td class="k"><code>website/</code></td>
     <td>Una carpeta con el mismo programa dividido en sus partes. Solo la necesita si quiere
-        <em>publicarlo en internet</em> para sus estudiantes (parte 8) o instalarlo como
-        aplicación (parte 9).</td>
+        <em>publicarlo en internet</em> para sus estudiantes (parte 11) o instalarlo como
+        aplicación (parte 12).</td>
   </tr>
   <tr>
     <td class="k"><code>LEEME.txt</code></td>
@@ -114,7 +120,7 @@ El programa no está «descargando» nada: está dibujando la montaña a partir 
   automáticamente. También puede cambiarlo en cualquier momento con el selector
   <strong>Español / English</strong> en la esquina superior del panel, sin perder nada de lo
   que esté haciendo.</p>
-  <p>Y si publica el programa en una dirección web (parte 8), puede añadirle
+  <p>Y si publica el programa en una dirección web (parte 11), puede añadirle
   <code>?lang=es</code> al final del enlace para que a sus estudiantes les abra en español
   sin importar cómo tengan configurado el navegador.</p>
 </div>
@@ -135,7 +141,7 @@ El programa no está «descargando» nada: está dibujando la montaña a partir 
   su disco duro cargue sus propios archivos de programa por separado. El archivo único
   <code>Gradient-Peaks.html</code> evita el problema porque ya lo lleva todo dentro.</p>
   <p>En su propio computador use <code>Gradient-Peaks.html</code>. Use la carpeta
-  <code>website/</code> solo cuando lo publique en una dirección web (parte 8).</p>
+  <code>website/</code> solo cuando lo publique en una dirección web (parte 11).</p>
 </div>
 
 <!-- =========================================================== PARTE 2 -->
@@ -157,7 +163,7 @@ que todos los navegadores tienen desde alrededor de 2013.</p>
 
 <h3>Comprobarlo en diez segundos</h3>
 <p>Abra <code>Gradient-Peaks.html</code>. Si ve una montaña, ya está — <em>esa</em> es la prueba.
-Si en cambio ve una pantalla en blanco o negra, vaya a la parte 10.</p>
+Si en cambio ve una pantalla en blanco o negra, vaya a la parte 13.</p>
 
 <div class="tip">
   <span class="label">Una nota sobre los computadores de colegios y universidades</span>
@@ -693,7 +699,177 @@ número iguala la razón de precios, y ambas cosas se ven en el mismo cuadro: la
 de nivel y el muro de la frontera quedan pegados uno contra otro.</p>
 
 <!-- =========================================================== PARTE 8 -->
-<h1 class="part"><span class="num">8</span>Cómo entregárselo a sus estudiantes</h1>
+<h1 class="part"><span class="num">8</span>Superficies que no son gráficas</h1>
+
+<p>Todo lo anterior ha sido una <em>gráfica</em>: una altura <code>z</code> sobre cada punto
+<code>(x, y)</code>. Es una restricción fuerte, y la rompen casi todas las superficies que le
+importan a un curso de geometría. Una esfera tiene dos alturas sobre el mismo punto. Un toro,
+cuatro. Una banda de Möbius no tiene siquiera una noción coherente de «arriba».</p>
+
+<p>El menú <strong>Tipo de superficie</strong>, al comienzo del panel, ofrece otras dos maneras de
+escribir una.</p>
+
+<h2>Implícita — F(x, y, z) = 0</h2>
+<p>Todos los puntos del espacio donde se satisface una ecuación. <code>x^2+y^2+z^2-1</code> es la
+esfera unitaria; <code>(sqrt(x^2+y^2)-1)^2+z^2-0.16</code> es un toro. No hay función de altura,
+así que no hay curvas de nivel ni <code>∂f/∂x</code>; pero <em>sí</em> hay una normal, a saber
+<code>∇F</code>, y donde hay normal se puede estar de pie.</p>
+
+<h2>Paramétrica — r(u, v)</h2>
+<p>Una hoja barrida por dos parámetros. El menú <strong>Superficie con nombre</strong> completa
+nueve de ellas con diales para sus propios parámetros: esfera, toro, pseudoesfera, hiperboloide de
+una hoja, catenoide, helicoide, banda de Möbius, botella de Klein y cross-cap. Elegir una escribe
+sus fórmulas en las mismas cajas <code>X(u,v)</code>, <code>Y(u,v)</code>, <code>Z(u,v)</code> en
+las que usted podría haberlas escrito, de modo que una superficie con nombre es un ejemplo
+resuelto y no un modo oculto. Modifíquelas después y vea qué pasa.</p>
+
+<h2>Pararse sobre ella</h2>
+<p><strong>Haga clic sobre la superficie.</strong> Esa es toda la interfaz. Una superficie
+implícita no tiene un punto de partida natural, y el origen de parámetros de una paramétrica es un
+artefacto de cómo alguien la escribió, así que lo honesto es dejarlo elegir a usted. El explorador
+aterriza exactamente donde hizo clic y la vista pasa a tercera persona.</p>
+
+<p>Después <kbd>W</kbd> <kbd>S</kbd> caminan, <kbd>A</kbd> <kbd>D</kbd> se desplazan de lado, el
+ratón gira y la rueda aleja la cámara. <kbd>1</kbd> son los ojos del explorador, <kbd>2</kbd> la
+cámara que lo mira, <kbd>3</kbd> el dron.</p>
+
+<p><strong>Arriba es la normal al plano tangente.</strong> Esa sola decisión es lo que hace que
+una esfera se sienta como un planeta y no como una pelota por la que uno resbala: el horizonte se
+inclina con el suelo, porque en una esfera así ocurre. <strong>Hacia dónde queda arriba</strong>
+permite fijarlo a un eje del mundo, para quien encuentre más difícil de leer un horizonte que da
+vueltas que uno fijo.</p>
+
+<div class="warn">
+  <span class="label">Caminar está hecho como corresponde, y eso tiene un costo que vale la pena conocer</span>
+  <p>Un paso de longitud dada en los parámetros <em>no</em> es un paso de longitud dada sobre la
+  superficie: cerca del polo de una esfera, un paso en longitud recorre casi nada de terreno.
+  Moverse a velocidad constante exige entonces resolver la primera forma fundamental
+  <code>[E F; F G](du,dv)ᵀ = (r<sub>u</sub>·w, r<sub>v</sub>·w)ᵀ</code> en cada paso. En una
+  superficie implícita no hay carta alguna: el paso se da en el plano tangente y luego se devuelve
+  a <code>F = 0</code> por el método de Newton a lo largo de <code>∇F</code>. Ninguno de los dos
+  es caro, y ambos son la razón de que el explorador se quede sobre la superficie en vez de irse
+  apartando de ella.</p>
+</div>
+
+<h2>Dentro, fuera y superficies de una sola cara</h2>
+<p><strong>Caminar por dentro</strong> cambia la cara de la superficie sobre la que se para el
+explorador. En una esfera o un toro esa es una elección real: la superficie tiene dos caras y se
+puede estar en cualquiera. La nota bajo el menú dice qué clase de superficie eligió.</p>
+
+<p>En una <strong>banda de Möbius</strong> la casilla queda deshabilitada, y la razón es la
+lección. La banda tiene una sola cara. Dé una vuelta completa y el explorador vuelve <em>de
+cabeza</em>, parado sobre lo que usted habría llamado la otra cara, sin haber cruzado ningún
+borde. Eso es ser no orientable, y cuesta mucho más no creerlo cuando uno acaba de caminarlo.</p>
+
+<p>La <strong>botella de Klein</strong> y el <strong>cross-cap</strong> traen una segunda
+advertencia: son <em>inmersiones</em> tridimensionales. La superficie se atraviesa a sí misma
+porque el encaje verdadero necesita una cuarta dimensión para quitarse de en medio. Caminar a
+través de la intersección es el precio de dibujarla en una sala.</p>
+
+<h2>Actividad — una vuelta a la banda de Möbius</h2>
+<p><strong>Prepare:</strong> Paramétrica → Banda de Möbius. Haga clic en el medio de la cinta.
+Tercera persona.</p>
+<p><strong>Haga:</strong> Fíjese hacia dónde apunta la cabeza del explorador respecto de la
+cámara. Mantenga <kbd>W</kbd> y recorra toda la banda mirando la lectura: la cifra <code>u</code>
+sube hasta 2π y vuelve a cero. Mire al explorador.</p>
+<p><strong>El punto:</strong> nada se dio vuelta, nada cruzó un borde, y el explorador está de
+cabeza. «Esta superficie tiene una sola cara» deja de ser una frase que memorizar.</p>
+
+<!-- =========================================================== PARTE 9 -->
+<h1 class="part"><span class="num">9</span>El problema del consumidor</h1>
+
+<p>Marque <strong>Problema del consumidor</strong> al comienzo del panel y el programa empieza a
+hablar en economía. Nada de la matemática cambia —eso es justamente lo que se quiere mostrar—,
+pero las palabras en pantalla pasan a ser las que usa un curso de microeconomía.</p>
+
+<table class="compact">
+  <tr><th style="width:52mm">En general</th><th>En el problema del consumidor</th></tr>
+  <tr><td>la función <code>f(x, y)</code></td><td>la función de utilidad <code>u(x, y)</code></td></tr>
+  <tr><td>el conjunto factible</td><td>el conjunto presupuestario</td></tr>
+  <tr><td>curvas de nivel</td><td>curvas de indiferencia</td></tr>
+  <tr><td><code>RMS</code> en la lectura</td><td><code>TMS</code>, la tasa marginal de sustitución</td></tr>
+  <tr><td>el máximo con restricciones</td><td>la canasta óptima del consumidor</td></tr>
+</table>
+
+<h2>Los diales</h2>
+<p><strong>Función de utilidad</strong> — Cobb–Douglas, CES, sustitutos perfectos o cuasilineal.
+<strong>Participación a</strong> es el exponente, el peso o el parámetro de elasticidad según cuál
+haya elegido; la etiqueta cambia para decir cuál. <strong>precio de x</strong>, <strong>precio de
+y</strong> e <strong>ingreso</strong> son lo que dicen.</p>
+
+<p>Cambiar cualquiera de ellos reescribe dos cajas que usted puede ver: la utilidad va a
+<code>f(x, y) =</code> y el conjunto presupuestario a la caja de restricciones como
+<code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; p<sub>x</sub>*x+p<sub>y</sub>*y&lt;=m</code>. El
+dominio se reencuadra sobre el conjunto presupuestario para que la frontera se vea en vez de
+quedar pegada al borde del mundo. No hay nada escondido: el estudiante puede leer la fórmula que
+produjeron los diales, cambiarla a mano y ver que «el problema del consumidor» es una
+<code>f</code> particular sobre un conjunto factible particular.</p>
+
+<h2>Actividad — la tangencia, caminada</h2>
+<p><strong>Prepare:</strong> Problema del consumidor activado, Cobb–Douglas, <code>a = 0,5</code>,
+<code>p<sub>x</sub> = p<sub>y</sub> = 1</code>, <code>m = 2</code>. Active <strong>Mostrar el
+óptimo</strong>, <strong>Curva de indiferencia sobre la que está parado</strong> y su
+<strong>recta tangente</strong>.</p>
+<p><strong>Haga:</strong> Lea el informe: el máximo es <code>1,0000</code> en
+<code>(1,0000, 1,0000)</code>, en la frontera. Teletranspórtese allí. Lea <code>TMS</code>: vale
+<code>1,000</code>, y también <code>p<sub>x</sub>/p<sub>y</sub></code>. Mire la tangente a la
+curva de indiferencia y el muro presupuestario: quedan pegados uno contra otro.</p>
+<p><strong>Luego:</strong> ponga <code>p<sub>x</sub> = 3</code>. El óptimo se mueve a
+<code>(0,333, 1,000)</code> —el <code>m/2p<sub>x</sub></code>, <code>m/2p<sub>y</sub></code> del
+libro— y en esa canasta <code>TMS</code> vale <code>3</code>, la nueva razón de precios. Pida a la
+clase que prediga la siguiente antes de que usted gire el dial.</p>
+<p><strong>El punto:</strong> «en el óptimo la TMS iguala la razón de precios» suele ser una línea
+de álgebra. Aquí es una imagen de dos rectas superpuestas, en un punto al que el estudiante
+caminó.</p>
+
+<!-- =========================================================== PARTE 10 -->
+<h1 class="part"><span class="num">10</span>El Laboratorio — el mapa plano junto a la escena</h1>
+
+<p>Hay una segunda versión del programa, <code>lab.html</code>, a la que se llega por el enlace
+del final de la sección de Ayuda (y se vuelve por el mismo sitio). Es el mismo programa, con los
+mismos controles haciendo lo mismo. Dos diferencias.</p>
+
+<p><strong>Los controles se quitan de en medio.</strong> La barra es más angosta y más discreta,
+la tecla <kbd>Tab</kbd> la oculta por completo y el botón <kbd>⛶</kbd> junto al selector de idioma
+pasa a pantalla completa, de modo que también desaparecen las pestañas y la barra de direcciones
+del navegador. Lo que queda es la superficie.</p>
+
+<p><strong>Un panel en la esquina muestra la figura que dibuja su libro de texto.</strong> El
+dominio visto desde arriba, con las mismas curvas de nivel en los mismos colores, la misma recta
+tangente en el mismo magenta y el explorador como un punto exagerado. Todo lo que hay en él es el
+mismo estado de la escena de atrás, así que caminar en la vista 3D camina el punto sobre el
+mapa.</p>
+
+<h2>Qué puede mostrar el panel</h2>
+<p><strong>Mapa de calor con la rampa de las curvas de nivel</strong> — la opción por defecto. El
+fondo se colorea con la misma rampa de diez colores que las curvas y la superficie, de modo que un
+color significa la misma altura en los tres sitios.</p>
+<p><strong>Mapa de calor clásico</strong> — de azul a rojo pasando por verde, la paleta que el
+estudiante habrá visto en cualquier otro mapa de calor. Deliberadamente distinta, para que no se
+confundan.</p>
+<p><strong>Vista cenital de la superficie</strong> — no es un dibujo, sino la escena misma
+renderizada desde arriba dentro del mismo rectángulo. Árboles, agua, muros de la frontera y el
+explorador, vistos como un mapa. Esta es la versión honesta de «proyectar la superficie sobre
+<code>z = 0</code>»; los modos dibujados son la idealizada.</p>
+<p><strong>Nada</strong> — ocultar el panel.</p>
+
+<p><strong>Opacidad del panel</strong> y <strong>Tamaño del panel</strong> hacen lo que dicen. Por
+defecto ocupa un tercio del alto de la ventana por un quinto de su ancho. El panel nunca
+intercepta un clic: es una lectura, no un control, y el ratón lo atraviesa hasta la escena.</p>
+
+<h2>Actividad — la misma curva, dos veces</h2>
+<p><strong>Prepare:</strong> el Laboratorio, cualquier función con relieve real, curvas de nivel
+activadas, la curva bajo sus pies activada, tercera persona.</p>
+<p><strong>Haga:</strong> Camine a lo largo de la curva de nivel bajo los pies del explorador, en
+la vista 3D, manteniéndose a la misma altura. Mire el punto en el panel: traza un lazo cerrado, y
+la <code>z</code> de la lectura no se mueve.</p>
+<p><strong>Luego:</strong> camine derecho por el gradiente, cruzando una curva tras otra. En el
+panel el punto atraviesa los anillos.</p>
+<p><strong>El punto:</strong> la figura plana del libro y la ladera bajo sus pies son el mismo
+objeto. A casi todos los estudiantes se lo dicen. Aquí pueden verlo.</p>
+
+<!-- =========================================================== PARTE 11 -->
+<h1 class="part"><span class="num">11</span>Cómo entregárselo a sus estudiantes</h1>
 
 <p>Cuatro maneras, de la más fácil a la más elaborada. La opción A no requiere nada; la opción D
 le da una dirección web permanente. Las cuatro son gratuitas.</p>
@@ -753,8 +929,8 @@ en un repositorio de GitHub:</p>
   programa.</p>
 </div>
 
-<!-- =========================================================== PARTE 9 -->
-<h1 class="part"><span class="num">9</span>Instalarlo como aplicación</h1>
+<!-- =========================================================== PARTE 12 -->
+<h1 class="part"><span class="num">12</span>Instalarlo como aplicación</h1>
 
 <p>Una vez que el programa está en una dirección web (opciones C o D de arriba), se puede instalar
 como una aplicación: con su propio ícono, su propia ventana, sin barra del navegador, y funciona
@@ -783,7 +959,7 @@ desarrollador.</p>
 estudiantes pueden usarlo en el bus sin señal.</p>
 
 <!-- ========================================================== PARTE 10 -->
-<h1 class="part"><span class="num">10</span>Cuando algo sale mal</h1>
+<h1 class="part"><span class="num">13</span>Cuando algo sale mal</h1>
 
 <table>
   <tr><th style="width:44mm">Lo que usted ve</th><th style="width:48mm">Por qué</th><th>Qué hacer</th></tr>
@@ -821,7 +997,7 @@ estudiantes pueden usarlo en el bus sin señal.</p>
 
   <tr><td><strong>Todo se mueve a saltos</strong></td>
       <td>La tarjeta gráfica del computador no da abasto.</td>
-      <td>Parte 11, en el orden que allí se indica.</td></tr>
+      <td>Parte 14, en el orden que allí se indica.</td></tr>
 
   <tr><td><strong>El explorador no se mueve</strong></td>
       <td><strong>Derivada direccional</strong> está activada. Deja inmóvil al explorador a
@@ -841,7 +1017,7 @@ estudiantes pueden usarlo en el bus sin señal.</p>
 </table>
 
 <!-- ========================================================== PARTE 11 -->
-<h1 class="part"><span class="num">11</span>Cómo hacerlo más rápido en un computador viejo</h1>
+<h1 class="part"><span class="num">14</span>Cómo hacerlo más rápido en un computador viejo</h1>
 
 <p>Cambie estas cosas en orden y deténgase apenas se sienta fluido. Las dos primeras casi no le
 cuestan nada.</p>
@@ -867,7 +1043,7 @@ cuestan nada.</p>
 </div>
 
 <!-- ========================================================== PARTE 12 -->
-<h1 class="part"><span class="num">12</span>Qué hay por dentro, y licencia</h1>
+<h1 class="part"><span class="num">15</span>Qué hay por dentro, y licencia</h1>
 
 <p>Para colegas y para los departamentos de sistemas que quieran saber qué se les está pidiendo
 permitir.</p>

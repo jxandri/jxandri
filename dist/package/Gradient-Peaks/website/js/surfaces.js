@@ -43,6 +43,9 @@ export function buildParametric(exprs, opts) {
   const pos = new Float32Array(w * w * 3);
   const nor = new Float32Array(w * w * 3);
   const col = new Float32Array(w * w * 3);
+  // The actual (u, v) of each vertex, so a raycast onto a triangle hands back
+  // the parameter pair and the walker can be dropped exactly where you clicked.
+  const uvs = new Float32Array(w * w * 2);
   const valid = new Uint8Array(w * w);
 
   const du = (umax - umin) / n, dv = (vmax - vmin) / n;
@@ -65,6 +68,7 @@ export function buildParametric(exprs, opts) {
     for (let i = 0; i < w; i++) {
       const u = umin + i * du;
       const k = j * w + i;
+      uvs[k * 2] = u; uvs[k * 2 + 1] = v;
       if (!at(u, v, P)) { valid[k] = 0; continue; }
       valid[k] = 1;
       pos[k * 3] = P[0]; pos[k * 3 + 1] = P[1]; pos[k * 3 + 2] = P[2];
@@ -108,6 +112,7 @@ export function buildParametric(exprs, opts) {
   geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geom.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geom.setIndex(idx);
   geom.computeBoundingSphere();
 
