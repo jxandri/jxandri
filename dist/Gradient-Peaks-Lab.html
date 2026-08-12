@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d1117">
-<title>Gradient Peaks — walk on the graph of f(x,y)</title>
+<title>Gradient Peaks Lab — the surface and its map, side by side</title>
 <meta name="description" content="A light 3D sandbox for exploring surface plots, level curves, partial derivatives, gradients and constrained maxima of functions of two variables.">
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkdyYWRpZW50IFBlYWtzIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ic2t5IiB4MT0iMCIgeTE9IjEiIHgyPSIwIiB5Mj0iMCI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzBkMTcyNCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxYzJlNDQiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InJvY2siIHgxPSIwIiB5MT0iMSIgeDI9IjAiIHkyPSIwIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMjY1YzM0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC41NSIgc3RvcC1jb2xvcj0iIzVmNmE2YyIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuODIiIHN0b3AtY29sb3I9IiNlZWY1ZmEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZmZmZmZmIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGNsaXBQYXRoIGlkPSJjYXJkIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk1Ii8+PC9jbGlwUGF0aD4KICA8L2RlZnM+CiAgPGcgY2xpcC1wYXRoPSJ1cmwoI2NhcmQpIj4KICAgIDxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSJ1cmwoI3NreSkiLz4KICAgIDxjaXJjbGUgY3g9IjQxMCIgY3k9IjgyIiByPSIzNCIgZmlsbD0iI2ZmZTlhOCIgb3BhY2l0eT0iMC45MiIvPgogICAgPHBhdGggZD0iTTAgNTEyIEMgOTYgNTEyIDExOCAyMTQgMjE1IDIwNSBDIDI5MiAxOTggMzAwIDMzMCAzNTIgMzIyIEMgNDA0IDMxNCA0MjAgMjM2IDUxMiAyMzYgTDUxMiA1MTIgWiIKICAgICAgICAgIGZpbGw9InVybCgjcm9jaykiLz4KICAgIDxnIHN0cm9rZT0iIzBkMTcyNCIgc3Ryb2tlLW9wYWNpdHk9IjAuMzAiIHN0cm9rZS13aWR0aD0iNSIgZmlsbD0ibm9uZSI+CiAgICAgIDxwYXRoIGQ9Ik0wIDQ2MCBDIDExMCA0NjAgMTMyIDMwMCA1MTIgMzAwIi8+CiAgICAgIDxwYXRoIGQ9Ik0wIDQwNCBDIDExOCA0MDQgMTUwIDI1MCA1MTIgMjUwIi8+CiAgICAgIDxwYXRoIGQ9Ik05NiAzNTAgQyAxNTAgMzMwIDE5MCAyMzYgMzAwIDI1MCIvPgogICAgPC9nPgogIDwvZz4KPC9zdmc+Cg==" type="image/svg+xml">
 <style>
@@ -304,6 +304,92 @@ button:disabled { opacity: .45; cursor: default; }
 #lang-select:focus { outline: none; border-color: var(--accent); }
 #lang-select option { background: var(--panel-solid); }
 
+/* Gradient Peaks Lab — the same program, given over to the picture.
+ *
+ * Loaded after style.css and overriding it. Two ideas only: the controls get
+ * out of the way, and the flat map sits in the corner where a student can hold
+ * both pictures in one glance.
+ */
+
+/* ------------------------------------------------- a narrower, quieter rail */
+
+#panel {
+  width: 268px;
+  background: rgba(13, 17, 24, 0.86);
+  font-size: 12px;
+}
+#panel-body { padding: 8px 11px 20px; }
+#panel-head { padding: 9px 11px 7px; }
+#panel-head h1 { font-size: 13px; letter-spacing: .01em; }
+#panel-head h1 em { font-style: normal; color: var(--accent); font-weight: 600; }
+
+#panel section { margin-bottom: 13px; padding-bottom: 11px; }
+#panel h2 { font-size: 10px; letter-spacing: .13em; margin-bottom: 7px; }
+.field span, .check, .range > span { font-size: 11.5px; }
+.field input, .field select, .preset { padding: 5px 7px; font-size: 11.5px; }
+.check { padding: 3px 0; }
+.note { font-size: 10.5px; line-height: 1.45; }
+button.primary, button.ghost { padding: 6px 9px; font-size: 11.5px; }
+.modes .mode { padding: 5px 4px; font-size: 10.5px; }
+kbd { font-size: 9px; padding: 1px 3px; }
+
+/* The show button is a thin tab rather than a floating square, so a hidden
+   panel costs almost nothing of the picture. */
+#panel-show {
+  top: 50%; left: 0; transform: translateY(-50%);
+  border-radius: 0 9px 9px 0; padding: 18px 5px;
+  font-size: 13px; line-height: 1;
+}
+
+#btn-full {
+  background: rgba(255, 255, 255, .06); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 7px;
+  padding: 3px 7px; font-size: 12px; cursor: pointer; line-height: 1.2;
+}
+#btn-full:hover { background: rgba(255, 255, 255, .13); border-color: var(--accent); }
+
+/* --------------------------------------------------------- the flat map */
+
+/*
+ * Default size is a third of the window's height and a fifth of its width,
+ * which on any ordinary screen is a panel you can read a contour off without
+ * it taking the scene over. The dial scales both together.
+ */
+#proj-wrap {
+  position: fixed;
+  right: 14px; bottom: 14px;
+  z-index: 5;
+  width: calc(20vw * var(--proj-scale, 1));
+  height: calc(33.33vh * var(--proj-scale, 1));
+  min-width: 130px; min-height: 110px;
+  max-width: 46vw; max-height: 62vh;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: rgba(9, 13, 19, .55);
+  backdrop-filter: blur(7px);
+  overflow: hidden;
+  opacity: var(--proj-opacity, .88);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .38);
+  pointer-events: none;          /* it is a readout, not a control */
+}
+#minimap { display: block; width: 100%; height: 100%; }
+
+#proj-label {
+  position: absolute; left: 7px; bottom: 5px;
+  font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: rgba(231, 237, 245, .72);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
+}
+
+/* The bottom pills would sit under the map on a narrow window. */
+@media (max-width: 900px) {
+  #proj-wrap { width: calc(34vw * var(--proj-scale, 1)); }
+}
+
+/* In the "looking down" mode the panel is a window onto the scene itself,
+   rendered underneath by the WebGL pass, so nothing may sit in front of it. */
+#proj-wrap.down { background: transparent; backdrop-filter: none; }
+
 </style>
 </head>
 <body>
@@ -333,14 +419,21 @@ button:disabled { opacity: .45; cursor: default; }
   <span id="r-msg" class="pill pill-warn" hidden></span>
 </div>
 
+
+<div id="proj-wrap" hidden>
+  <canvas id="minimap"></canvas>
+  <div id="proj-label" data-i18n="lab.projlabel">the (x, y) plane</div>
+</div>
+
 <div id="crosshair" hidden></div>
 
 <!-- ================================ panel ============================== -->
 <aside id="panel">
   <header id="panel-head">
-    <h1>Gradient&nbsp;Peaks</h1>
+    <h1>Gradient&nbsp;Peaks <em>Lab</em></h1>
     <div class="head-tools">
       <button id="lang-toggle" type="button" aria-label="Language / Idioma"><span id="lang-flag">EN</span></button>
+      <button id="btn-full" type="button" data-i18n-title="lab.full" title="Full screen (F11 or this button)" aria-label="Full screen">⛶</button>
       <button id="panel-toggle" data-i18n-title="panel.hide" title="Hide panel (Tab)" aria-label="Hide panel">‹</button>
     </div>
   </header>
@@ -579,6 +672,28 @@ button:disabled { opacity: .45; cursor: default; }
       <button id="btn-goto" class="ghost" disabled data-i18n="opt.goto">Teleport to the optimum</button>
     </section>
 
+
+    <section id="sec-proj">
+      <h2 data-i18n="lab.sec">Flat map panel</h2>
+      <label class="field"><span data-i18n="lab.mode">What the panel shows</span>
+        <select id="sel-proj" class="preset">
+          <option value="ramp" data-i18n="lab.ramp">Heat map on the level-curve ramp</option>
+          <option value="heat" data-i18n="lab.heat">Classical heat map</option>
+          <option value="down" data-i18n="lab.down">Looking straight down at the surface</option>
+          <option value="off" data-i18n="lab.off">Nothing — hide the panel</option>
+        </select>
+      </label>
+      <label class="range">
+        <span><span data-i18n="lab.opacity">Panel opacity</span> <b id="lbl-projop">0.88</b></span>
+        <input id="in-projop" type="range" min="0.15" max="1" step="0.01" value="0.88">
+      </label>
+      <label class="range">
+        <span><span data-i18n="lab.size">Panel size</span> <b id="lbl-projsize">1.00×</b></span>
+        <input id="in-projsize" type="range" min="0.5" max="2.2" step="0.05" value="1">
+      </label>
+      <p class="note" data-i18n="lab.note">The panel is the picture your textbook draws: the domain seen from above, with the same level curves in the same colours, the same tangent line, and the explorer as a dot. Everything on it is the same state as the scene behind — walk in the 3D view and the dot walks on the map.</p>
+    </section>
+
     <section>
       <h2 data-i18n="sec.view">View</h2>
       <div class="modes">
@@ -626,7 +741,7 @@ button:disabled { opacity: .45; cursor: default; }
         <b data-i18n="help.updown">Drone up/down</b> Space / Ctrl<br>
         <b data-i18n="help.release">Release the mouse</b> Esc · <b data-i18n="help.hide">hide this panel</b> Tab</p>
         <p class="note" data-i18n-html="help.syntax"></p>
-        <p class="note"><a id="other-app" href="Gradient-Peaks-Lab.html" style="color:var(--accent)" data-i18n="lab.link">Open the Lab — the same program with a flat map panel beside the scene</a></p>
+        <p class="note"><a id="other-app" href="Gradient-Peaks.html" style="color:var(--accent)" data-i18n="lab.linkback">Back to the classic layout</a></p>
       </div>
     </section>
   </div>

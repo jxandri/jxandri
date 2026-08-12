@@ -10,7 +10,13 @@ QUE HACER AHORA MISMO
        Windows: clic derecho en el .zip -> "Extraer todo..." -> Extraer
        macOS:   doble clic en el .zip; use la carpeta que aparece
 
-  2. Haga doble clic en:   Gradient-Peaks.html
+  2. Haga doble clic en:   Gradient-Peaks-Lab.html
+      EL MISMO PROGRAMA, segunda presentacion: controles mas
+      angostos, un boton de pantalla completa y un panel en la
+      esquina con el mapa plano. Tambien se abre con doble clic.
+      Las dos versiones enlazan entre si.
+
+  Gradient-Peaks.html
 
   3. Se abre en su navegador y funciona. Esa es toda la instalacion.
      Sin cuenta, sin complementos, sin conexion a internet.

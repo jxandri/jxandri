@@ -25,6 +25,11 @@ WHAT IS IN THIS FOLDER
   Gradient-Peaks.html
       THE PROGRAM. One self-contained file. Double-click to run.
 
+  Gradient-Peaks-Lab.html
+      THE SAME PROGRAM, second layout: slimmer controls, a
+      full-screen button, and a panel in the corner showing the flat
+      map. Also double-click to run. The two link to each other.
+
   Gradient-Peaks-Guia.pdf  /  LEEME.txt
       La misma guia, en espanol. El programa tambien esta en espanol:
       use el selector Espanol / English en el panel, o agregue

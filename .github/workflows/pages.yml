@@ -66,6 +66,9 @@ jobs:
 
           # the one-file build, offered as a download so a student can keep a
           # copy that works with no connection at all
+          if [ -f dist/Gradient-Peaks-Lab.html ]; then
+            cp dist/Gradient-Peaks-Lab.html _site/gradient-peaks/Gradient-Peaks-Lab-offline.html
+          fi
           if [ -f dist/Gradient-Peaks.html ]; then
             cp dist/Gradient-Peaks.html _site/gradient-peaks/Gradient-Peaks-offline.html
           fi
