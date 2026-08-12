@@ -15,6 +15,7 @@ import {
   maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo,
 } from './analysis.js';
 import { Player, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
+import { buildImplicit, buildParametric } from './surfaces.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
 } from './i18n.js';
@@ -104,6 +105,12 @@ const state = {
   xmin: 0, xmax: 2, ymin: 0, ymax: 2,
   res: 300,
   sx: 1, sy: 1, sz: 1,   // axis scales; 1,1,1 is isotropic Cartesian
+
+  surfaceKind: 'graph',  // 'graph' | 'implicit' | 'parametric'
+  implicitSrc: 'x^2+y^2+z^2-1',
+  zmin: -1.5, zmax: 1.5,
+  pxSrc: 'cos(u)*sin(v)', pySrc: 'sin(u)*sin(v)', pzSrc: 'cos(v)',
+  umin: 0, umax: 6.2832, vmin: 0, vmax: 3.1416,
   worldSize: 220,
 
   feasible: false,
@@ -147,6 +154,7 @@ let optMarker = null;
 let curveGizmo = null;
 let tangentLine = null;
 let optimum = null;
+let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let decorations = new Decorations();
 let player = null;
 
@@ -163,7 +171,113 @@ function setMessage(text) {
   el.hidden = false;
 }
 
+/** Remove every object that only makes sense for a graph of a function. */
+function clearGraphWorld() {
+  if (surface) disposeTree(surface.mesh);
+  disposeTree(water);
+  disposeTree(walls);
+  disposeTree(contourLines);
+  if (surfaceDetail) { disposeTree(surfaceDetail.group); surfaceDetail.dispose(); }
+  if (gizmo) { disposeTree(gizmo.group); gizmo.dispose(); }
+  if (tangentPlane) { disposeTree(tangentPlane.mesh); tangentPlane.dispose(); }
+  if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
+  if (curveGizmo) { disposeTree(curveGizmo.mesh); curveGizmo.dispose(); }
+  if (tangentLine) { disposeTree(tangentLine.mesh); tangentLine.dispose(); }
+  decorations.clear();
+  surface = water = walls = contourLines = null;
+  surfaceDetail = gizmo = tangentPlane = optMarker = curveGizmo = tangentLine = null;
+  contourInfo = null;
+  optimum = null;
+}
+
+/**
+ * Build an implicit or parametric surface.
+ *
+ * Neither is the graph of a function, so none of the heightfield machinery
+ * applies: the explorer, the derivative disc, the contours and the optimiser are
+ * all torn down and the view is handed to the drone.
+ */
+function rebuildAlternate() {
+  clearGraphWorld();
+  disposeTree(altSurface);
+  altSurface = null;
+
+  const ws = state.worldSize;
+  const common = { sx: state.sx, sy: state.sy, sz: state.sz, res: 0 };
+
+  try {
+    if (state.surfaceKind === 'implicit') {
+      const F = compile(state.implicitSrc, ['x', 'y', 'z']);
+      clearError('err-implicit');
+      const span = Math.max(state.xmax - state.xmin, state.ymax - state.ymin, state.zmax - state.zmin) || 1;
+      const built = buildImplicit(F, {
+        ...common,
+        res: Math.min(96, Math.max(24, Math.round(state.res / 4))),
+        xmin: state.xmin, xmax: state.xmax,
+        ymin: state.ymin, ymax: state.ymax,
+        zmin: state.zmin, zmax: state.zmax,
+        scale: ws / span,
+      });
+      if (!built) { setMessage(t('surf.empty')); return false; }
+      altSurface = built.mesh;
+    } else {
+      const X = compile(state.pxSrc, ['u', 'v']);
+      const Y = compile(state.pySrc, ['u', 'v']);
+      const Z = compile(state.pzSrc, ['u', 'v']);
+      clearError('err-param');
+      const built = buildParametric({ X, Y, Z }, {
+        ...common,
+        res: Math.min(320, Math.max(40, Math.round(state.res / 2))),
+        umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
+        scale: ws / 4,
+      });
+      if (!built) { setMessage(t('surf.empty')); return false; }
+      altSurface = built.mesh;
+    }
+  } catch (err) {
+    showError(state.surfaceKind === 'implicit' ? 'err-implicit' : 'err-param', err);
+    return false;
+  }
+
+  world.add(altSurface);
+  setMessage('');
+
+  // Sky and fog still want a sensible scale even without a Field.
+  disposeTree(sky);
+  sky = buildSky(ws * 8);
+  scene.add(sky);
+  scene.fog = new THREE.Fog(0xa9c3d8, ws * 1.6, ws * 8);
+  const sunDist = ws * 2;
+  sun.position.set(sunDist * 0.6, sunDist * 0.9, sunDist * 0.45);
+  sun.target.position.set(0, 0, 0);
+
+  if (player) player.group.visible = false;
+  frameAlternate();
+  return true;
+}
+
+/** Put the drone where the whole alternate surface is in shot. */
+function frameAlternate() {
+  const b = altSurface && altSurface.geometry.boundingSphere;
+  const r = b ? b.radius : state.worldSize;
+  const vFov = camera.fov * Math.PI / 180;
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+  const dist = (r / Math.sin(Math.min(vFov, hFov) / 2)) * 1.25;
+  const elev = 0.5;
+  camera.position.set(0, Math.sin(elev) * dist, Math.cos(elev) * dist);
+  camera.lookAt(0, 0, 0);
+  altCam.dist = dist;
+  altCam.yaw = 0;
+  altCam.pitch = -elev;
+}
+
 function rebuild() {
+  if (state.surfaceKind !== 'graph') return rebuildAlternate();
+
+  disposeTree(altSurface);
+  altSurface = null;
+  if (player) player.group.visible = true;
+
   // --- parse first, so a typo never destroys a working scene -------------
   let fn, pred;
   try {
@@ -190,20 +304,7 @@ function rebuild() {
   predicate = pred;
 
   // --- tear the old world down ------------------------------------------
-  if (surface) disposeTree(surface.mesh);
-  disposeTree(water);
-  disposeTree(walls);
-  disposeTree(contourLines);
-  if (surfaceDetail) { disposeTree(surfaceDetail.group); surfaceDetail.dispose(); }
-  if (gizmo) { disposeTree(gizmo.group); gizmo.dispose(); }
-  if (tangentPlane) { disposeTree(tangentPlane.mesh); tangentPlane.dispose(); }
-  if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
-  if (curveGizmo) { disposeTree(curveGizmo.mesh); curveGizmo.dispose(); }
-  if (tangentLine) { disposeTree(tangentLine.mesh); tangentLine.dispose(); }
-  decorations.clear();
-  surface = water = walls = contourLines = null;
-  contourInfo = null;
-  optimum = null;
+  clearGraphWorld();
 
   // --- sample -----------------------------------------------------------
   field = new Field({
@@ -607,6 +708,22 @@ function togglePanel(force) {
   $('panel-show').hidden = !hidden;
 }
 
+/** Show only the inputs that belong to the chosen kind of surface. */
+function applySurfaceKindUI() {
+  const graph = state.surfaceKind === 'graph';
+  $('grp-graph').hidden = !graph;
+  $('grp-implicit').hidden = state.surfaceKind !== 'implicit';
+  $('grp-parametric').hidden = state.surfaceKind !== 'parametric';
+  $('note-alt').hidden = graph;
+
+  // Grey out the sections that only mean something on a graph.
+  for (const id of ['sec-feasible', 'sec-map', 'sec-deriv', 'sec-curve', 'sec-zoom', 'sec-opt']) {
+    const el = $(id);
+    if (el) { el.style.opacity = graph ? '' : '0.4'; el.style.pointerEvents = graph ? '' : 'none'; }
+  }
+  for (const b of document.querySelectorAll('.mode')) b.disabled = !graph;
+}
+
 function applyInputs() {
   state.fnSrc = $('in-fn').value;
   state.feasSrc = $('in-feas').value;
@@ -762,6 +879,46 @@ function wireUI() {
     player._camReady = false;
   });
 
+  $('sel-surface').addEventListener('change', (e) => {
+    state.surfaceKind = e.target.value;
+    applySurfaceKindUI();
+    withLoading(() => rebuild());
+  });
+
+  for (const [id, key] of [['in-implicit', 'implicitSrc'], ['in-px', 'pxSrc'],
+    ['in-py', 'pySrc'], ['in-pz', 'pzSrc']]) {
+    $(id).addEventListener('change', (e) => { state[key] = e.target.value; applyInputs(); });
+  }
+  for (const [id, key] of [['in-zmin', 'zmin'], ['in-zmax', 'zmax'], ['in-umin', 'umin'],
+    ['in-umax', 'umax'], ['in-vmin', 'vmin'], ['in-vmax', 'vmax']]) {
+    $(id).addEventListener('change', (e) => {
+      const v = parseFloat(e.target.value);
+      if (isFinite(v)) { state[key] = v; applyInputs(); }
+    });
+  }
+
+  $('preset-implicit').addEventListener('change', (e) => {
+    if (!e.target.value) return;
+    $('in-implicit').value = e.target.value;
+    state.implicitSrc = e.target.value;
+    e.target.value = '';
+    applyInputs();
+  });
+
+  $('preset-param').addEventListener('change', (e) => {
+    if (!e.target.value) return;
+    // X | Y | Z | umin | umax | vmin | vmax
+    const parts = e.target.value.split('|');
+    const ids = ['in-px', 'in-py', 'in-pz', 'in-umin', 'in-umax', 'in-vmin', 'in-vmax'];
+    const keys = ['pxSrc', 'pySrc', 'pzSrc', 'umin', 'umax', 'vmin', 'vmax'];
+    parts.forEach((v, i) => {
+      $(ids[i]).value = v;
+      state[keys[i]] = i < 3 ? v : parseFloat(v);
+    });
+    e.target.value = '';
+    applyInputs();
+  });
+
   $('sel-style').addEventListener('change', (e) => player.setStyle(e.target.value));
 
   $('btn-top').addEventListener('click', () => { player.topDown(camera); setMode(MODE_DRONE); });
@@ -845,6 +1002,11 @@ function setChip(el, on, label, value, avg) {
 }
 
 function updateHUD(readout) {
+  if (state.surfaceKind !== 'graph') {
+    $('r-x').textContent = '—'; $('r-y').textContent = '—'; $('r-z').textContent = '—';
+    for (const k in chipEls) chipEls[k].hidden = true;
+    return;
+  }
   const z = player.height();
   $('r-x').textContent = fmt(player.x, 3);
   $('r-y').textContent = fmt(player.y, 3);
@@ -871,6 +1033,10 @@ function updateHUD(readout) {
 
 /* ------------------------------------------------------------- the loop */
 
+// Orbit state used only when an implicit or parametric surface is on screen:
+// there is nothing to stand on, so the drone simply circles it.
+const altCam = { yaw: 0, pitch: -0.5, dist: 400 };
+
 const clock = new THREE.Clock();
 const curveRGB = [0, 0, 0];
 
@@ -879,7 +1045,29 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
-  if (!field || !player) { renderer.render(scene, camera); return; }
+  if (state.surfaceKind !== 'graph') {
+    const inp = readInput();
+    altCam.yaw -= inp.right * dt * 1.2;
+    altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch + inp.up * dt * 1.2));
+    altCam.dist *= Math.exp(-inp.forward * dt * (inp.sprint ? 2.2 : 0.9));
+    const r = altCam.dist;
+    const cp = Math.cos(altCam.pitch);
+    camera.position.set(Math.sin(altCam.yaw) * cp * r, -Math.sin(altCam.pitch) * r, Math.cos(altCam.yaw) * cp * r);
+    camera.lookAt(0, 0, 0);
+    camera.near = Math.max(0.05, r * 1e-4);
+    camera.far = r * 20;
+    camera.updateProjectionMatrix();
+    if (sky) sky.position.copy(camera.position);
+    updateHUD(null);
+    renderer.render(scene, camera);
+    return;
+  }
+
+  // Teardown nulls these, and a frame can land between teardown and rebuild.
+  if (!field || !player || !surfaceDetail || !gizmo) {
+    renderer.render(scene, camera);
+    return;
+  }
 
   player.update(dt, readInput());
   player.updateCamera(camera, dt);
@@ -946,6 +1134,7 @@ window.addEventListener('orientationchange', onResize);
 
 wireLanguage();
 wireUI();
+applySurfaceKindUI();
 onResize();
 
 withLoading(() => {

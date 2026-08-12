@@ -157,7 +157,7 @@ class Parser {
       this.next();
       const right = this.parseAnd();
       const l = left;
-      left = (x, y) => bool(l(x, y) > 0.5 || right(x, y) > 0.5);
+      left = (x, y, z) => bool(l(x, y, z) > 0.5 || right(x, y, z) > 0.5);
     }
     return left;
   }
@@ -168,7 +168,7 @@ class Parser {
       this.next();
       const right = this.parseCmp();
       const l = left;
-      left = (x, y) => bool(l(x, y) > 0.5 && right(x, y) > 0.5);
+      left = (x, y, z) => bool(l(x, y, z) > 0.5 && right(x, y, z) > 0.5);
     }
     return left;
   }
@@ -187,14 +187,14 @@ class Parser {
       const a = prev, b = right, op = t.value;
       let link;
       switch (op) {
-        case '<': link = (x, y) => bool(a(x, y) < b(x, y)); break;
-        case '>': link = (x, y) => bool(a(x, y) > b(x, y)); break;
-        case '<=': link = (x, y) => bool(a(x, y) <= b(x, y)); break;
-        case '>=': link = (x, y) => bool(a(x, y) >= b(x, y)); break;
-        case '!=': link = (x, y) => bool(a(x, y) !== b(x, y)); break;
-        default: link = (x, y) => bool(a(x, y) === b(x, y)); break;
+        case '<': link = (x, y, z) => bool(a(x, y, z) < b(x, y, z)); break;
+        case '>': link = (x, y, z) => bool(a(x, y, z) > b(x, y, z)); break;
+        case '<=': link = (x, y, z) => bool(a(x, y, z) <= b(x, y, z)); break;
+        case '>=': link = (x, y, z) => bool(a(x, y, z) >= b(x, y, z)); break;
+        case '!=': link = (x, y, z) => bool(a(x, y, z) !== b(x, y, z)); break;
+        default: link = (x, y, z) => bool(a(x, y, z) === b(x, y, z)); break;
       }
-      acc = acc === null ? link : ((prevAcc) => (x, y) => bool(prevAcc(x, y) > 0.5 && link(x, y) > 0.5))(acc);
+      acc = acc === null ? link : ((prevAcc) => (x, y, z) => bool(prevAcc(x, y, z) > 0.5 && link(x, y, z) > 0.5))(acc);
       prev = right;
     }
     return acc === null ? left : acc;
@@ -203,8 +203,8 @@ class Parser {
   parseAdd() {
     let left = this.parseMul();
     for (;;) {
-      if (this.eatOp('+')) { const r = this.parseMul(), l = left; left = (x, y) => l(x, y) + r(x, y); }
-      else if (this.eatOp('-')) { const r = this.parseMul(), l = left; left = (x, y) => l(x, y) - r(x, y); }
+      if (this.eatOp('+')) { const r = this.parseMul(), l = left; left = (x, y, z) => l(x, y, z) + r(x, y, z); }
+      else if (this.eatOp('-')) { const r = this.parseMul(), l = left; left = (x, y, z) => l(x, y, z) - r(x, y, z); }
       else break;
     }
     return left;
@@ -220,26 +220,26 @@ class Parser {
   parseMul() {
     let left = this.parseUnary();
     for (;;) {
-      if (this.eatOp('*')) { const r = this.parseUnary(), l = left; left = (x, y) => l(x, y) * r(x, y); }
-      else if (this.eatOp('/')) { const r = this.parseUnary(), l = left; left = (x, y) => l(x, y) / r(x, y); }
+      if (this.eatOp('*')) { const r = this.parseUnary(), l = left; left = (x, y, z) => l(x, y, z) * r(x, y, z); }
+      else if (this.eatOp('/')) { const r = this.parseUnary(), l = left; left = (x, y, z) => l(x, y, z) / r(x, y, z); }
       else if (this.eatOp('%')) {
         const r = this.parseUnary(), l = left;
-        left = (x, y) => { const b = r(x, y); return l(x, y) - b * Math.floor(l(x, y) / b); };
+        left = (x, y, z) => { const b = r(x, y, z); return l(x, y, z) - b * Math.floor(l(x, y, z) / b); };
       } else if (this.startsAtom()) {
         // Implicit multiplication: 2x, 3(x+y), x y. A bare '|' would be
         // ambiguous with the closing bar of |...|, so it is excluded here.
         if (this.peek().type === '|') break;
         const r = this.parseUnary(), l = left;
-        left = (x, y) => l(x, y) * r(x, y);
+        left = (x, y, z) => l(x, y, z) * r(x, y, z);
       } else break;
     }
     return left;
   }
 
   parseUnary() {
-    if (this.eatOp('-')) { const v = this.parseUnary(); return (x, y) => -v(x, y); }
+    if (this.eatOp('-')) { const v = this.parseUnary(); return (x, y, z) => -v(x, y, z); }
     if (this.eatOp('+')) return this.parseUnary();
-    if (this.eatOp('!')) { const v = this.parseUnary(); return (x, y) => bool(!(v(x, y) > 0.5)); }
+    if (this.eatOp('!')) { const v = this.parseUnary(); return (x, y, z) => bool(!(v(x, y, z) > 0.5)); }
     return this.parsePower();
   }
 
@@ -247,7 +247,7 @@ class Parser {
     const base = this.parseAtom();
     if (this.eatOp('^')) {
       const exp = this.parseUnary(); // right associative, and allows x^-1
-      return (x, y) => Math.pow(base(x, y), exp(x, y));
+      return (x, y, z) => Math.pow(base(x, y, z), exp(x, y, z));
     }
     return base;
   }
@@ -268,7 +268,7 @@ class Parser {
       const inner = this.parseOr();
       if (this.peek().type !== '|') throw new MathExprError('Missing closing "|"', this.peek().pos, 'p.missingBar');
       this.next();
-      return (x, y) => Math.abs(inner(x, y));
+      return (x, y, z) => Math.abs(inner(x, y, z));
     }
 
     if (t.type === 'name') {
@@ -292,15 +292,16 @@ class Parser {
           throw new MathExprError(`${name}() takes ${want} argument(s), got ${args.length}`, t.pos,
             'p.arity', { name, want, got: args.length });
         }
-        if (args.length === 1) { const a = args[0]; return (x, y) => impl(a(x, y)); }
-        if (args.length === 2) { const a = args[0], b = args[1]; return (x, y) => impl(a(x, y), b(x, y)); }
-        if (args.length === 3) { const a = args[0], b = args[1], c = args[2]; return (x, y) => impl(a(x, y), b(x, y), c(x, y)); }
-        return (x, y) => impl.apply(null, args.map((a) => a(x, y)));
+        if (args.length === 1) { const a = args[0]; return (x, y, z) => impl(a(x, y, z)); }
+        if (args.length === 2) { const a = args[0], b = args[1]; return (x, y, z) => impl(a(x, y, z), b(x, y, z)); }
+        if (args.length === 3) { const a = args[0], b = args[1], c = args[2]; return (x, y, z) => impl(a(x, y, z), b(x, y, z), c(x, y, z)); }
+        return (x, y, z) => impl.apply(null, args.map((a) => a(x, y, z)));
       }
 
       const vi = this.vars.indexOf(name);
       if (vi === 0) { this.usesVar.x = true; return (x) => x; }
       if (vi === 1) { this.usesVar.y = true; return (x, y) => y; }
+      if (vi === 2) { this.usesVar.z = true; return (x, y, z) => z; }
 
       if (name in CONSTANTS) { const v = CONSTANTS[name]; return () => v; }
       if (FUNCS[name]) throw new MathExprError(`"${name}" is a function — write ${name}(...)`, t.pos, 'p.isFunction', { name });
@@ -317,7 +318,7 @@ class Parser {
  * Compile `src` into a function of (x, y).
  * Throws MathExprError with a .position on bad input.
  */
-export function compile(src, varNames = ['x', 'y']) {
+export function compile(src, varNames = ['x', 'y', 'z']) {
   if (typeof src !== 'string' || src.trim() === '') throw new MathExprError('Expression is empty', 0, 'p.empty');
   const parser = new Parser(tokenize(src), varNames);
   const fn = parser.parseOr();
@@ -325,6 +326,7 @@ export function compile(src, varNames = ['x', 'y']) {
   if (t.type !== 'end') throw new MathExprError('Unexpected trailing input', t.pos, 'p.trailing');
   fn.usesX = !!parser.usesVar.x;
   fn.usesY = !!parser.usesVar.y;
+  fn.usesZ = !!parser.usesVar.z;
   return fn;
 }
 
@@ -332,7 +334,7 @@ export function compile(src, varNames = ['x', 'y']) {
 export function compilePredicate(src, varNames = ['x', 'y']) {
   if (typeof src !== 'string' || src.trim() === '') return () => true;
   const fn = compile(src, varNames);
-  return (x, y) => fn(x, y) > 0.5;
+  return (x, y, z) => fn(x, y, z) > 0.5;
 }
 
 /** Quick syntax check used by the input boxes. Returns null or an error message. */

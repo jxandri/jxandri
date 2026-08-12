@@ -24,6 +24,12 @@ const STRINGS = {
     'panel.show': 'Show panel (Tab)',
 
     'sec.function': 'Function',
+    'surf.kind': 'Kind of surface',
+    'surf.graph': 'Graph — z = f(x, y)',
+    'surf.implicit': 'Implicit — F(x, y, z) = 0',
+    'surf.parametric': 'Parametric — r(u, v)',
+    'surf.flabel': 'F(x, y, z) =',
+    'surf.note': 'This surface is not the graph of a function, so walking, partial derivatives and level curves do not apply. Fly around it with the drone.',
     'fn.label': 'f(x, y) =',
     'fn.examples': '— examples —',
     'fn.cobb05': 'Cobb–Douglas  (x·y)^0.5',
@@ -132,6 +138,7 @@ const STRINGS = {
 
     'msg.undefinedFrac': 'f is undefined on {pct}% of the domain',
     'msg.emptyFeasible': 'the feasible set is empty here',
+    'surf.empty': 'That surface is empty in this box — widen the bounds or check the formula.',
     'err.emptyDomain': 'Domain is empty — check that x max > x min and y max > y min.',
     'err.undefinedEverywhere': 'f(x,y) is undefined everywhere on this domain.',
     'err.at': '(at character {pos})',
@@ -161,6 +168,12 @@ const STRINGS = {
     'panel.show': 'Mostrar el panel (Tab)',
 
     'sec.function': 'Función',
+    'surf.kind': 'Tipo de superficie',
+    'surf.graph': 'Gráfica — z = f(x, y)',
+    'surf.implicit': 'Implícita — F(x, y, z) = 0',
+    'surf.parametric': 'Paramétrica — r(u, v)',
+    'surf.flabel': 'F(x, y, z) =',
+    'surf.note': 'Esta superficie no es la gráfica de una función, así que caminar, las derivadas parciales y las curvas de nivel no aplican. Recórrala con el dron.',
     'fn.label': 'f(x, y) =',
     'fn.examples': '— ejemplos —',
     'fn.cobb05': 'Cobb–Douglas  (x·y)^0.5',
@@ -269,6 +282,7 @@ const STRINGS = {
 
     'msg.undefinedFrac': 'f no está definida en el {pct}% del dominio',
     'msg.emptyFeasible': 'el conjunto factible está vacío aquí',
+    'surf.empty': 'Esa superficie está vacía en esta caja: amplíe los límites o revise la fórmula.',
     'err.emptyDomain': 'El dominio está vacío: verifique que x máx > x mín y que y máx > y mín.',
     'err.undefinedEverywhere': 'f(x,y) no está definida en ningún punto de este dominio.',
     'err.at': '(en el carácter {pos})',

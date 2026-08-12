@@ -53,6 +53,58 @@
 
     <section>
       <h2 data-i18n="sec.function">Function</h2>
+      <label class="field"><span data-i18n="surf.kind">Kind of surface</span>
+        <select id="sel-surface" class="preset">
+          <option value="graph" data-i18n="surf.graph">Graph — z = f(x, y)</option>
+          <option value="implicit" data-i18n="surf.implicit">Implicit — F(x, y, z) = 0</option>
+          <option value="parametric" data-i18n="surf.parametric">Parametric — r(u, v)</option>
+        </select>
+      </label>
+
+      <div id="grp-implicit" hidden>
+        <label class="field"><span data-i18n="surf.flabel">F(x, y, z) =</span>
+          <input id="in-implicit" type="text" spellcheck="false" autocomplete="off" value="x^2+y^2+z^2-1"></label>
+        <select id="preset-implicit" class="preset">
+          <option value="" data-i18n="fn.examples">— examples —</option>
+          <option value="x^2+y^2+z^2-1">Sphere  x²+y²+z² = 1</option>
+          <option value="(sqrt(x^2+y^2)-1)^2+z^2-0.16">Torus</option>
+          <option value="x^2+y^2-z^2">Cone  x²+y² = z²</option>
+          <option value="x^2+y^2-z^2-1">Hyperboloid of one sheet</option>
+          <option value="x^2+y^2+z^2-2*(x^2+y^2)">Torus-like quartic</option>
+          <option value="sin(3x)+sin(3y)+sin(3z)">Triply periodic (gyroid-like)</option>
+        </select>
+        <div class="grid4">
+          <label class="field mini"><span>z min</span><input id="in-zmin" type="number" step="any" value="-1.5"></label>
+          <label class="field mini"><span>z max</span><input id="in-zmax" type="number" step="any" value="1.5"></label>
+        </div>
+        <div id="err-implicit" class="err" hidden></div>
+      </div>
+
+      <div id="grp-parametric" hidden>
+        <label class="field"><span>X(u, v) =</span>
+          <input id="in-px" type="text" spellcheck="false" autocomplete="off" value="cos(u)*sin(v)"></label>
+        <label class="field"><span>Y(u, v) =</span>
+          <input id="in-py" type="text" spellcheck="false" autocomplete="off" value="sin(u)*sin(v)"></label>
+        <label class="field"><span>Z(u, v) =</span>
+          <input id="in-pz" type="text" spellcheck="false" autocomplete="off" value="cos(v)"></label>
+        <select id="preset-param" class="preset">
+          <option value="" data-i18n="fn.examples">— examples —</option>
+          <option value="cos(u)*sin(v)|sin(u)*sin(v)|cos(v)|0|6.2832|0|3.1416">Sphere (polar)</option>
+          <option value="(2+cos(v))*cos(u)|(2+cos(v))*sin(u)|sin(v)|0|6.2832|0|6.2832">Torus</option>
+          <option value="u*cos(v)|u*sin(v)|v/3|0|1.5|0|12.566">Helicoid</option>
+          <option value="cos(u)*(3+cos(u/2)*sin(v)-sin(u/2)*sin(2v))|sin(u)*(3+cos(u/2)*sin(v)-sin(u/2)*sin(2v))|sin(u/2)*sin(v)+cos(u/2)*sin(2v)|0|6.2832|0|6.2832">Klein bottle (figure-8)</option>
+          <option value="u|v|u^2-v^2|-1.5|1.5|-1.5|1.5">Saddle as a patch</option>
+        </select>
+        <div class="grid4">
+          <label class="field mini"><span>u min</span><input id="in-umin" type="number" step="any" value="0"></label>
+          <label class="field mini"><span>u max</span><input id="in-umax" type="number" step="any" value="6.2832"></label>
+          <label class="field mini"><span>v min</span><input id="in-vmin" type="number" step="any" value="0"></label>
+          <label class="field mini"><span>v max</span><input id="in-vmax" type="number" step="any" value="3.1416"></label>
+        </div>
+        <div id="err-param" class="err" hidden></div>
+      </div>
+
+      <div id="grp-graph">
       <label class="field">
         <span data-i18n="fn.label">f(x, y) =</span>
         <input id="in-fn" type="text" spellcheck="false" autocomplete="off" value="(x*y)^0.5">
@@ -71,6 +123,8 @@
         <option value="x*y*exp(-(x^2+y^2))" data-i18n="fn.xyexp">x·y·e^−(x²+y²)</option>
       </select>
       <div id="err-fn" class="err" hidden></div>
+      </div>
+      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so walking, partial derivatives and level curves do not apply. Fly around it with the drone.</p>
     </section>
 
     <section>
@@ -103,7 +157,7 @@
       <button id="btn-apply" class="primary" data-i18n="dom.rebuild">Rebuild terrain</button>
     </section>
 
-    <section>
+    <section id="sec-feasible">
       <h2 data-i18n="sec.feasible">Feasible set</h2>
       <label class="field">
         <span data-i18n="feas.label">constraints</span>
@@ -122,7 +176,7 @@
       <label class="check"><input id="t-isolate" type="checkbox"><span><span data-i18n="feas.isolate">Make the outside translucent</span> <kbd>G</kbd></span></label>
     </section>
 
-    <section>
+    <section id="sec-map">
       <h2 data-i18n="sec.map">Map &amp; terrain</h2>
       <label class="check"><input id="t-contours" type="checkbox"><span><span data-i18n="map.contours">Level curves</span> <kbd>C</kbd></span></label>
       <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
@@ -141,7 +195,7 @@
       <label class="check"><input id="t-shadow" type="checkbox"><span><span data-i18n="map.shadows">Shadows (costs performance)</span></span></label>
     </section>
 
-    <section>
+    <section id="sec-deriv">
       <h2 data-i18n="sec.deriv">Derivatives</h2>
       <label class="check"><input id="t-disc" type="checkbox"><span><span data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
       <label class="range">
@@ -155,14 +209,14 @@
       <p class="note" id="note-dir" hidden data-i18n-html="deriv.dirnote">The explorer is frozen — move the mouse to swing <b>u</b> around the rim.</p>
     </section>
 
-    <section>
+    <section id="sec-curve">
       <h2 data-i18n="sec.curve">The curve under your feet</h2>
       <label class="check"><input id="t-curcurve" type="checkbox"><span><span data-i18n="curve.show">Level curve you are standing on</span> <kbd>J</kbd></span></label>
       <label class="check"><input id="t-curtan" type="checkbox"><span><span data-i18n="curve.tangent">Tangent line to that curve</span> <kbd>K</kbd></span></label>
       <p class="note" data-i18n="curve.note">Both follow the explorer continuously. The tangent stays dead level, because a level curve is where the height does not change.</p>
     </section>
 
-    <section>
+    <section id="sec-zoom">
       <h2 data-i18n="sec.zoom">Tangent plane &amp; scale</h2>
       <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
       <label class="range">
@@ -173,7 +227,7 @@
       <p class="note" data-i18n="zoom.note">The dial only shrinks the explorer, never enlarges them. Turn on the tangent plane and slide it down: a differentiable surface becomes indistinguishable from its plane.</p>
     </section>
 
-    <section>
+    <section id="sec-opt">
       <h2 data-i18n="sec.opt">Optimisation</h2>
       <label class="check"><input id="t-opt" type="checkbox"><span><span data-i18n="opt.show">Show optimum</span> <kbd>O</kbd></span></label>
       <div id="opt-report" class="report" data-i18n="opt.idle">Maximise f over the feasible set.</div>
