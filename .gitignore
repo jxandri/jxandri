@@ -1,3 +1,5 @@
+node_modules
 node_modules/
+dist/package/
 *.log
 .DS_Store
