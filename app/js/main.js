@@ -930,8 +930,8 @@ function wireUI() {
   bindCheck('t-isolate', 'isolate', () => { applyIsolation(); });
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
-  bindCheck('t-curcurve', 'curCurve');
-  bindCheck('t-curtan', 'curTangent');
+  bindCheck('t-curcurve', 'curCurve', () => { if (state.curCurve) goToExplorer(); });
+  bindCheck('t-curtan', 'curTangent', () => { if (state.curTangent) goToExplorer(); });
 
   $('in-cstep').addEventListener('change', (e) => {
     const v = parseFloat(e.target.value);
@@ -963,11 +963,11 @@ function wireUI() {
     });
   });
 
-  bindCheck('t-disc', 'disc');
+  bindCheck('t-disc', 'disc', () => { if (state.disc) goToExplorer(); });
   bindCheck('t-dx', 'showDx', ensureDisc);
   bindCheck('t-dy', 'showDy', ensureDisc);
   bindCheck('t-grad', 'showGrad', ensureDisc);
-  bindCheck('t-tangent', 'tangent');
+  bindCheck('t-tangent', 'tangent', () => { if (state.tangent) goToExplorer(); });
   bindCheck('t-dir', 'showDir', () => {
     ensureDisc();
     player.frozen = state.showDir;
@@ -1087,11 +1087,28 @@ function wireLanguage() {
   });
 }
 
-/** Turning on an arrow implies you want the neighbourhood shown. */
+/**
+ * Turning on an arrow implies you want the neighbourhood shown — and that you
+ * want to be somewhere you can see it.
+ *
+ * The gizmo is a few metres across, sized against a 1.80 m explorer, and the
+ * opening shot is a drone several hundred metres up framing the whole surface.
+ * Ticking "Gradient ∇f" from up there paints two pixels, which reads exactly
+ * like a broken feature. Anything drawn at the explorer's feet therefore brings
+ * the camera down to the explorer's shoulder, which is the view the whole
+ * section is written for.
+ */
+function goToExplorer() {
+  if (player && player.mode === MODE_DRONE && state.surfaceKind === 'graph') {
+    setMode(MODE_THIRD);
+  }
+}
+
 function ensureDisc() {
   if (state.showDx || state.showDy || state.showGrad || state.showDir) {
     if (!state.disc) { state.disc = true; $('t-disc').checked = true; }
   }
+  goToExplorer();
 }
 
 const ZOOM_MIN = 1e-4;   // explorer 0.18 mm tall

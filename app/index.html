@@ -82,6 +82,31 @@
       </div>
 
       <div id="grp-parametric" hidden>
+        <label class="field"><span data-i18n="shape.named">Named surface</span>
+          <select id="sel-shape" class="preset">
+            <option value="" data-i18n="shape.custom">— custom (type below) —</option>
+            <option value="sphere" data-i18n="shape.sphere">Sphere — radius a</option>
+            <option value="torus" data-i18n="shape.torus">Torus — radii a, b</option>
+            <option value="pseudo" data-i18n="shape.pseudo">Pseudosphere — radius a</option>
+            <option value="hyper1" data-i18n="shape.hyper1">Hyperboloid, one sheet — a, b</option>
+            <option value="catenoid" data-i18n="shape.catenoid">Catenoid — waist a</option>
+            <option value="helicoid" data-i18n="shape.helicoid">Helicoid — radius a, pitch b</option>
+            <option value="mobius" data-i18n="shape.mobius">Möbius strip — radius a, width b</option>
+            <option value="klein" data-i18n="shape.klein">Klein bottle (3D immersion) — a</option>
+            <option value="cross" data-i18n="shape.cross">Cross-cap — a</option>
+          </select>
+        </label>
+        <div id="grp-shapeparams" hidden>
+          <label class="range">
+            <span><span id="lbl-pa-name" data-i18n="shape.pa">a</span> <b id="lbl-pa">1.00</b></span>
+            <input id="in-pa" type="range" min="0.1" max="3" step="0.05" value="1">
+          </label>
+          <label class="range">
+            <span><span id="lbl-pb-name" data-i18n="shape.pb">b</span> <b id="lbl-pb">0.40</b></span>
+            <input id="in-pb" type="range" min="0.05" max="3" step="0.05" value="0.4">
+          </label>
+          <p class="note" id="note-orientable"></p>
+        </div>
         <label class="field"><span>X(u, v) =</span>
           <input id="in-px" type="text" spellcheck="false" autocomplete="off" value="cos(u)*sin(v)"></label>
         <label class="field"><span>Y(u, v) =</span>
@@ -148,7 +173,7 @@
       </select>
       <div id="err-fn" class="err" hidden></div>
       </div>
-      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so walking, partial derivatives and level curves do not apply. Fly around it with the drone.</p>
+      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so partial derivatives and level curves of a height do not apply — but you can still walk on it. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
     </section>
 
     <section>
@@ -266,6 +291,19 @@
         <button data-mode="third" class="mode active"><span data-i18n="view.third">Third person</span> <kbd>2</kbd></button>
         <button data-mode="drone" class="mode"><span data-i18n="view.drone">Drone</span> <kbd>3</kbd></button>
       </div>
+      <div id="fld-orient" hidden>
+        <label class="check"><input id="t-inside" type="checkbox"><span><span data-i18n="orient.inside">Walk on the inside</span> <kbd>I</kbd></span></label>
+        <label class="field"><span data-i18n="orient.up">Which way is up</span>
+          <select id="sel-up" class="preset">
+            <option value="normal" data-i18n="orient.normal">Normal to the tangent plane</option>
+            <option value="z" data-i18n="orient.z">World z (the usual vertical)</option>
+            <option value="x" data-i18n="orient.x">World x</option>
+            <option value="y" data-i18n="orient.y">World y</option>
+          </select>
+        </label>
+        <p class="note" data-i18n="orient.note">Click the surface to land the explorer on it. Walking keeps them upright with respect to the surface: on a sphere that is a planet, on a Möbius strip one lap brings them back upside down, which is what non-orientable means. In third person the camera holds a fixed height and circles, so the movement reads in three dimensions.</p>
+      </div>
+
       <label class="field" id="fld-dronecam" hidden><span data-i18n="view.dronecam">Drone camera</span>
         <select id="sel-dronecam" class="preset">
           <option value="first" data-i18n="view.dronefirst">First person — from the drone</option>
