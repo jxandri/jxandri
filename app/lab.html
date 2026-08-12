@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d1117">
-<title>Gradient Peaks — walk on the graph of f(x,y)</title>
+<title>Gradient Peaks Lab — the surface and its map, side by side</title>
 <meta name="description" content="A light 3D sandbox for exploring surface plots, level curves, partial derivatives, gradients and constrained maxima of functions of two variables.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/lab.css">
 </head>
 <body>
 
@@ -38,14 +39,21 @@
   <span id="r-msg" class="pill pill-warn" hidden></span>
 </div>
 
+
+<div id="proj-wrap" hidden>
+  <canvas id="minimap"></canvas>
+  <div id="proj-label" data-i18n="lab.projlabel">the (x, y) plane</div>
+</div>
+
 <div id="crosshair" hidden></div>
 
 <!-- ================================ panel ============================== -->
 <aside id="panel">
   <header id="panel-head">
-    <h1>Gradient&nbsp;Peaks</h1>
+    <h1>Gradient&nbsp;Peaks <em>Lab</em></h1>
     <div class="head-tools">
       <button id="lang-toggle" type="button" aria-label="Language / Idioma"><span id="lang-flag">EN</span></button>
+      <button id="btn-full" type="button" data-i18n-title="lab.full" title="Full screen (F11 or this button)" aria-label="Full screen">⛶</button>
       <button id="panel-toggle" data-i18n-title="panel.hide" title="Hide panel (Tab)" aria-label="Hide panel">‹</button>
     </div>
   </header>
@@ -284,6 +292,28 @@
       <button id="btn-goto" class="ghost" disabled data-i18n="opt.goto">Teleport to the optimum</button>
     </section>
 
+
+    <section id="sec-proj">
+      <h2 data-i18n="lab.sec">Flat map panel</h2>
+      <label class="field"><span data-i18n="lab.mode">What the panel shows</span>
+        <select id="sel-proj" class="preset">
+          <option value="ramp" data-i18n="lab.ramp">Heat map on the level-curve ramp</option>
+          <option value="heat" data-i18n="lab.heat">Classical heat map</option>
+          <option value="down" data-i18n="lab.down">Looking straight down at the surface</option>
+          <option value="off" data-i18n="lab.off">Nothing — hide the panel</option>
+        </select>
+      </label>
+      <label class="range">
+        <span><span data-i18n="lab.opacity">Panel opacity</span> <b id="lbl-projop">0.88</b></span>
+        <input id="in-projop" type="range" min="0.15" max="1" step="0.01" value="0.88">
+      </label>
+      <label class="range">
+        <span><span data-i18n="lab.size">Panel size</span> <b id="lbl-projsize">1.00×</b></span>
+        <input id="in-projsize" type="range" min="0.5" max="2.2" step="0.05" value="1">
+      </label>
+      <p class="note" data-i18n="lab.note">The panel is the picture your textbook draws: the domain seen from above, with the same level curves in the same colours, the same tangent line, and the explorer as a dot. Everything on it is the same state as the scene behind — walk in the 3D view and the dot walks on the map.</p>
+    </section>
+
     <section>
       <h2 data-i18n="sec.view">View</h2>
       <div class="modes">
@@ -331,7 +361,7 @@
         <b data-i18n="help.updown">Drone up/down</b> Space / Ctrl<br>
         <b data-i18n="help.release">Release the mouse</b> Esc · <b data-i18n="help.hide">hide this panel</b> Tab</p>
         <p class="note" data-i18n-html="help.syntax"></p>
-        <p class="note"><a id="other-app" href="lab.html" style="color:var(--accent)" data-i18n="lab.link">Open the Lab — the same program with a flat map panel beside the scene</a></p>
+        <p class="note"><a id="other-app" href="index.html" style="color:var(--accent)" data-i18n="lab.linkback">Back to the classic layout</a></p>
       </div>
     </section>
   </div>

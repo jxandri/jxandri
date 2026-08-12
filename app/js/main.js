@@ -12,11 +12,12 @@ import {
 import { Decorations } from './decor.js';
 import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
-  maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo,
+  maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo, traceLevelCurve,
 } from './analysis.js';
 import { Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
 import { ParametricWalker, ImplicitWalker } from './walker.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
+import { Projection } from './projection.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
 } from './i18n.js';
@@ -191,6 +192,18 @@ const altView = {
   scale: 1,             // world units per unit of the surface's own coordinates
   charScale: 1,         // world units per unit of the character
 };
+
+/*
+ * The flat map beside the solid one — the Lab page only.
+ *
+ * Everything is driven off the same state as the scene, so nothing can drift
+ * between the two pictures; the original page simply has no #minimap and every
+ * call below is a no-op there. That is the whole cost of shipping two front
+ * ends from one program.
+ */
+const projection = $('minimap') ? new Projection($('minimap')) : null;
+const projState = { mode: 'ramp', opacity: 0.88, size: 1 };
+let topCam = null;
 
 const world = new THREE.Group();
 scene.add(world);
@@ -601,6 +614,7 @@ function rebuild() {
   applyPalette();
   applyIsolation();
   refreshContours();
+  refreshProjection();
   refreshOptimum();
   reportStats();
   return true;
@@ -701,6 +715,7 @@ function refreshContours() {
   contourLines = buildContours(field, grid, picked.levels || [], { width: state.pathWidth });
   if (contourLines) world.add(contourLines);
   updateContourNote();
+  refreshProjection();
 }
 
 function updateContourNote() {
@@ -1034,6 +1049,8 @@ function applySurfaceKindUI() {
   $('grp-parametric').hidden = state.surfaceKind !== 'parametric';
   $('note-alt').hidden = graph;
 
+  if (projection) applyProjectionStyle();
+
   // Grey out the sections that only mean something on a graph.
   for (const id of ['sec-feasible', 'sec-map', 'sec-deriv', 'sec-curve', 'sec-zoom', 'sec-opt']) {
     const el = $(id);
@@ -1359,7 +1376,35 @@ function wireUI() {
     b.addEventListener('click', () => setMode(b.dataset.mode));
   }
 
+  if (projection) {
+    $('sel-proj').addEventListener('change', (e) => {
+      projState.mode = e.target.value;
+      applyProjectionStyle();
+    });
+    $('in-projop').addEventListener('input', (e) => {
+      projState.opacity = parseFloat(e.target.value);
+      $('lbl-projop').textContent = projState.opacity.toFixed(2);
+      applyProjectionStyle();
+    });
+    $('in-projsize').addEventListener('input', (e) => {
+      projState.size = parseFloat(e.target.value);
+      $('lbl-projsize').textContent = `${projState.size.toFixed(2)}×`;
+      applyProjectionStyle();
+    });
+    $('btn-full').addEventListener('click', toggleFullscreen);
+  }
+
   updateZoomLabels();
+}
+
+/** Full screen, with the browser's own chrome out of the way. */
+function toggleFullscreen() {
+  const el = document.documentElement;
+  if (document.fullscreenElement) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else if (el.requestFullscreen || el.webkitRequestFullscreen) {
+    (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  }
 }
 
 function wireLanguage() {
@@ -1543,6 +1588,109 @@ function updateHUD(readout) {
   }
 }
 
+/* ------------------------------------------------------- the flat map */
+
+const projRGB = [0, 0, 0];
+
+/** Point the panel at the current field, and rebuild its baked layer. */
+function refreshProjection() {
+  if (!projection || !field || !grid) return;
+  const { levels } = chooseLevels(grid.zmin, grid.zmax, {
+    step: state.contourStep, target: 40,
+  });
+  projection.setField(field, grid, levels);
+  applyProjectionStyle();
+}
+
+function applyProjectionStyle() {
+  if (!projection) return;
+  const wrap = $('proj-wrap');
+  projection.mode = projState.mode;
+  projection.dirty = true;
+  wrap.style.setProperty('--proj-opacity', projState.opacity);
+  wrap.style.setProperty('--proj-scale', projState.size);
+  // 'down' is a real render of the scene from above, not a 2D drawing, so the
+  // canvas is left empty and the WebGL pass fills the same rectangle.
+  wrap.hidden = projState.mode === 'off' || state.surfaceKind !== 'graph';
+  wrap.classList.toggle('down', projState.mode === 'down');
+}
+
+function drawProjection() {
+  if (!projection || $('proj-wrap').hidden) return;
+  const wrap = $('proj-wrap');
+  const r = wrap.getBoundingClientRect();
+  projection.resize(r.width, r.height);
+
+  if (projState.mode === 'down') {
+    // The 2D canvas sits on top of the WebGL one, so it has to be wiped or the
+    // last heat map keeps showing through where the render should be.
+    projection.ctx.clearRect(0, 0, projection.canvas.width, projection.canvas.height);
+    renderTopDown(r);
+    return;
+  }
+  if (!field || !grid || !player) return;
+
+  const z = player.height();
+  let curve = null;
+  if (state.curCurve && isFinite(z)) {
+    curve = traceLevelCurve(field, player.x, player.y);
+    heightColor(grid.norm(z), projRGB);
+  }
+
+  let tangent = null;
+  if (state.curTangent && isFinite(z)) {
+    const [gx, gy] = field.gradient(player.x, player.y);
+    const gm = Math.hypot(gx, gy);
+    if (gm > 1e-12) tangent = { x: player.x, y: player.y, ux: -gy / gm, uy: gx / gm };
+  }
+
+  projection.draw({
+    contours: state.contours,
+    curve, curveRGB: projRGB, tangent,
+    player: { x: player.x, y: player.y },
+    feasible: predicate, showFeasible: state.feasible || state.isolate,
+  });
+}
+
+/**
+ * The other panel mode: the scene itself, seen from directly overhead.
+ *
+ * Rendered with the scissor test into the same rectangle the 2D panel occupies,
+ * which costs one extra pass and no render target. It is the honest version of
+ * "project the surface onto z = 0" — trees, water and all — where the drawn map
+ * is the idealised one.
+ */
+function renderTopDown(rect) {
+  if (!field) return;
+  if (!topCam) topCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1e5);
+
+  const half = field.worldSize * 0.52;
+  const aspect = rect.width / Math.max(1, rect.height);
+  const hx = aspect >= 1 ? half * aspect : half;
+  const hy = aspect >= 1 ? half : half / aspect;
+  topCam.left = -hx; topCam.right = hx; topCam.top = hy; topCam.bottom = -hy;
+  topCam.position.set(field.worldX(field.cx), field.worldSize * 4, field.worldZ(field.cy));
+  topCam.up.set(0, 0, -1);
+  topCam.lookAt(field.worldX(field.cx), 0, field.worldZ(field.cy));
+  topCam.near = 0.1;
+  topCam.far = field.worldSize * 12;
+  topCam.updateProjectionMatrix();
+
+  // Device pixels, and the y axis measured from the bottom of the canvas.
+  const dpr = renderer.getPixelRatio();
+  const x = Math.round(rect.left * dpr);
+  const y = Math.round((window.innerHeight - rect.bottom) * dpr);
+  const w = Math.round(rect.width * dpr);
+  const h = Math.round(rect.height * dpr);
+
+  renderer.setScissorTest(true);
+  renderer.setViewport(x, y, w, h);
+  renderer.setScissor(x, y, w, h);
+  renderer.render(scene, topCam);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
+}
+
 /* ------------------------------------------------------------- the loop */
 
 // Orbit state used only when an implicit or parametric surface is on screen:
@@ -1628,6 +1776,7 @@ function animate() {
     if (sky) sky.position.copy(camera.position);
     updateHUD(null);
     renderer.render(scene, camera);
+    if (projection) projection.draw({});
     return;
   }
 
@@ -1692,6 +1841,7 @@ function animate() {
 
   updateHUD(readout);
   renderer.render(scene, camera);
+  drawProjection();
 }
 
 /* ---------------------------------------------------------------- start */
