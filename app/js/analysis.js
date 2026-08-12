@@ -324,7 +324,9 @@ export class TangentLineGizmo {
     geom.rotateX(-Math.PI / 2);
     this.geometry = geom;
     this.material = new THREE.MeshBasicMaterial({
-      color: 0x18324a, side: THREE.DoubleSide, toneMapped: false, fog: false,
+      // Magenta: nothing else in the palette is near it, so the tangent reads
+      // against green, tan, snow and water alike.
+      color: 0xff2f9e, side: THREE.DoubleSide, toneMapped: false, fog: false,
       transparent: true, opacity: 0.95,
       polygonOffset: true, polygonOffsetFactor: -12, polygonOffsetUnits: -24,
     });

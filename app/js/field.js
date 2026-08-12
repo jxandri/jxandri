@@ -256,8 +256,21 @@ export class FieldGrid {
     this.slopeRef = Math.max(median, (this.zmax - this.zmin) * 1e-3, 1e-6);
   }
 
-  /** Normalised height in [0,1], used for biome and hypsometric colouring. */
+  /** Normalised height in [0,1] over the full range. Drives the height ramp. */
   norm(z) { return (z - this.zmin) / (this.zmax - this.zmin); }
+
+  /**
+   * Normalised height over the *land* — the part above the waterline.
+   *
+   * The terrain bands have to be spread over ground you can actually stand on.
+   * Measured against the full range, a surface that spends half its depth under
+   * water would put beach, forest and meadow below the surface and leave every
+   * visible slope in the arid and volcanic bands.
+   */
+  landNorm(z) {
+    const base = this.zmin < 0 ? 0 : this.zmin;
+    return (z - base) / Math.max(1e-9, this.zmax - base);
+  }
 
   /**
    * Height of the *rendered* triangle mesh at (x, y) — not of f itself.

@@ -109,36 +109,64 @@ export function heightColor(h, out) {
   return mixRGB(HEIGHT_RAMP[i], HEIGHT_RAMP[i + 1], t - i, out);
 }
 
-// Realistic terrain ramp, keyed on normalised height. Deliberately bright:
-// these are albedos, and a muddy albedo under a soft sky reads as grey mush.
-const SILT = [0.46, 0.41, 0.31];
-const SAND = [0.90, 0.84, 0.60];
-const GRASS = [0.47, 0.76, 0.28];
-const GRASS_DRY = [0.79, 0.74, 0.33];   // sun-bleached meadow
-const GRASS_COOL = [0.33, 0.63, 0.41];  // damp, blue-green pasture
-const FOREST = [0.31, 0.58, 0.24];
-const FOREST_DEEP = [0.20, 0.40, 0.19];
-const SCREE = [0.74, 0.71, 0.66];
-const SNOW = [0.99, 0.99, 1.00];
+/**
+ * The qualitative gradient: eight terrain characters, low to high.
+ *
+ *   1 water   2 beach   3 deep vegetation   4 light vegetation
+ *   5 arid    6 volcanic rock   7 snow   8 cloud
+ *
+ * Each band has a colour here and a population of scenery in decor.js, and both
+ * are blended continuously rather than switched, so one character gives way to
+ * the next the way a real mountainside does. Deliberately bright: these are
+ * albedos, and a muddy albedo under a soft sky reads as grey mush.
+ */
+const BAND_WATER = [0.13, 0.42, 0.55];    // lake bed seen through the water
+const BAND_BEACH = [0.95, 0.89, 0.66];    // pale sand
+const BAND_VEG_DEEP = [0.15, 0.47, 0.17];
+const BAND_VEG_LIGHT = [0.55, 0.78, 0.29];
+const BAND_ARID = [0.82, 0.55, 0.34];     // Utah / Atacama red-tan
+const BAND_VOLCANIC = [0.76, 0.69, 0.30]; // sulphur yellow over rock
+const BAND_SNOW = [0.98, 0.98, 1.00];
+const BAND_CLOUD = [0.96, 0.97, 1.00];
 
-// Three rock families. Which one you are standing on varies over tens of
-// metres, which is most of what makes high ground look like anything at all.
+const BANDS = [
+  BAND_WATER, BAND_BEACH, BAND_VEG_DEEP, BAND_VEG_LIGHT,
+  BAND_ARID, BAND_VOLCANIC, BAND_SNOW, BAND_CLOUD,
+];
+
+// Where each band sits on the normalised height axis. Not evenly spaced: the
+// vegetated middle is where the eye spends its time, so it gets more room.
+const BAND_AT = [0.00, 0.10, 0.22, 0.40, 0.56, 0.70, 0.84, 1.00];
+
+export const BAND_COUNT = BANDS.length;
+
+/**
+ * How strongly band `i` is present at normalised height `h`.
+ * A tent function over the neighbouring stops — the same weights decor.js uses
+ * to decide how often to plant a tree or drop a boulder, so the scenery and the
+ * colour always agree about what kind of ground this is.
+ */
+export function bandWeight(i, h) {
+  const c = BAND_AT[i];
+  const lo = i > 0 ? BAND_AT[i - 1] : c - 0.12;
+  const hi = i < BAND_AT.length - 1 ? BAND_AT[i + 1] : c + 0.12;
+  if (h <= lo || h >= hi) return 0;
+  return h < c ? (h - lo) / (c - lo) : (hi - h) / (hi - c);
+}
+
+// Rock families still vary the high ground, so a summit is not one grey slab.
 const ROCK_COOL = [0.62, 0.62, 0.64];   // grey granite
-const ROCK_WARM = [0.72, 0.58, 0.44];   // ochre sandstone
-const ROCK_DARK = [0.38, 0.36, 0.39];   // dark basalt
+const ROCK_WARM = [0.78, 0.60, 0.42];   // ochre sandstone
+const ROCK_DARK = [0.40, 0.37, 0.36];   // dark basalt
 const LICHEN = [0.58, 0.65, 0.40];
 
 const ROCK_TMP = [0, 0, 0];
 
-/**
- * The rock colour at a point: two families blended over a long wavelength, a
- * darker mineral in patches, and faint strata banding on the harsher ground.
- */
+/** Two rock families blended over a long wavelength, plus strata banding. */
 function rockTint(macro, meso, h, rugged, out) {
   mixRGB(ROCK_COOL, ROCK_WARM, smoothstep(0.30, 0.78, macro), out);
-  mixRGB(out, ROCK_DARK, smoothstep(0.58, 0.95, meso) * 0.60, out);
+  mixRGB(out, ROCK_DARK, smoothstep(0.58, 0.95, meso) * 0.55, out);
 
-  // Horizontal bands, as if bedding planes were exposed by the slope.
   const strata = 0.5 + 0.5 * Math.sin(h * 52 + macro * 7.0);
   const k = 1 + (strata - 0.5) * 0.20 * rugged;
   out[0] *= k; out[1] *= k; out[2] *= k;
@@ -146,7 +174,7 @@ function rockTint(macro, meso, h, rugged, out) {
 }
 
 /**
- * Biome colour for a surface point.
+ * Surface colour under the qualitative gradient.
  *
  * @param h      normalised height in [0,1]
  * @param z      raw height (so the waterline at z = 0 means something)
@@ -163,58 +191,46 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   const fine = fbm(wx, wz, 7, 331, 2);      // ground texture at walking range
 
   const steep = smoothstep(1.35, 3.2, slope);
-
-  // How harsh this ground is: steep and high is tough, low and flat is gentle.
-  // Everything below scales its variation by this, so meadows stay calm while
-  // the summits break up into patches of different stone.
   const rugged = Math.min(1, 0.60 * smoothstep(0.70, 2.60, slope)
                            + 0.40 * smoothstep(0.45, 0.95, h));
 
-  // Let the biome boundaries wander instead of tracking the level curves
+  // Let the band boundaries wander instead of tracking the level curves
   // exactly — nothing in nature changes colour along a contour, and a band that
   // does is the giveaway that you are looking at a plot rather than a place.
-  const t = h + (macro - 0.5) * 0.13 + (meso - 0.5) * 0.05;
+  const t = Math.min(1, Math.max(0, h + (macro - 0.5) * 0.11 + (meso - 0.5) * 0.045));
 
-  if (z < 0) {
-    // Lake bed: silt, drying to sand near the shoreline.
-    mixRGB(SILT, SAND, 0.25 + macro * 0.45, out);
-  } else if (t < 0.26) {
-    mixRGB(SAND, GRASS, smoothstep(0.0, 0.12, t), out);
-    mixRGB(out, GRASS_DRY, smoothstep(0.30, 0.78, veg) * 0.55, out);
-  } else if (t < 0.62) {
-    mixRGB(GRASS, FOREST, smoothstep(0.24, 0.74, t), out);
-    // Meadows and clearings run dry and strawy; the hollows between them hold
-    // darker, denser growth.
-    mixRGB(out, GRASS_DRY, smoothstep(0.34, 0.80, veg) * 0.52, out);
-    mixRGB(out, GRASS_COOL, smoothstep(0.62, 0.20, veg) * 0.42, out);
-    mixRGB(out, FOREST_DEEP, smoothstep(0.52, 0.92, meso) * 0.45, out);
-    // Scrub and bare earth showing through at close range.
-    mixRGB(out, GRASS_DRY, smoothstep(0.58, 0.95, fine) * 0.26, out);
-  } else if (t < 0.80) {
-    mixRGB(FOREST, rockTint(macro, meso, h, rugged, ROCK_TMP), smoothstep(0.62, 0.80, t), out);
-  } else if (t < 0.90) {
-    mixRGB(rockTint(macro, meso, h, rugged, ROCK_TMP), SCREE, smoothstep(0.80, 0.90, t), out);
-  } else {
-    mixRGB(SCREE, SNOW, smoothstep(0.87, 0.97, t), out);
+  // Blend the two bands `t` falls between.
+  let i = 0;
+  while (i < BAND_AT.length - 2 && t > BAND_AT[i + 1]) i++;
+  const span = BAND_AT[i + 1] - BAND_AT[i] || 1e-6;
+  mixRGB(BANDS[i], BANDS[i + 1], (t - BAND_AT[i]) / span, out);
+
+  // Anything actually below the waterline is lake bed, whatever the band says.
+  if (z < 0) mixRGB(out, BAND_WATER, 0.75, out);
+
+  // The vegetation bands break into patches of lighter and darker growth.
+  const vegetated = bandWeight(2, t) + bandWeight(3, t);
+  if (vegetated > 0.01) {
+    mixRGB(out, BAND_VEG_LIGHT, smoothstep(0.35, 0.85, veg) * 0.35 * vegetated, out);
+    mixRGB(out, BAND_VEG_DEEP, smoothstep(0.55, 0.95, meso) * 0.35 * vegetated, out);
   }
 
-  // Steep ground sheds soil and snow: push it toward bare rock.
+  // Steep ground sheds soil at any height: it goes to bare rock.
   if (steep > 0.001) {
-    mixRGB(out, rockTint(macro, meso, h, rugged, ROCK_TMP), steep * 0.78, out);
+    mixRGB(out, rockTint(macro, meso, h, rugged, ROCK_TMP), steep * 0.72, out);
   }
 
-  // Lichen and moss colonise the gentler rock faces.
-  const lichen = smoothstep(0.62, 0.92, meso) * (1 - steep * 0.6) * rugged * 0.30;
+  // Lichen colonises the gentler faces of the arid and volcanic bands.
+  const stony = bandWeight(4, t) + bandWeight(5, t);
+  const lichen = smoothstep(0.62, 0.92, meso) * (1 - steep * 0.6) * stony * 0.28;
   if (lichen > 0.001) mixRGB(out, LICHEN, lichen, out);
 
-  // Snow lies in patches, and only where it can settle. Displacing the snow
-  // line by noise keeps the cap from being a clean band around the peak.
-  const snow = smoothstep(0.86, 1.00, t - steep * 0.12 + (meso - 0.5) * 0.10);
-  if (snow > 0.001) mixRGB(out, SNOW, snow, out);
+  // Snow lies in patches, and only where it can settle.
+  const snow = smoothstep(0.80, 1.00, t - steep * 0.12 + (meso - 0.5) * 0.10);
+  if (snow > 0.001) mixRGB(out, BAND_SNOW, snow, out);
 
-  // Finally, brightness variation. Gentle ground still breathes a little; tough
-  // ground swings hard, which is what stops a summit reading as one grey slab.
-  const amp = 0.13 + 0.34 * rugged;
+  // Brightness variation — subtle on gentle ground, strong on tough.
+  const amp = 0.11 + 0.30 * rugged;
   const swing = (fine - 0.5) * 0.40 + (meso - 0.5) * 0.35 + (macro - 0.5) * 0.25;
   const shade = 1 + swing * 2 * amp;
   out[0] *= shade; out[1] *= shade; out[2] *= shade;
@@ -259,7 +275,7 @@ export function buildSurface(field, grid, predicate) {
 
       const slope = isFinite(grad[0]) && isFinite(grad[1])
         ? Math.hypot(grad[0], grad[1]) / grid.slopeRef : 0;
-      biomeColor(grid.norm(z), z, slope, px, pz, rgb);
+      biomeColor(grid.landNorm(z), z, slope, px, pz, rgb);
       colors[k * 3] = rgb[0]; colors[k * 3 + 1] = rgb[1]; colors[k * 3 + 2] = rgb[2];
     }
   }
@@ -343,7 +359,7 @@ export function recolorSurface(field, grid, geometry, palette) {
         grid.gradientAt(i, j, grad);
         const slope = isFinite(grad[0]) && isFinite(grad[1])
           ? Math.hypot(grad[0], grad[1]) / grid.slopeRef : 0;
-        biomeColor(grid.norm(z), z, slope, field.worldX(grid.x(i)), field.worldZ(yy), rgb);
+        biomeColor(grid.landNorm(z), z, slope, field.worldX(grid.x(i)), field.worldZ(yy), rgb);
       }
       arr[k * 3] = rgb[0]; arr[k * 3 + 1] = rgb[1]; arr[k * 3 + 2] = rgb[2];
     }
@@ -645,7 +661,7 @@ export class SurfaceDetail {
           heightColor(grid.norm(zz), rgb);
         } else {
           const slope = isFinite(gx) && isFinite(gy) ? Math.hypot(gx, gy) / grid.slopeRef : 0;
-          biomeColor(grid.norm(zz), zz, slope, px, pz, rgb);
+          biomeColor(grid.landNorm(zz), zz, slope, px, pz, rgb);
         }
         C[k * 3] = rgb[0]; C[k * 3 + 1] = rgb[1]; C[k * 3 + 2] = rgb[2];
       }

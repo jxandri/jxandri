@@ -11,6 +11,7 @@
  */
 
 import * as THREE from '../vendor/three.module.js';
+import { bandWeight } from './terrain.js';
 
 /* --------------------------------------------------------------- helpers */
 
@@ -163,11 +164,24 @@ function makeGrassGeometry() {
   return g;
 }
 
+function makeCloudGeometry() {
+  const parts = [];
+  const rnd = mulberry32(4242);
+  for (let i = 0; i < 5; i++) {
+    const r = 0.55 + rnd() * 0.55;
+    const g = new THREE.IcosahedronGeometry(r, 1);
+    g.scale(1.25, 0.68, 1.05);
+    g.translate((rnd() - 0.5) * 2.1, (rnd() - 0.5) * 0.45, (rnd() - 0.5) * 1.5);
+    parts.push({ geometry: g, color: 0xf4f8ff });
+  }
+  return mergeParts(parts);
+}
+
 /* --------------------------------------------------------------- the set */
 
 class DecorLayer {
-  constructor(geometry, count, castShadow) {
-    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  constructor(geometry, count, castShadow, material) {
+    const mat = material || new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
     this.mesh = new THREE.InstancedMesh(geometry, mat, count);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.castShadow = !!castShadow;
@@ -247,13 +261,19 @@ export class Decorations {
     const area = field.worldSize * field.worldSize;
     const cap = (per10k) => Math.max(16, Math.round((area / 10000) * per10k * density));
 
-    const conifer = new DecorLayer(makeTreeGeometry('conifer'), cap(150), shadows);
-    const broadleaf = new DecorLayer(makeTreeGeometry('broadleaf'), cap(90), shadows);
-    const rock = new DecorLayer(makeRockGeometry(7, false), cap(110), shadows);
-    const snowRock = new DecorLayer(makeRockGeometry(13, true), cap(60), false);
+    const conifer = new DecorLayer(makeTreeGeometry('conifer'), cap(190), shadows);
+    const broadleaf = new DecorLayer(makeTreeGeometry('broadleaf'), cap(120), shadows);
+    const rock = new DecorLayer(makeRockGeometry(7, false), cap(130), shadows);
+    const snowRock = new DecorLayer(makeRockGeometry(13, true), cap(70), false);
     const grass = new DecorLayer(makeGrassGeometry(), cap(420), false);
+    const cloud = new DecorLayer(makeCloudGeometry(), cap(26), false,
+      new THREE.MeshLambertMaterial({
+        vertexColors: true, transparent: true, opacity: 0.72,
+        depthWrite: false, side: THREE.DoubleSide,
+      }));
+    cloud.mesh.renderOrder = 4;
 
-    this.layers = [conifer, broadleaf, rock, snowRock, grass];
+    this.layers = [conifer, broadleaf, rock, snowRock, grass, cloud];
 
     const rnd = mulberry32(0x5eed);
     const m = new THREE.Matrix4();
@@ -286,7 +306,7 @@ export class Decorations {
       const z = grid.meshHeight(x, y);
       if (!isFinite(z)) continue;
 
-      const hN = grid.norm(z);
+      const hN = grid.landNorm(z);
       // Slope relative to this surface's median, so the rules read the same
       // way on a gentle paraboloid and on a near-conical Cobb-Douglas surface.
       const [fx, fy] = field.gradient(x, y);
@@ -297,25 +317,56 @@ export class Decorations {
 
       if (z < 0) continue;               // below the waterline: leave it to the lake
 
-      // Sizes are all relative to the 1.8 m explorer: boulders 0.4–1.6 m across,
-      // trees 4–9 m tall, grass ankle-to-knee high.
-      if (hN > 0.80 && r < 0.35 * flat + 0.12) {
+      // Every population is driven by the band weights, so what grows where
+      // matches the colour underneath it exactly. Sizes stay relative to the
+      // 1.8 m explorer: boulders 0.4-1.6 m, trees 4-9 m, grass ankle-high.
+      const wBeach = bandWeight(1, hN);
+      const wDeep = bandWeight(2, hN);      // dense forest
+      const wLight = bandWeight(3, hN);     // thinning woodland
+      const wArid = bandWeight(4, hN);
+      const wVolcanic = bandWeight(5, hN);
+      const wSnow = bandWeight(6, hN);
+      const wCloud = bandWeight(7, hN);
+
+      if (z < 0) continue;                  // below the waterline: leave the lake
+
+      // Clouds hang above the highest ground rather than resting on it.
+      if (wCloud > 0.02 && r < wCloud * 0.5) {
+        const lift = unit * (14 + rnd() * 22);
+        posv.set(field.worldX(x), field.worldY(z) + lift, field.worldZ(y));
+        q.identity();
+        const spin = new THREE.Quaternion().setFromAxisAngle(up, yaw);
+        q.multiply(spin);
+        scl.setScalar(unit * (3.0 + rnd() * 3.5));
+        m.compose(posv, q, scl);
+        cloud.push(m, predicate(x, y));
+        continue;
+      }
+
+      if (wSnow > 0.02 && r < wSnow * 0.42 * flat + 0.06) {
         place(snowRock, x, y, z, 0.9, unit * (0.22 + rnd() * 0.45), yaw);
         continue;
       }
-      if ((slope > 1.5 || hN > 0.62) && r < 0.42) {
+
+      // Bare rock on the arid and volcanic bands, and on anything steep.
+      const stony = wArid * 0.5 + wVolcanic * 0.9;
+      if ((stony > 0.02 || slope > 1.5) && r < 0.16 + stony * 0.5) {
         place(rock, x, y, z, 0.85, unit * (0.20 + rnd() * 0.60), yaw);
         continue;
       }
-      if (hN < 0.60 && slope < 2.2) {
-        const treeChance = 0.55 * flat * (1 - Math.abs(hN - 0.26) / 0.55);
-        if (r < treeChance) {
-          const layer = hN > 0.34 ? conifer : (rnd() < 0.55 ? broadleaf : conifer);
-          place(layer, x, y, z, 0.28, unit * (0.70 + rnd() * 0.70), yaw);
-          continue;
-        }
+
+      // Trees: frequent through the deep-vegetation band, thinning out through
+      // the lighter one, gone by the time the ground turns arid.
+      const treeChance = (wDeep * 0.85 + wLight * 0.30) * flat;
+      if (r < treeChance && slope < 2.4) {
+        const layer = wDeep > wLight ? conifer : (rnd() < 0.5 ? broadleaf : conifer);
+        place(layer, x, y, z, 0.28, unit * (0.70 + rnd() * 0.70), yaw);
+        continue;
       }
-      if (hN < 0.66 && slope < 3.0 && r < 0.75) {
+
+      // Grass on the beach and through the vegetated bands.
+      const grassChance = wBeach * 0.25 + wDeep * 0.7 + wLight * 0.8;
+      if (r < grassChance && slope < 3.0) {
         place(grass, x, y, z, 0.7, unit * (0.45 + rnd() * 0.55), yaw);
       }
     }
