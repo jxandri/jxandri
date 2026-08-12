@@ -38,16 +38,19 @@ const iconData = `data:image/svg+xml;base64,${Buffer.from(icon).toString('base64
 let html = await readFile(join(app, 'index.html'), 'utf8');
 
 // Swap every external reference for its inlined equivalent.
+//
+// The replacements use functions, not strings: minified JavaScript contains
+// "$&" and "$'" sequences, and String.replace reads those in a *string*
+// replacement as "insert the match" / "insert everything after it". That
+// silently re-injected the very script tag being replaced.
 html = html
   .replace('<link rel="manifest" href="manifest.webmanifest">\n', '')
   .replace('<link rel="apple-touch-icon" href="icon-192.png">\n', '')
   .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">',
-    `<link rel="icon" href="${iconData}" type="image/svg+xml">`)
-  .replace('<link rel="stylesheet" href="css/style.css">',
-    `<style>\n${css}\n</style>`)
+    () => `<link rel="icon" href="${iconData}" type="image/svg+xml">`)
+  .replace('<link rel="stylesheet" href="css/style.css">', () => `<style>\n${css}\n</style>`)
   .replace(/<script type="importmap">[\s\S]*?<\/script>\n/, '')
-  .replace('<script type="module" src="js/main.js"></script>',
-    `<script>\n${script}\n</script>`);
+  .replace('<script type="module" src="js/main.js"></script>', () => `<script>\n${script}\n</script>`);
 
 // Fail loudly rather than shipping a file with a dangling reference.
 for (const bad of ['href="css/', 'src="js/', 'importmap', 'href="manifest']) {
