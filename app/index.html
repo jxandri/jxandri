@@ -85,11 +85,21 @@
         <span><span data-i18n="dom.res">Mesh resolution</span> <b id="lbl-res">300</b></span>
         <input id="in-res" type="range" min="80" max="600" step="20" value="300">
       </label>
+      <h2 style="margin-top:14px" data-i18n="dom.axes">Axis scale</h2>
       <label class="range">
-        <span><span data-i18n="dom.vex">Vertical exaggeration</span> <b id="lbl-vex">1.0×</b></span>
-        <input id="in-vex" type="range" min="0.2" max="4" step="0.1" value="1">
+        <span><span data-i18n="dom.sx">x axis</span> <b id="lbl-sx">1.00×</b></span>
+        <input id="in-sx" type="range" min="0.1" max="4" step="0.05" value="1">
       </label>
-      <p class="note" data-i18n="dom.vexnote">Exaggeration is visual only — every number shown is the true value.</p>
+      <label class="range">
+        <span><span data-i18n="dom.sy">y axis</span> <b id="lbl-sy">1.00×</b></span>
+        <input id="in-sy" type="range" min="0.1" max="4" step="0.05" value="1">
+      </label>
+      <label class="range">
+        <span><span data-i18n="dom.sz">z axis (steepness)</span> <b id="lbl-sz">1.00×</b></span>
+        <input id="in-sz" type="range" min="0.1" max="4" step="0.05" value="1">
+      </label>
+      <button id="btn-isotropic" class="ghost" data-i18n="dom.isotropic">Reset to equal axes</button>
+      <p class="note" data-i18n="dom.axesnote">All three at 1 is ordinary Cartesian space, where the unit sphere is round. Stretching an axis changes the picture only — every number reported stays the true value.</p>
       <button id="btn-apply" class="primary" data-i18n="dom.rebuild">Rebuild terrain</button>
     </section>
 
@@ -177,6 +187,14 @@
         <button data-mode="third" class="mode active"><span data-i18n="view.third">Third person</span> <kbd>2</kbd></button>
         <button data-mode="drone" class="mode"><span data-i18n="view.drone">Drone</span> <kbd>3</kbd></button>
       </div>
+      <label class="field"><span data-i18n="view.style">Explorer's look</span>
+        <select id="sel-style" class="preset">
+          <option value="explorer" data-i18n="style.explorer">Hiker</option>
+          <option value="brick" data-i18n="style.brick">Brick minifigure</option>
+          <option value="blocky" data-i18n="style.blocky">Blocky (pixel style)</option>
+          <option value="buddy" data-i18n="style.buddy">Round buddy</option>
+        </select>
+      </label>
       <button id="btn-top" class="ghost"><span data-i18n="view.top">Look straight down</span> <kbd>T</kbd></button>
       <button id="btn-reset" class="ghost"><span data-i18n="view.reset">Return to the centre</span> <kbd>R</kbd></button>
     </section>

@@ -20,7 +20,12 @@ export class Field {
     const o = options || {};
     this.fn = o.fn || ((x, y) => 0);
     this.setDomain(o.xmin ?? -1, o.xmax ?? 1, o.ymin ?? -1, o.ymax ?? 1, o.worldSize ?? 200);
-    this.vex = o.vex ?? 1; // vertical exaggeration, visual only
+    // Independent scale per axis. All three at 1 is isotropic Cartesian
+    // space, where the unit sphere really is round; changing them stretches
+    // the picture without touching a single reported number.
+    this.sx = o.sx ?? 1;
+    this.sy = o.sy ?? 1;
+    this.sz = o.sz ?? 1;
   }
 
   setDomain(xmin, xmax, ymin, ymax, worldSize) {
@@ -45,12 +50,12 @@ export class Field {
 
   // --- coordinate conversion -------------------------------------------
 
-  worldX(x) { return (x - this.cx) * this.S; }
-  worldZ(y) { return -(y - this.cy) * this.S; }
-  worldY(z) { return z * this.S * this.vex; }
+  worldX(x) { return (x - this.cx) * this.S * this.sx; }
+  worldZ(y) { return -(y - this.cy) * this.S * this.sy; }
+  worldY(z) { return z * this.S * this.sz; }
 
-  mathX(wx) { return wx / this.S + this.cx; }
-  mathY(wz) { return -wz / this.S + this.cy; }
+  mathX(wx) { return wx / (this.S * this.sx) + this.cx; }
+  mathY(wz) { return -wz / (this.S * this.sy) + this.cy; }
 
   /** Write the world position of math point (x, y, f(x,y)) into `out` (any {x,y,z}). */
   toWorld(x, y, z, out) {
@@ -130,8 +135,9 @@ export class Field {
    */
   normalFromGrad(fx, fy, out) {
     if (!isFinite(fx) || !isFinite(fy)) { out.set(0, 1, 0); return out; }
-    // Surface (X, vex·f, −Y): normal ∝ (−vex·fx, 1, +vex·fy) in world axes.
-    out.set(-fx * this.vex, 1, fy * this.vex).normalize();
+    // Surface X = S·sx·x, Y = S·sz·f, Z = −S·sy·y, so ∂Y/∂X = sz·fx/sx and
+    // ∂Y/∂Z = −sz·fy/sy; the normal follows.
+    out.set(-fx * this.sz / this.sx, 1, fy * this.sz / this.sy).normalize();
     return out;
   }
 }

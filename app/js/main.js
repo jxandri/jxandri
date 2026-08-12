@@ -103,7 +103,7 @@ const state = {
   feasSrc: 'x>=0 && y>=0 && x+y<=2',
   xmin: 0, xmax: 2, ymin: 0, ymax: 2,
   res: 300,
-  vex: 1,
+  sx: 1, sy: 1, sz: 1,   // axis scales; 1,1,1 is isotropic Cartesian
   worldSize: 220,
 
   feasible: false,
@@ -210,7 +210,7 @@ function rebuild() {
     fn,
     xmin: state.xmin, xmax: state.xmax, ymin: state.ymin, ymax: state.ymax,
     worldSize: state.worldSize,
-    vex: state.vex,
+    sx: state.sx, sy: state.sy, sz: state.sz,
   });
   grid = new FieldGrid(field, state.res);
   field.zTop = grid.zmax;
@@ -615,7 +615,9 @@ function applyInputs() {
   state.ymin = parseFloat($('in-ymin').value);
   state.ymax = parseFloat($('in-ymax').value);
   state.res = parseInt($('in-res').value, 10);
-  state.vex = parseFloat($('in-vex').value);
+  state.sx = parseFloat($('in-sx').value);
+  state.sy = parseFloat($('in-sy').value);
+  state.sz = parseFloat($('in-sz').value);
   withLoading(() => rebuild());
 }
 
@@ -671,8 +673,19 @@ function wireUI() {
 
   $('in-res').addEventListener('input', (e) => { $('lbl-res').textContent = e.target.value; });
   $('in-res').addEventListener('change', applyInputs);
-  $('in-vex').addEventListener('input', (e) => { $('lbl-vex').textContent = `${parseFloat(e.target.value).toFixed(1)}×`; });
-  $('in-vex').addEventListener('change', applyInputs);
+  for (const ax of ['sx', 'sy', 'sz']) {
+    $(`in-${ax}`).addEventListener('input', (e) => {
+      $(`lbl-${ax}`).textContent = `${parseFloat(e.target.value).toFixed(2)}×`;
+    });
+    $(`in-${ax}`).addEventListener('change', applyInputs);
+  }
+  $('btn-isotropic').addEventListener('click', () => {
+    for (const ax of ['sx', 'sy', 'sz']) {
+      $(`in-${ax}`).value = '1';
+      $(`lbl-${ax}`).textContent = '1.00×';
+    }
+    applyInputs();
+  });
 
   bindCheck('t-feas', 'feasible', () => {
     if (walls) walls.visible = state.feasible;
@@ -748,6 +761,8 @@ function wireUI() {
     player.y = optimum.y;
     player._camReady = false;
   });
+
+  $('sel-style').addEventListener('change', (e) => player.setStyle(e.target.value));
 
   $('btn-top').addEventListener('click', () => { player.topDown(camera); setMode(MODE_DRONE); });
   $('btn-reset').addEventListener('click', () => player.resetToDomainCentre());

@@ -27,57 +27,202 @@ function box(w, h, d, color) {
   return new THREE.Mesh(g, m);
 }
 
-/** A blocky but readable humanoid, ~1.8 m tall, origin at the feet. */
-function buildCharacter() {
+function cyl(rt, rb, h, color, seg) {
+  const g = new THREE.CylinderGeometry(rt, rb, h, seg || 12);
+  return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color }));
+}
+
+/**
+ * A limb that swings from its top end.
+ * The mesh hangs below the pivot so the walk cycle can just rotate the pivot.
+ */
+function limb(x, y, color, len, thick, depth) {
+  const pivot = new THREE.Group();
+  pivot.position.set(x, y, 0);
+  const m = box(thick, len, depth || thick, color);
+  m.position.y = -len / 2;
+  pivot.add(m);
+  return pivot;
+}
+
+/**
+ * Character styles.
+ *
+ * Every one is exactly 1.80 m tall with its origin at the feet, and every one
+ * exposes the same `parts` — hips, two arms, two legs, head — so the walk cycle
+ * and the camera work identically whichever is chosen.
+ */
+const STYLES = {
+  /** The original: a hiker in a hi-vis jacket and a hat. */
+  explorer(root) {
+    const hips = new THREE.Group();
+    hips.position.y = 0.92;
+    root.add(hips);
+
+    const torso = box(0.42, 0.62, 0.24, 0xff7a2f);
+    torso.position.y = 0.31;
+    hips.add(torso);
+    const pack = box(0.30, 0.36, 0.16, 0x35424f);
+    pack.position.set(0, 0.34, -0.19);
+    hips.add(pack);
+    const neck = box(0.14, 0.08, 0.14, 0xf2c49a);
+    neck.position.y = 0.66;
+    hips.add(neck);
+
+    const head = box(0.24, 0.26, 0.24, 0xffd2a6);
+    head.position.y = 0.83;
+    hips.add(head);
+    const hat = box(0.30, 0.09, 0.30, 0x2f4858);
+    hat.position.y = 0.98;
+    const brim = box(0.40, 0.03, 0.40, 0x2f4858);
+    brim.position.y = 0.93;
+    hips.add(hat, brim);
+
+    const armL = limb(-0.29, 0.56, 0xe86a28, 0.60, 0.13);
+    const armR = limb(0.29, 0.56, 0xe86a28, 0.60, 0.13);
+    const legL = limb(-0.12, 0, 0x3358a8, 0.90, 0.16);
+    const legR = limb(0.12, 0, 0x3358a8, 0.90, 0.16);
+    hips.add(armL, armR, legL, legR);
+    return { hips, armL, armR, legL, legR, head };
+  },
+
+  /** A minifigure: cylindrical head with a stud, flared torso, C-shaped hands. */
+  brick(root) {
+    const hips = new THREE.Group();
+    hips.position.y = 0.74;                       // legs are one solid block
+    root.add(hips);
+
+    const legBlock = box(0.44, 0.74, 0.30, 0x2255cc);
+    legBlock.position.y = -0.37;
+    hips.add(legBlock);
+    const hipBlock = box(0.46, 0.10, 0.32, 0x1a44a8);
+    hipBlock.position.y = 0.02;
+    hips.add(hipBlock);
+
+    const torso = cyl(0.22, 0.30, 0.56, 0xd11f2d, 16);
+    torso.position.y = 0.34;
+    hips.add(torso);
+
+    const neck = cyl(0.09, 0.09, 0.06, 0xf5c518, 12);
+    neck.position.y = 0.65;
+    hips.add(neck);
+
+    const head = cyl(0.20, 0.20, 0.36, 0xf5c518, 18);
+    head.position.y = 0.86;
+    hips.add(head);
+    const stud = cyl(0.08, 0.08, 0.07, 0xf5c518, 12);
+    stud.position.y = 1.07;
+    hips.add(stud);
+    // A face, so it reads as a character rather than a peg.
+    for (const sx of [-0.07, 0.07]) {
+      const eye = cyl(0.028, 0.028, 0.02, 0x1a1a1a, 8);
+      eye.rotation.x = Math.PI / 2;
+      eye.position.set(sx, 0.90, 0.196);
+      hips.add(eye);
+    }
+    const smile = box(0.13, 0.02, 0.01, 0x1a1a1a);
+    smile.position.set(0, 0.81, 0.198);
+    hips.add(smile);
+
+    const armL = limb(-0.30, 0.56, 0xd11f2d, 0.40, 0.13);
+    const armR = limb(0.30, 0.56, 0xd11f2d, 0.40, 0.13);
+    for (const [a, sgn] of [[armL, -1], [armR, 1]]) {
+      const hand = cyl(0.085, 0.085, 0.09, 0xf5c518, 12);
+      hand.position.set(sgn * 0.02, -0.44, 0.06);
+      a.add(hand);
+    }
+    hips.add(armL, armR);
+
+    // The legs are one moulded block, so the "legs" are stand-ins that keep
+    // the walk cycle happy without visibly detaching.
+    const legL = new THREE.Group(); const legR = new THREE.Group();
+    hips.add(legL, legR);
+    return { hips, armL, armR, legL, legR, head, stiffLegs: true };
+  },
+
+  /** Boxy, 32 units tall, four-unit limbs. */
+  blocky(root) {
+    const U = 1.8 / 32;                            // one pixel of the classic grid
+    const hips = new THREE.Group();
+    hips.position.y = 12 * U;
+    root.add(hips);
+
+    const torso = box(8 * U, 12 * U, 4 * U, 0x28b0a0);
+    torso.position.y = 6 * U;
+    hips.add(torso);
+
+    const head = box(8 * U, 8 * U, 8 * U, 0xc79a6d);
+    head.position.y = 16 * U;
+    hips.add(head);
+    const hair = box(8.3 * U, 2.4 * U, 8.3 * U, 0x3a2a1a);
+    hair.position.y = 19.3 * U;
+    hips.add(hair);
+    for (const sx of [-1.9, 1.9]) {
+      const eye = box(1.6 * U, 1.6 * U, 0.4 * U, 0xffffff);
+      eye.position.set(sx * U, 16.6 * U, 4.05 * U);
+      hips.add(eye);
+      const pupil = box(0.8 * U, 1.6 * U, 0.5 * U, 0x2a3f6a);
+      pupil.position.set((sx + (sx > 0 ? 0.4 : -0.4)) * U, 16.6 * U, 4.08 * U);
+      hips.add(pupil);
+    }
+
+    const armL = limb(-6 * U, 11.5 * U, 0x2ec6b4, 12 * U, 4 * U);
+    const armR = limb(6 * U, 11.5 * U, 0x2ec6b4, 12 * U, 4 * U);
+    const legL = limb(-2 * U, 0, 0x3b4ea8, 12 * U, 4 * U);
+    const legR = limb(2 * U, 0, 0x3b4ea8, 12 * U, 4 * U);
+    hips.add(armL, armR, legL, legR);
+    return { hips, armL, armR, legL, legR, head };
+  },
+
+  /** Round head, slab torso, slim limbs. */
+  buddy(root) {
+    const hips = new THREE.Group();
+    hips.position.y = 0.78;
+    root.add(hips);
+
+    const torso = box(0.46, 0.52, 0.26, 0x35c05a);
+    torso.position.y = 0.26;
+    hips.add(torso);
+
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.25, 20, 16),
+      new THREE.MeshLambertMaterial({ color: 0xffd34d }),
+    );
+    head.scale.set(1, 0.95, 0.95);
+    head.position.y = 0.78;
+    hips.add(head);
+    for (const sx of [-0.09, 0.09]) {
+      const eye = new THREE.Mesh(
+        new THREE.SphereGeometry(0.045, 10, 8),
+        new THREE.MeshLambertMaterial({ color: 0x20242c }),
+      );
+      eye.position.set(sx, 0.82, 0.215);
+      hips.add(eye);
+    }
+    const smile = new THREE.Mesh(
+      new THREE.TorusGeometry(0.075, 0.016, 8, 16, Math.PI),
+      new THREE.MeshLambertMaterial({ color: 0x20242c }),
+    );
+    smile.rotation.z = Math.PI;
+    smile.position.set(0, 0.72, 0.205);
+    hips.add(smile);
+
+    const armL = limb(-0.28, 0.46, 0xffd34d, 0.46, 0.10);
+    const armR = limb(0.28, 0.46, 0xffd34d, 0.46, 0.10);
+    const legL = limb(-0.13, 0, 0x2b3a8c, 0.76, 0.13);
+    const legR = limb(0.13, 0, 0x2b3a8c, 0.76, 0.13);
+    hips.add(armL, armR, legL, legR);
+    return { hips, armL, armR, legL, legR, head };
+  },
+};
+
+export const CHARACTER_STYLES = Object.keys(STYLES);
+
+/** Build a character of the given style, 1.8 m tall with its origin at the feet. */
+function buildCharacter(style) {
   const root = new THREE.Group();
-
-  const hips = new THREE.Group();
-  hips.position.y = 0.92;
-  root.add(hips);
-
-  const torso = box(0.42, 0.62, 0.24, 0xd8622e);      // hi-vis jacket
-  torso.position.y = 0.31;
-  hips.add(torso);
-
-  const pack = box(0.30, 0.36, 0.16, 0x35424f);
-  pack.position.set(0, 0.34, -0.19);
-  hips.add(pack);
-
-  const neck = box(0.14, 0.08, 0.14, 0xe8b48c);
-  neck.position.y = 0.66;
-  hips.add(neck);
-
-  const head = box(0.24, 0.26, 0.24, 0xf0c39a);
-  head.position.y = 0.83;
-  hips.add(head);
-
-  const hat = box(0.30, 0.09, 0.30, 0x2f4858);
-  hat.position.y = 0.98;
-  hips.add(hat);
-
-  const brim = box(0.40, 0.03, 0.40, 0x2f4858);
-  brim.position.y = 0.93;
-  hips.add(brim);
-
-  const mkLimb = (x, color, len, thick) => {
-    const pivot = new THREE.Group();
-    pivot.position.set(x, 0, 0);
-    const limb = box(thick, len, thick, color);
-    limb.position.y = -len / 2;
-    pivot.add(limb);
-    return pivot;
-  };
-
-  const armL = mkLimb(-0.29, 0xc25a29, 0.60, 0.13);
-  const armR = mkLimb(0.29, 0xc25a29, 0.60, 0.13);
-  armL.position.y = 0.56; armR.position.y = 0.56;
-  hips.add(armL, armR);
-
-  const legL = mkLimb(-0.12, 0x2c3e63, 0.90, 0.16);
-  const legR = mkLimb(0.12, 0x2c3e63, 0.90, 0.16);
-  hips.add(legL, legR);
-
-  root.userData.parts = { hips, armL, armR, legL, legR, head };
+  const make = STYLES[style] || STYLES.explorer;
+  root.userData.parts = make(root);
   root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
   return root;
 }
@@ -126,7 +271,8 @@ export class Player {
     this.walkPhase = 0;
     this.speedScale = 1;
 
-    this.character = buildCharacter();
+    this.style = 'explorer';
+    this.character = buildCharacter(this.style);
     this.facing = 0;
 
     this.drone = buildDrone();
@@ -202,6 +348,21 @@ export class Player {
   setZoom(zoom) {
     this.zoom = zoom;
     this._camReady = false;
+  }
+
+  /** Swap the character's look without disturbing where they are standing. */
+  setStyle(style) {
+    if (style === this.style) return;
+    this.style = style;
+    const wasVisible = this.character.visible;
+    this.group.remove(this.character);
+    this.character.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
+    this.character = buildCharacter(style);
+    this.character.visible = wasVisible;
+    this.group.add(this.character);
   }
 
   /**
@@ -317,8 +478,8 @@ export class Player {
 
     const distWorld = speed * dt;
     // World displacement back into math units (uniform scale, so just divide).
-    const nx = this.x + (vx * distWorld) / f.S;
-    const ny = this.y - (vz * distWorld) / f.S;
+    const nx = this.x + (vx * distWorld) / (f.S * f.sx);
+    const ny = this.y - (vz * distWorld) / (f.S * f.sy);
 
     const cx = Math.max(f.xmin, Math.min(f.xmax, nx));
     const cy = Math.max(f.ymin, Math.min(f.ymax, ny));
@@ -368,8 +529,10 @@ export class Player {
     const target = moving ? Math.sin(this.walkPhase) : 0;
     const swing = 0.75 * target;
 
-    p.legL.rotation.x = swing;
-    p.legR.rotation.x = -swing;
+    if (!p.stiffLegs) {
+      p.legL.rotation.x = swing;
+      p.legR.rotation.x = -swing;
+    }
     p.armL.rotation.x = -swing * 0.8;
     p.armR.rotation.x = swing * 0.8;
     p.hips.position.y = 0.92 + (moving ? Math.abs(Math.sin(this.walkPhase)) * 0.045 : 0);
