@@ -57,7 +57,10 @@ const STRINGS = {
 
     'sec.map': 'Map & terrain',
     'map.contours': 'Level curves',
-    'map.topo': 'Topographic colours',
+    'map.cstep': 'Contour interval Δz (blank = automatic)',
+    'map.cwidth': 'Path width',
+    'map.heightcol': 'Colour the surface by height',
+    'map.clamped': 'interval widened to keep the count manageable',
     'map.decor': 'Vegetation, rocks & snow',
     'map.water': 'Water in the depressions',
     'map.density': 'Decoration density',
@@ -73,9 +76,14 @@ const STRINGS = {
     'deriv.dirnote': 'The explorer is frozen — move the mouse to swing <b>u</b> around the rim.',
     'deriv.tangent': 'Tangent plane',
 
-    'sec.zoom': 'Zoom-in ruler',
+    'sec.curve': 'The curve under your feet',
+    'curve.show': 'Level curve you are standing on',
+    'curve.tangent': 'Tangent line to that curve',
+    'curve.note': 'Both follow the explorer continuously. The tangent stays dead level, because a level curve is where the height does not change.',
+
+    'sec.zoom': 'Tangent plane & scale',
     'zoom.scale': 'Explorer scale',
-    'zoom.note': 'Each notch shrinks the explorer ten-fold. Turn on the tangent plane and watch a differentiable surface become a plane.',
+    'zoom.note': 'The dial only shrinks the explorer, never enlarges them. Turn on the tangent plane and slide it down: a differentiable surface becomes indistinguishable from its plane.',
 
     'sec.opt': 'Optimisation',
     'opt.show': 'Show optimum',
@@ -179,7 +187,10 @@ const STRINGS = {
 
     'sec.map': 'Mapa y terreno',
     'map.contours': 'Curvas de nivel',
-    'map.topo': 'Colores topográficos',
+    'map.cstep': 'Intervalo entre curvas Δz (vacío = automático)',
+    'map.cwidth': 'Ancho del sendero',
+    'map.heightcol': 'Colorear la superficie según la altura',
+    'map.clamped': 'se amplió el intervalo para no generar demasiadas curvas',
     'map.decor': 'Vegetación, rocas y nieve',
     'map.water': 'Agua en las depresiones',
     'map.density': 'Densidad de la decoración',
@@ -195,9 +206,14 @@ const STRINGS = {
     'deriv.dirnote': 'El explorador queda inmóvil: mueva el ratón para girar <b>u</b> sobre el borde.',
     'deriv.tangent': 'Plano tangente',
 
-    'sec.zoom': 'Regla de acercamiento',
+    'sec.curve': 'La curva bajo sus pies',
+    'curve.show': 'Curva de nivel sobre la que está parado',
+    'curve.tangent': 'Recta tangente a esa curva',
+    'curve.note': 'Ambas siguen al explorador continuamente. La tangente permanece perfectamente horizontal, porque una curva de nivel es justamente donde la altura no cambia.',
+
+    'sec.zoom': 'Plano tangente y escala',
     'zoom.scale': 'Escala del explorador',
-    'zoom.note': 'Cada muesca reduce al explorador diez veces. Active el plano tangente y vea cómo una superficie diferenciable se convierte en un plano.',
+    'zoom.note': 'El dial solo reduce al explorador, nunca lo agranda. Active el plano tangente y bájelo: una superficie diferenciable se vuelve indistinguible de su plano.',
 
     'sec.opt': 'Optimización',
     'opt.show': 'Mostrar el óptimo',

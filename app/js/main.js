@@ -7,12 +7,12 @@ import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
   buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
-  GROUP_OUTSIDE,
+  GROUP_OUTSIDE, heightColor,
 } from './terrain.js';
 import { Decorations } from './decor.js';
 import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
-  maximize, OptimumMarker,
+  maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo,
 } from './analysis.js';
 import { Player, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
 import {
@@ -57,8 +57,8 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-// No tone mapping on purpose: the topographic palette has to arrive on screen
-// as the exact colours it was authored in, or the map legend stops matching.
+// No tone mapping on purpose: the height ramp has to arrive on screen as the
+// exact colours it was authored in, or the map legend stops matching.
 renderer.toneMapping = THREE.NoToneMapping;
 
 const scene = new THREE.Scene();
@@ -89,8 +89,8 @@ function buildSky(radius) {
 
 // Three.js lights are in physical units and the Lambert BRDF divides by π, so
 // these numbers are ~3× what they look like they should be.
-const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x6b5f4c, 2.35);
-const sun = new THREE.DirectionalLight(0xfff4e2, 2.7);
+const hemi = new THREE.HemisphereLight(0xcfe4ff, 0x8a7f6a, 3.1);
+const sun = new THREE.DirectionalLight(0xfff8ec, 3.4);
 sun.position.set(1, 1.4, 0.6);
 scene.add(hemi, sun, sun.target);
 
@@ -109,7 +109,11 @@ const state = {
   feasible: false,
   isolate: false,
   contours: false,
-  topo: false,
+  contourStep: 0,      // 0 = choose a round interval automatically
+  pathWidth: 1.4,      // world metres; wide enough to walk along
+  heightColors: false,
+  curCurve: false,
+  curTangent: false,
   decor: true,
   water: true,
   density: 1,
@@ -124,7 +128,7 @@ const state = {
   dirAngle: 0,
   tangent: false,
 
-  zoomStep: 0,
+  zoom: 1,             // continuous, and never above 1
   showOpt: false,
 };
 
@@ -140,6 +144,8 @@ let surfaceDetail = null;
 let gizmo = null;
 let tangentPlane = null;
 let optMarker = null;
+let curveGizmo = null;
+let tangentLine = null;
 let optimum = null;
 let decorations = new Decorations();
 let player = null;
@@ -192,6 +198,8 @@ function rebuild() {
   if (gizmo) { disposeTree(gizmo.group); gizmo.dispose(); }
   if (tangentPlane) { disposeTree(tangentPlane.mesh); tangentPlane.dispose(); }
   if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
+  if (curveGizmo) { disposeTree(curveGizmo.mesh); curveGizmo.dispose(); }
+  if (tangentLine) { disposeTree(tangentLine.mesh); tangentLine.dispose(); }
   decorations.clear();
   surface = water = walls = contourLines = null;
   contourInfo = null;
@@ -236,6 +244,12 @@ function rebuild() {
   optMarker = new OptimumMarker(field);
   world.add(optMarker.group);
 
+  curveGizmo = new LevelCurveGizmo(field);
+  world.add(curveGizmo.mesh);
+
+  tangentLine = new TangentLineGizmo(field);
+  world.add(tangentLine.mesh);
+
   decorations.build(field, grid, predicate, { density: state.density, shadows: state.shadows });
   decorations.setVisible(state.decor);
   decorations.setIsolate(state.isolate && state.feasible);
@@ -259,7 +273,7 @@ function rebuild() {
     player.field = field;
     player.resetToDomainCentre();
   }
-  player.setZoom(Math.pow(10, -state.zoomStep));
+  player.setZoom(state.zoom);
 
   applyPalette();
   applyIsolation();
@@ -327,17 +341,19 @@ function configureShadows() {
 
 /* ---------------------------------------------------------- toggle logic */
 
+function paletteMode() { return state.heightColors ? 'height' : 'biome'; }
+
 function applyPalette() {
   if (!surface) return;
-  recolorSurface(field, grid, surface.geometry, state.topo);
+  recolorSurface(field, grid, surface.geometry, paletteMode());
 
-  // In map mode, flatten the lighting. Hypsometric tints only mean anything if
-  // the colour on screen is the colour in the legend, so trade some of the
+  // In height-colour mode, flatten the lighting. The ramp only means anything
+  // if the colour on screen is the colour in the legend, so trade some of the
   // directional shading for fidelity to the palette.
-  if (state.topo) { hemi.intensity = 3.7; sun.intensity = 1.0; }
-  else { hemi.intensity = 2.35; sun.intensity = 2.7; }
+  if (state.heightColors) { hemi.intensity = 4.2; sun.intensity = 1.1; }
+  else { hemi.intensity = 3.1; sun.intensity = 3.4; }
   if (surfaceDetail && player) {
-    surfaceDetail.update(player.x, player.y, detailExtent(), grid, state.topo, true);
+    surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
   }
 }
 
@@ -357,9 +373,9 @@ function refreshContours() {
   if (contourLines) { disposeTree(contourLines); contourLines = null; }
   if (!state.contours || !grid) { updateContourNote(); return; }
 
-  const picked = chooseLevels(grid.zmin, grid.zmax, 18);
+  const picked = chooseLevels(grid.zmin, grid.zmax, { step: state.contourStep, target: 40 });
   contourInfo = picked;
-  contourLines = buildContours(field, grid, picked.levels || []);
+  contourLines = buildContours(field, grid, picked.levels || [], { width: state.pathWidth });
   if (contourLines) world.add(contourLines);
   updateContourNote();
 }
@@ -371,7 +387,8 @@ function updateContourNote() {
   if (state.contours && contourInfo && contourInfo.step) {
     const s = document.createElement('kbd');
     s.className = 'contour-step';
-    s.textContent = `Δz = ${fmt(contourInfo.step, 3)}`;
+    s.textContent = `Δz = ${fmt(contourInfo.step, 4)}` + (contourInfo.clamped ? ' ⚠' : '');
+    if (contourInfo.clamped) s.title = t('map.clamped');
     el.querySelector('span').appendChild(s);
   }
 }
@@ -457,7 +474,7 @@ window.addEventListener('keydown', (e) => {
     case 't': player.topDown(camera); setMode(MODE_DRONE); break;
     case 'r': player.resetToDomainCentre(); break;
     case 'c': toggleCheckbox('t-contours'); break;
-    case 'm': toggleCheckbox('t-topo'); break;
+    case 'm': toggleCheckbox('t-heightcol'); break;
     case 'f': toggleCheckbox('t-feas'); break;
     case 'g': toggleCheckbox('t-isolate'); break;
     case 'h': toggleCheckbox('t-disc'); break;
@@ -466,6 +483,8 @@ window.addEventListener('keydown', (e) => {
     case 'v': toggleCheckbox('t-grad'); break;
     case 'b': toggleCheckbox('t-dir'); break;
     case 'p': toggleCheckbox('t-tangent'); break;
+    case 'j': toggleCheckbox('t-curcurve'); break;
+    case 'k': toggleCheckbox('t-curtan'); break;
     case 'o': toggleCheckbox('t-opt'); break;
     default: break;
   }
@@ -662,7 +681,23 @@ function wireUI() {
   });
   bindCheck('t-isolate', 'isolate', () => { applyIsolation(); });
   bindCheck('t-contours', 'contours', refreshContours);
-  bindCheck('t-topo', 'topo', applyPalette);
+  bindCheck('t-heightcol', 'heightColors', applyPalette);
+  bindCheck('t-curcurve', 'curCurve');
+  bindCheck('t-curtan', 'curTangent');
+
+  $('in-cstep').addEventListener('change', (e) => {
+    const v = parseFloat(e.target.value);
+    state.contourStep = isFinite(v) && v > 0 ? v : 0;   // blank or 0 means auto
+    if (state.contours) withLoading(refreshContours);
+  });
+
+  $('in-cwidth').addEventListener('input', (e) => {
+    state.pathWidth = parseFloat(e.target.value);
+    $('lbl-cwidth').textContent = `${state.pathWidth.toFixed(1)} m`;
+  });
+  $('in-cwidth').addEventListener('change', () => {
+    if (state.contours) withLoading(refreshContours);
+  });
   bindCheck('t-decor', 'decor', () => decorations.setVisible(state.decor));
   bindCheck('t-water', 'water', () => { if (water) water.visible = state.water && !(state.feasible && state.isolate); });
   bindCheck('t-shadow', 'shadows', () => {
@@ -698,9 +733,10 @@ function wireUI() {
   });
 
   $('in-zoom').addEventListener('input', (e) => {
-    state.zoomStep = parseInt(e.target.value, 10);
-    const z = Math.pow(10, -state.zoomStep);
-    player.setZoom(z);
+    // The dial reads in decades of shrinkage and starts at zero, so the
+    // explorer can only ever get smaller — which is the whole point of it.
+    state.zoom = Math.pow(10, -parseFloat(e.target.value));
+    player.setZoom(state.zoom);
     updateZoomLabels();
   });
 
@@ -760,9 +796,10 @@ function ensureDisc() {
 }
 
 function updateZoomLabels() {
-  const z = Math.pow(10, -state.zoomStep);
-  $('lbl-zoom').textContent = state.zoomStep === 0 ? '1 : 1' : `1 : 10^${state.zoomStep}`;
-  $('r-zoom').textContent = state.zoomStep === 0
+  const z = state.zoom;
+  const decades = -Math.log10(z);
+  $('lbl-zoom').textContent = decades < 0.005 ? '1 : 1' : `1 : ${Math.round(1 / z).toLocaleString()}`;
+  $('r-zoom').textContent = decades < 0.005
     ? t('hud.scale11')
     : t('hud.tall', { h: (1.8 * z).toPrecision(2) });
   updateRuler();
@@ -771,10 +808,12 @@ function updateZoomLabels() {
 function updateRuler() {
   const el = $('ruler');
   el.innerHTML = '';
+  const decades = -Math.log10(state.zoom);
   for (let i = 0; i <= 4; i++) {
     const s = document.createElement('span');
     s.textContent = i === 0 ? '1.8 m' : `10^-${i}`;
-    if (i === state.zoomStep) s.className = 'on';
+    // The dial is continuous now, so highlight the decade it is nearest to.
+    if (Math.abs(decades - i) < 0.5) s.className = 'on';
     el.appendChild(s);
   }
 }
@@ -818,6 +857,7 @@ function updateHUD(readout) {
 /* ------------------------------------------------------------- the loop */
 
 const clock = new THREE.Clock();
+const curveRGB = [0, 0, 0];
 
 function animate() {
   requestAnimationFrame(animate);
@@ -832,7 +872,7 @@ function animate() {
   if (sky) sky.position.copy(camera.position);
 
   // High-resolution rings under the explorer.
-  surfaceDetail.update(player.x, player.y, detailExtent(), grid, state.topo, false);
+  surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), false);
 
   // Derivative gizmo.
   const wantGizmo = state.disc && isFinite(player.height());
@@ -853,6 +893,22 @@ function animate() {
     tangentPlane.update(player.x, player.y, state.radius * player.zoom);
   } else {
     tangentPlane.setVisible(false);
+  }
+
+  // The contour through the player's feet, and its tangent. Both are traced
+  // afresh from the player's exact height, so they follow continuously.
+  const onGround = isFinite(player.height());
+  if (state.curCurve && onGround) {
+    heightColor(grid.norm(player.height()), curveRGB);
+    curveGizmo.update(player.x, player.y, state.pathWidth * 1.35, curveRGB);
+  } else {
+    curveGizmo.setVisible(false);
+  }
+
+  if (state.curTangent && onGround) {
+    tangentLine.update(player.x, player.y, field.worldSize * 0.22, state.pathWidth * 0.9);
+  } else {
+    tangentLine.setVisible(false);
   }
 
   if (state.showOpt && optimum) optMarker.animate(t, camera.position);

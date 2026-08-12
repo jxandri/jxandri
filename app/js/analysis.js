@@ -13,7 +13,7 @@
  */
 
 import * as THREE from '../vendor/three.module.js';
-import { topoColor } from './terrain.js';
+import { heightColor } from './terrain.js';
 
 export const COLOR_DX = 0x2f7bff;      // blue   — ∂f/∂x
 export const COLOR_DY = 0xff3b30;      // red    — ∂f/∂y
@@ -22,14 +22,36 @@ export const COLOR_DIR = 0xffc531;     // amber  — directional derivative
 
 /* ---------------------------------------------------------- level curves */
 
-/** Pick ~`target` round-numbered contour levels spanning [zmin, zmax]. */
-export function chooseLevels(zmin, zmax, target = 18) {
+/**
+ * Contour levels.
+ *
+ * `step` is the interval the user asked for. When it is absent we fall back to
+ * a round number giving roughly `target` levels — but the interval is a
+ * parameter of the exercise, not a decision for the program to make, so the UI
+ * always shows the number in force and lets it be overridden.
+ */
+export function chooseLevels(zmin, zmax, options) {
+  const o = options || {};
   const span = zmax - zmin;
-  if (!(span > 0)) return [];
-  const raw = span / target;
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-  const norm = raw / mag;
-  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  if (!(span > 0)) return { levels: [], step: 0, clamped: false };
+
+  let step = o.step;
+  if (!(step > 0)) {
+    const target = o.target || 40;
+    const raw = span / target;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  }
+
+  // A tiny interval on a tall surface can ask for a million paths. Refuse
+  // politely rather than freezing the browser, and say so in the interface.
+  const maxLevels = o.maxLevels || 320;
+  let clamped = false;
+  if (span / step > maxLevels) {
+    step = span / maxLevels;
+    clamped = true;
+  }
 
   const levels = [];
   const first = Math.ceil(zmin / step) * step;
@@ -37,37 +59,65 @@ export function chooseLevels(zmin, zmax, target = 18) {
     // Re-round to kill floating point dust like 0.30000000000000004.
     levels.push(parseFloat(v.toPrecision(12)));
   }
-  return { levels, step };
+  return { levels, step, clamped };
+}
+
+/* ------------------------------------------------- ribbons on the surface */
+
+/**
+ * Append one quad of a path lying on the surface, from (x0,y0) to (x1,y1) at a
+ * fixed height.
+ *
+ * Both ends are extended by half the width along the path. Marching squares
+ * hands back one short segment per grid cell, and without that overlap every
+ * corner between consecutive segments would show a notch; with it, the quads
+ * cover each other's joints and the result reads as a continuous walkway.
+ */
+function pushPathQuad(field, pos, col, idx, x0, y0, x1, y1, z, half, lift, rgb) {
+  const ax = field.worldX(x0), az = field.worldZ(y0);
+  const bx = field.worldX(x1), bz = field.worldZ(y1);
+  let tx = bx - ax, tz = bz - az;
+  const len = Math.hypot(tx, tz);
+  if (!(len > 1e-9)) return;
+  tx /= len; tz /= len;
+
+  // The path is level, so its own tangent is horizontal; the sideways
+  // direction is simply the horizontal perpendicular.
+  const sx = -tz * half, sz = tx * half;
+  const ex = tx * half, ez = tz * half;
+  const wy = field.worldY(z) + lift;
+
+  const v = pos.length / 3;
+  pos.push(
+    ax - ex + sx, wy, az - ez + sz,
+    bx + ex + sx, wy, bz + ez + sz,
+    bx + ex - sx, wy, bz + ez - sz,
+    ax - ex - sx, wy, az - ez - sz,
+  );
+  for (let i = 0; i < 4; i++) col.push(rgb[0], rgb[1], rgb[2]);
+  idx.push(v, v + 1, v + 2, v, v + 2, v + 3);
 }
 
 /**
- * Marching squares over the grid. Crossings are collected per edge and paired,
- * with the cell centre used to disambiguate saddles.
+ * Marching squares over the grid, emitted as wide paths rather than hairlines.
+ *
+ * Crossings are collected per edge and paired, with the cell centre used to
+ * disambiguate saddles. Each level takes its colour from the height ramp, so a
+ * path's colour states its altitude.
  */
-export function buildContours(field, grid, levels) {
+export function buildContours(field, grid, levels, options) {
+  const o = options || {};
+  const half = (o.width ?? 1.4) / 2;                       // world metres
+  const lift = o.lift ?? Math.max(field.worldSize * 4e-4, half * 0.12);
+
   const { n, w } = grid;
-  const positions = [];
-  const colors = [];
-  const c = [0, 0, 0];
-  const wet = grid.zmin < 0 ? Math.min(1, (0 - grid.zmin) / (grid.zmax - grid.zmin)) : 0;
-  const lift = field.worldSize * 0.0016; // keep lines off the surface
-
-  const nrmCache = new THREE.Vector3();
-
-  const emit = (x, y, z) => {
-    field.worldNormal(x, y, nrmCache);
-    positions.push(
-      field.worldX(x) + nrmCache.x * lift,
-      field.worldY(z) + nrmCache.y * lift,
-      field.worldZ(y) + nrmCache.z * lift,
-    );
-    colors.push(c[0], c[1], c[2]);
-  };
+  const pos = [];
+  const col = [];
+  const idx = [];
+  const rgb = [0, 0, 0];
 
   for (const level of levels) {
-    topoColor(grid.norm(level), wet, c);
-    // Darken slightly so the line reads against the same tint on the surface.
-    c[0] *= 0.55; c[1] *= 0.55; c[2] *= 0.55;
+    heightColor(grid.norm(level), rgb);
 
     for (let j = 0; j < n; j++) {
       for (let i = 0; i < n; i++) {
@@ -91,32 +141,220 @@ export function buildContours(field, grid, levels) {
         if (b3 !== b0) pts.push({ e: 3, p: lerp(z3, z0, x0, y1, x0, y0) });
 
         if (pts.length === 2) {
-          emit(pts[0].p[0], pts[0].p[1], level);
-          emit(pts[1].p[0], pts[1].p[1], level);
+          pushPathQuad(field, pos, col, idx, pts[0].p[0], pts[0].p[1],
+            pts[1].p[0], pts[1].p[1], level, half, lift, rgb);
         } else if (pts.length === 4) {
           const centre = (z0 + z1 + z2 + z3) / 4;
           const pair = (centre >= level) === b0 ? [[3, 0], [1, 2]] : [[0, 1], [2, 3]];
           for (const [ea, eb] of pair) {
             const A = pts.find((q) => q.e === ea), B = pts.find((q) => q.e === eb);
-            if (A && B) { emit(A.p[0], A.p[1], level); emit(B.p[0], B.p[1], level); }
+            if (A && B) {
+              pushPathQuad(field, pos, col, idx, A.p[0], A.p[1], B.p[0], B.p[1],
+                level, half, lift, rgb);
+            }
           }
         }
       }
     }
   }
 
-  if (positions.length === 0) return null;
+  if (idx.length === 0) return null;
 
   const geom = new THREE.BufferGeometry();
-  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geom.setIndex(idx);
   geom.computeBoundingSphere();
 
-  const mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, toneMapped: false });
-  const lines = new THREE.LineSegments(geom, mat);
-  lines.name = 'contours';
-  lines.renderOrder = 2;
-  return lines;
+  const mat = new THREE.MeshBasicMaterial({
+    vertexColors: true, side: THREE.DoubleSide, toneMapped: false,
+    polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -12,
+  });
+
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.name = 'contours';
+  mesh.renderOrder = 2;
+  return mesh;
+}
+
+/* -------------------------------------------- the curve under your feet */
+
+/**
+ * Follow the level set of f through (x0, y0).
+ *
+ * Marching squares would give the same curve, but only at grid resolution and
+ * only for the levels already chosen. Walking the curve directly gives a smooth
+ * result at the player's exact height, which is what "the contour you are
+ * standing on" has to mean if it is to update as they move.
+ *
+ * Each step goes along the tangent — perpendicular to the gradient — and is
+ * then pulled back onto the level set by a couple of Newton corrections along
+ * the gradient, so the trace does not drift off the contour over long runs.
+ */
+export function traceLevelCurve(field, x0, y0, options) {
+  const o = options || {};
+  const step = o.step || field.mathStep(2.2);
+  const maxSteps = o.maxSteps || 420;
+  const z0 = field.height(x0, y0);
+  if (!isFinite(z0)) return [];
+
+  const forward = [];
+  const backward = [];
+
+  for (const dir of [1, -1]) {
+    const out = dir > 0 ? forward : backward;
+    let px = x0, py = y0;
+
+    for (let i = 0; i < maxSteps; i++) {
+      const [gx, gy] = field.gradient(px, py);
+      const gm = Math.hypot(gx, gy);
+      if (!isFinite(gm) || gm < 1e-9) break;          // flat: no curve to follow
+
+      px += dir * (-gy / gm) * step;
+      py += dir * (gx / gm) * step;
+
+      for (let k = 0; k < 2; k++) {
+        const [cx, cy] = field.gradient(px, py);
+        const cm2 = cx * cx + cy * cy;
+        if (!(cm2 > 1e-18)) break;
+        const err = field.height(px, py) - z0;
+        if (!isFinite(err)) break;
+        px -= cx * (err / cm2);
+        py -= cy * (err / cm2);
+      }
+
+      if (!field.inDomain(px, py) || !isFinite(field.height(px, py))) break;
+      out.push(px, py);
+
+      // A closed loop has come back to where it started; stop rather than
+      // lapping it forever.
+      if (i > 8 && Math.hypot(px - x0, py - y0) < step * 0.75) break;
+    }
+  }
+
+  const pts = [];
+  for (let i = backward.length - 2; i >= 0; i -= 2) pts.push(backward[i], backward[i + 1]);
+  pts.push(x0, y0);
+  for (let i = 0; i < forward.length; i += 2) pts.push(forward[i], forward[i + 1]);
+  return pts;
+}
+
+/** The contour through the player, redrawn as they move. */
+export class LevelCurveGizmo {
+  constructor(field, maxQuads = 900) {
+    this.field = field;
+    this.maxQuads = maxQuads;
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxQuads * 4 * 3), 3));
+    const idx = new Uint16Array(maxQuads * 6);
+    for (let q = 0; q < maxQuads; q++) {
+      const v = q * 4;
+      idx.set([v, v + 1, v + 2, v, v + 2, v + 3], q * 6);
+    }
+    geom.setIndex(new THREE.BufferAttribute(idx, 1));
+
+    this.geometry = geom;
+    this.material = new THREE.MeshBasicMaterial({
+      color: 0xffffff, side: THREE.DoubleSide, toneMapped: false, fog: false,
+      transparent: true, opacity: 0.95,
+      polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -20,
+    });
+    this.mesh = new THREE.Mesh(geom, this.material);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 7;
+    this.mesh.visible = false;
+  }
+
+  update(cx, cy, widthMetres, colorRGB) {
+    const field = this.field;
+    const pts = traceLevelCurve(field, cx, cy);
+    if (pts.length < 4) { this.mesh.visible = false; return false; }
+
+    const half = widthMetres / 2;
+    const lift = Math.max(field.worldSize * 6e-4, half * 0.2);
+    const z = field.height(cx, cy);
+    const arr = this.geometry.getAttribute('position').array;
+
+    let q = 0;
+    for (let i = 0; i + 3 < pts.length && q < this.maxQuads; i += 2, q++) {
+      const ax = field.worldX(pts[i]), az = field.worldZ(pts[i + 1]);
+      const bx = field.worldX(pts[i + 2]), bz = field.worldZ(pts[i + 3]);
+      let tx = bx - ax, tz = bz - az;
+      const len = Math.hypot(tx, tz);
+      if (!(len > 1e-9)) { q--; continue; }
+      tx /= len; tz /= len;
+      const sx = -tz * half, sz = tx * half;
+      const ex = tx * half * 0.6, ez = tz * half * 0.6;
+      const wy = field.worldY(z) + lift;
+
+      const o = q * 12;
+      arr[o] = ax - ex + sx; arr[o + 1] = wy; arr[o + 2] = az - ez + sz;
+      arr[o + 3] = bx + ex + sx; arr[o + 4] = wy; arr[o + 5] = bz + ez + sz;
+      arr[o + 6] = bx + ex - sx; arr[o + 7] = wy; arr[o + 8] = bz + ez - sz;
+      arr[o + 9] = ax - ex - sx; arr[o + 10] = wy; arr[o + 11] = az - ez - sz;
+    }
+
+    // Collapse the quads we did not use, rather than resizing the buffer.
+    for (let k = q * 12; k < arr.length; k++) arr[k] = 0;
+
+    this.geometry.getAttribute('position').needsUpdate = true;
+    this.geometry.setDrawRange(0, q * 6);
+    this.geometry.computeBoundingSphere();
+    if (colorRGB) this.material.color.setRGB(colorRGB[0], colorRGB[1], colorRGB[2]);
+    this.mesh.visible = true;
+    return true;
+  }
+
+  setVisible(v) { this.mesh.visible = v; }
+  dispose() { this.geometry.dispose(); this.material.dispose(); }
+}
+
+/**
+ * The tangent line to that contour, at the player's feet.
+ *
+ * A level curve keeps f constant, so its tangent is horizontal and points
+ * perpendicular to the gradient. Drawing it as a straight, dead-level bar is
+ * both the correct picture and a visible contrast with the curve it touches.
+ */
+export class TangentLineGizmo {
+  constructor(field) {
+    this.field = field;
+    const geom = new THREE.PlaneGeometry(1, 1, 1, 1);
+    geom.rotateX(-Math.PI / 2);
+    this.geometry = geom;
+    this.material = new THREE.MeshBasicMaterial({
+      color: 0x18324a, side: THREE.DoubleSide, toneMapped: false, fog: false,
+      transparent: true, opacity: 0.95,
+      polygonOffset: true, polygonOffsetFactor: -12, polygonOffsetUnits: -24,
+    });
+    this.mesh = new THREE.Mesh(geom, this.material);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 8;
+    this.mesh.visible = false;
+  }
+
+  update(cx, cy, lengthMetres, widthMetres) {
+    const field = this.field;
+    const z = field.height(cx, cy);
+    const [gx, gy] = field.gradient(cx, cy);
+    const gm = Math.hypot(gx, gy);
+    if (!isFinite(z) || !isFinite(gm) || gm < 1e-12) { this.mesh.visible = false; return false; }
+
+    // Tangent to the level curve in math space, then into world axes.
+    const ux = -gy / gm, uy = gx / gm;
+    const dirX = ux, dirZ = -uy;
+
+    const lift = Math.max(field.worldSize * 8e-4, widthMetres * 0.3);
+    this.mesh.position.set(field.worldX(cx), field.worldY(z) + lift, field.worldZ(cy));
+    this.mesh.rotation.set(0, Math.atan2(dirX, dirZ), 0);
+    this.mesh.scale.set(widthMetres, 1, lengthMetres);
+    this.mesh.visible = true;
+    return true;
+  }
+
+  setVisible(v) { this.mesh.visible = v; }
+  dispose() { this.geometry.dispose(); this.material.dispose(); }
 }
 
 /* ------------------------------------------------------- surface ribbons */

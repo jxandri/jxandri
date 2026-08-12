@@ -115,7 +115,13 @@
     <section>
       <h2 data-i18n="sec.map">Map &amp; terrain</h2>
       <label class="check"><input id="t-contours" type="checkbox"><span><span data-i18n="map.contours">Level curves</span> <kbd>C</kbd></span></label>
-      <label class="check"><input id="t-topo" type="checkbox"><span><span data-i18n="map.topo">Topographic colours</span> <kbd>M</kbd></span></label>
+      <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
+        <input id="in-cstep" type="number" step="any" min="0" placeholder="auto"></label>
+      <label class="range">
+        <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">1.4 m</b></span>
+        <input id="in-cwidth" type="range" min="0.3" max="5" step="0.1" value="1.4">
+      </label>
+      <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
       <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
       <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
       <label class="range">
@@ -137,17 +143,24 @@
       <label class="check"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i><span data-i18n="deriv.grad">Gradient ∇f</span> <kbd>V</kbd></span></label>
       <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i><span data-i18n="deriv.dir">Directional derivative</span> <kbd>B</kbd></span></label>
       <p class="note" id="note-dir" hidden data-i18n-html="deriv.dirnote">The explorer is frozen — move the mouse to swing <b>u</b> around the rim.</p>
-      <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
     </section>
 
     <section>
-      <h2 data-i18n="sec.zoom">Zoom-in ruler</h2>
+      <h2 data-i18n="sec.curve">The curve under your feet</h2>
+      <label class="check"><input id="t-curcurve" type="checkbox"><span><span data-i18n="curve.show">Level curve you are standing on</span> <kbd>J</kbd></span></label>
+      <label class="check"><input id="t-curtan" type="checkbox"><span><span data-i18n="curve.tangent">Tangent line to that curve</span> <kbd>K</kbd></span></label>
+      <p class="note" data-i18n="curve.note">Both follow the explorer continuously. The tangent stays dead level, because a level curve is where the height does not change.</p>
+    </section>
+
+    <section>
+      <h2 data-i18n="sec.zoom">Tangent plane &amp; scale</h2>
+      <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
       <label class="range">
         <span><span data-i18n="zoom.scale">Explorer scale</span> <b id="lbl-zoom">1 : 1</b></span>
-        <input id="in-zoom" type="range" min="0" max="4" step="1" value="0">
+        <input id="in-zoom" type="range" min="0" max="4" step="0.01" value="0">
       </label>
       <div id="ruler"></div>
-      <p class="note" data-i18n="zoom.note">Each notch shrinks the explorer ten-fold. Turn on the tangent plane and watch a differentiable surface become a plane.</p>
+      <p class="note" data-i18n="zoom.note">The dial only shrinks the explorer, never enlarges them. Turn on the tangent plane and slide it down: a differentiable surface becomes indistinguishable from its plane.</p>
     </section>
 
     <section>

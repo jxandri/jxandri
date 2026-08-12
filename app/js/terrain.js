@@ -83,23 +83,50 @@ function mixRGB(c1, c2, t, out) {
   return out;
 }
 
-// Realistic terrain ramp, keyed on normalised height.
-const SILT = [0.34, 0.30, 0.24];
-const SAND = [0.72, 0.67, 0.48];
-const GRASS = [0.36, 0.56, 0.23];
-const GRASS_DRY = [0.58, 0.54, 0.26];   // sun-bleached meadow
-const GRASS_COOL = [0.24, 0.44, 0.30];  // damp, blue-green pasture
-const FOREST = [0.23, 0.40, 0.18];
-const FOREST_DEEP = [0.14, 0.26, 0.13];
-const SCREE = [0.55, 0.52, 0.48];
-const SNOW = [0.96, 0.97, 1.00];
+/**
+ * The height ramp: ten colours, interpolated continuously by normalised
+ * height. This is the palette a heat map or a physical relief map uses, and it
+ * drives both the contour paths and — when the height-colour toggle is on —
+ * the whole surface, so the two always agree.
+ */
+const HEIGHT_RAMP = [
+  [0.000, 0.427, 0.173],  // (0,109,44)     deepest
+  [0.192, 0.639, 0.329],  // (49,163,84)
+  [0.455, 0.769, 0.463],  // (116,196,118)
+  [0.729, 0.894, 0.702],  // (186,228,179)
+  [0.929, 0.973, 0.914],  // (237,248,233)
+  [1.000, 1.000, 0.698],  // (255,255,178)
+  [0.996, 0.800, 0.361],  // (254,204,92)
+  [0.992, 0.553, 0.235],  // (253,141,60)
+  [0.941, 0.231, 0.125],  // (240,59,32)
+  [0.741, 0.000, 0.149],  // (189,0,38)     highest
+];
+
+/** Continuous interpolation along HEIGHT_RAMP. `h` is normalised height. */
+export function heightColor(h, out) {
+  const t = Math.min(1, Math.max(0, h)) * (HEIGHT_RAMP.length - 1);
+  const i = Math.min(HEIGHT_RAMP.length - 2, Math.floor(t));
+  return mixRGB(HEIGHT_RAMP[i], HEIGHT_RAMP[i + 1], t - i, out);
+}
+
+// Realistic terrain ramp, keyed on normalised height. Deliberately bright:
+// these are albedos, and a muddy albedo under a soft sky reads as grey mush.
+const SILT = [0.46, 0.41, 0.31];
+const SAND = [0.90, 0.84, 0.60];
+const GRASS = [0.47, 0.76, 0.28];
+const GRASS_DRY = [0.79, 0.74, 0.33];   // sun-bleached meadow
+const GRASS_COOL = [0.33, 0.63, 0.41];  // damp, blue-green pasture
+const FOREST = [0.31, 0.58, 0.24];
+const FOREST_DEEP = [0.20, 0.40, 0.19];
+const SCREE = [0.74, 0.71, 0.66];
+const SNOW = [0.99, 0.99, 1.00];
 
 // Three rock families. Which one you are standing on varies over tens of
 // metres, which is most of what makes high ground look like anything at all.
-const ROCK_COOL = [0.44, 0.44, 0.46];   // grey granite
-const ROCK_WARM = [0.52, 0.42, 0.32];   // ochre sandstone
-const ROCK_DARK = [0.24, 0.23, 0.25];   // dark basalt
-const LICHEN = [0.42, 0.47, 0.30];
+const ROCK_COOL = [0.62, 0.62, 0.64];   // grey granite
+const ROCK_WARM = [0.72, 0.58, 0.44];   // ochre sandstone
+const ROCK_DARK = [0.38, 0.36, 0.39];   // dark basalt
+const LICHEN = [0.58, 0.65, 0.40];
 
 const ROCK_TMP = [0, 0, 0];
 
@@ -192,38 +219,6 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   const shade = 1 + swing * 2 * amp;
   out[0] *= shade; out[1] *= shade; out[2] *= shade;
   return out;
-}
-
-// Hypsometric tints, the palette paper topographic maps use.
-const TOPO_STOPS = [
-  [0.00, [0.10, 0.22, 0.45]], // deep water
-  [0.16, [0.28, 0.55, 0.75]], // shallow water
-  [0.25, [0.55, 0.76, 0.60]],
-  [0.38, [0.72, 0.82, 0.52]], // lowland green
-  [0.50, [0.92, 0.88, 0.58]], // yellow
-  [0.62, [0.88, 0.74, 0.44]],
-  [0.74, [0.76, 0.55, 0.36]], // tan
-  [0.86, [0.62, 0.42, 0.34]], // brown
-  [0.94, [0.80, 0.76, 0.75]],
-  [1.00, [1.00, 1.00, 1.00]], // snow / summit
-];
-
-/** Topographic colour. `wet` is the fraction of the range that is below z=0. */
-export function topoColor(h, wet, out) {
-  // Remap so that the water part of the ramp lines up with z < 0 exactly.
-  let t;
-  if (wet > 0.001 && h < wet) t = (h / wet) * 0.25;
-  else t = 0.25 + ((h - wet) / Math.max(1e-6, 1 - wet)) * 0.75;
-  t = Math.min(1, Math.max(0, t));
-
-  for (let i = 1; i < TOPO_STOPS.length; i++) {
-    if (t <= TOPO_STOPS[i][0] || i === TOPO_STOPS.length - 1) {
-      const [t0, c0] = TOPO_STOPS[i - 1];
-      const [t1, c1] = TOPO_STOPS[i];
-      return mixRGB(c0, c1, (t - t0) / (t1 - t0 || 1e-9), out);
-    }
-  }
-  return mixRGB(TOPO_STOPS[0][1], TOPO_STOPS[0][1], 0, out);
 }
 
 /* --------------------------------------------------------- surface build */
@@ -330,21 +325,20 @@ export function buildSurface(field, grid, predicate) {
 }
 
 /** Recolour an existing surface in place (topographic <-> realistic). */
-export function recolorSurface(field, grid, geometry, topographic) {
+export function recolorSurface(field, grid, geometry, palette) {
   const colors = geometry.getAttribute('color');
   const arr = colors.array;
   const { n, w } = grid;
   const rgb = [0, 0, 0];
   const grad = [0, 0];
-  const wet = grid.zmin < 0 ? Math.min(1, (0 - grid.zmin) / (grid.zmax - grid.zmin)) : 0;
 
   for (let j = 0; j <= n; j++) {
     const yy = grid.y(j);
     for (let i = 0; i <= n; i++) {
       const k = j * w + i;
       const z = grid.valid[k] ? grid.z[k] : 0;
-      if (topographic) {
-        topoColor(grid.norm(z), wet, rgb);
+      if (palette === 'height') {
+        heightColor(grid.norm(z), rgb);
       } else {
         grid.gradientAt(i, j, grad);
         const slope = isFinite(grad[0]) && isFinite(grad[1])
@@ -614,7 +608,6 @@ export class SurfaceDetail {
     // the samples above rather than costing four more evaluations each.
     const nrm = new THREE.Vector3();
     const rgb = [0, 0, 0];
-    const wet = grid.zmin < 0 ? Math.min(1, (0 - grid.zmin) / (grid.zmax - grid.zmin)) : 0;
 
     for (let j = 0; j < w; j++) {
       const yy = cy + (j - seg / 2) * step;
@@ -648,8 +641,8 @@ export class SurfaceDetail {
         field.normalFromGrad(gx, gy, nrm);
         N[k * 3] = nrm.x; N[k * 3 + 1] = nrm.y; N[k * 3 + 2] = nrm.z;
 
-        if (topographic) {
-          topoColor(grid.norm(zz), wet, rgb);
+        if (topographic === 'height') {
+          heightColor(grid.norm(zz), rgb);
         } else {
           const slope = isFinite(gx) && isFinite(gy) ? Math.hypot(gx, gy) / grid.slopeRef : 0;
           biomeColor(grid.norm(zz), zz, slope, px, pz, rgb);
