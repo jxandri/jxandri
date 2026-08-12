@@ -172,10 +172,22 @@ every browser has had since about 2013.</p>
 <figure>
   <img src="figs/fig-open.png" alt="The opening screen">
   <figcaption><b>Figure 1.</b> The opening screen. The control panel is on the left. Along the
-  top, the readout always shows where you are: <code>x</code>, <code>y</code>, and the height
-  <code>z = f(x,y)</code>. At the bottom, the current view mode and scale. You begin in the air,
-  looking at the whole surface.</figcaption>
+  top, the readout always shows where you are: <code>x</code>, <code>y</code>, the height
+  <code>z = f(x,y)</code> and <code>RMS</code>. At the bottom, the current view mode and scale.
+  You begin in the air, looking at the whole surface.</figcaption>
 </figure>
+
+<h2>The four numbers along the top</h2>
+<p><code>x</code> and <code>y</code> are where the explorer is standing; <code>z = f(x,y)</code>
+is the height there. The fourth, <strong><code>RMS</code></strong>, is the absolute slope of the
+level curve through that point:</p>
+<p style="text-align:center"><code>RMS = |∂f/∂x ÷ ∂f/∂y|</code></p>
+<p>Differentiating <code>f(x, y) = c</code> implicitly gives <code>dy/dx = −f<sub>x</sub>/f<sub>y</sub></code>
+along the contour, so this number says how many units of <code>y</code> one unit of <code>x</code>
+buys you while staying at the same height — the marginal rate of substitution. It is shown
+unsigned, it is there whether or not any derivative arrow is switched on, and it goes to
+<code>∞</code> exactly where the level curve turns vertical (<code>f<sub>y</sub> = 0</code>). At a
+critical point, where both partials vanish, it is genuinely undefined and shows a dash.</p>
 
 <h2>Step one: look at the whole surface</h2>
 <p>You start as a <strong>drone</strong>, hovering above the plot. This first view is deliberate: before
@@ -234,6 +246,18 @@ replaces it.</p>
 produces. Nothing is recomputed, so you can switch mid-demonstration.</p>
 
 <h2>Function</h2>
+<p><strong>Kind of surface</strong> — three of them, and only the first is a landscape you can
+walk on.</p>
+<ul>
+  <li><strong>Graph — z = f(x, y)</strong>: the default, and what the rest of this guide is
+  about. One height above every point of the plane, so it can be stood on, differentiated and
+  contoured.</li>
+  <li><strong>Implicit — F(x, y, z) = 0</strong>: everything satisfying one equation in three
+  variables — a sphere, a torus, a cone. There may be several sheets above one <code>(x, y)</code>,
+  or none, so there is nothing to walk on and no <code>∂f/∂x</code>; fly around it with the drone.</li>
+  <li><strong>Parametric — r(u, v)</strong>: a sheet swept out by two parameters. Also flown
+  around rather than walked on.</li>
+</ul>
 <p><strong><code>f(x, y) =</code></strong> — the formula that becomes the landscape. Type a new one
 and press <kbd>Enter</kbd>. Part 5 explains the notation in full.</p>
 <p><strong>— examples —</strong> — a menu of ready-made functions. Choosing one loads it and sets a
@@ -247,10 +271,14 @@ a typing mistake never destroys your work.</p>
 The default is the square from 0 to 2 in both directions.</p>
 <p><strong>Mesh resolution</strong> — how finely the surface is divided into triangles. Higher is
 smoother but slower to build. 300 is the default; lower it to 100 or 80 on an old computer.</p>
-<p><strong>Vertical exaggeration</strong> — stretches the landscape upward for looks. <strong>Leave this
-at 1.0 for teaching.</strong> At any other value the picture is stretched but the numbers on screen
-remain the true, unstretched ones, which is exactly the sort of mismatch that confuses students.
-It exists for functions so flat you cannot see them at all.</p>
+<p><strong>Axis scale — x axis, y axis, z axis</strong> — three dials, all at
+<code>1.00×</code> by default. That default is ordinary Cartesian space, where one unit of
+<code>x</code>, one unit of <code>y</code> and one unit of <code>z</code> are the same length and
+the unit sphere really is round. <strong>Leave all three at 1.0 for teaching.</strong> Stretching
+one changes the picture only: every number on screen stays the true, unstretched value, which is
+exactly the sort of mismatch that confuses students. The <code>z</code> dial exists for functions
+so flat you cannot otherwise see them, and the <code>x</code> and <code>y</code> dials for domains
+far longer than they are wide. <strong>Reset to equal axes</strong> puts all three back to 1.</p>
 <p><strong>Rebuild terrain</strong> — applies the function and domain. Pressing <kbd>Enter</kbd> in
 any of the boxes does the same thing.</p>
 
@@ -264,13 +292,24 @@ fades to a ghost, so only the permitted region is solid. Turning both of these o
 way to pose a constrained optimisation problem.</p>
 
 <h2>Map &amp; terrain</h2>
-<p><strong>Level curves</strong> <kbd>C</kbd> — draws the contour lines on the surface, at round-numbered
-heights. The spacing chosen (for example <code>Δz = 0.2</code>) is shown next to the checkbox. You can
-walk along them.</p>
-<p><strong>Topographic colours</strong> <kbd>M</kbd> — repaints the surface in the standard hypsometric
-palette of a paper map: blues below zero, then green, yellow, tan, brown and white with height.
-Combine with <kbd>T</kbd> (look straight down) to turn the 3D scene into the flat map students
-already know.</p>
+<p><strong>Level curves</strong> <kbd>C</kbd> — draws the contours on the surface as wide,
+walkable paths rather than hairlines, and <em>drapes them over the ground</em>: the centre of each
+path is at constant height, as a level curve must be, but the band itself follows the hillside it
+crosses instead of hanging in the air as a flat ring. Each path is coloured by its own height on
+the ten-colour ramp, so the colour states the altitude whether or not the surface itself is
+coloured.</p>
+<p><strong>Contour interval Δz</strong> — leave it blank and the program picks a round interval
+and shows you which one. Type a number and that is the interval, which is the point when the
+interval is the thing being taught. Ask for one so small that thousands of paths would be needed
+and it is widened, with a note saying so.</p>
+<p><strong>Path width</strong> — how wide those paths are, in metres, against the 1.80 m explorer.
+The default 1.4 m is a footpath you can see from the air and still walk along.</p>
+<p><strong>Colour the surface by height</strong> <kbd>M</kbd> — repaints the whole surface on the
+same ten-colour ramp the contours use, so the surface and its level curves agree. Turn it off and
+the surface goes back to the eight terrain bands — water, beach, deep vegetation, lighter
+vegetation, arid, volcanic rock, snow, cloud — which say the same thing in the language of a
+landscape. Combine either with <kbd>T</kbd> (look straight down) to turn the 3D scene into the
+flat map students already know.</p>
 <p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off. The scenery sits
 <em>on top of</em> the surface and never changes its shape.</p>
 <p><strong>Water in the depressions</strong> — a translucent lake surface at height zero, so any
@@ -281,7 +320,13 @@ region where <code>f &lt; 0</code> fills with water.</p>
 <h2>Derivatives</h2>
 <p><strong>Highlight neighbourhood</strong> <kbd>H</kbd> — lights up a disc on the surface centred on
 the explorer. This is the neighbourhood in which all the rates of change are measured.</p>
-<p><strong>Radius</strong> — 1 metre or 2 metres, measured against the 1.80 m explorer.</p>
+<p><strong>Radius</strong> — 1 metre or 2 metres, measured against the 1.80 m explorer, and
+measured <strong>as arc length over the surface</strong>: it is the distance actually walked from
+where the explorer stands, not the distance on the flat floor underneath. On level ground the two
+agree. On a slope of 1 you cover 2 m of ground in only 1.41 m of floor, so the patch shrinks in
+the <code>(x, y)</code> plane — and on a surface whose steepness varies with direction the rim
+stops being a circle at all. That is the honest local neighbourhood: the set of points two metres'
+walk away, exactly as a Riemannian metric measures it.</p>
 <p><strong><span class="swatch" style="background:#2f7bff"></span>∂f/∂x arrow</strong> <kbd>X</kbd> —
 a blue arrow drawn <em>along the surface</em> in the direction of increasing <code>x</code>.</p>
 <p><strong><span class="swatch" style="background:#ff3b30"></span>∂f/∂y arrow</strong> <kbd>Y</kbd> —
@@ -296,10 +341,24 @@ radius is a lesson in itself.</p>
 <kbd>B</kbd> — freezes the explorer and lets you swing a direction vector <strong>u</strong> around
 the rim with the mouse. The badge shows D<sub>u</sub>f and the angle. To look around while in this
 mode, hold the <strong>right</strong> mouse button.</p>
-<p><strong>Tangent plane</strong> <kbd>P</kbd> — draws the flat plane that best matches the surface
-at the explorer's feet.</p>
+<p>All four arrows are painted on the surface and reach the same arc length, so on a
+hillside they bend with the hillside; each ends in a flat arrowhead, proportioned to the width of
+its own shaft.</p>
 
-<h2>Zoom-in ruler</h2>
+<h2>The curve under your feet</h2>
+<p><strong>Level curve you are standing on</strong> <kbd>J</kbd> — traces the contour through the
+explorer's exact height, not the nearest round one, and re-traces it continuously as they walk.
+It is coloured by that height on the ramp, and laid on the surface like the other paths.</p>
+<p><strong>Tangent line to that curve</strong> <kbd>K</kbd> — the tangent to that contour at the
+explorer's feet, in magenta, projected down onto the surface so that it hugs the ground rather
+than floating off it. Because a level curve keeps <code>f</code> constant, its tangent direction
+is perpendicular to <code>∇f</code>, and the projected line leaves the contour only at second
+order: the two run together near the explorer and part slowly further out. Shrink the explorer
+with the zoom dial and they close up again — which is what "tangent" means.</p>
+
+<h2>Tangent plane &amp; scale</h2>
+<p><strong>Tangent plane</strong> <kbd>P</kbd> — draws the flat plane that best matches the
+surface at the explorer's feet.</p>
 <p>Shrinks the explorer by a factor of ten per notch: 1.8 m, then 18 cm, 1.8 cm, 1.8 mm, and finally
 0.18 mm. The camera, the walking speed and the measuring disc all shrink with them, so from the
 explorer's point of view nothing changes — but the patch of surface they occupy gets a hundred,
@@ -313,9 +372,28 @@ The report underneath gives the maximum value, where it is, whether it sits in t
 <p><strong>Teleport to the optimum</strong> — puts the explorer on that spot instantly.</p>
 
 <h2>View</h2>
-<p><strong>First person</strong> <kbd>1</kbd>, <strong>Third person</strong> <kbd>2</kbd>,
-<strong>Drone</strong> <kbd>3</kbd>. <strong>Look straight down</strong> <kbd>T</kbd> flies the drone
-directly overhead, which projects the surface onto the plane <code>z = 0</code> — the flat map view.
+<p>Three ways of being in the scene.</p>
+<ul>
+  <li><strong>First person</strong> <kbd>1</kbd> — through the explorer's own eyes, walking on the
+  surface. The slope is felt rather than seen.</li>
+  <li><strong>Third person</strong> <kbd>2</kbd> — over the explorer's shoulder. The best view for
+  the derivative arrows, because you can see both the ground and the figure standing on it.</li>
+  <li><strong>Drone</strong> <kbd>3</kbd> — a flying camera, off the surface altogether.</li>
+</ul>
+<p><strong>Drone camera</strong> — visible only in drone mode, and offering the same choice again
+one level up: <em>first person</em> puts you in the aircraft, <em>third person</em> puts the camera
+behind it so you can see the drone itself.</p>
+<p>The drone flies level. <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> move it over the
+<code>(x, y)</code> plane, <kbd>Space</kbd> and <kbd>Ctrl</kbd> set its altitude, and the mouse
+only aims the camera — so you can look straight down at the ground and still cross the domain at a
+constant height, which a camera that dives wherever it is pointed makes very hard. Hanging beneath
+it is a bright beam, perpendicular to the plane <code>z = 0</code>, ending in a bright ring on the
+surface: that ring is the point of the domain you are above, and watching it is how you keep track
+of where you are while flying.</p>
+<p><strong>Explorer's look</strong> — hiker, brick minifigure, blocky pixel figure or round buddy.
+All four are exactly 1.80 m tall, so the scale reference never changes.</p>
+<p><strong>Look straight down</strong> <kbd>T</kbd> flies the drone directly overhead, which
+projects the surface onto the plane <code>z = 0</code> — the flat map view.
 <strong>Return to the centre</strong> <kbd>R</kbd> rescues an explorer who has wandered off.</p>
 
 <!-- =========================================================== PART 5 -->

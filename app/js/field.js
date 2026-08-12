@@ -121,6 +121,76 @@ export class Field {
     return (z1 - z0) / r;
   }
 
+  /**
+   * The math-space radius whose *arc length along the surface* is `metres`.
+   *
+   * Everywhere else a "2 m neighbourhood" meant two metres measured on the flat
+   * (x, y) floor, which is not what a walker experiences: on a slope of 1 you
+   * cover 2 m of ground in √2 ≈ 1.41 m of floor. Measuring along the surface is
+   * the honest thing — it is the Riemannian length of the curve
+   * t ↦ (x + t·u, y + t·v, f(x + t·u, y + t·v)), induced by the ambient metric —
+   * and it makes the highlighted patch a genuine disc of radius r *for someone
+   * standing on it*, which is the whole point of a local neighbourhood.
+   *
+   * Integrated by marching, because the integrand needs f anyway and marching
+   * doubles as the domain-edge check: where f stops being defined, so does the
+   * neighbourhood, and the returned radius is however far we got.
+   */
+  arcRadius(cx, cy, ux, uy, metres) {
+    const flat = metres / this.S;            // what it would be on level ground
+    if (!(flat > 0)) return 0;
+
+    const step = flat / 8;
+    const maxSteps = 8 * 24;                 // give up past 24× the flat radius
+    const z0 = this.height(cx, cy);
+    if (!isFinite(z0)) return flat;
+
+    let t = 0, s = 0;
+    let px = this.worldX(cx), py = this.worldY(z0), pz = this.worldZ(cy);
+
+    for (let i = 0; i < maxSteps; i++) {
+      const t2 = t + step;
+      const x2 = cx + ux * t2, y2 = cy + uy * t2;
+      const z2 = this.height(x2, y2);
+      if (!isFinite(z2)) return t;           // ran off the edge of the domain
+      const qx = this.worldX(x2), qy = this.worldY(z2), qz = this.worldZ(y2);
+      const ds = Math.hypot(qx - px, qy - py, qz - pz);
+      if (!(ds > 0)) return t2;              // degenerate: nothing to integrate
+      if (s + ds >= metres) return t + step * ((metres - s) / ds);
+      s += ds; t = t2; px = qx; py = qy; pz = qz;
+    }
+    return t;
+  }
+
+  /**
+   * How far the surface bulges above the straight chords drawn between `nSeg`
+   * samples out to radius `r` — the sagitta, in world metres.
+   *
+   * Anything drawn *on* the surface is really a chain of flat quads through
+   * points of it. Over a dome those chords pass underneath the surface between
+   * their endpoints and the whole overlay disappears into the ground; over a
+   * bowl they never do. Lifting everything by this much clears the worst case
+   * without floating conspicuously in the flat case, where it is zero.
+   */
+  chordSag(cx, cy, r, nSeg, directions = 8) {
+    if (!(r > 0) || nSeg < 1) return 0;
+    let worst = 0;
+    for (let d = 0; d < directions; d++) {
+      const a = (d / directions) * Math.PI * 2;
+      const ux = Math.cos(a), uy = Math.sin(a);
+      for (let i = 0; i < nSeg; i++) {
+        const t0 = (i / nSeg) * r, t1 = ((i + 1) / nSeg) * r;
+        const z0 = this.height(cx + ux * t0, cy + uy * t0);
+        const z1 = this.height(cx + ux * t1, cy + uy * t1);
+        const zm = this.height(cx + ux * (t0 + t1) / 2, cy + uy * (t0 + t1) / 2);
+        if (!isFinite(z0) || !isFinite(z1) || !isFinite(zm)) continue;
+        const sag = this.worldY(zm - (z0 + z1) / 2);
+        if (sag > worst) worst = sag;
+      }
+    }
+    return worst;
+  }
+
   /** Unit surface normal in WORLD space (respects vertical exaggeration). */
   worldNormal(x, y, out) {
     const [fx, fy] = this.gradient(x, y);

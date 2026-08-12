@@ -222,9 +222,62 @@ export const CHARACTER_STYLES = Object.keys(STYLES);
 function buildCharacter(style) {
   const root = new THREE.Group();
   const make = STYLES[style] || STYLES.explorer;
-  root.userData.parts = make(root);
+  const parts = make(root);
+  // Every style hangs its hips at a different height; remember where, so the
+  // walk cycle bobs around the right place instead of yanking them to the
+  // hiker's.
+  parts.hipsY = parts.hips.position.y;
+  root.userData.parts = parts;
   root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
   return root;
+}
+
+/**
+ * The drone's plumb line: a bright vertical beam from the aircraft down to the
+ * ground, ending in a ring drawn on the surface.
+ *
+ * Flying, it is very easy to lose track of where you are in the (x, y) plane —
+ * the picture on screen is a projection and altitude reads as distance. The
+ * beam is perpendicular to the z = 0 plane by construction, so the ring marks
+ * exactly the point of the domain you are above.
+ */
+function buildPlumb() {
+  const group = new THREE.Group();
+  group.name = 'drone-plumb';
+
+  // Unit cylinder along +Y with its base at the origin, so scaling y gives the
+  // drop straight away.
+  const beamGeom = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true);
+  beamGeom.translate(0, 0.5, 0);
+  const beam = new THREE.Mesh(beamGeom, new THREE.MeshBasicMaterial({
+    color: 0x8ef0ff, transparent: true, opacity: 0.42,
+    side: THREE.DoubleSide, depthWrite: false, toneMapped: false, fog: false,
+  }));
+  beam.frustumCulled = false;
+  beam.renderOrder = 7;
+
+  const ringGeom = new THREE.RingGeometry(0.72, 1, 48);
+  ringGeom.rotateX(-Math.PI / 2);
+  const ring = new THREE.Mesh(ringGeom, new THREE.MeshBasicMaterial({
+    color: 0xa9f7ff, transparent: true, opacity: 0.95,
+    side: THREE.DoubleSide, depthWrite: false, toneMapped: false, fog: false,
+  }));
+  ring.frustumCulled = false;
+  ring.renderOrder = 8;
+
+  const glowGeom = new THREE.CircleGeometry(1, 48);
+  glowGeom.rotateX(-Math.PI / 2);
+  const glow = new THREE.Mesh(glowGeom, new THREE.MeshBasicMaterial({
+    color: 0x7fe8ff, transparent: true, opacity: 0.26,
+    side: THREE.DoubleSide, depthWrite: false, toneMapped: false, fog: false,
+  }));
+  glow.frustumCulled = false;
+  glow.renderOrder = 7;
+
+  group.add(beam, ring, glow);
+  group.userData = { beam, ring, glow };
+  group.visible = false;
+  return group;
 }
 
 /** Small quadrotor for the flying camera. */
@@ -244,8 +297,13 @@ function buildDrone() {
     arm.rotation.y = sx * sz > 0 ? Math.PI / 4 : -Math.PI / 4;
     root.add(arm);
     const rotor = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.24, 0.24, 0.02, 12),
-      new THREE.MeshLambertMaterial({ color: 0x8899aa, transparent: true, opacity: 0.5 }),
+      new THREE.CylinderGeometry(0.24, 0.24, 0.02, 16),
+      // depthWrite off: four translucent discs that write depth carve holes in
+      // each other and the drone ends up looking chewed.
+      new THREE.MeshLambertMaterial({
+        color: 0x8899aa, transparent: true, opacity: 0.55,
+        depthWrite: false, side: THREE.DoubleSide,
+      }),
     );
     rotor.position.set(sx * 0.5, 0.06, sz * 0.5);
     root.add(rotor);
@@ -278,10 +336,18 @@ export class Player {
     this.drone = buildDrone();
     this.dronePos = new THREE.Vector3();
     this.droneActive = false;
+    this.droneView = MODE_FIRST;   // looking out of the drone, or at it
+    this.plumb = buildPlumb();
+
+    // Clearance between the soles and the surface, as a fraction of the body.
+    // Small enough to read as "standing on it", large enough that the disc,
+    // the arrows and the tangent plane are not swallowed by the ground.
+    this.hover = 0.045;
+    this.extraLift = 0;            // set by whatever overlay is on the ground
 
     this.group = new THREE.Group();
     this.group.name = 'player';
-    this.group.add(this.character, this.drone);
+    this.group.add(this.character, this.drone, this.plumb);
     this.drone.visible = false;
 
     this.thirdDistance = 5.0;
@@ -326,10 +392,21 @@ export class Player {
 
   get charScale() { return this.zoom; }
 
+  /**
+   * How far above the surface the soles sit, in world metres. Whatever is being
+   * drawn on the ground reports its own clearance through `extraLift`, and the
+   * explorer stands on top of it rather than through it.
+   */
+  groundLift() {
+    return BODY_HEIGHT * this.hover * this.zoom + (this.extraLift || 0);
+  }
+
   /** World position of the character's feet. */
   worldFeet(out) {
     const h = this.height();
-    return this.field.toWorld(this.x, this.y, isFinite(h) ? h : 0, out || new THREE.Vector3());
+    const v = this.field.toWorld(this.x, this.y, isFinite(h) ? h : 0, out || new THREE.Vector3());
+    v.y += this.groundLift();
+    return v;
   }
 
   setMode(mode) {
@@ -338,10 +415,33 @@ export class Player {
     if (mode !== MODE_DRONE && this.mode === MODE_DRONE && this.pitch < -0.9) {
       this.pitch = -0.25;
     }
+    // Taking off: launch from wherever the explorer is standing rather than
+    // from wherever the drone was last parked, which after a walk is usually
+    // somewhere behind you and often inside a tree.
+    if (mode === MODE_DRONE && this.mode !== MODE_DRONE) {
+      const f = this.field;
+      const h = this.height();
+      this.dronePos.set(
+        f.worldX(this.x),
+        f.worldY(isFinite(h) ? h : 0) + Math.max(f.worldSize * 0.10, 14) * this.zoom,
+        f.worldZ(this.y),
+      );
+      if (this.pitch > -0.2) this.pitch = -0.35;
+    }
     this.mode = mode;
     this.droneActive = mode === MODE_DRONE;
-    this.drone.visible = mode === MODE_DRONE;
+    // In the first-person drone the aircraft is where the camera is, so drawing
+    // it would only fill the screen with its own dome.
+    this.drone.visible = mode === MODE_DRONE && this.droneView === MODE_THIRD;
+    this.plumb.visible = mode === MODE_DRONE;
     this.character.visible = mode !== MODE_FIRST;
+    this._camReady = false;
+  }
+
+  /** MODE_FIRST = camera in the cockpit, MODE_THIRD = camera behind the drone. */
+  setDroneView(view) {
+    this.droneView = view === MODE_THIRD ? MODE_THIRD : MODE_FIRST;
+    this.drone.visible = this.mode === MODE_DRONE && this.droneView === MODE_THIRD;
     this._camReady = false;
   }
 
@@ -445,17 +545,18 @@ export class Player {
     // Place the character on the surface regardless of mode, so switching back
     // from the drone puts you exactly where you left off.
     const h = this.height();
-    const wy = f.worldY(isFinite(h) ? h : 0);
+    const wy = f.worldY(isFinite(h) ? h : 0) + this.groundLift();
     this.character.position.set(f.worldX(this.x), wy, f.worldZ(this.y));
     this.character.scale.setScalar(this.zoom);
     this.character.rotation.y = this.facing;
 
     if (this.mode === MODE_DRONE) {
       this.drone.position.copy(this.dronePos);
-      this.drone.rotation.y += dt * 2;
+      this.drone.rotation.y = this.yaw;
       const s = Math.max(1, f.worldSize / 200) * 1.2;
       this.drone.scale.setScalar(s);
     }
+    this._updatePlumb();
 
     this._animate(dt);
   }
@@ -498,18 +599,24 @@ export class Player {
     this.facing = Math.atan2(vx, vz) + Math.PI;
   }
 
+  /**
+   * A quadrotor's controls, not a spectator camera's: W/S and A/D fly level,
+   * Space and Ctrl set the altitude, and the pitch of the gimbal only aims the
+   * camera. Diving because you happened to be looking down is what makes a
+   * free camera so hard to navigate with; here you can look straight at the
+   * ground and still cross the domain at a constant height.
+   */
   _updateDrone(dt, input) {
     const f = this.field;
     const speed = f.worldSize * (input.sprint ? 0.75 : 0.28);
 
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
-    const fwd = new THREE.Vector3(-sy * cp, sp, -cy * cp);
+    const fwd = new THREE.Vector3(-sy, 0, -cy);
     const rgt = new THREE.Vector3(cy, 0, -sy);
 
     this.dronePos.addScaledVector(fwd, input.forward * speed * dt);
     this.dronePos.addScaledVector(rgt, input.right * speed * dt);
-    this.dronePos.y += input.up * speed * dt;
+    this.dronePos.y += input.up * speed * dt * 0.8;
 
     // Stay above the ground, and inside a generous box around the plot.
     const mx = f.mathX(this.dronePos.x), my = f.mathY(this.dronePos.z);
@@ -521,6 +628,41 @@ export class Player {
     this.dronePos.x = Math.max(f.worldX(f.cx) - lim, Math.min(f.worldX(f.cx) + lim, this.dronePos.x));
     this.dronePos.z = Math.max(f.worldZ(f.cy) - lim, Math.min(f.worldZ(f.cy) + lim, this.dronePos.z));
     this.dronePos.y = Math.min(this.dronePos.y, lim * 1.5);
+
+    // Where in the domain we are, for the HUD and the plumb line.
+    this.droneX = Math.max(f.xmin, Math.min(f.xmax, f.mathX(this.dronePos.x)));
+    this.droneY = Math.max(f.ymin, Math.min(f.ymax, f.mathY(this.dronePos.z)));
+    this.droneAltitude = this.dronePos.y - f.worldY(isFinite(gh) ? gh : 0);
+  }
+
+  /** Drop the beam from the drone to the ground and lay the ring on the surface. */
+  _updatePlumb() {
+    const f = this.field;
+    if (this.mode !== MODE_DRONE) { this.plumb.visible = false; return; }
+
+    const { beam, ring, glow } = this.plumb.userData;
+    const gx = this.droneX ?? f.cx, gy = this.droneY ?? f.cy;
+    const gz = f.height(gx, gy);
+    const groundY = f.worldY(isFinite(gz) ? gz : 0);
+
+    // The beam hangs from the aircraft straight down — perpendicular to z = 0
+    // whatever the surface underneath happens to be doing.
+    const drop = Math.max(this.dronePos.y - groundY, 0);
+    const thick = Math.max(f.worldSize * 0.0016, 0.05);
+    beam.position.set(this.dronePos.x, groundY, this.dronePos.z);
+    beam.scale.set(thick, drop, thick);
+
+    const rad = Math.max(f.worldSize * 0.016, 0.6);
+    const n = f.worldNormal(gx, gy, new THREE.Vector3());
+    // Lift by a hair so the ring is not lost in the surface it marks.
+    const lift = Math.max(f.worldSize * 6e-4, 0.02);
+    for (const m of [ring, glow]) {
+      m.position.set(f.worldX(gx), groundY + lift, f.worldZ(gy));
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+      m.scale.setScalar(rad);
+    }
+    glow.scale.setScalar(rad * 0.74);
+    this.plumb.visible = true;
   }
 
   _animate(dt) {
@@ -535,7 +677,7 @@ export class Player {
     }
     p.armL.rotation.x = -swing * 0.8;
     p.armR.rotation.x = swing * 0.8;
-    p.hips.position.y = 0.92 + (moving ? Math.abs(Math.sin(this.walkPhase)) * 0.045 : 0);
+    p.hips.position.y = p.hipsY + (moving ? Math.abs(Math.sin(this.walkPhase)) * 0.045 : 0);
 
     if (this.mode === MODE_DRONE && this.drone.userData.rotors) {
       for (const r of this.drone.userData.rotors) r.rotation.y += dt * 40;
@@ -549,13 +691,26 @@ export class Player {
     const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
 
     if (this.mode === MODE_DRONE) {
-      camera.position.copy(this.dronePos);
-      camera.quaternion.copy(q);
+      if (this.droneView === MODE_THIRD) {
+        // Chase camera: behind and a little above the aircraft, so you can see
+        // the drone, its beam and the ring it is casting all at once.
+        const back = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+        const d = Math.max(f.worldSize * 0.05, 6) * Math.max(1, f.worldSize / 200);
+        this._camPos.copy(this.dronePos).addScaledVector(back, d);
+        this._camPos.y += d * 0.22;
+        if (!this._camReady) { this._smoothCam.copy(this._camPos); this._camReady = true; }
+        this._smoothCam.lerp(this._camPos, 1 - Math.exp(-dt * 12));
+        camera.position.copy(this._smoothCam);
+        camera.lookAt(this.dronePos);
+      } else {
+        camera.position.copy(this.dronePos);
+        camera.quaternion.copy(q);
+      }
     } else if (this.mode === MODE_FIRST) {
       const h = this.height();
       camera.position.set(
         f.worldX(this.x),
-        f.worldY(isFinite(h) ? h : 0) + EYE_HEIGHT * this.zoom,
+        f.worldY(isFinite(h) ? h : 0) + this.groundLift() + EYE_HEIGHT * this.zoom,
         f.worldZ(this.y),
       );
       camera.quaternion.copy(q);
@@ -569,7 +724,7 @@ export class Player {
       const h = this.height();
       this._camTarget.set(
         f.worldX(this.x),
-        f.worldY(isFinite(h) ? h : 0) + BODY_HEIGHT * 0.75 * this.zoom,
+        f.worldY(isFinite(h) ? h : 0) + this.groundLift() + BODY_HEIGHT * 0.75 * this.zoom,
         f.worldZ(this.y),
       );
       this._camPos.copy(this._camTarget).add(back).add(upOff).add(side);

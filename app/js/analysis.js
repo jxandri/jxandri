@@ -65,15 +65,22 @@ export function chooseLevels(zmin, zmax, options) {
 /* ------------------------------------------------- ribbons on the surface */
 
 /**
- * Append one quad of a path lying on the surface, from (x0,y0) to (x1,y1) at a
- * fixed height.
+ * Append one quad of a path draped on the surface, from (x0,y0) to (x1,y1).
+ *
+ * The *centreline* of a level curve is at constant height — that is what makes
+ * it a level curve — but the path has width, and across that width the ground
+ * rises on one side and falls on the other. Holding all four corners at the
+ * same z would float a flat ring parallel to the (x, y) plane, cutting into the
+ * hillside above and hanging in the air below. So each corner is put at the
+ * height of the surface beneath *it*, and the band lies on the hill like a
+ * footpath, which is what it is.
  *
  * Both ends are extended by half the width along the path. Marching squares
  * hands back one short segment per grid cell, and without that overlap every
  * corner between consecutive segments would show a notch; with it, the quads
  * cover each other's joints and the result reads as a continuous walkway.
  */
-function pushPathQuad(field, pos, col, idx, x0, y0, x1, y1, z, half, lift, rgb) {
+function pushPathQuad(field, sampleZ, pos, col, idx, x0, y0, x1, y1, z, half, lift, rgb) {
   const ax = field.worldX(x0), az = field.worldZ(y0);
   const bx = field.worldX(x1), bz = field.worldZ(y1);
   let tx = bx - ax, tz = bz - az;
@@ -81,20 +88,24 @@ function pushPathQuad(field, pos, col, idx, x0, y0, x1, y1, z, half, lift, rgb) 
   if (!(len > 1e-9)) return;
   tx /= len; tz /= len;
 
-  // The path is level, so its own tangent is horizontal; the sideways
-  // direction is simply the horizontal perpendicular.
   const sx = -tz * half, sz = tx * half;
   const ex = tx * half, ez = tz * half;
-  const wy = field.worldY(z) + lift;
+  const flat = field.worldY(z) + lift;
+
+  // World X/Z of the four corners, then the ground under each of them.
+  const cs = [
+    [ax - ex + sx, az - ez + sz],
+    [bx + ex + sx, bz + ez + sz],
+    [bx + ex - sx, bz + ez - sz],
+    [ax - ex - sx, az - ez - sz],
+  ];
 
   const v = pos.length / 3;
-  pos.push(
-    ax - ex + sx, wy, az - ez + sz,
-    bx + ex + sx, wy, bz + ez + sz,
-    bx + ex - sx, wy, bz + ez - sz,
-    ax - ex - sx, wy, az - ez - sz,
-  );
-  for (let i = 0; i < 4; i++) col.push(rgb[0], rgb[1], rgb[2]);
+  for (const [wx, wz] of cs) {
+    const zz = sampleZ(field.mathX(wx), field.mathY(wz));
+    pos.push(wx, isFinite(zz) ? field.worldY(zz) + lift : flat, wz);
+    col.push(rgb[0], rgb[1], rgb[2]);
+  }
   idx.push(v, v + 1, v + 2, v, v + 2, v + 3);
 }
 
@@ -115,6 +126,10 @@ export function buildContours(field, grid, levels, options) {
   const col = [];
   const idx = [];
   const rgb = [0, 0, 0];
+
+  // Drape on the *rendered* triangles rather than on f itself: a bilinear look
+  // up into samples we already hold, and it costs nothing per corner.
+  const sampleZ = (x, y) => grid.meshHeight(x, y);
 
   for (const level of levels) {
     heightColor(grid.norm(level), rgb);
@@ -141,7 +156,7 @@ export function buildContours(field, grid, levels, options) {
         if (b3 !== b0) pts.push({ e: 3, p: lerp(z3, z0, x0, y1, x0, y0) });
 
         if (pts.length === 2) {
-          pushPathQuad(field, pos, col, idx, pts[0].p[0], pts[0].p[1],
+          pushPathQuad(field, sampleZ, pos, col, idx, pts[0].p[0], pts[0].p[1],
             pts[1].p[0], pts[1].p[1], level, half, lift, rgb);
         } else if (pts.length === 4) {
           const centre = (z0 + z1 + z2 + z3) / 4;
@@ -149,7 +164,7 @@ export function buildContours(field, grid, levels, options) {
           for (const [ea, eb] of pair) {
             const A = pts.find((q) => q.e === ea), B = pts.find((q) => q.e === eb);
             if (A && B) {
-              pushPathQuad(field, pos, col, idx, A.p[0], A.p[1], B.p[0], B.p[1],
+              pushPathQuad(field, sampleZ, pos, col, idx, A.p[0], A.p[1], B.p[0], B.p[1],
                 level, half, lift, rgb);
             }
           }
@@ -274,7 +289,15 @@ export class LevelCurveGizmo {
     const half = widthMetres / 2;
     const lift = Math.max(field.worldSize * 6e-4, half * 0.2);
     const z = field.height(cx, cy);
+    const flat = field.worldY(z) + lift;
     const arr = this.geometry.getAttribute('position').array;
+
+    // Same treatment as the contour set: the centreline is level, the band
+    // itself is draped over the ground it crosses.
+    const groundY = (wx, wz) => {
+      const zz = field.height(field.mathX(wx), field.mathY(wz));
+      return isFinite(zz) ? field.worldY(zz) + lift : flat;
+    };
 
     let q = 0;
     for (let i = 0; i + 3 < pts.length && q < this.maxQuads; i += 2, q++) {
@@ -286,13 +309,16 @@ export class LevelCurveGizmo {
       tx /= len; tz /= len;
       const sx = -tz * half, sz = tx * half;
       const ex = tx * half * 0.6, ez = tz * half * 0.6;
-      const wy = field.worldY(z) + lift;
 
       const o = q * 12;
-      arr[o] = ax - ex + sx; arr[o + 1] = wy; arr[o + 2] = az - ez + sz;
-      arr[o + 3] = bx + ex + sx; arr[o + 4] = wy; arr[o + 5] = bz + ez + sz;
-      arr[o + 6] = bx + ex - sx; arr[o + 7] = wy; arr[o + 8] = bz + ez - sz;
-      arr[o + 9] = ax - ex - sx; arr[o + 10] = wy; arr[o + 11] = az - ez - sz;
+      const c0x = ax - ex + sx, c0z = az - ez + sz;
+      const c1x = bx + ex + sx, c1z = bz + ez + sz;
+      const c2x = bx + ex - sx, c2z = bz + ez - sz;
+      const c3x = ax - ex - sx, c3z = az - ez - sz;
+      arr[o] = c0x; arr[o + 1] = groundY(c0x, c0z); arr[o + 2] = c0z;
+      arr[o + 3] = c1x; arr[o + 4] = groundY(c1x, c1z); arr[o + 5] = c1z;
+      arr[o + 6] = c2x; arr[o + 7] = groundY(c2x, c2z); arr[o + 8] = c2z;
+      arr[o + 9] = c3x; arr[o + 10] = groundY(c3x, c3z); arr[o + 11] = c3z;
     }
 
     // Collapse the quads we did not use, rather than resizing the buffer.
@@ -311,31 +337,53 @@ export class LevelCurveGizmo {
 }
 
 /**
- * The tangent line to that contour, at the player's feet.
+ * The tangent line to that contour, at the player's feet — projected onto the
+ * surface rather than left hanging in the air.
  *
- * A level curve keeps f constant, so its tangent is horizontal and points
- * perpendicular to the gradient. Drawing it as a straight, dead-level bar is
- * both the correct picture and a visible contrast with the curve it touches.
+ * A level curve keeps f constant, so its tangent at p is horizontal and points
+ * perpendicular to ∇f(p). Drawn as a straight bar it would leave the ground the
+ * moment the hill turns, which reads as a floating stick rather than as a line
+ * touching a curve. So what is drawn is the tangent direction *pushed back down
+ * onto the surface*: the curve t ↦ (p + t·u, f(p + t·u)). It agrees with the
+ * true tangent line to first order at p, which is precisely the claim being
+ * made, and the gap that opens further out is the second-order error — visible,
+ * and worth seeing. Shrink the explorer and it closes.
  */
 export class TangentLineGizmo {
-  constructor(field) {
+  constructor(field, segments = 48) {
     this.field = field;
-    const geom = new THREE.PlaneGeometry(1, 1, 1, 1);
-    geom.rotateX(-Math.PI / 2);
+    this.seg = segments;                        // per side of the centre
+    const rows = segments * 2 + 1;
+    this.rows = rows;
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(rows * 2 * 3), 3));
+    const idx = [];
+    for (let i = 0; i < rows - 1; i++) {
+      const a = i * 2, b = i * 2 + 1, c = i * 2 + 2, d = i * 2 + 3;
+      idx.push(a, c, b, b, c, d);
+    }
+    geom.setIndex(idx);
     this.geometry = geom;
+
     this.material = new THREE.MeshBasicMaterial({
       // Magenta: nothing else in the palette is near it, so the tangent reads
       // against green, tan, snow and water alike.
       color: 0xff2f9e, side: THREE.DoubleSide, toneMapped: false, fog: false,
-      transparent: true, opacity: 0.95,
+      transparent: true, opacity: 0.95, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -12, polygonOffsetUnits: -24,
     });
     this.mesh = new THREE.Mesh(geom, this.material);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 8;
     this.mesh.visible = false;
+
+    this._p = new THREE.Vector3();
+    this._n = new THREE.Vector3();
+    this._t = new THREE.Vector3();
+    this._s = new THREE.Vector3();
   }
 
+  /** @param lengthMetres total length, as arc length over the surface */
   update(cx, cy, lengthMetres, widthMetres) {
     const field = this.field;
     const z = field.height(cx, cy);
@@ -343,14 +391,58 @@ export class TangentLineGizmo {
     const gm = Math.hypot(gx, gy);
     if (!isFinite(z) || !isFinite(gm) || gm < 1e-12) { this.mesh.visible = false; return false; }
 
-    // Tangent to the level curve in math space, then into world axes.
+    // Tangent to the level curve in math space.
     const ux = -gy / gm, uy = gx / gm;
-    const dirX = ux, dirZ = -uy;
+    const half = lengthMetres / 2;
+    // Each half reaches the same distance *walked*, so a steep flank does not
+    // get a stubby tangent and a flat one a sprawling bar.
+    const rPos = field.arcRadius(cx, cy, ux, uy, half);
+    const rNeg = field.arcRadius(cx, cy, -ux, -uy, half);
 
-    const lift = Math.max(field.worldSize * 8e-4, widthMetres * 0.3);
-    this.mesh.position.set(field.worldX(cx), field.worldY(z) + lift, field.worldZ(cy));
-    this.mesh.rotation.set(0, Math.atan2(dirX, dirZ), 0);
-    this.mesh.scale.set(widthMetres, 1, lengthMetres);
+    const lift = Math.max(field.worldSize * 8e-4, widthMetres * 0.3,
+      field.chordSag(cx, cy, Math.max(rPos, rNeg), this.seg, 2) * 1.3);
+    const hw = widthMetres / 2;
+    const arr = this.geometry.getAttribute('position').array;
+    const p = this._p, nrm = this._n, tan = this._t, side = this._s;
+    const seg = this.seg;
+    const eps = Math.max((rPos + rNeg) * 1e-3, 1e-12);
+
+    for (let i = 0; i < this.rows; i++) {
+      const u = (i - seg) / seg;                       // −1 … +1
+      const t = u >= 0 ? u * rPos : u * rNeg;
+      const x = cx + ux * t, y = cy + uy * t;
+      const zz = field.height(x, y);
+      if (!isFinite(zz)) { this.mesh.visible = false; return false; }
+
+      field.toWorld(x, y, zz, p);
+      field.worldNormal(x, y, nrm);
+
+      const za = field.height(cx + ux * (t - eps), cy + uy * (t - eps));
+      const zb = field.height(cx + ux * (t + eps), cy + uy * (t + eps));
+      if (isFinite(za) && isFinite(zb)) {
+        tan.set(
+          field.worldX(cx + ux * (t + eps)) - field.worldX(cx + ux * (t - eps)),
+          field.worldY(zb - za),
+          field.worldZ(cy + uy * (t + eps)) - field.worldZ(cy + uy * (t - eps)),
+        );
+      } else {
+        tan.set(ux, 0, -uy);
+      }
+      if (tan.lengthSq() < 1e-24) tan.set(ux, 0, -uy);
+      tan.normalize();
+      side.crossVectors(nrm, tan).normalize().multiplyScalar(hw);
+
+      const k = i * 2;
+      arr[k * 3] = p.x + side.x + nrm.x * lift;
+      arr[k * 3 + 1] = p.y + side.y + nrm.y * lift;
+      arr[k * 3 + 2] = p.z + side.z + nrm.z * lift;
+      arr[(k + 1) * 3] = p.x - side.x + nrm.x * lift;
+      arr[(k + 1) * 3 + 1] = p.y - side.y + nrm.y * lift;
+      arr[(k + 1) * 3 + 2] = p.z - side.z + nrm.z * lift;
+    }
+
+    this.geometry.getAttribute('position').needsUpdate = true;
+    this.geometry.computeBoundingSphere();
     this.mesh.visible = true;
     return true;
   }
@@ -362,17 +454,24 @@ export class TangentLineGizmo {
 /* ------------------------------------------------------- surface ribbons */
 
 /**
- * An arrow that lies on the surface: a ribbon of quads following z = f(x,y)
- * from the centre out to the rim, capped with a cone head.
+ * An arrow painted on the surface: one ribbon of quads that follows z = f(x,y)
+ * from the centre out to the rim, narrow along the shaft and then flaring into
+ * a flat triangular head — the arrow of a map, not a cone stuck on a stick.
+ *
+ * The whole thing lies in the surface, so on a hillside it bends with the
+ * hillside and its length is arc length, the distance actually walked.
  */
 class SurfaceArrow {
   constructor(color, segments = 20) {
     this.seg = segments;
-    const vcount = (segments + 1) * 2;
+    // Rows of two vertices each: `segments + 1` down the shaft, then the two
+    // barbs, then the tip (doubled, so every row has the same two-vertex shape
+    // and the strip indices stay uniform).
+    this.rows = segments + 3;
     const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vcount * 3), 3));
+    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.rows * 2 * 3), 3));
     const idx = [];
-    for (let i = 0; i < segments; i++) {
+    for (let i = 0; i < this.rows - 1; i++) {
       const a = i * 2, b = i * 2 + 1, cc = i * 2 + 2, d = i * 2 + 3;
       idx.push(a, cc, b, b, cc, d);
     }
@@ -386,66 +485,68 @@ class SurfaceArrow {
     this.ribbon.frustumCulled = false;
     this.ribbon.renderOrder = 6;
 
-    // Unit height, so scaling y by a length gives exactly that length.
-    this.head = new THREE.Mesh(
-      new THREE.ConeGeometry(1, 1, 12),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false, fog: false }),
-    );
-    this.head.frustumCulled = false;
-    this.head.renderOrder = 6;
-
     this.group = new THREE.Group();
-    this.group.add(this.ribbon, this.head);
+    this.group.add(this.ribbon);
     this.group.visible = false;
     this.geometry = geom;
+
+    this._p = new THREE.Vector3();
+    this._n = new THREE.Vector3();
+    this._t = new THREE.Vector3();
+    this._s = new THREE.Vector3();
+    this._prev = new THREE.Vector3();
+    this._next = new THREE.Vector3();
   }
 
   /**
-   * @param r      radius in math units
-   * @param width  ribbon half-width in world metres
-   * @param lift   how far above the surface to float, in world metres
+   * @param r         outer radius, in math units (the arc-length rim)
+   * @param rShaft    where the shaft stops and the head begins, in math units
+   * @param width     shaft half-width, in world metres
+   * @param headWidth half-width at the barbs, in world metres
+   * @param lift      how far along the normal to float, in world metres
    */
-  update(field, cx, cy, ux, uy, r, width, lift) {
+  update(field, cx, cy, ux, uy, r, rShaft, width, headWidth, lift) {
     const pos = this.geometry.getAttribute('position');
     const arr = pos.array;
     const seg = this.seg;
+    const p = this._p, nrm = this._n, tan = this._t, side = this._s;
+    const prev = this._prev, next = this._next;
 
-    const p = new THREE.Vector3();
-    const nrm = new THREE.Vector3();
-    const tan = new THREE.Vector3();
-    const side = new THREE.Vector3();
-    const prev = new THREE.Vector3();
-    let ok = true;
+    // Parameter and half-width of every row, in order from the centre out.
+    const ts = new Array(this.rows);
+    const hw = new Array(this.rows);
+    for (let i = 0; i <= seg; i++) { ts[i] = (i / seg) * rShaft; hw[i] = width; }
+    ts[seg + 1] = rShaft;                 // barbs, at the same point as the
+    hw[seg + 1] = headWidth;              // shaft's end: a clean square shoulder
+    ts[seg + 2] = r;                      // tip
+    hw[seg + 2] = width * 0.06;           // not quite zero, so it stays visible
 
-    // Leave room at the tip for the cone head.
-    const headLen = Math.min(r * 0.30, r) ;
-    const shaftEnd = r - headLen * 0.9;
+    const eps = Math.max(r * 1e-3, 1e-12);
 
-    for (let i = 0; i <= seg; i++) {
-      const t = (i / seg) * shaftEnd;
+    for (let i = 0; i < this.rows; i++) {
+      const t = ts[i];
       const x = cx + ux * t, y = cy + uy * t;
       const z = field.height(x, y);
-      if (!isFinite(z)) { ok = false; break; }
+      if (!isFinite(z)) { this.group.visible = false; return false; }
 
       field.toWorld(x, y, z, p);
       field.worldNormal(x, y, nrm);
 
-      if (i === 0) {
-        // Tangent from a small forward step so the first quad is not degenerate.
-        const z2 = field.height(cx + ux * shaftEnd / seg, cy + uy * shaftEnd / seg);
-        if (!isFinite(z2)) { ok = false; break; }
-        tan.set(
-          field.worldX(cx + ux * shaftEnd / seg) - p.x,
-          field.worldY(z2) - p.y,
-          field.worldZ(cy + uy * shaftEnd / seg) - p.z,
-        );
+      // Tangent by a central difference along the ray, which keeps the ribbon
+      // from twisting where the strip has two rows at the same parameter.
+      const za = field.height(cx + ux * (t - eps), cy + uy * (t - eps));
+      const zb = field.height(cx + ux * (t + eps), cy + uy * (t + eps));
+      if (isFinite(za) && isFinite(zb)) {
+        prev.set(field.worldX(cx + ux * (t - eps)), field.worldY(za), field.worldZ(cy + uy * (t - eps)));
+        next.set(field.worldX(cx + ux * (t + eps)), field.worldY(zb), field.worldZ(cy + uy * (t + eps)));
+        tan.subVectors(next, prev);
       } else {
-        tan.subVectors(p, prev);
+        tan.set(field.worldX(cx + ux) - field.worldX(cx), 0, field.worldZ(cy + uy) - field.worldZ(cy));
       }
-      if (tan.lengthSq() < 1e-20) tan.set(ux, 0, -uy);
+      if (tan.lengthSq() < 1e-24) tan.set(ux, 0, -uy);
       tan.normalize();
 
-      side.crossVectors(nrm, tan).normalize().multiplyScalar(width);
+      side.crossVectors(nrm, tan).normalize().multiplyScalar(hw[i]);
 
       const k = i * 2;
       arr[k * 3] = p.x + side.x + nrm.x * lift;
@@ -454,33 +555,10 @@ class SurfaceArrow {
       arr[(k + 1) * 3] = p.x - side.x + nrm.x * lift;
       arr[(k + 1) * 3 + 1] = p.y - side.y + nrm.y * lift;
       arr[(k + 1) * 3 + 2] = p.z - side.z + nrm.z * lift;
-
-      prev.copy(p);
     }
 
-    if (!ok) { this.group.visible = false; return false; }
     pos.needsUpdate = true;
     this.geometry.computeBoundingSphere();
-
-    // Head: sits at the rim, pointing along the surface tangent there.
-    const zt = field.height(cx + ux * r, cy + uy * r);
-    const zs = field.height(cx + ux * shaftEnd, cy + uy * shaftEnd);
-    if (!isFinite(zt) || !isFinite(zs)) { this.group.visible = false; return false; }
-
-    const tip = new THREE.Vector3(field.worldX(cx + ux * r), field.worldY(zt), field.worldZ(cy + uy * r));
-    const bottom = new THREE.Vector3(field.worldX(cx + ux * shaftEnd), field.worldY(zs), field.worldZ(cy + uy * shaftEnd));
-    field.worldNormal(cx + ux * r, cy + uy * r, nrm);
-    tip.addScaledVector(nrm, lift);
-    bottom.addScaledVector(nrm, lift);
-
-    const dir = new THREE.Vector3().subVectors(tip, bottom);
-    const len = Math.max(dir.length(), 1e-6);
-    dir.normalize();
-
-    this.head.position.copy(bottom).addScaledVector(dir, len * 0.5);
-    this.head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-    this.head.scale.set(width * 3.0, len, width * 3.0);
-
     this.group.visible = true;
     return true;
   }
@@ -490,8 +568,6 @@ class SurfaceArrow {
   dispose() {
     this.geometry.dispose();
     this.material.dispose();
-    this.head.geometry.dispose();
-    this.head.material.dispose();
   }
 }
 
@@ -502,6 +578,7 @@ class SurfaceArrow {
 export class DerivativeGizmo {
   constructor(field) {
     this.field = field;
+    this.lift = 0;                  // published for whatever stands on the disc
     this.group = new THREE.Group();
     this.group.name = 'derivative-gizmo';
 
@@ -554,13 +631,25 @@ export class DerivativeGizmo {
    */
   update(cx, cy, opts) {
     const field = this.field;
-    const r = field.mathStep(opts.radiusMetres);      // radius in math units
-    const lift = Math.max(field.worldSize * 1e-4, opts.radiusMetres * 0.012);
-    const width = opts.radiusMetres * 0.045;
+    const L = opts.radiusMetres;                       // arc length, in metres
+    const width = L * 0.045;
 
-    this._updateDisc(cx, cy, r, lift);
+    // A representative math radius, only for sizing the lift and the sagitta
+    // probe. Each direction gets its own exact radius below.
+    const rTypical = field.arcRadius(cx, cy, 1, 0, L);
 
-    const h = r * 1e-3;
+    // Clear the surface. Two things have to be cleared, not one: the flat quads
+    // we draw between samples cut under a dome (the sagitta), and the detail
+    // rings the terrain draws underfoot float a little above the mathematical
+    // surface themselves (the clearance the caller hands us).
+    const sag = field.chordSag(cx, cy, rTypical, this.rings, 8);
+    const lift = Math.max(field.worldSize * 1.5e-4, L * 0.02,
+      sag * 1.35, (opts.clearance || 0) * 1.6);
+    this.lift = lift;
+
+    this._updateDisc(cx, cy, L, lift);
+
+    const h = rTypical * 1e-3;
     const fx = field.partialX(cx, cy, h);
     const fy = field.partialY(cx, cy, h);
     const gm = Math.hypot(fx, fy);
@@ -568,10 +657,8 @@ export class DerivativeGizmo {
     const out = {
       fx, fy, gradMag: gm,
       gradDir: gm > 1e-12 ? Math.atan2(fy, fx) : NaN,
-      avgX: field.averageRate(cx, cy, 1, 0, r),
-      avgY: field.averageRate(cx, cy, 0, 1, r),
-      avgG: NaN, dirSlope: NaN, avgDir: NaN,
-      radiusMath: r,
+      avgX: NaN, avgY: NaN, avgG: NaN, dirSlope: NaN, avgDir: NaN,
+      radiusMath: rTypical, lift,
     };
 
     this.arrowX.setVisible(false);
@@ -579,28 +666,51 @@ export class DerivativeGizmo {
     this.arrowG.setVisible(false);
     this.arrowU.setVisible(false);
 
-    if (opts.showX) this.arrowX.update(field, cx, cy, 1, 0, r, width, lift);
-    if (opts.showY) this.arrowY.update(field, cx, cy, 0, 1, r, width, lift);
+    // Average rates are still rise over *run*, the honest secant slope — it is
+    // only the reach of the arrow that is now measured along the surface.
+    const rx = field.arcRadius(cx, cy, 1, 0, L);
+    const ry = field.arcRadius(cx, cy, 0, 1, L);
+    out.avgX = field.averageRate(cx, cy, 1, 0, rx);
+    out.avgY = field.averageRate(cx, cy, 0, 1, ry);
+
+    if (opts.showX) this._arm(this.arrowX, cx, cy, 1, 0, L, width, lift, rx);
+    if (opts.showY) this._arm(this.arrowY, cx, cy, 0, 1, L, width, lift, ry);
 
     if (opts.showGrad && gm > 1e-12) {
       const ux = fx / gm, uy = fy / gm;
-      out.avgG = field.averageRate(cx, cy, ux, uy, r);
       // Double width, as the gradient is the headline vector here.
-      this.arrowG.update(field, cx, cy, ux, uy, r, width * 2, lift * 1.25);
+      const rg = this._arm(this.arrowG, cx, cy, ux, uy, L, width * 2, lift * 1.3);
+      out.avgG = field.averageRate(cx, cy, ux, uy, rg);
     }
 
     if (opts.showDir) {
       const ux = Math.cos(opts.dirAngle), uy = Math.sin(opts.dirAngle);
       out.dirSlope = fx * ux + fy * uy;
-      out.avgDir = field.averageRate(cx, cy, ux, uy, r);
       out.dirAngle = opts.dirAngle;
-      this.arrowU.update(field, cx, cy, ux, uy, r, width * 1.4, lift * 1.5);
+      const rd = this._arm(this.arrowU, cx, cy, ux, uy, L, width * 1.4, lift * 1.55);
+      out.avgDir = field.averageRate(cx, cy, ux, uy, rd);
     }
 
     return out;
   }
 
-  _updateDisc(cx, cy, r, lift) {
+  /**
+   * Lay one arrow along direction (ux, uy) so that its tip is `L` metres away
+   * *measured over the surface*. Returns the math radius it reached.
+   */
+  _arm(arrow, cx, cy, ux, uy, L, width, lift, rKnown) {
+    const field = this.field;
+    const r = rKnown ?? field.arcRadius(cx, cy, ux, uy, L);
+    const headWidth = width * 2.7;
+    // A head proportioned to its own width, not to the arrow's length: that is
+    // what stops a short arrow ending in a bulb and a long one in a pinprick.
+    const headLen = Math.min(headWidth * 1.9, L * 0.4);
+    const rShaft = field.arcRadius(cx, cy, ux, uy, L - headLen);
+    arrow.update(field, cx, cy, ux, uy, r, Math.min(rShaft, r), width, headWidth, lift);
+    return r;
+  }
+
+  _updateDisc(cx, cy, L, lift) {
     const field = this.field;
     const pos = this.discGeom.getAttribute('position');
     const arr = pos.array;
@@ -613,18 +723,23 @@ export class DerivativeGizmo {
       const zz = isFinite(z) ? z : 0;
       field.toWorld(x, y, zz, p);
       field.worldNormal(x, y, nrm);
-      arr[k * 3] = p.x + nrm.x * lift * 0.5;
-      arr[k * 3 + 1] = p.y + nrm.y * lift * 0.5;
-      arr[k * 3 + 2] = p.z + nrm.z * lift * 0.5;
+      arr[k * 3] = p.x + nrm.x * lift * 0.75;
+      arr[k * 3 + 1] = p.y + nrm.y * lift * 0.75;
+      arr[k * 3 + 2] = p.z + nrm.z * lift * 0.75;
     };
 
     put(0, cx, cy);
-    for (let ri = 0; ri < this.rings; ri++) {
-      const rr = ((ri + 1) / this.rings) * r;
-      for (let s = 0; s < this.sectors; s++) {
-        const a = (s / this.sectors) * Math.PI * 2;
+    for (let s = 0; s < this.sectors; s++) {
+      const a = (s / this.sectors) * Math.PI * 2;
+      const ux = Math.cos(a), uy = Math.sin(a);
+      // One arc-length radius per sector, so the rim really is the set of
+      // points L metres' walk from the explorer. Over a bowl or a ridge it is
+      // visibly not a circle in (x, y) — which is exactly the lesson.
+      const r = field.arcRadius(cx, cy, ux, uy, L);
+      for (let ri = 0; ri < this.rings; ri++) {
+        const rr = ((ri + 1) / this.rings) * r;
         const k = 1 + ri * this.sectors + s;
-        put(k, cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+        put(k, cx + ux * rr, cy + uy * rr);
         if (ri === this.rings - 1) {
           rimArr[s * 3] = arr[k * 3];
           rimArr[s * 3 + 1] = arr[k * 3 + 1] + lift * 0.5;
@@ -675,15 +790,25 @@ export class TangentPlane {
     this.geometry = geom;
   }
 
-  update(cx, cy, radiusMetres) {
+  /**
+   * @param radiusMetres  half-width, as arc length over the surface
+   * @param lift          clearance along the normal, in world metres
+   *
+   * The lift is a lie of a few centimetres, told on purpose: over a bowl the
+   * true tangent plane lies under the surface everywhere except at the single
+   * point of tangency, and an object buried in the ground teaches nobody
+   * anything. Slide the explorer scale down and the gap closes on its own.
+   */
+  update(cx, cy, radiusMetres, lift = 0) {
     const field = this.field;
-    const r = field.mathStep(radiusMetres) * 1.6;
+    const r = field.arcRadius(cx, cy, 1, 0, radiusMetres * 1.6);
     const z0 = field.height(cx, cy);
-    const [fx, fy] = field.gradient(cx, cy, r * 1e-3);
+    const [fx, fy] = field.gradient(cx, cy, Math.max(r, 1e-9) * 1e-3);
     if (!isFinite(z0) || !isFinite(fx) || !isFinite(fy)) { this.mesh.visible = false; return; }
 
     // Build the plane's basis directly in world space.
     const o = new THREE.Vector3(field.worldX(cx), field.worldY(z0), field.worldZ(cy));
+    if (lift) o.addScaledVector(field.normalFromGrad(fx, fy, new THREE.Vector3()), lift);
     const ex = new THREE.Vector3(field.S, field.worldY(fx), 0).normalize();
     const ey = new THREE.Vector3(0, field.worldY(fy), -field.S).normalize();
     const n = new THREE.Vector3().crossVectors(ey, ex).normalize();

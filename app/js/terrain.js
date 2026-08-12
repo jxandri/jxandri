@@ -516,6 +516,7 @@ export class SurfaceDetail {
     this.growth = o.growth ?? 3.4;
     this.extent = 0;
     this.topographic = false;
+    this.topLift = 0;
 
     this.group = new THREE.Group();
     this.group.name = 'surface-detail';
@@ -592,6 +593,19 @@ export class SurfaceDetail {
         this._buildRing(ring, cx, cy, extent, grid, topographic);
       }
     }
+
+    // How far the rings float above the mathematical surface.
+    //
+    // Everything drawn *on* the ground — the neighbourhood disc, the arrows,
+    // the tangent plane — has to clear the rings, not the surface, or a ring
+    // quietly covers it and the student sees nothing. Publishing the number is
+    // better than every overlay guessing at it: this is precisely why the disc
+    // and the arrows used to disappear on a gentle slope.
+    let top = 0;
+    for (const ring of this.rings) {
+      if (ring.mesh.visible && ring.mesh.position.y > top) top = ring.mesh.position.y;
+    }
+    this.topLift = top;
   }
 
   _buildRing(ring, cx, cy, extent, grid, topographic) {

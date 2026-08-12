@@ -172,10 +172,23 @@ Si en cambio ve una pantalla en blanco o negra, vaya a la parte 10.</p>
 <figure>
   <img src="figs-es/fig-open.png" alt="La pantalla inicial">
   <figcaption><b>Figura 1.</b> La pantalla inicial. El panel de control está a la izquierda.
-  Arriba, la lectura muestra siempre dónde se encuentra: <code>x</code>, <code>y</code> y la
-  altura <code>z = f(x,y)</code>. Abajo, el modo de vista y la escala actuales. Usted empieza
-  en el aire, mirando toda la superficie.</figcaption>
+  Arriba, la lectura muestra siempre dónde se encuentra: <code>x</code>, <code>y</code>, la
+  altura <code>z = f(x,y)</code> y <code>RMS</code>. Abajo, el modo de vista y la escala
+  actuales. Usted empieza en el aire, mirando toda la superficie.</figcaption>
 </figure>
+
+<h2>Los cuatro números de arriba</h2>
+<p><code>x</code> e <code>y</code> son el punto donde está parado el explorador;
+<code>z = f(x,y)</code> es la altura allí. El cuarto, <strong><code>RMS</code></strong>, es el
+valor absoluto de la pendiente de la curva de nivel que pasa por ese punto:</p>
+<p style="text-align:center"><code>RMS = |∂f/∂x ÷ ∂f/∂y|</code></p>
+<p>Derivando implícitamente <code>f(x, y) = c</code> se obtiene
+<code>dy/dx = −f<sub>x</sub>/f<sub>y</sub></code> a lo largo de la curva de nivel, de modo que este
+número dice cuántas unidades de <code>y</code> compra una unidad de <code>x</code> manteniéndose a
+la misma altura: la relación marginal de sustitución. Se muestra sin signo, aparece esté o no
+activada alguna flecha de derivadas, y se va a <code>∞</code> justo donde la curva de nivel se
+vuelve vertical (<code>f<sub>y</sub> = 0</code>). En un punto crítico, donde ambas parciales se
+anulan, es genuinamente indeterminado y aparece un guion.</p>
 
 <h2>Paso uno: mire la superficie completa</h2>
 <p>Usted empieza como un <strong>dron</strong>, sobrevolando la gráfica. Esta primera vista es
@@ -233,6 +246,19 @@ panel de control. También puede usar el botón <kbd>‹</kbd> de su esquina, o 
 </div>
 
 <h2>Función</h2>
+<p><strong>Tipo de superficie</strong> — hay tres, y solo la primera es un paisaje por el que se
+pueda caminar.</p>
+<ul>
+  <li><strong>Gráfica — z = f(x, y)</strong>: la opción por defecto y de la que trata el resto de
+  esta guía. Una altura sobre cada punto del plano, así que se puede pisar, derivar y trazarle
+  curvas de nivel.</li>
+  <li><strong>Implícita — F(x, y, z) = 0</strong>: todo lo que satisface una ecuación en tres
+  variables —una esfera, un toro, un cono—. Puede haber varias hojas sobre un mismo
+  <code>(x, y)</code>, o ninguna, así que no hay nada que pisar ni <code>∂f/∂x</code> que calcular;
+  se recorre volando con el dron.</li>
+  <li><strong>Paramétrica — r(u, v)</strong>: una hoja barrida por dos parámetros. También se
+  sobrevuela en vez de caminarse.</li>
+</ul>
 <p><strong><code>f(x, y) =</code></strong> — la fórmula que se convierte en el paisaje. Escriba
 una nueva y presione <kbd>Enter</kbd>. La parte 5 explica la notación completa.</p>
 <p><strong>— ejemplos —</strong> — un menú de funciones ya preparadas. Elegir una la carga y
@@ -247,11 +273,15 @@ graficando. Por defecto es el cuadrado de 0 a 2 en ambas direcciones.</p>
 <p><strong>Resolución de la malla</strong> — en cuántos triángulos se divide la superficie. Más
 alta es más suave pero más lenta de construir. 300 es el valor por defecto; bájela a 100 o a 80
 en un computador viejo.</p>
-<p><strong>Exageración vertical</strong> — estira el paisaje hacia arriba, por estética.
-<strong>Déjela en 1.0 para enseñar.</strong> Con cualquier otro valor la imagen queda estirada
-pero los números en pantalla siguen siendo los verdaderos, sin estirar, que es justamente el
-tipo de desajuste que confunde a los estudiantes. Existe para funciones tan planas que de otro
-modo no se verían.</p>
+<p><strong>Escala de los ejes — eje x, eje y, eje z</strong> — tres diales, todos en
+<code>1.00×</code> por defecto. Ese valor por defecto es el espacio cartesiano de siempre, donde
+una unidad de <code>x</code>, una de <code>y</code> y una de <code>z</code> miden lo mismo y la
+esfera unitaria es realmente redonda. <strong>Déjelos los tres en 1.0 para enseñar.</strong>
+Estirar uno cambia únicamente la imagen: todos los números en pantalla siguen siendo los
+verdaderos, sin estirar, que es justamente el tipo de desajuste que confunde a los estudiantes. El
+dial de <code>z</code> existe para funciones tan planas que de otro modo no se verían, y los de
+<code>x</code> e <code>y</code> para dominios mucho más largos que anchos. <strong>Volver a ejes
+iguales</strong> devuelve los tres a 1.</p>
 <p><strong>Reconstruir el terreno</strong> — aplica la función y el dominio. Presionar
 <kbd>Enter</kbd> en cualquiera de las cajas hace lo mismo.</p>
 
@@ -266,13 +296,25 @@ permitida es sólida. Activar ambas cosas es la manera más clara de plantear un
 optimización con restricciones.</p>
 
 <h2>Mapa y terreno</h2>
-<p><strong>Curvas de nivel</strong> <kbd>C</kbd> — dibuja las curvas de nivel sobre la superficie,
-a alturas redondas. El espaciamiento elegido (por ejemplo <code>Δz = 0.2</code>) aparece junto a
-la casilla. Se puede caminar sobre ellas.</p>
-<p><strong>Colores topográficos</strong> <kbd>M</kbd> — repinta la superficie con la paleta
-hipsométrica estándar de un mapa de papel: azules por debajo de cero, y luego verde, amarillo,
-ocre, café y blanco con la altura. Combínelo con <kbd>T</kbd> (mirar desde arriba) y la escena
-3D se convierte en el mapa plano que los estudiantes ya conocen.</p>
+<p><strong>Curvas de nivel</strong> <kbd>C</kbd> — dibuja las curvas de nivel sobre la superficie
+como caminos anchos y transitables, no como hilos, y las <em>tiende sobre el terreno</em>: el
+centro de cada camino está a altura constante, como debe estarlo una curva de nivel, pero la
+banda misma sigue la ladera que atraviesa en lugar de quedar colgada en el aire como un anillo
+plano. Cada camino se colorea según su propia altura en la rampa de diez colores, de modo que el
+color dice la altitud, esté o no coloreada la superficie.</p>
+<p><strong>Intervalo entre curvas Δz</strong> — déjelo en blanco y el programa elige un intervalo
+redondo y le dice cuál. Escriba un número y ese es el intervalo, que es lo que hace falta cuando
+el intervalo es justamente lo que se está enseñando. Si pide uno tan pequeño que harían falta
+miles de caminos, se ensancha y aparece una nota diciéndolo.</p>
+<p><strong>Ancho del camino</strong> — cuán anchos son esos caminos, en metros, medidos contra el
+explorador de 1,80 m. El valor por defecto de 1,4 m es un sendero visible desde el aire y aun así
+transitable.</p>
+<p><strong>Colorear la superficie por altura</strong> <kbd>M</kbd> — repinta toda la superficie
+con la misma rampa de diez colores que usan las curvas de nivel, de modo que la superficie y sus
+curvas concuerdan. Apáguelo y la superficie vuelve a las ocho bandas de terreno —agua, playa,
+vegetación profunda, vegetación más clara, árido, roca volcánica, nieve, nube—, que dicen lo mismo
+en el idioma de un paisaje. Combine cualquiera de las dos con <kbd>T</kbd> (mirar desde arriba) y
+la escena 3D se convierte en el mapa plano que los estudiantes ya conocen.</p>
 <p><strong>Vegetación, rocas y nieve</strong> — enciende y apaga el decorado. El decorado se
 apoya <em>encima</em> de la superficie y nunca cambia su forma.</p>
 <p><strong>Agua en las depresiones</strong> — una lámina de agua translúcida a la altura cero, de
@@ -283,7 +325,14 @@ modo que toda región donde <code>f &lt; 0</code> se llena de agua.</p>
 <h2>Derivadas</h2>
 <p><strong>Resaltar la vecindad</strong> <kbd>H</kbd> — ilumina un disco sobre la superficie
 centrado en el explorador. Esa es la vecindad en la que se miden todas las razones de cambio.</p>
-<p><strong>Radio</strong> — 1 metro o 2 metros, medidos contra el explorador de 1,80 m.</p>
+<p><strong>Radio</strong> — 1 metro o 2 metros, medidos contra el explorador de 1,80 m y
+medidos <strong>como longitud de arco sobre la superficie</strong>: es la distancia realmente
+recorrida desde donde está parado el explorador, no la distancia sobre el suelo plano de abajo. En
+terreno llano las dos coinciden. En una ladera de pendiente 1 se recorren 2 m de terreno con solo
+1,41 m de suelo, así que el entorno se encoge en el plano <code>(x, y)</code>; y en una superficie
+cuya inclinación cambia con la dirección, el borde deja de ser una circunferencia. Ese es el
+entorno local honesto: el conjunto de puntos a dos metros de camino, exactamente como lo mide un
+tensor métrico riemanniano.</p>
 <p><strong><span class="swatch" style="background:#2f7bff"></span>Flecha ∂f/∂x</strong> <kbd>X</kbd> —
 una flecha azul dibujada <em>sobre la superficie</em> en la dirección en que crece <code>x</code>.</p>
 <p><strong><span class="swatch" style="background:#ff3b30"></span>Flecha ∂f/∂y</strong> <kbd>Y</kbd> —
@@ -298,6 +347,24 @@ una lección en sí misma.</p>
 <kbd>B</kbd> — deja inmóvil al explorador y le permite girar un vector dirección
 <strong>u</strong> sobre el borde con el ratón. La etiqueta muestra D<sub>u</sub>f y el ángulo.
 Para mirar alrededor en este modo, mantenga presionado el botón <strong>derecho</strong>.</p>
+<p>Las cuatro flechas van pintadas sobre la superficie y alcanzan la misma longitud de
+arco, así que en una ladera se doblan con la ladera; cada una termina en una punta de flecha
+plana, proporcionada al ancho de su propio cuerpo.</p>
+
+<h2>La curva bajo sus pies</h2>
+<p><strong>Curva de nivel sobre la que está parado</strong> <kbd>J</kbd> — traza la curva de nivel
+que pasa por la altura exacta del explorador, no por la altura redonda más cercana, y la vuelve a
+trazar continuamente mientras camina. Se colorea según esa altura en la rampa y se tiende sobre la
+superficie como los demás caminos.</p>
+<p><strong>Recta tangente a esa curva</strong> <kbd>K</kbd> — la tangente a esa curva de nivel a
+los pies del explorador, en magenta, proyectada sobre la superficie para que se pegue al terreno
+en vez de quedar flotando. Como una curva de nivel mantiene <code>f</code> constante, su dirección
+tangente es perpendicular a <code>∇f</code>, y la recta proyectada se separa de la curva solo en
+segundo orden: las dos van juntas cerca del explorador y se apartan despacio más allá. Encoja al
+explorador con el dial de escala y se vuelven a juntar, que es justamente lo que significa
+«tangente».</p>
+
+<h2>Plano tangente y escala</h2>
 <p><strong>Plano tangente</strong> <kbd>P</kbd> — dibuja el plano que mejor se ajusta a la
 superficie a los pies del explorador.</p>
 
@@ -316,11 +383,31 @@ cualquier parte. El informe de abajo da el valor máximo, dónde está, si queda
 <p><strong>Teletransportarse al óptimo</strong> — lleva al explorador a ese punto al instante.</p>
 
 <h2>Vista</h2>
-<p><strong>Primera persona</strong> <kbd>1</kbd>, <strong>Tercera persona</strong> <kbd>2</kbd>,
-<strong>Dron</strong> <kbd>3</kbd>. <strong>Mirar desde arriba</strong> <kbd>T</kbd> lleva el dron
-justo encima, lo que proyecta la superficie sobre el plano <code>z = 0</code>: la vista de mapa
-plano. <strong>Volver al centro</strong> <kbd>R</kbd> rescata a un explorador que se haya
-perdido.</p>
+<p>Tres maneras de estar en la escena.</p>
+<ul>
+  <li><strong>Primera persona</strong> <kbd>1</kbd> — por los propios ojos del explorador,
+  caminando sobre la superficie. La pendiente se siente más que se ve.</li>
+  <li><strong>Tercera persona</strong> <kbd>2</kbd> — por encima del hombro del explorador. Es la
+  mejor vista para las flechas de derivadas, porque se ven a la vez el suelo y la figura parada
+  sobre él.</li>
+  <li><strong>Dron</strong> <kbd>3</kbd> — una cámara voladora, fuera de la superficie.</li>
+</ul>
+<p><strong>Cámara del dron</strong> — aparece solo en modo dron y ofrece la misma elección un
+nivel más arriba: <em>primera persona</em> lo pone dentro del aparato, <em>tercera persona</em>
+pone la cámara detrás para que se vea el dron mismo.</p>
+<p>El dron vuela nivelado. <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> lo desplazan sobre
+el plano <code>(x, y)</code>, <kbd>Espacio</kbd> y <kbd>Ctrl</kbd> fijan su altitud, y el ratón
+solo apunta la cámara: puede mirar directamente hacia abajo y aun así cruzar el dominio a altura
+constante, cosa muy difícil con una cámara que se lanza en picado hacia donde uno mira. Colgando
+de él hay un haz luminoso, perpendicular al plano <code>z = 0</code>, que termina en un anillo
+brillante sobre la superficie: ese anillo es el punto del dominio sobre el que está, y mirarlo es
+la forma de no perder el rumbo mientras vuela.</p>
+<p><strong>Aspecto del explorador</strong> — excursionista, figura de bloques, estilo píxel o
+amigo redondo. Los cuatro miden exactamente 1,80 m, así que la referencia de escala nunca
+cambia.</p>
+<p><strong>Mirar desde arriba</strong> <kbd>T</kbd> lleva el dron justo encima, lo que proyecta la
+superficie sobre el plano <code>z = 0</code>: la vista de mapa plano. <strong>Volver al
+centro</strong> <kbd>R</kbd> rescata a un explorador que se haya perdido.</p>
 
 <!-- =========================================================== PARTE 5 -->
 <h1 class="part"><span class="num">5</span>Cómo escribir sus propias funciones</h1>

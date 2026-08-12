@@ -699,6 +699,7 @@ function setMode(mode) {
   for (const b of document.querySelectorAll('.mode')) b.classList.toggle('active', b.dataset.mode === mode);
   $('r-mode').textContent = t(mode === MODE_FIRST ? 'view.first' : mode === MODE_THIRD ? 'view.third' : 'view.drone');
   $('crosshair').hidden = !(pointerLocked && mode === MODE_FIRST);
+  $('fld-dronecam').hidden = mode !== MODE_DRONE;
 }
 
 function togglePanel(force) {
@@ -920,6 +921,7 @@ function wireUI() {
   });
 
   $('sel-style').addEventListener('change', (e) => player.setStyle(e.target.value));
+  $('sel-dronecam').addEventListener('change', (e) => player.setDroneView(e.target.value));
 
   $('btn-top').addEventListener('click', () => { player.topDown(camera); setMode(MODE_DRONE); });
   $('btn-reset').addEventListener('click', () => player.resetToDomainCentre());
@@ -1001,9 +1003,30 @@ function setChip(el, on, label, value, avg) {
   if (on) el.innerHTML = `${label} <b>${value}</b> <i>${t('hud.avg')} ${avg}</i>`;
 }
 
+/**
+ * |∂f/∂x ÷ ∂f/∂y| — the absolute slope of the level curve through the point.
+ *
+ * Implicit differentiation of f(x, y) = c gives dy/dx = −f_x / f_y, so this is
+ * how many units of y one unit of x buys you along the curve: the marginal rate
+ * of substitution. It is reported unsigned, as the rate itself, and it blows up
+ * exactly where the level curve turns vertical (f_y = 0).
+ */
+function updateRMS(readout) {
+  const el = $('r-rms');
+  let fx = readout && readout.fx, fy = readout && readout.fy;
+  if (fx === undefined || fx === null || !isFinite(fx) || !isFinite(fy)) {
+    const g = field.gradient(player.x, player.y);
+    fx = g[0]; fy = g[1];
+  }
+  if (!isFinite(fx) || !isFinite(fy)) { el.textContent = t('hud.undefined'); return; }
+  if (Math.abs(fy) < Math.abs(fx) * 1e-9) { el.textContent = '∞'; return; }
+  el.textContent = fmt(Math.abs(fx / fy), 3);
+}
+
 function updateHUD(readout) {
   if (state.surfaceKind !== 'graph') {
     $('r-x').textContent = '—'; $('r-y').textContent = '—'; $('r-z').textContent = '—';
+    $('r-rms').textContent = '—';
     for (const k in chipEls) chipEls[k].hidden = true;
     return;
   }
@@ -1011,6 +1034,7 @@ function updateHUD(readout) {
   $('r-x').textContent = fmt(player.x, 3);
   $('r-y').textContent = fmt(player.y, 3);
   $('r-z').textContent = isFinite(z) ? fmt(z, 3) : t('hud.undefined');
+  updateRMS(readout);
 
   if (!readout) {
     for (const k in chipEls) chipEls[k].hidden = true;
@@ -1069,6 +1093,10 @@ function animate() {
     return;
   }
 
+  // The explorer stands on whatever is being drawn on the ground, so the disc
+  // and the arrows are never buried under their own feet.
+  player.extraLift = state.disc && gizmo.lift ? gizmo.lift : surfaceDetail.topLift;
+
   player.update(dt, readInput());
   player.updateCamera(camera, dt);
 
@@ -1084,6 +1112,7 @@ function animate() {
   if (wantGizmo) {
     readout = gizmo.update(player.x, player.y, {
       radiusMetres: state.radius * player.zoom,
+      clearance: surfaceDetail.topLift,
       showX: state.showDx,
       showY: state.showDy,
       showGrad: state.showGrad,
@@ -1093,7 +1122,8 @@ function animate() {
   }
 
   if (state.tangent && isFinite(player.height())) {
-    tangentPlane.update(player.x, player.y, state.radius * player.zoom);
+    tangentPlane.update(player.x, player.y, state.radius * player.zoom,
+      Math.max(player.extraLift, surfaceDetail.topLift * 1.6));
   } else {
     tangentPlane.setVisible(false);
   }
