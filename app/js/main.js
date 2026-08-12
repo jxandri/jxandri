@@ -137,6 +137,15 @@ const state = {
 
   zoom: 1,             // continuous, and never above 1
   showOpt: false,
+
+  // Consumer problem: the same machinery, wearing the vocabulary of demand
+  // theory. Nothing about the mathematics changes — a budget set is a feasible
+  // set and an indifference curve is a level curve — but a student meeting
+  // this in a microeconomics course should read the words they were taught.
+  consumer: false,
+  utility: 'cobb',
+  alpha: 0.5,
+  px: 1, py: 1, income: 2,
 };
 
 let field = null;
@@ -743,6 +752,67 @@ function applySurfaceKindUI() {
   for (const b of document.querySelectorAll('.mode')) b.disabled = !graph;
 }
 
+/**
+ * Turn the consumer dials into the function box and the constraint box.
+ *
+ * Written into the visible inputs rather than kept in a parallel world, so a
+ * student can see the formula the dials produced, edit it, and understand that
+ * "the consumer problem" is not a separate program but a particular f and a
+ * particular feasible set.
+ */
+function applyConsumer() {
+  const a = state.alpha;
+  const b = (1 - a).toFixed(2);
+  const src = {
+    cobb: `x^${a.toFixed(2)}*y^${b}`,
+    // r must avoid 0, where CES degenerates to Cobb-Douglas in the limit.
+    ces: `(x^${a.toFixed(2)}+y^${a.toFixed(2)})^(1/${a.toFixed(2)})`,
+    subs: `${a.toFixed(2)}*x+${b}*y`,
+    quasi: `${a.toFixed(2)}*ln(x)+y`,
+  }[state.utility] || `x^0.5*y^0.5`;
+
+  const { px, py, income } = state;
+  $('in-fn').value = src;
+  $('in-feas').value = `x>=0 && y>=0 && ${px}*x+${py}*y<=${income}`;
+
+  // Frame the domain on the budget set with a margin, so the frontier is
+  // visible rather than jammed against the edge of the world.
+  const xcap = income / Math.max(px, 1e-6);
+  const ycap = income / Math.max(py, 1e-6);
+  $('in-xmin').value = 0; $('in-xmax').value = (xcap * 1.3).toPrecision(3);
+  $('in-ymin').value = 0; $('in-ymax').value = (ycap * 1.3).toPrecision(3);
+
+  $('t-feas').checked = true;
+  state.feasible = true;
+  $('t-isolate').checked = true;
+  state.isolate = true;
+}
+
+/**
+ * Swap the words on screen between the mathematician's and the economist's.
+ *
+ * Only the labels move. The same code computes the same numbers either way,
+ * which is the point worth making to a class: an indifference curve *is* a
+ * level curve, and the marginal rate of substitution *is* the slope of one.
+ */
+function applyVocabulary() {
+  const c = state.consumer;
+  const set = (sel, key) => { const el = document.querySelector(sel); if (el) el.textContent = t(key); };
+
+  set('[data-i18n="map.contours"]', c ? 'cons.contours' : 'map.contours');
+  set('[data-i18n="curve.show"]', c ? 'cons.curveshow' : 'curve.show');
+  set('[data-i18n="sec.curve"]', c ? 'cons.seccurve' : 'sec.curve');
+  set('[data-i18n="sec.feasible"]', c ? 'cons.budget' : 'sec.feasible');
+
+  const rms = document.querySelector('[data-i18n-title="hud.rmshelp"]');
+  if (rms) {
+    rms.textContent = c ? t('cons.mrs') : 'RMS';
+    rms.title = t(c ? 'cons.mrshelp' : 'hud.rmshelp');
+  }
+  $('grp-consumer').hidden = !c;
+  $('lbl-alpha-name').textContent = t(state.utility === 'ces' ? 'cons.rho' : 'cons.alpha');
+}
+
 function applyInputs() {
   state.fnSrc = $('in-fn').value;
   state.feasSrc = $('in-feas').value;
@@ -793,6 +863,35 @@ function wireUI() {
     e.target.value = '';
     applyInputs();
   });
+
+  bindCheck('t-consumer', 'consumer', () => {
+    applyVocabulary();
+    if (state.consumer) applyConsumer();
+    applyInputs();
+  });
+
+  $('sel-utility').addEventListener('change', (e) => {
+    state.utility = e.target.value;
+    applyVocabulary();
+    applyConsumer();
+    applyInputs();
+  });
+
+  $('in-alpha').addEventListener('input', (e) => {
+    state.alpha = parseFloat(e.target.value);
+    $('lbl-alpha').textContent = state.alpha.toFixed(2);
+  });
+  $('in-alpha').addEventListener('change', () => { applyConsumer(); applyInputs(); });
+
+  for (const [id, key] of [['in-px2', 'px'], ['in-py2', 'py'], ['in-income', 'income']]) {
+    $(id).addEventListener('change', (e) => {
+      const v = parseFloat(e.target.value);
+      if (!(v > 0)) { e.target.value = state[key]; return; }
+      state[key] = v;
+      applyConsumer();
+      applyInputs();
+    });
+  }
 
   $('preset-feas').addEventListener('change', (e) => {
     if (!e.target.value) return;
@@ -948,24 +1047,36 @@ function wireUI() {
 }
 
 function wireLanguage() {
-  const sel = $('lang-select');
-  for (const { code, label } of LANGUAGES) {
-    const opt = document.createElement('option');
-    opt.value = code;
-    opt.textContent = label;
-    sel.appendChild(opt);
-  }
+  const btn = $('lang-toggle');
+  const flag = $('lang-flag');
+
+  // A button rather than a menu: there are two languages, so a menu is one
+  // click of ceremony around a thing that has only one possible answer. The
+  // label shows the language you would switch *to*, which is the convention
+  // every bilingual site converges on.
+  const paint = () => {
+    const here = getLanguage();
+    const next = LANGUAGES.find((l) => l.code !== here) || LANGUAGES[0];
+    flag.textContent = next.code.toUpperCase();
+    btn.title = next.label;
+    btn.setAttribute('aria-label', next.label);
+  };
 
   setLanguage(detectLanguage());
-  sel.value = getLanguage();
-  sel.addEventListener('change', () => setLanguage(sel.value));
+  paint();
+  btn.addEventListener('click', () => {
+    const here = getLanguage();
+    const next = LANGUAGES.find((l) => l.code !== here) || LANGUAGES[0];
+    setLanguage(next.code);
+  });
 
   // applyStatic() only reaches the markup. Anything the program composes for
   // itself — the mode pill, the optimum report, a visible parse error — has to
   // be rebuilt by hand, without recomputing the terrain or the optimiser.
   onLanguageChange(() => {
-    sel.value = getLanguage();
+    paint();
     if (player) setMode(player.mode);
+    applyVocabulary();
     updateZoomLabels();
     updateContourNote();
     renderOptimum();
@@ -1196,6 +1307,7 @@ window.addEventListener('orientationchange', onResize);
 
 wireLanguage();
 wireUI();
+applyVocabulary();
 applySurfaceKindUI();
 onResize();
 

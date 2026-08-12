@@ -267,6 +267,13 @@ button:disabled { opacity: .45; cursor: default; }
 
 /* Language selector in the panel header. */
 .head-tools { display: flex; align-items: center; gap: 6px; }
+#lang-toggle {
+  background: rgba(255, 255, 255, .06); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 7px;
+  padding: 4px 9px; font-family: var(--font); font-size: 11px; cursor: pointer;
+  font-weight: 700; letter-spacing: .06em; min-width: 38px;
+}
+#lang-toggle:hover { background: rgba(255, 255, 255, .13); border-color: var(--accent); }
 #lang-select {
   background: rgba(255, 255, 255, .06); color: var(--ink);
   border: 1px solid var(--line); border-radius: 7px;

@@ -45,7 +45,7 @@
   <header id="panel-head">
     <h1>Gradient&nbsp;Peaks</h1>
     <div class="head-tools">
-      <select id="lang-select" aria-label="Language"></select>
+      <button id="lang-toggle" type="button" aria-label="Language / Idioma"><span id="lang-flag">EN</span></button>
       <button id="panel-toggle" data-i18n-title="panel.hide" title="Hide panel (Tab)" aria-label="Hide panel">‹</button>
     </div>
   </header>
@@ -106,6 +106,29 @@
       </div>
 
       <div id="grp-graph">
+      <label class="check"><input id="t-consumer" type="checkbox"><span><span data-i18n="cons.mode">Consumer problem</span></span></label>
+
+      <div id="grp-consumer" hidden>
+        <label class="field"><span data-i18n="cons.utility">Utility function</span>
+          <select id="sel-utility" class="preset">
+            <option value="cobb" data-i18n="cons.cobb">Cobb–Douglas  x^a · y^(1−a)</option>
+            <option value="ces" data-i18n="cons.ces">CES  (x^r + y^r)^(1/r)</option>
+            <option value="subs" data-i18n="cons.subs">Perfect substitutes  a·x + (1−a)·y</option>
+            <option value="quasi" data-i18n="cons.quasi">Quasi-linear  a·ln x + y</option>
+          </select>
+        </label>
+        <label class="range">
+          <span><span id="lbl-alpha-name" data-i18n="cons.alpha">Share a</span> <b id="lbl-alpha">0.50</b></span>
+          <input id="in-alpha" type="range" min="0.05" max="0.95" step="0.05" value="0.5">
+        </label>
+        <div class="grid4">
+          <label class="field mini"><span data-i18n="cons.px">price of x</span><input id="in-px2" type="number" step="any" min="0.01" value="1"></label>
+          <label class="field mini"><span data-i18n="cons.py">price of y</span><input id="in-py2" type="number" step="any" min="0.01" value="1"></label>
+          <label class="field mini"><span data-i18n="cons.inc">income</span><input id="in-income" type="number" step="any" min="0.01" value="2"></label>
+        </div>
+        <p class="note" id="note-consumer" data-i18n="cons.note">The feasible set becomes the budget set p<sub>x</sub>·x + p<sub>y</sub>·y ≤ m with x, y ≥ 0, the domain is framed on it, and the vocabulary on screen changes: level curves are indifference curves, and RMS is the marginal rate of substitution. Turn on the optimum to find the consumer's choice.</p>
+      </div>
+
       <label class="field">
         <span data-i18n="fn.label">f(x, y) =</span>
         <input id="in-fn" type="text" spellcheck="false" autocomplete="off" value="(x*y)^0.5">
