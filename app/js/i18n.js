@@ -18,6 +18,8 @@ export const LANGUAGES = [
 const STRINGS = {
   en: {
     'meta.title': 'Gradient Peaks — walk on the graph of f(x,y)',
+    'meta.labtitle': 'Gradient Peaks Lab — the surface and its map, side by side',
+    'meta.labdesc': 'The same 3D sandbox with a flat map panel beside the scene: the domain from above, the same level curves in the same colours, and the explorer as a dot.',
     'meta.description': 'A light 3D sandbox for exploring surface plots, level curves, partial derivatives, gradients and constrained maxima of functions of two variables.',
 
     'panel.hide': 'Hide panel (Tab)',
@@ -224,6 +226,8 @@ const STRINGS = {
 
   es: {
     'meta.title': 'Gradient Peaks — camine sobre la gráfica de f(x,y)',
+    'meta.labtitle': 'Gradient Peaks Lab — la superficie y su mapa, lado a lado',
+    'meta.labdesc': 'El mismo laboratorio 3D con un panel de mapa plano junto a la escena: el dominio visto desde arriba, las mismas curvas de nivel en los mismos colores y el explorador como un punto.',
     'meta.description': 'Un entorno 3D ligero para explorar gráficas de superficie, curvas de nivel, derivadas parciales, gradientes y máximos con restricciones de funciones de dos variables.',
 
     'panel.hide': 'Ocultar el panel (Tab)',
@@ -494,8 +498,13 @@ export function applyStatic(root) {
   }
 
   if (scope === document) {
-    document.title = t('meta.title');
+    // Two front ends share this dictionary, and they are different pages. A
+    // page that names its own title key keeps it; only the one that says
+    // nothing gets the default. Otherwise the Lab's tab is indistinguishable
+    // from the classic app's, which is exactly when you have both open.
+    const key = document.documentElement.dataset.titleKey || 'meta.title';
+    document.title = t(key);
     const desc = document.querySelector('meta[name="description"]');
-    if (desc) desc.content = t('meta.description');
+    if (desc) desc.content = t(document.documentElement.dataset.descKey || 'meta.description');
   }
 }
