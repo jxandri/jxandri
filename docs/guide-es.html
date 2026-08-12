@@ -331,8 +331,12 @@ recorrida desde donde está parado el explorador, no la distancia sobre el suelo
 terreno llano las dos coinciden. En una ladera de pendiente 1 se recorren 2 m de terreno con solo
 1,41 m de suelo, así que el entorno se encoge en el plano <code>(x, y)</code>; y en una superficie
 cuya inclinación cambia con la dirección, el borde deja de ser una circunferencia. Ese es el
-entorno local honesto: el conjunto de puntos a dos metros de camino, exactamente como lo mide un
-tensor métrico riemanniano.</p>
+entorno local honesto: el conjunto de puntos a dos metros de camino, exactamente como lo mide la
+primera forma fundamental
+<code>g = (1 + f<sub>x</sub>²) dx² + 2 f<sub>x</sub> f<sub>y</sub> dx dy + (1 + f<sub>y</sub>²) dy²</code>.
+(En rigor es el conjunto de puntos a los que se llega caminando esa distancia en una dirección de
+brújula fija, no la circunferencia geodésica de ese radio; ambas coinciden a segundo orden en el
+radio, y con estos radios la diferencia queda muy por debajo de un píxel.)</p>
 <p><strong><span class="swatch" style="background:#2f7bff"></span>Flecha ∂f/∂x</strong> <kbd>X</kbd> —
 una flecha azul dibujada <em>sobre la superficie</em> en la dirección en que crece <code>x</code>.</p>
 <p><strong><span class="swatch" style="background:#ff3b30"></span>Flecha ∂f/∂y</strong> <kbd>Y</kbd> —

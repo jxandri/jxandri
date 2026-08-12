@@ -127,10 +127,20 @@ export class Field {
    * Everywhere else a "2 m neighbourhood" meant two metres measured on the flat
    * (x, y) floor, which is not what a walker experiences: on a slope of 1 you
    * cover 2 m of ground in √2 ≈ 1.41 m of floor. Measuring along the surface is
-   * the honest thing — it is the Riemannian length of the curve
-   * t ↦ (x + t·u, y + t·v, f(x + t·u, y + t·v)), induced by the ambient metric —
-   * and it makes the highlighted patch a genuine disc of radius r *for someone
-   * standing on it*, which is the whole point of a local neighbourhood.
+   * the honest thing — it is the length that the first fundamental form
+   *
+   *     g = (1 + f_x²) dx² + 2 f_x f_y dx dy + (1 + f_y²) dy²
+   *
+   * assigns to the curve t ↦ (x + t·u, y + t·v), which is exactly what this
+   * integrates: ‖γ'(t)‖ = √(u² + v² + (∇f · u)²) in world units, sampled rather
+   * than written out, so that anisotropic axis scales come along for free.
+   *
+   * The rim is therefore the set of points reached by walking `metres` in a
+   * fixed compass direction — not the geodesic circle of that radius, which
+   * would need the straight rays replaced by solutions of the geodesic
+   * equation. The two agree to second order in the radius, and at these radii
+   * the difference is far below a pixel; the compass reading is also the one a
+   * walker can actually verify.
    *
    * Integrated by marching, because the integrand needs f anyway and marching
    * doubles as the domain-edge check: where f stops being defined, so does the

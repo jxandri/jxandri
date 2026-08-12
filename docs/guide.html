@@ -326,7 +326,11 @@ where the explorer stands, not the distance on the flat floor underneath. On lev
 agree. On a slope of 1 you cover 2 m of ground in only 1.41 m of floor, so the patch shrinks in
 the <code>(x, y)</code> plane — and on a surface whose steepness varies with direction the rim
 stops being a circle at all. That is the honest local neighbourhood: the set of points two metres'
-walk away, exactly as a Riemannian metric measures it.</p>
+walk away, exactly as the first fundamental form
+<code>g = (1 + f<sub>x</sub>²) dx² + 2 f<sub>x</sub> f<sub>y</sub> dx dy + (1 + f<sub>y</sub>²) dy²</code>
+measures it. (Strictly it is the set of points reached by walking that far in a fixed compass
+direction, not the geodesic circle of that radius; the two agree to second order in the radius,
+and at these radii the difference is well below a pixel.)</p>
 <p><strong><span class="swatch" style="background:#2f7bff"></span>∂f/∂x arrow</strong> <kbd>X</kbd> —
 a blue arrow drawn <em>along the surface</em> in the direction of increasing <code>x</code>.</p>
 <p><strong><span class="swatch" style="background:#ff3b30"></span>∂f/∂y arrow</strong> <kbd>Y</kbd> —
