@@ -38,7 +38,7 @@
       <span class="desc">The complete notation, with worked examples and common mistakes.</span></li>
     <li>Writing feasible sets
       <span class="desc">Turning constraints into a country with borders.</span></li>
-    <li>Nine classroom activities
+    <li>Ten classroom activities
       <span class="desc">One prepared lesson for each feature of the program.</span></li>
     <li>Giving it to your students
       <span class="desc">Four ways to distribute it, from easiest to most permanent.</span></li>
@@ -349,6 +349,13 @@ its own shaft.</p>
 <p><strong>Level curve you are standing on</strong> <kbd>J</kbd> — traces the contour through the
 explorer's exact height, not the nearest round one, and re-traces it continuously as they walk.
 It is coloured by that height on the ramp, and laid on the surface like the other paths.</p>
+<figure>
+  <img src="figs/fig-curve.png" alt="The level curve under the explorer and its tangent">
+  <figcaption><b>Figure 3.</b> The contour through the explorer's own height, and its tangent in
+  magenta. Both lie on the surface: the paths bend over the hillsides they cross instead of
+  hanging in the air.</figcaption>
+</figure>
+
 <p><strong>Tangent line to that curve</strong> <kbd>K</kbd> — the tangent to that contour at the
 explorer's feet, in magenta, projected down onto the surface so that it hugs the ground rather
 than floating off it. Because a level curve keeps <code>f</code> constant, its tangent direction
@@ -383,6 +390,13 @@ The report underneath gives the maximum value, where it is, whether it sits in t
 <p><strong>Drone camera</strong> — visible only in drone mode, and offering the same choice again
 one level up: <em>first person</em> puts you in the aircraft, <em>third person</em> puts the camera
 behind it so you can see the drone itself.</p>
+
+<figure>
+  <img src="figs/fig-drone.png" alt="The drone, its plumb beam and the ring on the surface">
+  <figcaption><b>Figure 4.</b> The drone seen from its chase camera. The beam hanging beneath it
+  is perpendicular to the plane <code>z = 0</code>, and the bright ring where it lands is the
+  point of the domain the drone is over — here, still the spot the explorer took off from.</figcaption>
+</figure>
 <p>The drone flies level. <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> move it over the
 <code>(x, y)</code> plane, <kbd>Space</kbd> and <kbd>Ctrl</kbd> set its altitude, and the mouse
 only aims the camera — so you can look straight down at the ground and still cross the domain at a
@@ -492,13 +506,13 @@ means exactly what it looks like. Leaving the box empty means "no constraint at 
 
 <figure>
   <img src="figs/fig-feasible.png" alt="The feasible set isolated">
-  <figcaption><b>Figure 3.</b> <code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code> with both feasible-set
+  <figcaption><b>Figure 5.</b> <code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code> with both feasible-set
   switches on. The permitted triangle is solid ground with its scenery; everything outside has
   faded to a ghost. The shaft of light marks the constrained maximum.</figcaption>
 </figure>
 
 <!-- =========================================================== PART 7 -->
-<h1 class="part"><span class="num">7</span>Nine classroom activities</h1>
+<h1 class="part"><span class="num">7</span>Ten classroom activities</h1>
 
 <p>One for each feature. Each takes five to ten minutes and ends with something the students
 can state in words.</p>
@@ -545,7 +559,7 @@ become an ordinary contour map.</p>
 
 <figure>
   <img src="figs/fig-topo.png" alt="Top-down topographic view">
-  <figcaption><b>Figure 4.</b> The same landscape from directly overhead with contour lines and
+  <figcaption><b>Figure 6.</b> The same landscape from directly overhead with contour lines and
   map colours on. This is the picture in the textbook — and the students have just been standing
   in it.</figcaption>
 </figure>
@@ -564,7 +578,7 @@ see and walk in.</p>
 
 <figure>
   <img src="figs/fig-arrows.png" alt="Derivative arrows drawn on the surface">
-  <figcaption><b>Figure 5.</b> The three arrows, drawn following the curve of the ground rather than
+  <figcaption><b>Figure 7.</b> The three arrows, drawn following the curve of the ground rather than
   as straight lines through the air. Blue is ∂f/∂x, red is ∂f/∂y, and the double-width teal arrow
   is the gradient. Here the red arrow has almost no length, because ∂f/∂y is nearly zero — so the
   gradient points along the blue one.</figcaption>
@@ -591,11 +605,11 @@ however far you go. That is what a non-differentiable point looks like.</p>
 <div class="two-up">
   <figure>
     <img src="figs/fig-zoom0.png" alt="Tangent plane at full scale">
-    <figcaption><b>Figure 6a.</b> At 1:1 the tangent plane (yellow) clearly leaves the surface.</figcaption>
+    <figcaption><b>Figure 8a.</b> At 1:1 the tangent plane (yellow) clearly leaves the surface.</figcaption>
   </figure>
   <figure>
     <img src="figs/fig-zoom3.png" alt="Tangent plane at 1:1000">
-    <figcaption><b>Figure 6b.</b> The same spot with the explorer shrunk to 1.8&nbsp;mm. The surface has
+    <figcaption><b>Figure 8b.</b> The same spot with the explorer shrunk to 1.8&nbsp;mm. The surface has
     become its tangent plane.</figcaption>
   </figure>
 </div>
@@ -615,6 +629,26 @@ the ground goes flat and the gradient dies. At a <em>constrained</em> maximum it
 still climbing, and what stops you is the border. Students who have stood at that spot and seen the
 gradient arrow jammed against the wall do not later write "set the gradient to zero" on a constrained
 problem.</p>
+
+<h2>Activity 10 — The marginal rate of substitution, read off the ground</h2>
+<p><strong>Set up:</strong> <code>f(x,y) = (x*y)^0.5</code> over <code>[0,2]²</code>,
+<strong>Level curve you are standing on</strong> <kbd>J</kbd> on, its
+<strong>tangent line</strong> <kbd>K</kbd> on, third person.</p>
+<p><strong>Do:</strong> Watch the <code>RMS</code> figure at the top while you walk along the
+contour you are standing on. It does not move: a level curve of
+<code>f = (xy)<sup>1/2</sup></code> is a rectangular hyperbola <code>xy = c</code>, and on it
+<code>RMS = |y/x|</code>, which is the slope of the ray you are walking around, not of the path
+under your feet. Now walk <em>across</em> the contours instead, straight up the gradient, and it
+still barely moves — for this function the rate depends only on the ratio <code>y/x</code>.</p>
+<p><strong>Then:</strong> go to the point <code>(1, 1)</code>. <code>RMS = 1</code>: one unit of
+<code>x</code> substitutes for exactly one unit of <code>y</code>. Walk to where <code>x</code> is
+four times <code>y</code> and it reads <code>0.25</code>. Ask the class to predict the reading
+before each move.</p>
+<p><strong>The point:</strong> the marginal rate of substitution is not an extra formula bolted on
+to the derivatives — it is the slope of the indifference curve, and the indifference curve is a
+path the student has just walked along. At the constrained optimum of Activity 9, that number
+equals the price ratio, and both are visible in the same frame: the tangent to the level curve and
+the frontier wall lie flat against each other.</p>
 
 <!-- =========================================================== PART 8 -->
 <h1 class="part"><span class="num">8</span>Giving it to your students</h1>
@@ -785,11 +819,14 @@ else — there is no <code>eval</code> anywhere in the program. A student cannot
 function box that makes the program do anything other than draw a surface.</p>
 
 <h3>The mathematics is honest</h3>
-<p>The horizontal and vertical scales are the same, so the slope you see is the slope the program
-reports. (The vertical exaggeration slider deliberately breaks that, which is why it is labelled
-"visual only" and defaults to off.) The optimum is found by scanning the feasible set and then
-refining the best candidates, and every trial point must satisfy the constraints — which is why
-a boundary maximum is found correctly.</p>
+<p>All three axis scales start at 1, so one unit of <code>x</code>, of <code>y</code> and of
+<code>z</code> are the same length and the slope you see is the slope the program reports.
+(Moving any of the three dials deliberately breaks that, which is why they are labelled as
+picture-only and start at 1.) The neighbourhood, and every arrow drawn in it, is measured as arc
+length over the surface — the length the ambient metric assigns to the path — while the
+derivatives reported are the ordinary partial derivatives, unaffected. The optimum is found by
+scanning the feasible set and then refining the best candidates, and every trial point must
+satisfy the constraints — which is why a boundary maximum is found correctly.</p>
 
 <h3>Licence</h3>
 <p>The program is released under the MIT licence: use it, change it, and give it to your students
@@ -804,7 +841,7 @@ licence text travels with the files in <code>website/vendor/</code>.</p>
   <tr><th style="width:40mm">Key</th><th>Does</th></tr>
   <tr><td class="k"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Walk or fly</td></tr>
   <tr><td class="k"><kbd>Shift</kbd></td><td>Hold to move faster</td></tr>
-  <tr><td class="k"><kbd>Space</kbd> / <kbd>Ctrl</kbd></td><td>Drone up / down</td></tr>
+  <tr><td class="k"><kbd>Space</kbd> / <kbd>Ctrl</kbd></td><td>Drone altitude, up / down</td></tr>
   <tr><td class="k">mouse</td><td>Look around (click the scene first)</td></tr>
   <tr><td class="k"><kbd>Esc</kbd></td><td><strong>Release the mouse pointer</strong></td></tr>
   <tr><td class="k"><kbd>Tab</kbd></td><td>Hide or show the control panel</td></tr>
@@ -812,7 +849,9 @@ licence text travels with the files in <code>website/vendor/</code>.</p>
   <tr><td class="k"><kbd>T</kbd></td><td>Look straight down (map view)</td></tr>
   <tr><td class="k"><kbd>R</kbd></td><td>Return to the centre</td></tr>
   <tr><td class="k"><kbd>C</kbd></td><td>Level curves</td></tr>
-  <tr><td class="k"><kbd>M</kbd></td><td>Topographic colours</td></tr>
+  <tr><td class="k"><kbd>M</kbd></td><td>Colour the surface by height</td></tr>
+  <tr><td class="k"><kbd>J</kbd></td><td>The level curve you are standing on</td></tr>
+  <tr><td class="k"><kbd>K</kbd></td><td>Its tangent line, projected on the surface</td></tr>
   <tr><td class="k"><kbd>F</kbd></td><td>Frontier walls of the feasible set</td></tr>
   <tr><td class="k"><kbd>G</kbd></td><td>Make everything outside translucent</td></tr>
   <tr><td class="k"><kbd>H</kbd></td><td>Highlight the neighbourhood disc</td></tr>

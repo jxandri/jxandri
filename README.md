@@ -54,9 +54,9 @@ npm install esbuild && npm run build:standalone
 | **1** | Surface plot of any `f(x, y)` typed into a dialog box, over an adjustable domain |
 | **2** | Realistic terrain dressing: trees, grass, rocks and snow placed *on top of* the smooth surface, plus translucent water filling every depression where `f < 0` |
 | **3** | **Feasible set** from typed constraints, drawn as glowing frontier walls, with a toggle that turns everything outside translucent |
-| **4** | First person, third person (over-the-shoulder), and a free-flying drone with a straight-down map view |
-| **5** | **Level curves** by marching squares, plus topographic hypsometric colouring; the HUD always shows `(x, y)` and the height |
-| **6** | **Derivative disc** of 1 m or 2 m radius around the explorer, with `∂f/∂x` in blue, `∂f/∂y` in red and `∇f` in double-width teal — each drawn following the curved surface, each reporting both its instantaneous and its average rate of change |
+| **4** | First person, third person (over-the-shoulder), and a drone that flies level with its own first- and third-person cameras, a straight-down map view, and a beam dropping perpendicular to `z = 0` onto a bright ring marking the point of the domain you are over |
+| **5** | **Level curves** by marching squares, drawn as wide walkable paths draped over the ground and coloured by height on a ten-colour ramp, at an interval you choose; the contour under the explorer and its tangent, both projected onto the surface; the HUD always shows `(x, y)`, the height, and `RMS = \|∂f/∂x ÷ ∂f/∂y\|`, the slope of the level curve |
+| **6** | **Derivative disc** of 1 m or 2 m around the explorer, measured as **arc length over the surface** rather than on the flat floor — so the rim is the set of points that far *walked* — with `∂f/∂x` in blue, `∂f/∂y` in red and `∇f` in double-width teal, each a flat arrow painted on the curved surface, each reporting both its instantaneous and its average rate of change |
 | **7** | **Directional derivative**: freezes the explorer and lets the mouse swing **u** around the rim |
 | **8** | **Zoom-in ruler**: shrinks the explorer by powers of ten, down to 0.18 mm, so a differentiable surface visibly flattens onto its tangent plane |
 | **9** | **Numerical maximisation** over the feasible set, marked with a ring and a beam of light visible from anywhere, reporting whether the optimum is interior or on the boundary |
@@ -80,9 +80,9 @@ contrast, standing on the surface and looking at the arrows, is the point.
 |---|---|
 | Move | `W` `A` `S` `D` — hold `Shift` to run |
 | Look | mouse (click the scene to capture the pointer, `Esc` to release) |
-| Drone up / down | `Space` / `Ctrl` |
+| Drone altitude | `Space` / `Ctrl` — the drone flies level, so the mouse only aims the camera |
 | Views | `1` first person · `2` third person · `3` drone · `T` straight down · `R` recentre |
-| Toggles | `C` level curves · `M` topographic colours · `F` frontier walls · `G` translucent outside · `H` highlight disc · `X` `Y` `V` `B` the four arrows · `P` tangent plane · `O` optimum |
+| Toggles | `C` level curves · `M` colour by height · `J` the curve under your feet · `K` its tangent · `F` frontier walls · `G` translucent outside · `H` highlight disc · `X` `Y` `V` `B` the four arrows · `P` tangent plane · `O` optimum |
 | Panel | `Tab` |
 
 On a phone or tablet: drag on the left half to walk, drag on the right half to
