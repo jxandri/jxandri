@@ -119,22 +119,57 @@ html, body {
 #crosshair::before { left: 7px; top: 0; width: 2px; height: 16px; }
 #crosshair::after { top: 7px; left: 0; height: 2px; width: 16px; }
 
-/* ------------------------------------- the two dials on the right edge --- */
+/* ----------------------------------------------- the right-hand rail --- */
+
+/*
+ * The compass and the two dials share one column down the right edge. They are
+ * on the right because the panel is on the left, and in one column because two
+ * separately positioned overlays will eventually overlap on somebody's screen.
+ */
+#right-rail {
+  position: fixed; right: max(10px, env(safe-area-inset-right));
+  top: 84px; bottom: 84px; z-index: 6;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 14px;
+  pointer-events: none;              /* only the controls themselves take input */
+}
+#right-rail > * { pointer-events: auto; }
+
+/* --- the direction indicator ------------------------------------------- */
+
+#compass-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 6px 4px; border-radius: 14px;
+  background: rgba(16, 21, 28, .55); border: 1px solid rgba(255, 255, 255, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: border-color .18s ease, background .18s ease;
+}
+/* Held modifier, or the mouse just released: the instrument is being consulted
+   rather than glanced at, so it says so. */
+#compass-wrap.on {
+  border-color: rgba(89, 247, 214, .55);
+  background: rgba(16, 21, 28, .78);
+}
+#compass { display: block; width: 108px; height: 108px; }
+#compass-wrap.on #compass { width: 132px; height: 132px; }
+.cmp-read {
+  display: flex; gap: 8px;
+  font: 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink-dim);
+}
+
+/* --- the two dials ------------------------------------------------------ */
 
 /*
  * A tablet has no wheel and no modifier key, so the wheel's two jobs — move the
- * camera, resize the explorer — need handles that a thumb can find. They sit on
- * the right because the panel is on the left and because that is the edge a
- * right-handed grip reaches without covering the picture.
+ * camera, resize the explorer — need handles that a thumb can find.
  *
  * The sliders are ordinary horizontal ranges turned on their side. A rotation
  * behaves identically in every browser, which `writing-mode: vertical-*` on a
  * range input still does not.
  */
 #side-dials {
-  position: fixed; right: max(10px, env(safe-area-inset-right)); top: 50%;
-  transform: translateY(-50%);
-  z-index: 6; display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
 .sd {
@@ -198,11 +233,15 @@ html, body {
 
 /* A phone held sideways is the case these were added for, so they shrink to
    fit rather than disappearing — which is what a wheel-less screen needs. */
-@media (max-height: 520px) {
+@media (max-height: 620px) {
+  #right-rail { top: 62px; bottom: 62px; gap: 8px; }
   #side-dials { gap: 8px; }
   .sd { padding: 5px 4px; }
-  .sd-slot { height: 88px; }
-  .sd-slot input[type=range] { width: 88px; }
+  .sd-slot { height: 74px; }
+  .sd-slot input[type=range] { width: 74px; }
+  #compass { width: 74px; height: 74px; }
+  #compass-wrap.on #compass { width: 88px; height: 88px; }
+  .cmp-read { font-size: 9px; }
 }
 
 /* ------------------------------------------------------------- panel --- */

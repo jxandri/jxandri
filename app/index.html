@@ -40,8 +40,16 @@
 
 <div id="crosshair" hidden></div>
 
-<!-- ====================== dials on the right edge ======================= -->
-<!-- Everything the wheel does, for a screen that has no wheel. -->
+<!-- ========================= the right-hand rail ======================== -->
+<!-- The direction indicator, and everything the wheel does for a screen that
+     has no wheel. One column, so the two can never land on top of each other. -->
+<div id="right-rail">
+
+<div id="compass-wrap">
+  <canvas id="compass" width="132" height="132"></canvas>
+  <div class="cmp-read"><span id="cmp-az">0°</span><span id="cmp-el">0°</span></div>
+</div>
+
 <div id="side-dials">
   <div class="sd">
     <button id="btn-camzoom-reset" type="button" class="sd-cap"
@@ -63,6 +71,8 @@
     </div>
     <span class="sd-val" id="lbl-charscale">1 : 1</span>
   </div>
+</div>
+
 </div>
 
 <!-- ================================ panel ============================== -->
@@ -346,6 +356,8 @@
           <option value="buddy" data-i18n="style.buddy">Round buddy</option>
         </select>
       </label>
+      <label class="check"><input id="t-compass" type="checkbox" checked><span><span data-i18n="view.compass">Direction indicator</span> <kbd>I</kbd></span></label>
+      <p class="note" data-i18n="view.compassnote">The globe in the top right shows which way you are looking: latitude and longitude around a small figure turned to face the same direction, with the bearing and the elevation underneath. Hold ⌘/⊞ or Alt, or press Esc and move the mouse, and it enlarges.</p>
       <button id="btn-top" class="ghost"><span data-i18n="view.top">Look straight down</span> <kbd>T</kbd></button>
       <button id="btn-reset" class="ghost"><span data-i18n="view.reset">Return to the centre</span> <kbd>R</kbd></button>
     </section>

@@ -23,6 +23,7 @@ import { buildImplicit, buildParametric } from './surfaces.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, disposeGrid,
 } from './gridlines.js';
+import { Compass, angles } from './compass.js';
 import { Projection } from './projection.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
@@ -128,6 +129,7 @@ const state = {
   pathWidth: 1.4,      // world metres; wide enough to walk along
   heightColors: false,
   surfGrid: false,     // the coordinate grid, drawn on the surface itself
+  compass: true,       // the direction indicator, top right
   curCurve: false,
   curTangent: false,
   decor: true,
@@ -213,6 +215,19 @@ const altView = {
 const projection = $('minimap') ? new Projection($('minimap')) : null;
 const projState = { mode: 'ramp', opacity: 0.88, size: 1 };
 let topCam = null;
+
+/*
+ * The direction indicator, top right.
+ *
+ * It reads the live camera rather than any one of the three things that can be
+ * driving it — the explorer's head, the walker's heading, the aircraft's gimbal
+ * — because whichever of those is in charge, the camera is where the answer
+ * ends up. `_emphasis` counts down the seconds since the instrument was last
+ * being consulted rather than glanced at.
+ */
+const compass = $('compass') ? new Compass($('compass')) : null;
+const compassState = { emphasis: 0, freed: false };
+const _camDir = new THREE.Vector3();
 
 const world = new THREE.Group();
 scene.add(world);
@@ -909,6 +924,7 @@ window.addEventListener('keydown', (e) => {
     case 'c': toggleCheckbox('t-contours'); break;
     case 'm': toggleCheckbox('t-heightcol'); break;
     case 'n': toggleCheckbox('t-surfgrid'); break;
+    case 'i': toggleCheckbox('t-compass'); break;
     case 'f': toggleCheckbox('t-feas'); break;
     case 'g': toggleCheckbox('t-isolate'); break;
     case 'h': toggleCheckbox('t-disc'); break;
@@ -1022,7 +1038,9 @@ document.addEventListener('pointerlockchange', () => {
 });
 
 document.addEventListener('mousemove', (e) => {
-  if (!pointerLocked) return;
+  // Escape gives the mouse back; moving it after that means you have stopped
+  // flying and started reading the instruments. Light the compass up.
+  if (!pointerLocked) { compassState.emphasis = 2.2; return; }
   const dx = e.movementX || 0, dy = e.movementY || 0;
 
   if (state.surfaceKind !== 'graph') {
@@ -1121,6 +1139,33 @@ function readInput() {
     up: Math.max(-1, Math.min(1, up)),
     sprint: !!(keys.ShiftLeft || keys.ShiftRight),
   };
+}
+
+/**
+ * Point the direction indicator wherever the live camera is pointing.
+ *
+ * World axes into the plot's own: math x is world x, math y is world −z, math z
+ * is world y — the same convention the terrain and the walker use, so the cage's
+ * labelled x, y and z are the axes on screen and not a second set of them.
+ */
+function updateCompass(dt) {
+  if (!compass || !state.compass) return;
+  compassState.emphasis = Math.max(0, compassState.emphasis - dt);
+  compass.active = lookMod ? 1 : Math.min(1, compassState.emphasis / 0.4);
+
+  camera.getWorldDirection(_camDir);
+  compass.setDirection(_camDir.x, -_camDir.z, _camDir.y);
+  compass.setDrone(state.surfaceKind === 'graph'
+    ? !!(player && player.mode === MODE_DRONE)
+    : (altView.mode === MODE_DRONE || !walker));
+
+  const wrap = $('compass-wrap');
+  if (wrap) wrap.classList.toggle('on', compass.active > 0.5);
+
+  const { az, el } = angles(compass.dir[0], compass.dir[1], compass.dir[2]);
+  $('cmp-az').textContent = `${az}°`;
+  $('cmp-el').textContent = `${el >= 0 ? '+' : ''}${el}°`;
+  compass.draw();
 }
 
 /**
@@ -1389,6 +1434,13 @@ function wireUI() {
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
+
+  if ($('t-compass')) {
+    $('t-compass').addEventListener('change', (e) => {
+      state.compass = e.target.checked;
+      $('compass-wrap').hidden = !state.compass;
+    });
+  }
   bindCheck('t-curcurve', 'curCurve', () => { if (state.curCurve) goToExplorer(); });
   bindCheck('t-curtan', 'curTangent', () => { if (state.curTangent) goToExplorer(); });
 
@@ -2012,6 +2064,7 @@ function animate() {
 
     camera.updateProjectionMatrix();
     if (sky) sky.position.copy(camera.position);
+    updateCompass(dt);
     updateHUD(null);
     renderer.render(scene, camera);
     if (projection) projection.draw({});
@@ -2078,6 +2131,7 @@ function animate() {
 
   if (state.showOpt && optimum) optMarker.animate(t, camera.position);
 
+  updateCompass(dt);
   updateHUD(readout);
   renderer.render(scene, camera);
   drawProjection();

@@ -181,6 +181,8 @@ const STRINGS = {
     'style.brick': 'Brick minifigure',
     'style.blocky': 'Blocky (pixel style)',
     'style.buddy': 'Round buddy',
+    'view.compass': 'Direction indicator',
+    'view.compassnote': 'The globe in the top right shows which way you are looking: latitude and longitude around a small figure turned to face the same direction, with the bearing and the elevation underneath. Hold \u2318/\u229e or Alt, or press Esc and move the mouse, and it enlarges.',
     'view.top': 'Look straight down',
     'view.reset': 'Return to the centre',
 
@@ -401,6 +403,8 @@ const STRINGS = {
     'style.brick': 'Figura de bloques',
     'style.blocky': 'Estilo píxel',
     'style.buddy': 'Amigo redondo',
+    'view.compass': 'Indicador de direcci\u00f3n',
+    'view.compassnote': 'El globo de la esquina superior derecha muestra hacia d\u00f3nde est\u00e1 mirando: latitud y longitud alrededor de una figurita orientada en la misma direcci\u00f3n, con el rumbo y la elevaci\u00f3n debajo. Mantenga \u2318/\u229e o Alt, o pulse Esc y mueva el rat\u00f3n, y se agranda.',
     'view.top': 'Mirar desde arriba',
     'view.reset': 'Volver al centro',
 
