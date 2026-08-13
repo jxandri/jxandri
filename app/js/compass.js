@@ -13,34 +13,44 @@
  * A direction is a unit triple (lateral, forward, azimuth) — x to the right, y
  * forward, z up, the same axes the plot uses. It is flattened by
  *
- *     P(x, y, z) = (x + y/√2,  −y/√2 + z)
+ *     P(x, y, z) = (x + y·sin θ,  y·cos θ + z),      θ = 0.9 radians
  *
  * which sends the six cardinal directions to
  *
  *     right   (1,0,0)  → ( 1, 0)          up   (0,0, 1) → (0,  1)
  *     left   (−1,0,0)  → (−1, 0)          down (0,0,−1) → (0, −1)
- *     forward (0,1,0)  → ( 1/√2, −1/√2)   — that is, at −45°
- *     back   (0,−1,0)  → (−1/√2,  1/√2)   — at 135°
+ *     forward (0,1,0)  → ( sin θ,  cos θ) — up and to the right, 38° above
+ *     back   (0,−1,0)  → (−sin θ, −cos θ) — down and to the left
  *
- * and, as the worked example that fixed the convention: right and up together,
- * (1,0,1), goes to (1,1)/√2, which is orthogonal to forward's (1,−1)/√2.
+ * The forward axis used to run down-right at −45°, straight through the
+ * figure's own body and legs. Swinging it up above the horizon puts it in clear
+ * air, at the cost of bringing it within 52° of the z axis instead of 135°;
+ * that is a legibility trade, and the arrow's length and the numeric bearing
+ * underneath are what disambiguate the two when they are close.
  *
  * This is an oblique projection, not an orthographic one: all six cardinal
  * directions land on the unit circle, but a diagonal like right-plus-forward
- * runs past it, so the silhouette of the sphere is an ellipse elongated along
- * the forward–back axis rather than a circle. That is a real consequence of
- * putting the depth axis at 45° without foreshortening it, and it is what makes
- * the forward direction legible instead of collapsing it into the frame.
+ * runs past it, so the silhouette of the sphere is an ellipse rather than a
+ * circle. That is a real consequence of putting the depth axis at an angle
+ * without foreshortening it, and it is what makes the forward direction legible
+ * instead of collapsing it into the frame.
  *
  * Depth. P has a one-dimensional kernel — the direction it is looking along —
- * found by solving x + y/√2 = 0 and −y/√2 + z = 0, which gives (−1, √2, 1)/2.
- * A point's dot product with that is how near the viewer it is, so the far half
- * of the cage can be drawn faintly and the figure can turn its back.
+ * found by solving x + y·sin θ = 0 and y·cos θ + z = 0, which gives
+ * (−sin θ, 1, −cos θ). A point's dot product with that is how near the viewer
+ * it is, so the far half of the cage can be drawn faintly and the figure can
+ * turn its back. Forward lands on the positive side of it, which is what makes
+ * the default attitude a face rather than the back of a head.
  */
+
+/** Where the forward axis is aimed in the picture, in radians from screen up. */
+const FORWARD_ANGLE = 0.9;
+const FS = Math.sin(FORWARD_ANGLE);
+const FC = Math.cos(FORWARD_ANGLE);
 
 /** The kernel of P, normalised: the axis the cage is viewed along. */
 const VIEW = (() => {
-  const v = [-1, Math.SQRT2, 1];
+  const v = [-FS, 1, -FC];
   const n = Math.hypot(v[0], v[1], v[2]);
   return [v[0] / n, v[1] / n, v[2] / n];
 })();
@@ -51,11 +61,10 @@ const VIEW = (() => {
  * it face-on; the rest of the drawing is unaffected.
  */
 const MIRROR_LATERAL = 1;
-const R2 = 1 / Math.SQRT2;
 
 export function project(x, y, z, out) {
-  out[0] = MIRROR_LATERAL * (x + y * R2);
-  out[1] = -y * R2 + z;
+  out[0] = MIRROR_LATERAL * (x + y * FS);
+  out[1] = y * FC + z;
   return out;
 }
 
@@ -63,6 +72,31 @@ export function project(x, y, z, out) {
 export function depthOf(x, y, z) {
   return x * VIEW[0] + y * VIEW[1] + z * VIEW[2];
 }
+
+/**
+ * The silhouette of the unit sphere under P — an ellipse, because P is oblique.
+ *
+ * The singular values of P's matrix M are the semi-axes and the eigenvectors of
+ * MMᵀ their directions, so this is one 2×2 eigenproblem, solved once. The head
+ * is drawn to the same shape one size down; drawing it as a circle would put
+ * the features outside their own head wherever the projection stretches most.
+ */
+export const SILHOUETTE = (() => {
+  // M = [[1, FS, 0], [0, FC, 1]];  MMᵀ = [[1 + FS², FS·FC], [FS·FC, FC² + 1]]
+  const a = 1 + FS * FS, b = FS * FC, c = FC * FC + 1;
+  const tr = a + c, det = a * c - b * b;
+  const disc = Math.sqrt(Math.max(0, (tr * tr) / 4 - det));
+  const l1 = tr / 2 + disc, l2 = tr / 2 - disc;
+  // Eigenvector for the larger eigenvalue, in projected coordinates.
+  const ex = Math.abs(b) > 1e-12 ? b : 1;
+  const ey = Math.abs(b) > 1e-12 ? l1 - a : 0;
+  return {
+    major: Math.sqrt(l1),
+    minor: Math.sqrt(Math.max(0, l2)),
+    // Canvas y grows downward, so the projected angle flips sign.
+    angle: Math.atan2(-ey, ex),
+  };
+})();
 
 const LAT = [-60, -30, 0, 30, 60];
 const LON = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -207,10 +241,11 @@ export class Compass {
     if (S < 8) return;
 
     const cx = W / 2, cy = H / 2;
-    // The projected sphere is an ellipse whose long axis reaches √2, so the
-    // radius has to leave room for that or the forward–back extremes are cut
-    // off by the edge of the widget.
-    const R = S * 0.30 * (1 + this.active * 0.05);
+    // The projected sphere is an ellipse, so the radius is set from its long
+    // axis rather than guessed: the cage then spans the same fraction of the
+    // widget whatever angle the forward axis is drawn at, and cannot be clipped
+    // by the edge if that angle is retuned.
+    const R = ((S * 0.425) / SILHOUETTE.major) * (1 + this.active * 0.05);
     const a = this.active;
     const ink = (o) => `rgba(226, 238, 250, ${o * (0.62 + a * 0.38)})`;
     const lw = Math.max(1, S / 150);

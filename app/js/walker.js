@@ -49,6 +49,28 @@ function facingFrom(frame, angle) {
     .addScaledVector(frame.side, s);
 }
 
+/**
+ * The rotation that stands a model up along `up` and points it along `face`.
+ *
+ * The character is a rigid body. Walking it over a torus may translate it and
+ * rotate it and nothing else — no shear, and in particular no reflection, which
+ * is the trap here. A Matrix4 built from three orthonormal columns is a
+ * rotation only when the third is the cross product of the first two, and a
+ * model's own axes are (right, up, back): with `up` second and `−face` third,
+ * the first column must be face × up. Built as up × face instead, the matrix
+ * has determinant −1, and Three's quaternion extraction — which assumes a
+ * rotation — returns something unrelated to the stance and jumps about as the
+ * walker moves. That reads on screen as a character being smeared onto the
+ * surface rather than standing on it.
+ *
+ * Both arguments must be unit and orthogonal; the caller orthogonalises,
+ * because it is the caller that knows what to fall back on when they are not.
+ */
+export function standBasis(up, face, out) {
+  const right = new THREE.Vector3().crossVectors(face, up).normalize();
+  return (out || new THREE.Matrix4()).makeBasis(right, up, face.clone().negate());
+}
+
 /** Central difference of a vector-valued function of one parameter. */
 function diff(fn, t, h, out) {
   const a = fn(t - h), b = fn(t + h);
