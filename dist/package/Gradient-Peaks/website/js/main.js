@@ -21,7 +21,8 @@ import {
 import { ParametricWalker, ImplicitWalker, standBasis } from './walker.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
 import {
-  buildGraphGrid, buildParametricGrid, buildImplicitGrid, disposeGrid,
+  buildGraphGrid, buildParametricGrid, buildImplicitGrid, buildGeodesicGrid,
+  disposeGrid,
 } from './gridlines.js';
 import { Compass, angles } from './compass.js';
 import { Projection } from './projection.js';
@@ -129,6 +130,7 @@ const state = {
   pathWidth: 1.4,      // world metres; wide enough to walk along
   heightColors: false,
   surfGrid: false,     // the coordinate grid, drawn on the surface itself
+  geoGrid: false,      // ...built from geodesics rather than from coordinates
   compass: true,       // the direction indicator, top right
   curCurve: false,
   curTangent: false,
@@ -464,32 +466,47 @@ function rebuildAlternate() {
  */
 function refreshSurfaceGrid() {
   if (surfGrid) { world.remove(surfGrid); disposeGrid(surfGrid); surfGrid = null; }
+  updateGridUI();
   if (!state.surfGrid) return;
 
   const ws = state.worldSize;
   try {
     if (state.surfaceKind === 'graph') {
-      if (field) surfGrid = buildGraphGrid(field);
-    } else if (state.surfaceKind === 'implicit') {
-      const span = Math.max(state.xmax - state.xmin, state.ymax - state.ymin,
-        state.zmax - state.zmin) || 1;
-      surfGrid = buildImplicitGrid(compile(state.implicitSrc, ['x', 'y', 'z']), {
-        sx: state.sx, sy: state.sy, sz: state.sz,
-        xmin: state.xmin, xmax: state.xmax,
-        ymin: state.ymin, ymax: state.ymax,
-        zmin: state.zmin, zmax: state.zmax,
-        scale: ws / span, radius: ws / 2,
-      });
+      // One square per explorer. Their height in world metres is the ruler.
+      if (field) surfGrid = buildGraphGrid(field, { unit: 1.8 * state.zoom });
     } else {
-      surfGrid = buildParametricGrid({
-        X: compile(state.pxSrc, ['u', 'v']),
-        Y: compile(state.pySrc, ['u', 'v']),
-        Z: compile(state.pzSrc, ['u', 'v']),
-      }, {
-        sx: state.sx, sy: state.sy, sz: state.sz,
-        umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
-        scale: ws / 4, radius: ws / 3,
-      });
+      // Two, on a surface with no metres of its own — a person against a torus
+      // is small enough that single squares would be a haze.
+      const unit = 2 * 1.8 * state.zoom * (altView.charScale || 1);
+      if (state.geoGrid && walker) {
+        surfGrid = buildGeodesicGrid(walker, {
+          unit,
+          cells: Math.round((altSurfaceRadius() * 2.6) / unit),
+          radius: altSurfaceRadius(),
+        });
+      } else if (state.surfaceKind === 'implicit') {
+        const span = Math.max(state.xmax - state.xmin, state.ymax - state.ymin,
+          state.zmax - state.zmin) || 1;
+        surfGrid = buildImplicitGrid(compile(state.implicitSrc, ['x', 'y', 'z']), {
+          unit,
+          sx: state.sx, sy: state.sy, sz: state.sz,
+          xmin: state.xmin, xmax: state.xmax,
+          ymin: state.ymin, ymax: state.ymax,
+          zmin: state.zmin, zmax: state.zmax,
+          scale: ws / span, radius: ws / 2,
+        });
+      } else {
+        surfGrid = buildParametricGrid({
+          X: compile(state.pxSrc, ['u', 'v']),
+          Y: compile(state.pySrc, ['u', 'v']),
+          Z: compile(state.pzSrc, ['u', 'v']),
+        }, {
+          unit,
+          sx: state.sx, sy: state.sy, sz: state.sz,
+          umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
+          scale: ws / 4, radius: ws / 3,
+        });
+      }
     }
   } catch (err) {
     // A formula that will not compile has already been reported where it was
@@ -497,6 +514,45 @@ function refreshSurfaceGrid() {
     surfGrid = null;
   }
   if (surfGrid) world.add(surfGrid);
+  updateGridUI();
+}
+
+/** The radius of whatever non-graph surface is on screen. */
+function altSurfaceRadius() {
+  const b = altSurface && altSurface.geometry.boundingSphere;
+  return b ? b.radius : state.worldSize / 2;
+}
+
+/**
+ * Show what one square is worth, and offer the geodesic option only where it
+ * means anything — a graph's grid is the plane's own, and the plane's own grid
+ * is already made of geodesics.
+ */
+function updateGridUI() {
+  const geoField = $('fld-geogrid');
+  if (geoField) geoField.hidden = !(state.surfGrid && state.surfaceKind !== 'graph');
+  const el = $('grid-scale');
+  if (!el) return;
+  if (!state.surfGrid || !surfGrid) { el.hidden = true; return; }
+  const { side, multiple, geodesic } = surfGrid.userData;
+  const heights = (side || 0) / (1.8 * state.zoom * (state.surfaceKind === 'graph' ? 1 : (altView.charScale || 1)));
+  el.hidden = false;
+  el.textContent = t(geodesic ? 'map.gridgeo' : 'map.gridside', {
+    n: heights < 1.05 ? '1' : heights.toPrecision(2),
+    m: multiple > 1 ? ` (×${multiple})` : '',
+  });
+}
+
+/**
+ * Resizing the explorer resizes the grid, and rebuilding a few hundred traced
+ * lines is not something to do on every notch of a wheel. Wait until the dial
+ * has stopped moving.
+ */
+let gridTimer = 0;
+function scheduleGridRebuild() {
+  if (!state.surfGrid) return;
+  clearTimeout(gridTimer);
+  gridTimer = setTimeout(() => refreshSurfaceGrid(), 220);
 }
 
 /**
@@ -523,7 +579,10 @@ function ensureAltHiker() {
 }
 
 function applyOrientation() {
-  if (walker) walker.sign = state.inside ? -1 : 1;
+  // Through flip(), not by assignment: swapping sides swaps which way is right,
+  // and with it the sense of the angle the body is held at.
+  const want = state.inside ? -1 : 1;
+  if (walker && walker.sign !== want) walker.flip();
   $('fld-orient').hidden = state.surfaceKind === 'graph';
 }
 
@@ -1551,6 +1610,7 @@ function wireUI() {
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
+  bindCheck('t-geogrid', 'geoGrid', () => withLoading(refreshSurfaceGrid));
 
   bindCheck('t-follow', 'follow', () => { $('grp-follow').hidden = !state.follow; });
   const followStep = (id, key) => $(id).addEventListener('change', (e) => {
@@ -1863,8 +1923,12 @@ function updateZoomLabels() {
 
 /** The one place the explorer's scale is set, whatever asked for it. */
 function applyZoom(z) {
+  const before = state.zoom;
   state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
+  // The grid squares are one explorer tall, so they are no longer the right
+  // size once the explorer is not.
+  if (state.zoom !== before) scheduleGridRebuild();
   $('in-zoom').value = String(-Math.log10(state.zoom));
   // The panel dial and the dial on the right edge are two handles on one
   // number, so whichever was moved, both have to end up showing it. They run

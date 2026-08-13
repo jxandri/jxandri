@@ -373,9 +373,19 @@ consumidor, donde el dominio no es una ventana sobre nada sino el conjunto de ce
 existen.</p>
 <p><strong>Retícula de coordenadas sobre la superficie</strong> <kbd>N</kbd> — dibuja el sistema
 de coordenadas <em>sobre</em> la superficie. Es la malla que casi siempre aparece en la figura de
-un libro de texto, y no es un adorno: es lo que permite ver qué están haciendo las coordenadas. Lo
-que dibuja depende del tipo de superficie, y en cada caso es la intersección de la superficie con
-una familia de conjuntos de nivel de las coordenadas:</p>
+un libro de texto, y no es un adorno: es lo que permite ver qué están haciendo las coordenadas.</p>
+<p><strong>Cada cuadrado mide lo que mide de alto el explorador</strong> —el doble, en longitud de
+arco, sobre una superficie que no es una gráfica—, de modo que la malla es una regla y no una
+textura. Cuántos cuadrados de ancho tiene esta colina; a qué distancia están esas dos curvas de
+nivel; qué tamaño tiene el entorno del que se está leyendo la derivada. Y como el cuadrado mide lo
+que mide el explorador, encoge cuando él encoge: baje una década el dial de tamaño y los cuadrados
+bajan con usted, y la superficie que creía curva resulta ser, a esa escala, un plano. El panel dice
+cuánto vale un cuadrado en cada momento. Cuando un cuadrado por explorador exigiría más líneas de
+las que caben en una pantalla —un explorador de 0,18 mm sobre una gráfica de 220 m—, el espaciado
+sube en múltiplos enteros, 1, 2, 5, 10, y se indica el múltiplo; una regla con divisiones ilegibles
+no es más precisa, solo ilegible.</p>
+<p>Lo que dibuja depende del tipo de superficie, y en cada caso es la intersección de la superficie
+con una familia de conjuntos de nivel de las coordenadas:</p>
 <ul>
   <li><strong>una gráfica</strong> <code>z = f(x, y)</code> — la retícula del plano
   <code>(x, y)</code> levantada sobre la superficie: las curvas <code>x = constante</code> e
@@ -393,6 +403,26 @@ una familia de conjuntos de nivel de las coordenadas:</p>
 <p>La retícula se dibuja por <em>ambos lados</em>, de modo que sigue siendo legible cuando el
 explorador camina por dentro de un toro: una sola copia quedaría enterrada en la superficie que
 pretende marcar.</p>
+
+<p><strong>Construirla con geodésicas</strong> — se ofrece en superficies paramétricas e implícitas,
+donde las coordenadas no son las de la superficie. Las otras dos retículas heredan su espaciado de
+algo ajeno a la superficie: de cómo alguien escribió <code>r(u, v)</code>, o de dónde caen los planos
+<code>x = constante</code>. Ninguna de las dos cosas es una propiedad de la superficie, y ninguna
+puede prometer honestamente que un cuadrado sea un cuadrado. Una retícula geodésica sí, porque se
+construye solo con caminos rectísimos y longitud de arco:</p>
+<ol>
+  <li>tome un par de direcciones perpendiculares en el plano tangente donde está el explorador;</li>
+  <li>recorra la geodésica en una de ellas y márquela cada <em>L</em> de longitud de arco;</li>
+  <li>desde cada marca, recorra una geodésica en la dirección perpendicular al eje <em>allí</em>;</li>
+  <li>repita con las dos direcciones intercambiadas.</li>
+</ol>
+<p>El resultado es la figura de las coordenadas normales geodésicas. Las dos familias se cortan en
+ángulo recto a lo largo de los ejes y, sobre una superficie curva, en ningún otro sitio; y eso no es
+un defecto del dibujo, es la curvatura. Las geodésicas que salen paralelas no siguen paralelas, y la
+rapidez con que convergen o se separan <em>es</em> la curvatura de Gauss. En una esfera los
+cuadrados se cierran al alejarse del explorador; en una silla de montar se abren. Es la imagen más
+clara de la curvatura que un estudiante va a encontrarse, y queda anclada donde estaba el explorador
+cuando se dibujó.</p>
 <p><strong>Vegetación, rocas y nieve</strong> — enciende y apaga el decorado. El decorado se
 apoya <em>encima</em> de la superficie y nunca cambia su forma.</p>
 <p><strong>Agua en las depresiones</strong> — una lámina de agua translúcida a la altura cero, de
@@ -847,6 +877,23 @@ vueltas que uno fijo.</p>
   es caro, y ambos son la razón de que el explorador se quede sobre la superficie en vez de irse
   apartando de ella.</p>
 </div>
+
+<h2>Caminar recto hacia adelante</h2>
+<p>En una gráfica uno camina por el plano y la superficie sube y baja por debajo. En un toro no hay
+plano por el que caminar, y «recto hacia adelante» necesita una definición. La que se usa aquí es la
+única que no depende de cómo escribiera nadie la superficie: <strong>el explorador sigue la
+geodésica</strong> que pasa por donde está, con su velocidad como condición inicial —el camino más
+recto que la superficie permite—. En una esfera eso es un círculo máximo. En un plano, una recta. En
+un toro es una de toda una familia que en general nunca se cierra, y ver una dar vueltas y vueltas
+sin repetirse jamás da para una clase entera.</p>
+<p>Girar es una rotación de la velocidad dentro del plano tangente; caminar es la geodésica que esa
+velocidad inicia. Entre las dos cosas, el rumbo se <em>transporta paralelamente</em>: se lleva a
+cuestas sin ninguna rotación alrededor de la normal, que es lo que tiene que significar llevar una
+dirección a lo largo de un camino cuando no hay ninguna dirección fija con la que compararla. Dé una
+vuelta completa a un círculo máximo y el rumbo vuelve exactamente como salió. Dé una vuelta cerrada
+que <em>no</em> sea geodésica —un paralelo, por ejemplo— y no vuelve igual, y el ángulo que ha girado
+es la holonomía: el área encerrada, por la curvatura. Eso es el teorema de Gauss–Bonnet, y el
+explorador puede recorrerlo a pie.</p>
 
 <h2>Dentro, fuera y superficies de una sola cara</h2>
 <p><strong>Caminar por dentro</strong> cambia la cara de la superficie sobre la que se para el

@@ -365,9 +365,18 @@ is left off in the consumer problem, where the domain is not a window onto anyth
 bundles that exist.</p>
 <p><strong>Coordinate grid on the surface</strong> <kbd>N</kbd> — draws the coordinate system
 <em>on</em> the surface, which is the mesh a textbook picture almost always has and which is not
-decoration: it is what lets you see what the coordinates are doing. What it draws depends on the
-kind of surface, and in each case it is the intersection of the surface with a family of level
-sets of the coordinates:</p>
+decoration: it is what lets you see what the coordinates are doing.</p>
+<p><strong>Every square is one explorer tall</strong> — twice that, in arc length, on a surface that
+is not a graph — so the mesh is a ruler and not a texture. How many squares across is this hill;
+how far apart are those two contours; how big is the neighbourhood the derivative is being read
+from. And because the square is the explorer's own height, it shrinks when they do: take the size
+dial down a decade and the squares come down with you, and the surface you thought was curved turns
+out, at that scale, to be a plane. The panel says what one square is currently worth. Where one
+square per explorer would need more lines than a screen can carry — a 0.18 mm explorer on a 220 m
+plot — the spacing goes up in whole multiples, 1, 2, 5, 10, and the multiple is stated; a ruler
+with unreadable divisions is not more accurate, only unreadable.</p>
+<p>What it draws depends on the kind of surface, and in each case it is the intersection of the
+surface with a family of level sets of the coordinates:</p>
 <ul>
   <li><strong>a graph</strong> <code>z = f(x, y)</code> — the grid of the <code>(x, y)</code> plane
   lifted onto the surface: the curves <code>x = constant</code> and <code>y = constant</code> with
@@ -383,6 +392,25 @@ sets of the coordinates:</p>
 </ul>
 <p>The grid is drawn on <em>both sides</em>, so it stays readable when the explorer is walking on
 the inside of a torus — a single copy would be buried in the surface it is meant to be marking.</p>
+
+<p><strong>Build it from geodesics instead</strong> — offered on parametric and implicit surfaces,
+where the coordinates are not the surface's own. The other two grids inherit their spacing from
+something outside the surface: how somebody happened to write <code>r(u, v)</code>, or where the
+planes <code>x = constant</code> happen to fall. Neither is a property of the surface, and neither
+can honestly promise that a square is a square. A geodesic grid can, because it is built only from
+straightest paths and arc length:</p>
+<ol>
+  <li>take a perpendicular pair of directions in the tangent plane where the explorer is standing;</li>
+  <li>run the geodesic along one of them and mark it every <em>L</em> of arc length;</li>
+  <li>from each mark, run a geodesic in the direction perpendicular to the axis <em>there</em>;</li>
+  <li>do the same with the two directions swapped.</li>
+</ol>
+<p>The result is the picture of geodesic normal coordinates. The two families cross at right angles
+along the axes and, on a curved surface, nowhere else — and that is not a defect in the drawing,
+it is the curvature. Geodesics that set off parallel do not stay parallel; how fast they converge
+or spread apart <em>is</em> the Gaussian curvature. On a sphere the squares close up as you go away
+from the explorer; on a saddle they splay open. It is the clearest picture of curvature a student
+is likely to meet, and it is anchored where the explorer was standing when it was drawn.</p>
 <p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off. The scenery sits
 <em>on top of</em> the surface and never changes its shape.</p>
 <p><strong>Water in the depressions</strong> — a translucent lake surface at height zero, so any
@@ -807,6 +835,23 @@ instead, for a student who finds a tumbling horizon harder to read than a fixed 
   pulled back onto <code>F = 0</code> by Newton's method along <code>∇F</code>. Neither is
   expensive, and both are why the explorer stays on the surface instead of drifting off it.</p>
 </div>
+
+<h2>Walking straight ahead</h2>
+<p>On a graph you walk in the plane and the surface goes up and down underneath you. On a torus
+there is no plane to walk in, and "straight ahead" needs a definition. The one used here is the only
+one that does not depend on how somebody wrote the surface down: <strong>the explorer follows the
+geodesic</strong> through where they are standing, with their velocity as its initial condition —
+the straightest path the surface allows. On a sphere that is a great circle. On a plane it is a
+straight line. On a torus it is one of a family that mostly never closes up, and watching one wander
+round and round without ever repeating is worth a lecture on its own.</p>
+<p>Turning is a rotation of the velocity inside the tangent plane; walking is the geodesic that
+velocity starts. Between the two, the heading is <em>parallel-transported</em> — carried along with
+no rotation about the surface's normal, which is what carrying a direction along a path has to mean
+when there is no fixed direction to compare it with. Walk a great circle all the way round and the
+heading comes back exactly as it set out. Walk a closed loop that is <em>not</em> a geodesic — round
+a circle of latitude, say — and it does not, and the angle it comes back turned by is the holonomy:
+the area enclosed, times the curvature. That is the Gauss–Bonnet theorem, and the explorer can walk
+it.</p>
 
 <h2>Inside, outside, and one-sided surfaces</h2>
 <p><strong>Walk on the inside</strong> flips which side of the surface the explorer stands on.

@@ -63,6 +63,13 @@ function limb(x, y, color, len, thick, depth) {
  * Every one is exactly 1.80 m tall with its origin at the feet, and every one
  * exposes the same `parts` — hips, two arms, two legs, head — so the walk cycle
  * and the camera work identically whichever is chosen.
+ *
+ * They all face their own **−Z**, which is the direction Three's cameras look
+ * and the direction every basis in this program treats as forward. Faces and
+ * backpacks are therefore at negative and positive z respectively. Building
+ * them the other way round — which is easy to do, since +Z reads as "towards
+ * you" while you are looking at the code — makes the explorer walk backwards
+ * everywhere and puts the over-the-shoulder camera in front of their face.
  */
 const STYLES = {
   /** The original: a hiker in a hi-vis jacket and a hat. */
@@ -75,7 +82,7 @@ const STYLES = {
     torso.position.y = 0.31;
     hips.add(torso);
     const pack = box(0.30, 0.36, 0.16, 0x35424f);
-    pack.position.set(0, 0.34, -0.19);
+    pack.position.set(0, 0.34, 0.19);
     hips.add(pack);
     const neck = box(0.14, 0.08, 0.14, 0xf2c49a);
     neck.position.y = 0.66;
@@ -129,18 +136,18 @@ const STYLES = {
     for (const sx of [-0.07, 0.07]) {
       const eye = cyl(0.028, 0.028, 0.02, 0x1a1a1a, 8);
       eye.rotation.x = Math.PI / 2;
-      eye.position.set(sx, 0.90, 0.196);
+      eye.position.set(sx, 0.90, -0.196);
       hips.add(eye);
     }
     const smile = box(0.13, 0.02, 0.01, 0x1a1a1a);
-    smile.position.set(0, 0.81, 0.198);
+    smile.position.set(0, 0.81, -0.198);
     hips.add(smile);
 
     const armL = limb(-0.30, 0.56, 0xd11f2d, 0.40, 0.13);
     const armR = limb(0.30, 0.56, 0xd11f2d, 0.40, 0.13);
     for (const [a, sgn] of [[armL, -1], [armR, 1]]) {
       const hand = cyl(0.085, 0.085, 0.09, 0xf5c518, 12);
-      hand.position.set(sgn * 0.02, -0.44, 0.06);
+      hand.position.set(sgn * 0.02, -0.44, -0.06);
       a.add(hand);
     }
     hips.add(armL, armR);
@@ -171,10 +178,10 @@ const STYLES = {
     hips.add(hair);
     for (const sx of [-1.9, 1.9]) {
       const eye = box(1.6 * U, 1.6 * U, 0.4 * U, 0xffffff);
-      eye.position.set(sx * U, 16.6 * U, 4.05 * U);
+      eye.position.set(sx * U, 16.6 * U, -4.05 * U);
       hips.add(eye);
       const pupil = box(0.8 * U, 1.6 * U, 0.5 * U, 0x2a3f6a);
-      pupil.position.set((sx + (sx > 0 ? 0.4 : -0.4)) * U, 16.6 * U, 4.08 * U);
+      pupil.position.set((sx + (sx > 0 ? 0.4 : -0.4)) * U, 16.6 * U, -4.08 * U);
       hips.add(pupil);
     }
 
@@ -208,7 +215,7 @@ const STYLES = {
         new THREE.SphereGeometry(0.045, 10, 8),
         new THREE.MeshLambertMaterial({ color: 0x20242c }),
       );
-      eye.position.set(sx, 0.82, 0.215);
+      eye.position.set(sx, 0.82, -0.215);
       hips.add(eye);
     }
     const smile = new THREE.Mesh(
@@ -216,7 +223,8 @@ const STYLES = {
       new THREE.MeshLambertMaterial({ color: 0x20242c }),
     );
     smile.rotation.z = Math.PI;
-    smile.position.set(0, 0.72, 0.205);
+    smile.rotation.y = Math.PI;
+    smile.position.set(0, 0.72, -0.205);
     hips.add(smile);
 
     const armL = limb(-0.28, 0.46, 0xffd34d, 0.46, 0.10);
