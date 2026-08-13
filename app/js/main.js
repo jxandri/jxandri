@@ -20,6 +20,9 @@ import {
 } from './player.js';
 import { ParametricWalker, ImplicitWalker } from './walker.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
+import {
+  buildGraphGrid, buildParametricGrid, buildImplicitGrid, disposeGrid,
+} from './gridlines.js';
 import { Projection } from './projection.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
@@ -124,6 +127,7 @@ const state = {
   contourStep: 0,      // 0 = choose a round interval automatically
   pathWidth: 1.4,      // world metres; wide enough to walk along
   heightColors: false,
+  surfGrid: false,     // the coordinate grid, drawn on the surface itself
   curCurve: false,
   curTangent: false,
   decor: true,
@@ -176,6 +180,7 @@ let curveGizmo = null;
 let tangentLine = null;
 let optimum = null;
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
+let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
 let decorations = new Decorations();
 let player = null;
 
@@ -419,8 +424,57 @@ function rebuildAlternate() {
   if (player) player.group.visible = false;
   ensureAltHiker();
   applyOrientation();
+  refreshSurfaceGrid();
   frameAlternate();
   return true;
+}
+
+/**
+ * Build — or tear down — the coordinate grid on whatever surface is on screen.
+ *
+ * Called on every rebuild and whenever the checkbox moves. The three kinds of
+ * surface have three different notions of "coordinate grid", so this is where
+ * the choice is made; gridlines.js knows how to draw each one.
+ *
+ * It is rebuilt rather than kept and hidden, because the lines are tied to the
+ * surface's own geometry: change the function, the domain, the axis scales or a
+ * named surface's parameters, and every vertex of the grid has moved.
+ */
+function refreshSurfaceGrid() {
+  if (surfGrid) { world.remove(surfGrid); disposeGrid(surfGrid); surfGrid = null; }
+  if (!state.surfGrid) return;
+
+  const ws = state.worldSize;
+  try {
+    if (state.surfaceKind === 'graph') {
+      if (field) surfGrid = buildGraphGrid(field);
+    } else if (state.surfaceKind === 'implicit') {
+      const span = Math.max(state.xmax - state.xmin, state.ymax - state.ymin,
+        state.zmax - state.zmin) || 1;
+      surfGrid = buildImplicitGrid(compile(state.implicitSrc, ['x', 'y', 'z']), {
+        sx: state.sx, sy: state.sy, sz: state.sz,
+        xmin: state.xmin, xmax: state.xmax,
+        ymin: state.ymin, ymax: state.ymax,
+        zmin: state.zmin, zmax: state.zmax,
+        scale: ws / span, radius: ws / 2,
+      });
+    } else {
+      surfGrid = buildParametricGrid({
+        X: compile(state.pxSrc, ['u', 'v']),
+        Y: compile(state.pySrc, ['u', 'v']),
+        Z: compile(state.pzSrc, ['u', 'v']),
+      }, {
+        sx: state.sx, sy: state.sy, sz: state.sz,
+        umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
+        scale: ws / 4, radius: ws / 3,
+      });
+    }
+  } catch (err) {
+    // A formula that will not compile has already been reported where it was
+    // typed; the grid simply has nothing to draw.
+    surfGrid = null;
+  }
+  if (surfGrid) world.add(surfGrid);
 }
 
 /**
@@ -452,18 +506,27 @@ function applyOrientation() {
 }
 
 /**
- * Stand the character on the surface, facing along the walker's heading.
+ * Stand the character on the surface, turned the way they last moved.
  *
  * The basis is (side, up, −forward) because the character models look down
  * their own −Z. `up` is normally the surface normal — which is what makes a
  * sphere feel like a planet — but can be pinned to a world axis instead, for
  * students who find a tumbling horizon harder to read than a fixed one.
+ *
+ * Two directions are in play and they are not the same. The heading is where
+ * the explorer is *looking*, which the mouse turns and the first-person camera
+ * follows; the facing is which way the body is *pointed*, and a body points the
+ * way it last travelled. Strafe left around a torus and you should watch
+ * someone walk left, not watch someone walk forwards sideways. So the body
+ * takes the facing and the returned frame keeps the heading for the camera.
  */
 const _hbasis = new THREE.Matrix4();
 function placeAltHiker() {
   if (!walker || !altHiker) return null;
   const p = walker.position(new THREE.Vector3());
-  const { n, fwd, side } = walker.frame();
+  const fr = walker.frame();
+  const { n, side } = fr;
+  const fwd = walker.facing ? walker.facing(fr) : fr.fwd;
 
   let up = n;
   if (state.upAxis !== 'normal') {
@@ -473,18 +536,27 @@ function placeAltHiker() {
     up = axis.multiplyScalar(walker.sign);
   }
 
-  // Re-orthogonalise: pinning "up" to an axis leaves the heading out of plane.
-  const f = fwd.clone().addScaledVector(up, -fwd.dot(up));
-  if (f.lengthSq() < 1e-12) f.copy(side);
-  f.normalize();
-  const sd = new THREE.Vector3().crossVectors(up, f).normalize();
+  // Re-orthogonalise: pinning "up" to an axis leaves both directions out of
+  // plane, and a character built on a skewed basis leans.
+  const flatten = (v, fallback) => {
+    const w = v.clone().addScaledVector(up, -v.dot(up));
+    if (w.lengthSq() < 1e-12) w.copy(fallback);
+    return w.normalize();
+  };
+  const face = flatten(fwd, side);            // the body
+  const head = flatten(fr.fwd, side);         // the eyes
+  const sd = new THREE.Vector3().crossVectors(up, head).normalize();
 
-  _hbasis.makeBasis(sd, up, f.clone().negate());
+  _hbasis.makeBasis(
+    new THREE.Vector3().crossVectors(up, face).normalize(),
+    up,
+    face.clone().negate(),
+  );
   altHiker.position.copy(p);
   altHiker.quaternion.setFromRotationMatrix(_hbasis);
   altHiker.scale.setScalar(state.zoom * altView.charScale);
   altHiker.visible = altView.mode !== MODE_FIRST;
-  return { p, up, fwd: f, side: sd };
+  return { p, up, fwd: head, face, side: sd };
 }
 
 /** Put the drone where the whole alternate surface is in shot. */
@@ -618,6 +690,7 @@ function rebuild() {
   applyPalette();
   applyIsolation();
   refreshContours();
+  refreshSurfaceGrid();
   refreshProjection();
   refreshOptimum();
   reportStats();
@@ -835,6 +908,7 @@ window.addEventListener('keydown', (e) => {
     case 'r': player.resetToDomainCentre(); break;
     case 'c': toggleCheckbox('t-contours'); break;
     case 'm': toggleCheckbox('t-heightcol'); break;
+    case 'n': toggleCheckbox('t-surfgrid'); break;
     case 'f': toggleCheckbox('t-feas'); break;
     case 'g': toggleCheckbox('t-isolate'); break;
     case 'h': toggleCheckbox('t-disc'); break;
@@ -1314,6 +1388,7 @@ function wireUI() {
   bindCheck('t-isolate', 'isolate', () => { applyIsolation(); });
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
+  bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
   bindCheck('t-curcurve', 'curCurve', () => { if (state.curCurve) goToExplorer(); });
   bindCheck('t-curtan', 'curTangent', () => { if (state.curTangent) goToExplorer(); });
 

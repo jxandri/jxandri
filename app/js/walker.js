@@ -28,6 +28,27 @@
 
 import * as THREE from '../vendor/three.module.js';
 
+/**
+ * Which way the body is turned, given a frame and the last step taken.
+ *
+ * Heading and facing are not the same thing. The heading is where you are
+ * looking — it is what the mouse turns and what the first-person camera points
+ * along. Facing is which way the body is pointed, and a body points the way it
+ * last moved: strafe left and you go left, sideways, still looking ahead.
+ *
+ * The last step is remembered as an *angle within the tangent frame* rather
+ * than as a direction in space, which means it needs no parallel transport. Walk
+ * a lap of a sphere and the frame carries the angle round with it for free; the
+ * alternative — storing a world vector and re-projecting it every frame — drifts
+ * exactly where the surface curves most, which is where it matters.
+ */
+function facingFrom(frame, angle) {
+  const c = Math.cos(angle), s = Math.sin(angle);
+  return new THREE.Vector3()
+    .addScaledVector(frame.fwd, c)
+    .addScaledVector(frame.side, s);
+}
+
 /** Central difference of a vector-valued function of one parameter. */
 function diff(fn, t, h, out) {
   const a = fn(t - h), b = fn(t + h);
@@ -49,6 +70,7 @@ export class ParametricWalker {
     this.v = (opts.vmin + opts.vmax) / 2;
     this.sign = 1;              // +1 outside, −1 inside
     this.heading = 0;           // radians in the tangent plane
+    this.moveAngle = 0;         // where the last step went, relative to it
     this.h = Math.min(opts.umax - opts.umin, opts.vmax - opts.vmin) * 1e-4;
 
     this._p = new THREE.Vector3();
@@ -141,6 +163,9 @@ export class ParametricWalker {
   move(dist, fwdAmt, sideAmt) {
     const { ru, rv } = this.basis();
     const { fwd, side } = this.frame();
+    if (Math.abs(fwdAmt) + Math.abs(sideAmt) > 1e-9) {
+      this.moveAngle = Math.atan2(sideAmt, fwdAmt);
+    }
 
     const w = new THREE.Vector3()
       .addScaledVector(fwd, fwdAmt)
@@ -175,6 +200,9 @@ export class ParametricWalker {
 
   turn(radians) { this.heading += radians; }
 
+  /** Which way the body is pointed: the direction of the last step taken. */
+  facing(frame) { return facingFrom(frame || this.frame(), this.moveAngle); }
+
   flip() { this.sign = -this.sign; }
 
   /** Put the walker at a parameter pair, e.g. from a click on the mesh. */
@@ -196,6 +224,7 @@ export class ImplicitWalker {
     this.o = opts;
     this.sign = 1;
     this.heading = 0;
+    this.moveAngle = 0;         // where the last step went, relative to it
     // Math-space position. Kept in math space, not world, so the axis dials can
     // be changed without the walker falling off the surface.
     this.p = new THREE.Vector3(0, 0, 0);
@@ -280,6 +309,9 @@ export class ImplicitWalker {
   move(dist, fwdAmt, sideAmt) {
     const o = this.o;
     const { fwd, side } = this.frame();
+    if (Math.abs(fwdAmt) + Math.abs(sideAmt) > 1e-9) {
+      this.moveAngle = Math.atan2(sideAmt, fwdAmt);
+    }
     const step = new THREE.Vector3()
       .addScaledVector(fwd, fwdAmt)
       .addScaledVector(side, sideAmt);
@@ -301,6 +333,9 @@ export class ImplicitWalker {
   }
 
   turn(radians) { this.heading += radians; }
+
+  /** Which way the body is pointed: the direction of the last step taken. */
+  facing(frame) { return facingFrom(frame || this.frame(), this.moveAngle); }
 
   flip() { this.sign = -this.sign; }
 
