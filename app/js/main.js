@@ -952,7 +952,14 @@ document.addEventListener('mousemove', (e) => {
   const dx = e.movementX || 0, dy = e.movementY || 0;
 
   if (state.surfaceKind !== 'graph') {
-    if (!walker || altView.mode === MODE_DRONE) return;
+    if (altView.mode === MODE_DRONE || !walker) {
+      // Flying around a torus, the mouse aims the camera exactly as it aims
+      // the explorer's head — two angles, and between them every direction on
+      // the unit sphere with the aircraft at its centre.
+      altCam.yaw -= dx * 0.0022;
+      altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * 0.0022));
+      return;
+    }
     if (altView.mode === MODE_FIRST) {
       // Turning is a rotation of the heading *in the tangent plane*, which is
       // the only thing "turn left" can mean on a surface with no fixed up.
@@ -1064,7 +1071,7 @@ function applyLookKeys(dt) {
   if (state.surfaceKind !== 'graph') {
     if (altView.mode === MODE_DRONE || !walker) {
       altCam.yaw -= dx * a;
-      altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch - dy * a));
+      altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * a));
     } else if (altView.mode === MODE_FIRST) {
       // On a surface, "turn" is a rotation of the heading inside the tangent
       // plane; pitch is clamped short of vertical so the view never rolls under
@@ -1837,7 +1844,12 @@ function renderTopDown(rect) {
 
 // Orbit state used only when an implicit or parametric surface is on screen:
 // there is nothing to stand on, so the drone simply circles it.
+//
+// The pitch limit is a whisker short of vertical rather than the old 1.5 rad,
+// so the orbit really does cover the sphere — a torus can be looked at squarely
+// down its hole, which is the one view that shows what a torus is.
 const altCam = { yaw: 0, pitch: -0.5, dist: 400 };
+const ALT_PITCH_LIM = Math.PI / 2 - 1e-4;
 
 let altWalkPhase = 0;
 
@@ -1869,12 +1881,18 @@ function animate() {
       if (altHiker) altHiker.visible = !!walker;
       if (walker) placeAltHiker();
       altCam.yaw -= inp.right * dt * 1.2;
-      altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch + inp.up * dt * 1.2));
+      altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch + inp.up * dt * 1.2));
       altCam.dist *= Math.exp(-inp.forward * dt * (inp.sprint ? 2.2 : 0.9));
       const r = altCam.dist / state.camZoom;
       const cp = Math.cos(altCam.pitch);
       camera.position.set(Math.sin(altCam.yaw) * cp * r, -Math.sin(altCam.pitch) * r, Math.cos(altCam.yaw) * cp * r);
-      camera.lookAt(0, 0, 0);
+      // The orientation is the same two angles the position was built from,
+      // which is exactly the attitude lookAt(0,0,0) would produce — but defined
+      // at the poles, where lookAt's up vector becomes parallel to the view and
+      // the frame collapses. Looking straight down the axis of a torus is a
+      // view worth having, so it has to be a view that works.
+      camera.up.set(0, 1, 0);
+      camera.quaternion.setFromEuler(new THREE.Euler(altCam.pitch, altCam.yaw, 0, 'YXZ'));
       camera.fov = fovFor(false);
       camera.near = Math.max(0.05, r * 1e-4);
       camera.far = r * 20;
