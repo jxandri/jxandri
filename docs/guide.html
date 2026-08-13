@@ -242,6 +242,11 @@ function is indistinguishable from its tangent plane.</p>
 has no wheel and no modifier key at all. The upper dial is the camera, the lower one the
 explorer's size, and each has a small button above it that returns it to normal. They run the only
 direction a vertical dial can run: up is more of whatever it is labelled with.</p>
+<p>The explorer's size runs from <strong>1 : 10,000</strong> — 0.18 mm tall, where a differentiable
+function is indistinguishable from its tangent plane — to <strong>100 : 1</strong>, where they are
+180 m tall and cross a hillside at a stride. Both dials count <em>decades</em> rather than metres,
+which is the only way six orders of magnitude fit on one slider: a linear dial would spend nine
+tenths of its travel inside the largest decade and leave the interesting end unreachable.</p>
 
 <h2>Looking around without a mouse</h2>
 <p>Hold <kbd>⌘</kbd>/<kbd>⊞</kbd> or <kbd>Alt</kbd> and the movement keys stop moving you and start
@@ -341,6 +346,23 @@ the surface goes back to the eight terrain bands — water, beach, deep vegetati
 vegetation, arid, volcanic rock, snow, cloud — which say the same thing in the language of a
 landscape. Combine either with <kbd>T</kbd> (look straight down) to turn the 3D scene into the
 flat map students already know.</p>
+<p><strong>The window follows the explorer</strong> — walk to an edge of the domain and the
+domain moves rather than stopping you. The plot is a window onto a function that has no edges, and
+a wall at <code>x = b</code> says something false about <code>f</code>. Reaching a side slides that
+axis along by <code>G</code> (or <code>H</code> for <code>y</code>) times its own width, in the
+direction you were walking:</p>
+<ul>
+  <li>east, <code>x = b</code>: <code>[a, b]</code> becomes <code>[a + G(b−a), b + G(b−a)]</code></li>
+  <li>west, <code>x = a</code>: <code>[a, b]</code> becomes <code>[a − G(b−a), b − G(b−a)]</code></li>
+  <li>north, <code>y = d</code>: <code>[c, d]</code> becomes <code>[c + H(d−c), d + H(d−c)]</code></li>
+  <li>south, <code>y = c</code>: <code>[c, d]</code> becomes <code>[c − H(d−c), d − H(d−c)]</code></li>
+</ul>
+<p>Walking into a corner moves both axes at once. The width never changes — this is a pan, not a
+zoom — so the scale of the plot, and with it every reading taken against the 1.80 m explorer,
+survives the move. <code>G</code> and <code>H</code> default to 0.2, which buys a fifth of a domain
+width of walking before the next move; raise them for longer strides between rebuilds. The feature
+is left off in the consumer problem, where the domain is not a window onto anything but the set of
+bundles that exist.</p>
 <p><strong>Coordinate grid on the surface</strong> <kbd>N</kbd> — draws the coordinate system
 <em>on</em> the surface, which is the mesh a textbook picture almost always has and which is not
 decoration: it is what lets you see what the coordinates are doing. What it draws depends on the
@@ -481,6 +503,13 @@ aircraft, with its lens pointing where the camera points.</p>
 the mouse, and it enlarges — those are the moments you are consulting it rather than glancing at
 it. The wires on the far side of the globe are drawn faintly, so it reads as a globe and not as a
 flat doily; when you are looking away from the reader you see the back of the figure's head.</p>
+<p>The flattening sends the three axes to
+<code>x → (1, 0)</code>, <code>z → (0, 1)</code> and <code>y → (sin 0.9, cos 0.9)</code>, so
+forward runs up and to the right at about 38° above the horizontal and backwards runs down and to
+the left. It is an oblique projection rather than an orthographic one — the six cardinal directions
+land on the unit circle but the diagonals run past it — so the cage is an ellipse and not a circle.
+That is a real consequence of drawing the depth axis at an angle without foreshortening it, and it
+is what keeps forward from collapsing into the frame.</p>
 
 <!-- =========================================================== PART 5 -->
 <h1 class="part"><span class="num">5</span>Writing your own functions</h1>

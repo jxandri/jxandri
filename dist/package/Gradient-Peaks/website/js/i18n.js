@@ -108,6 +108,10 @@ const STRINGS = {
     'dom.sx': 'x axis', 'dom.sy': 'y axis', 'dom.sz': 'z axis (steepness)',
     'dom.isotropic': 'Reset to equal axes',
     'dom.axesnote': 'All three at 1 is ordinary Cartesian space, where the unit sphere is round. Stretching an axis changes the picture only — every number reported stays the true value.',
+    'dom.follow': 'The window follows the explorer',
+    'dom.followg': 'step G (x)',
+    'dom.followh': 'step H (y)',
+    'dom.follownote': 'Reaching an edge slides that axis along by G (or H) times its own width, in the direction you were walking, and the terrain is rebuilt around the new window. The width never changes, so the scale — and every reading taken against the 1.80 m explorer — survives the move. It is left off in the consumer problem, where the domain is not a window but the set of bundles that exist.',
     'dom.rebuild': 'Rebuild terrain',
 
     'sec.feasible': 'Feasible set',
@@ -330,6 +334,10 @@ const STRINGS = {
     'dom.sx': 'eje x', 'dom.sy': 'eje y', 'dom.sz': 'eje z (inclinación)',
     'dom.isotropic': 'Volver a ejes iguales',
     'dom.axesnote': 'Los tres en 1 es el espacio cartesiano corriente, donde la esfera unitaria es redonda. Estirar un eje cambia solo la imagen: todos los números reportados siguen siendo los verdaderos.',
+    'dom.follow': 'La ventana sigue al explorador',
+    'dom.followg': 'paso G (x)',
+    'dom.followh': 'paso H (y)',
+    'dom.follownote': 'Al llegar a un borde, ese eje se desplaza G (u H) veces su propia anchura en la direcci\u00f3n en que iba caminando, y el terreno se reconstruye alrededor de la nueva ventana. La anchura no cambia, de modo que la escala —y con ella toda medida tomada contra el explorador de 1,80 m— sobrevive al desplazamiento. Queda desactivada en el problema del consumidor, donde el dominio no es una ventana sino el conjunto de cestas que existen.',
     'dom.rebuild': 'Reconstruir el terreno',
 
     'sec.feasible': 'Conjunto factible',

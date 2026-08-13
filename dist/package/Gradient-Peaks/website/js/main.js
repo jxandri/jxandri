@@ -18,7 +18,7 @@ import {
   Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE,
   BASE_FOV, FOV_MIN, FOV_MAX,
 } from './player.js';
-import { ParametricWalker, ImplicitWalker } from './walker.js';
+import { ParametricWalker, ImplicitWalker, standBasis } from './walker.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, disposeGrid,
@@ -134,6 +134,13 @@ const state = {
   curTangent: false,
   decor: true,
   water: true,
+
+  // The window follows the explorer: reaching an edge slides that axis along by
+  // this fraction of its own width, in the direction of travel.
+  follow: true,
+  followG: 0.2,
+  followH: 0.2,
+
   density: 1,
   shadows: false,
 
@@ -536,6 +543,7 @@ function applyOrientation() {
  * takes the facing and the returned frame keeps the heading for the camera.
  */
 const _hbasis = new THREE.Matrix4();
+const _cbasis = new THREE.Matrix4();
 function placeAltHiker() {
   if (!walker || !altHiker) return null;
   const p = walker.position(new THREE.Vector3());
@@ -560,18 +568,26 @@ function placeAltHiker() {
   };
   const face = flatten(fwd, side);            // the body
   const head = flatten(fr.fwd, side);         // the eyes
-  const sd = new THREE.Vector3().crossVectors(up, head).normalize();
 
-  _hbasis.makeBasis(
-    new THREE.Vector3().crossVectors(up, face).normalize(),
-    up,
-    face.clone().negate(),
-  );
+  // The explorer's own right hand — see standBasis for why the order matters.
+  const sd = new THREE.Vector3().crossVectors(head, up).normalize();
+
+  standBasis(up, face, _hbasis);
   altHiker.position.copy(p);
   altHiker.quaternion.setFromRotationMatrix(_hbasis);
   altHiker.scale.setScalar(state.zoom * altView.charScale);
   altHiker.visible = altView.mode !== MODE_FIRST;
   return { p, up, fwd: head, face, side: sd };
+}
+
+/**
+ * Keep the following camera above the explorer's feet and short of straight
+ * overhead — at exactly overhead its view is parallel to the world up and
+ * lookAt has nothing left to orient against.
+ */
+function clampCamHeight(h) {
+  const lim = (altView.camDist || 1) * 2.2;
+  return Math.max(-lim, Math.min(lim, h));
 }
 
 /** Put the drone where the whole alternate surface is in shot. */
@@ -587,12 +603,16 @@ function frameAlternate() {
   altCam.dist = dist;
   altCam.yaw = 0;
   altCam.pitch = -elev;
-  altView.camDist = dist * 0.85;
-  altView.camHeight = (b ? b.center.y : 0) + r * 0.25;
   // A torus has no metres. The explorer is sized against the surface instead —
   // about a fourteenth of its radius, which is roughly a person against a
   // small hill and keeps them visible without dwarfing the shape.
   altView.charScale = r / 14;
+  // The third-person camera's offset *from the explorer*, in their own body
+  // heights: far enough back to see the surface they are standing on, close
+  // enough that they are a figure rather than a speck.
+  const body = 1.8 * altView.charScale;
+  altView.camDist = body * 7;
+  altView.camHeight = body * 2.6;
 }
 
 function rebuild() {
@@ -1059,7 +1079,7 @@ document.addEventListener('mousemove', (e) => {
       altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * 0.0022));
     } else {
       altView.camYaw -= dx * 0.004;
-      altView.camHeight += dy * altView.camDist * 0.002;
+      altView.camHeight = clampCamHeight(altView.camHeight - dy * altView.camDist * 0.004);
     }
     return;
   }
@@ -1199,7 +1219,7 @@ function applyLookKeys(dt) {
       altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * a));
     } else {
       altView.camYaw -= dx * a;
-      altView.camHeight += dy * (altView.camDist || 1) * a * 0.6;
+      altView.camHeight = clampCamHeight(altView.camHeight - dy * (altView.camDist || 1) * a * 0.9);
     }
     return;
   }
@@ -1330,6 +1350,103 @@ function applyInputs() {
   withLoading(() => rebuild());
 }
 
+/* ------------------------------------------- walking off the edge of it */
+
+/**
+ * When the explorer reaches an edge of the domain, move the domain.
+ *
+ * The plot is a window onto a function that has no edges, and until now the
+ * window was fixed: walk far enough east and you stopped at a wall, which says
+ * something false about f. So each side, on being reached, slides its own axis
+ * along by a fraction of its own width in the direction of travel:
+ *
+ *     east  (x = b)  →  [a, b] becomes [a + G(b−a), b + G(b−a)]
+ *     west  (x = a)  →  [a, b] becomes [a − G(b−a), b − G(b−a)]
+ *     north (y = d)  →  [c, d] becomes [c + H(d−c), d + H(d−c)]
+ *     south (y = c)  →  [c, d] becomes [c − H(d−c), d − H(d−c)]
+ *
+ * The width is unchanged — this is a pan, not a zoom — so the scale of the plot,
+ * and with it every reading taken against the 1.80 m explorer, survives the
+ * move. Reaching a corner moves both axes at once, which is what walking
+ * south-east into (b, c) does.
+ *
+ * The specification wrote the east case out in full and left the other three to
+ * be read off it; taken literally the west and north formulas give b' < a',
+ * an inverted interval, so they are implemented as the translations the prose
+ * describes.
+ */
+const FOLLOW_COOLDOWN = 0.35;    // seconds; a rebuild is not free
+let followTimer = 0;
+
+function followEdges(dt) {
+  followTimer = Math.max(0, followTimer - dt);
+  if (!state.follow || followTimer > 0) return;
+  if (state.surfaceKind !== 'graph' || !field || !player) return;
+  // In the consumer problem the domain is not a window, it is the set of
+  // bundles a consumer could buy. Panning it into negative quantities would be
+  // panning into bundles that do not exist.
+  if (state.consumer) return;
+
+  const w = state.xmax - state.xmin, h = state.ymax - state.ymin;
+  if (!(w > 0 && h > 0)) return;
+
+  // A hair inside the edge, because the walker is clamped exactly onto it and
+  // floating-point equality is not something to bet a rebuild on.
+  const tx = w * 1e-6, ty = h * 1e-6;
+  let dx = 0, dy = 0;
+  if (player.x >= state.xmax - tx) dx = 1;
+  else if (player.x <= state.xmin + tx) dx = -1;
+  if (player.y >= state.ymax - ty) dy = 1;
+  else if (player.y <= state.ymin + ty) dy = -1;
+  if (!dx && !dy) return;
+
+  followTimer = FOLLOW_COOLDOWN;
+  shiftDomain(dx, dy);
+}
+
+/** Slide the window, keeping the explorer exactly where they are standing. */
+function shiftDomain(dx, dy) {
+  const w = state.xmax - state.xmin, h = state.ymax - state.ymin;
+  const before = {
+    xmin: state.xmin, xmax: state.xmax, ymin: state.ymin, ymax: state.ymax,
+  };
+  const sx = dx * state.followG * w, sy = dy * state.followH * h;
+  state.xmin += sx; state.xmax += sx;
+  state.ymin += sy; state.ymax += sy;
+
+  // The explorer does not move — the window does. Their math coordinates are
+  // therefore unchanged, and are restored over the reset that rebuild does.
+  const keep = {
+    x: player.x, y: player.y, yaw: player.yaw,
+    pitch: player.pitch, facing: player.facing,
+  };
+
+  if (!rebuild()) {
+    // f is undefined on the whole of the new window. Put it back and stop; the
+    // wall is real this time.
+    Object.assign(state, before);
+    rebuild();
+    Object.assign(player, keep);
+    return false;
+  }
+
+  Object.assign(player, keep);
+  // Everything in the world just moved by the shift, so the smoothed camera
+  // must be told to snap rather than sail across the terrain to catch up.
+  player._camReady = false;
+  syncDomainInputs();
+  return true;
+}
+
+/** Write the domain back into the panel, so it never lies about the window. */
+function syncDomainInputs() {
+  const round = (v) => (Math.abs(v) < 1e-9 ? 0 : parseFloat(v.toPrecision(6)));
+  $('in-xmin').value = round(state.xmin);
+  $('in-xmax').value = round(state.xmax);
+  $('in-ymin').value = round(state.ymin);
+  $('in-ymax').value = round(state.ymax);
+}
+
 /** Run a heavy rebuild with the spinner up, so the UI never looks frozen. */
 function withLoading(work) {
   const el = $('loading');
@@ -1434,6 +1551,17 @@ function wireUI() {
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
+
+  bindCheck('t-follow', 'follow', () => { $('grp-follow').hidden = !state.follow; });
+  const followStep = (id, key) => $(id).addEventListener('change', (e) => {
+    const v = parseFloat(e.target.value);
+    // Zero would never move the window and one would jump a whole width, so
+    // the useful range is the open interval between them.
+    state[key] = isFinite(v) ? Math.max(0.05, Math.min(0.95, v)) : 0.2;
+    e.target.value = state[key];
+  });
+  followStep('in-followg', 'followG');
+  followStep('in-followh', 'followH');
 
   if ($('t-compass')) {
     $('t-compass').addEventListener('change', (e) => {
@@ -1690,7 +1818,12 @@ function ensureDisc() {
 }
 
 const ZOOM_MIN = 1e-4;   // explorer 0.18 mm tall
-const ZOOM_MAX = 10;     // explorer 18 m tall
+const ZOOM_MAX = 100;    // explorer 180 m tall — a whole hillside at a stride
+
+// Both size dials are log10 of the explorer's own height, which is what makes
+// the six decades between a fifth of a millimetre and a hundred and eighty
+// metres fit on one slider at all: a linear dial would spend nine tenths of its
+// travel in the top decade and leave the interesting end unreachable.
 
 // How far in and out the camera itself can be driven. Twenty times closer is
 // enough to read the arrowheads; a twentieth is enough to lose the whole
@@ -1716,9 +1849,15 @@ function updateZoomLabels() {
       : `${z >= 10 ? Math.round(z) : z.toPrecision(2)} : 1`;
   $('lbl-zoom').textContent = ratio;
   if ($('lbl-charscale')) $('lbl-charscale').textContent = ratio;
+  // A height in metres, written the way a person would write it. toPrecision
+  // alone turns 180 into "1.8e+2", which is not a sentence about a hiker.
+  const m = 1.8 * z;
+  const h = m >= 100 ? Math.round(m).toLocaleString()
+    : m >= 1 ? m.toPrecision(2)
+      : m >= 0.01 ? m.toFixed(3) : m.toPrecision(2);
   $('r-zoom').textContent = Math.abs(decades) < 0.005
     ? t('hud.scale11')
-    : t('hud.tall', { h: (1.8 * z).toPrecision(2) });
+    : t('hud.tall', { h });
   updateRuler();
 }
 
@@ -1768,9 +1907,9 @@ function updateRuler() {
   const el = $('ruler');
   el.innerHTML = '';
   const decades = -Math.log10(state.zoom);
-  for (let i = -1; i <= 4; i++) {
+  for (let i = -2; i <= 4; i++) {
     const s = document.createElement('span');
-    s.textContent = i === 0 ? '1.8 m' : i < 0 ? '×10' : `10^-${i}`;
+    s.textContent = i === 0 ? '1.8 m' : i < 0 ? `×${Math.pow(10, -i)}` : `10^-${i}`;
     // The dial is continuous, so highlight the decade it is nearest to.
     if (Math.abs(decades - i) < 0.5) s.className = 'on';
     el.appendChild(s);
@@ -2040,26 +2179,39 @@ function animate() {
         // Up is the surface normal, so the horizon tilts with the ground —
         // which on a sphere is exactly right and on a Möbius strip is the
         // whole point.
+        // The same rigid basis the body is built on, aimed along the heading
+        // rather than along the direction of travel — the eyes and the feet do
+        // not have to agree.
         const q = new THREE.Quaternion().setFromRotationMatrix(
-          new THREE.Matrix4().makeBasis(stance.side, stance.up, stance.fwd.clone().negate()),
+          standBasis(stance.up, stance.fwd, _cbasis),
         );
         q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), altView.pitch));
         camera.position.copy(stance.p).addScaledVector(stance.up, eye);
         camera.quaternion.copy(q);
       } else {
-        // Third person from a camera that holds a fixed height and circles the
-        // surface. Static in the sense that matters: it never rolls with the
-        // explorer, so their tumbling is visible as tumbling.
-        const d = (altView.camDist || (altCam.dist * 0.55)) / state.camZoom;
+        // Third person from a camera that never rolls: its up is the world's,
+        // so an explorer going round the underside of a torus is seen to go
+        // upside down instead of the picture quietly turning with them. That
+        // was the point of calling it static.
+        //
+        // It follows at a fixed offset from the explorer rather than orbiting
+        // the origin, though, because orbiting the origin means zooming in
+        // walks the camera towards the centre of the surface — and the centre
+        // of a torus is inside the torus. You ended up looking at the far wall
+        // in the dark with the explorer nowhere in frame.
+        const d = (altView.camDist || (altCam.dist * 0.35)) / state.camZoom;
+        const h = (altView.camHeight || 0) / state.camZoom;
         camera.position.set(
-          Math.sin(altView.camYaw) * d, altView.camHeight, Math.cos(altView.camYaw) * d,
+          stance.p.x + Math.sin(altView.camYaw) * d,
+          stance.p.y + h,
+          stance.p.z + Math.cos(altView.camYaw) * d,
         );
         camera.up.set(0, 1, 0);
         camera.lookAt(stance.p);
       }
       camera.fov = fovFor(altView.mode === MODE_FIRST);
       camera.near = Math.max(1e-4, 0.02 * state.zoom * altView.charScale);
-      camera.far = Math.max(altCam.dist, altView.camDist) * 20 + state.worldSize * 8;
+      camera.far = altCam.dist * 20 + state.worldSize * 8;
     }
 
     camera.updateProjectionMatrix();
@@ -2083,6 +2235,7 @@ function animate() {
 
   applyLookKeys(dt);
   player.update(dt, readInput());
+  followEdges(dt);
   player.updateCamera(camera, dt);
 
   if (sky) sky.position.copy(camera.position);

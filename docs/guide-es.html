@@ -248,6 +248,12 @@ la que una función diferenciable es indistinguible de su plano tangente.</p>
 una tableta no tiene rueda ni tecla modificadora. El dial de arriba es la cámara y el de abajo el
 tamaño del explorador, y cada uno lleva encima un botoncito que lo devuelve a lo normal. Corren en
 la única dirección en que puede correr un dial vertical: arriba es más de aquello que rotula.</p>
+<p>El tamaño del explorador va de <strong>1 : 10.000</strong> —0,18 mm de altura, donde una función
+diferenciable es indistinguible de su plano tangente— hasta <strong>100 : 1</strong>, donde mide
+180 m y cruza una ladera de una zancada. Ambos diales cuentan <em>décadas</em> y no metros, que es
+la única manera de que seis órdenes de magnitud quepan en un solo deslizador: uno lineal gastaría
+nueve décimas partes de su recorrido dentro de la década mayor y dejaría inalcanzable el extremo
+interesante.</p>
 
 <h2>Mirar alrededor sin ratón</h2>
 <p>Mantenga <kbd>⌘</kbd>/<kbd>⊞</kbd> o <kbd>Alt</kbd> y las teclas de movimiento dejan de moverle
@@ -347,6 +353,24 @@ curvas concuerdan. Apáguelo y la superficie vuelve a las ocho bandas de terreno
 vegetación profunda, vegetación más clara, árido, roca volcánica, nieve, nube—, que dicen lo mismo
 en el idioma de un paisaje. Combine cualquiera de las dos con <kbd>T</kbd> (mirar desde arriba) y
 la escena 3D se convierte en el mapa plano que los estudiantes ya conocen.</p>
+<p><strong>La ventana sigue al explorador</strong> — camine hasta un borde del dominio y el
+dominio se mueve en vez de detenerle. La gráfica es una ventana sobre una función que no tiene
+bordes, y un muro en <code>x = b</code> dice algo falso sobre <code>f</code>. Al alcanzar un lado,
+ese eje se desplaza <code>G</code> (u <code>H</code> para <code>y</code>) veces su propia anchura,
+en la dirección en que iba caminando:</p>
+<ul>
+  <li>este, <code>x = b</code>: <code>[a, b]</code> pasa a <code>[a + G(b−a), b + G(b−a)]</code></li>
+  <li>oeste, <code>x = a</code>: <code>[a, b]</code> pasa a <code>[a − G(b−a), b − G(b−a)]</code></li>
+  <li>norte, <code>y = d</code>: <code>[c, d]</code> pasa a <code>[c + H(d−c), d + H(d−c)]</code></li>
+  <li>sur, <code>y = c</code>: <code>[c, d]</code> pasa a <code>[c − H(d−c), d − H(d−c)]</code></li>
+</ul>
+<p>Caminar hacia una esquina mueve ambos ejes a la vez. La anchura nunca cambia —esto es un
+desplazamiento, no un zoom—, de modo que la escala de la gráfica, y con ella toda medida tomada
+contra el explorador de 1,80 m, sobrevive al movimiento. <code>G</code> y <code>H</code> valen 0,2
+por defecto, lo que da un quinto de la anchura del dominio de caminata antes del siguiente
+desplazamiento; súbalos para andar más entre reconstrucciones. Queda desactivado en el problema del
+consumidor, donde el dominio no es una ventana sobre nada sino el conjunto de cestas que
+existen.</p>
 <p><strong>Retícula de coordenadas sobre la superficie</strong> <kbd>N</kbd> — dibuja el sistema
 de coordenadas <em>sobre</em> la superficie. Es la malla que casi siempre aparece en la figura de
 un libro de texto, y no es un adorno: es lo que permite ver qué están haciendo las coordenadas. Lo
@@ -496,6 +520,13 @@ pasa a ser la aeronave, con su objetivo apuntando adonde apunta la cámara.</p>
 el ratón, y se agranda: esos son los momentos en que uno lo consulta en vez de mirarlo de reojo.
 Los hilos de la cara oculta del globo se dibujan tenues, para que se lea como un globo y no como un
 tapete plano; cuando la mirada se aleja del lector se ve la nuca de la figura.</p>
+<p>El aplanamiento envía los tres ejes a <code>x → (1, 0)</code>, <code>z → (0, 1)</code> e
+<code>y → (sen 0,9, cos 0,9)</code>, de modo que «adelante» sube hacia la derecha unos 38° sobre la
+horizontal y «atrás» baja hacia la izquierda. Es una proyección oblicua y no ortográfica —las seis
+direcciones cardinales caen sobre la circunferencia unidad, pero las diagonales la rebasan—, así
+que la jaula es una elipse y no un círculo. Eso es una consecuencia real de dibujar el eje de
+profundidad en ángulo sin escorzarlo, y es lo que impide que «adelante» se derrumbe dentro del
+marco.</p>
 
 <!-- =========================================================== PARTE 5 -->
 <h1 class="part"><span class="num">5</span>Cómo escribir sus propias funciones</h1>
