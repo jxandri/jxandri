@@ -28,16 +28,19 @@
  *
  * The grid is a ruler
  * -------------------
- * Every square is one explorer tall — twice that, in arc length, on a surface
- * that is not a graph. That turns the mesh from decoration into a measuring
+ * Every square is **two explorers on a side**, measured along the surface, in
+ * all three regimes. That turns the mesh from decoration into a measuring
  * instrument: how many squares across is this hill, how far apart are these two
- * contours, how big is the neighbourhood the derivative is being read from. It
- * also means the grid changes when the explorer's size does, which is the whole
- * point of the zoom-in ruler — shrink to a tenth and the squares shrink with
- * you, and the surface you thought was curved turns out to be a plane.
+ * contours, how big is the neighbourhood the derivative is being read from. The
+ * same number everywhere is what makes it one ruler rather than three that
+ * happen to look alike.
  *
- * Where one square per explorer would need more lines than a screen can show —
- * a 0.18 mm explorer on a 220 m plot — the spacing goes up in whole multiples,
+ * It also means the grid changes when the explorer's size does, which is the
+ * whole point of the zoom-in ruler — shrink to a tenth and the squares shrink
+ * with you, and the surface you thought was curved turns out to be a plane.
+ *
+ * Where two explorers to a square would need more lines than a screen can show
+ * — a 0.18 mm explorer on a 220 m plot — the spacing goes up in whole multiples,
  * 1, 2, 5, 10, and the multiple is reported. A ruler with unreadable divisions
  * is not more accurate, it is just unreadable.
  *
@@ -138,11 +141,12 @@ export function niceStep(span, target) {
 const MAX_LINES = 150;
 
 /**
- * How many explorer-heights a square should be.
+ * By how much the asked-for square has to be widened to stay drawable.
  *
- * One, unless one would need more lines than MAX_LINES across the widest span,
- * in which case the next whole multiple up from 1, 2, 5, 10, 20, … that fits.
- * Returned rather than applied, so the caller can say so on screen.
+ * One — the size asked for — unless that would need more lines than MAX_LINES
+ * across the widest span, in which case the next whole multiple up from
+ * 1, 2, 5, 10, 20, … that fits. Returned rather than applied, so the caller can
+ * say so on screen.
  */
 export function gridMultiple(unit, span) {
   if (!(unit > 0) || !(span > 0)) return 1;
@@ -168,11 +172,11 @@ export function gridMultiple(unit, span) {
 export function buildGraphGrid(field, opts = {}) {
   const samples = opts.samples || 220;
 
-  // The square's side is a length in world metres — the explorer's height —
+  // The square's side is a length in world metres — two explorer heights —
   // so it becomes a step in x and a step in y through the plot's own scale.
   // With unequal axis scales those two steps differ in math units and agree in
   // metres, which is the way round that makes the squares square.
-  const unit = opts.unit || 1.8;
+  const unit = opts.unit || 3.6;         // two explorers, at 1:1
   const worldSpanX = (field.xmax - field.xmin) * field.S * field.sx;
   const worldSpanY = (field.ymax - field.ymin) * field.S * field.sy;
   const mult = gridMultiple(unit, Math.max(worldSpanX, worldSpanY));

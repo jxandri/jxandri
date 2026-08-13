@@ -471,13 +471,13 @@ function refreshSurfaceGrid() {
 
   const ws = state.worldSize;
   try {
+    // One rule everywhere: a square is two explorers on a side, measured along
+    // the surface. The same number in all three regimes is what makes the grid
+    // a ruler rather than three different rulers that happen to look alike.
     if (state.surfaceKind === 'graph') {
-      // One square per explorer. Their height in world metres is the ruler.
-      if (field) surfGrid = buildGraphGrid(field, { unit: 1.8 * state.zoom });
+      if (field) surfGrid = buildGraphGrid(field, { unit: GRID_HEIGHTS * 1.8 * state.zoom });
     } else {
-      // Two, on a surface with no metres of its own — a person against a torus
-      // is small enough that single squares would be a haze.
-      const unit = 2 * 1.8 * state.zoom * (altView.charScale || 1);
+      const unit = GRID_HEIGHTS * 1.8 * state.zoom * (altView.charScale || 1);
       if (state.geoGrid && walker) {
         surfGrid = buildGeodesicGrid(walker, {
           unit,
@@ -517,6 +517,17 @@ function refreshSurfaceGrid() {
   updateGridUI();
 }
 
+/**
+ * How many explorer-heights a grid square is on a side.
+ *
+ * Two rather than one: a single height is a stride, and a mesh at one stride is
+ * a haze on anything but a close view. Two is still a length the eye can carry
+ * — look at the explorer, look at a square — and it is the same two on a graph,
+ * on a parametric patch and on an implicit surface, so a square means the same
+ * thing whichever is on screen.
+ */
+const GRID_HEIGHTS = 2;
+
 /** The radius of whatever non-graph surface is on screen. */
 function altSurfaceRadius() {
   const b = altSurface && altSurface.geometry.boundingSphere;
@@ -535,10 +546,12 @@ function updateGridUI() {
   if (!el) return;
   if (!state.surfGrid || !surfGrid) { el.hidden = true; return; }
   const { side, multiple, geodesic } = surfGrid.userData;
-  const heights = (side || 0) / (1.8 * state.zoom * (state.surfaceKind === 'graph' ? 1 : (altView.charScale || 1)));
+  const one = 1.8 * state.zoom * (state.surfaceKind === 'graph' ? 1 : (altView.charScale || 1));
+  const heights = (side || 0) / one;
   el.hidden = false;
   el.textContent = t(geodesic ? 'map.gridgeo' : 'map.gridside', {
-    n: heights < 1.05 ? '1' : heights.toPrecision(2),
+    n: Math.abs(heights - Math.round(heights)) < 0.05
+      ? String(Math.round(heights)) : heights.toPrecision(2),
     m: multiple > 1 ? ` (×${multiple})` : '',
   });
 }
