@@ -277,7 +277,10 @@
       </label>
       <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
       <label class="check"><input id="t-surfgrid" type="checkbox"><span><span data-i18n="map.grid">Coordinate grid on the surface</span> <kbd>N</kbd></span></label>
-      <p class="note" id="note-grid" data-i18n="map.gridnote">On a graph this is the grid of the (x, y) plane lifted onto the surface; on a parametric surface it is the parameter lines themselves; on an implicit one it is where the surface cuts the coordinate planes. It is drawn on both sides, so it stays readable from inside.</p>
+      <label class="check" id="fld-geogrid" hidden><input id="t-geogrid" type="checkbox"><span data-i18n="map.geogrid">Build it from geodesics instead</span></label>
+      <p class="note" id="grid-scale" hidden></p>
+      <p class="note" id="note-grid" data-i18n="map.gridnote">Every square is one explorer tall — twice that, in arc length, on a surface that is not a graph — so the mesh is a ruler and not decoration. On a graph it is the grid of the (x, y) plane lifted onto the surface; on a parametric surface, its parameter lines; on an implicit one, where the surface cuts the coordinate planes. It is drawn on both sides, so it stays readable from inside.</p>
+      <p class="note" data-i18n="map.geonote">The geodesic grid is built only from straightest paths and arc length, so its squares really are that size wherever they sit — which the other two cannot promise, since their spacing comes from how the surface was written down rather than from the surface. Where the squares stop meeting at right angles, that is the curvature.</p>
       <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
       <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
       <label class="range">
