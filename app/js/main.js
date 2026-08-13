@@ -14,7 +14,10 @@ import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
   maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo, traceLevelCurve,
 } from './analysis.js';
-import { Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
+import {
+  Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE,
+  BASE_FOV, FOV_MIN, FOV_MAX,
+} from './player.js';
 import { ParametricWalker, ImplicitWalker } from './walker.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
 import { Projection } from './projection.js';
@@ -137,7 +140,8 @@ const state = {
   dirAngle: 0,
   tangent: false,
 
-  zoom: 1,             // continuous, and never above 1
+  zoom: 1,             // the explorer's own size, in units of 1.8 m
+  camZoom: 1,          // how close the camera is, which is a separate question
   showOpt: false,
 
   charStyle: 'explorer',
@@ -795,14 +799,32 @@ const keys = Object.create(null);
 let pointerLocked = false;
 let rightDown = false;
 
+// True while ⌘/⊞ or Alt/Option is down. Held, the movement keys stop being
+// movement keys and become a look control — the keyboard equivalent of the
+// mouse, for anyone on a tablet keyboard or without a trackpad they can aim
+// with. The state is tracked rather than read per-event because looking is
+// continuous: it has to keep happening for as long as the key is held.
+let lookMod = false;
+
 const isTypingTarget = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
 
+const LOOK_CODES = ['KeyW', 'KeyA', 'KeyS', 'KeyD',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
 window.addEventListener('keydown', (e) => {
+  lookMod = SIZE_MOD(e);
   if (isTypingTarget(e.target)) {
     if (e.key === 'Enter') { e.target.blur(); applyInputs(); }
     return;
   }
   keys[e.code] = true;
+
+  // Alt+letter is a dead key on a Mac and a menu accelerator on Windows, so
+  // e.key is not the letter that was pressed. Shortcuts only fire unmodified.
+  if (e.ctrlKey || e.metaKey || e.altKey) {
+    if (LOOK_CODES.includes(e.code)) e.preventDefault();
+    return;
+  }
 
   const k = e.key.toLowerCase();
   switch (k) {
@@ -827,11 +849,17 @@ window.addEventListener('keydown', (e) => {
     default: break;
   }
   if (e.code === 'Tab') { e.preventDefault(); togglePanel(); }
-  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) e.preventDefault();
+  if (LOOK_CODES.includes(e.code) || e.code === 'Space') e.preventDefault();
 });
 
-window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+  lookMod = SIZE_MOD(e);
+});
+window.addEventListener('blur', () => {
+  for (const k in keys) keys[k] = false;
+  lookMod = false;
+});
 
 function toggleCheckbox(id) {
   const el = $(id);
@@ -851,38 +879,32 @@ window.addEventListener('mouseup', (e) => { if (e.button === 2) rightDown = fals
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 /**
- * The wheel drives the scale, the way it drives the zoom of a map.
+ * The wheel moves the camera; the wheel with a modifier held resizes the
+ * explorer. These are two different questions and used to share one control.
+ *
+ * ⌘ on a Mac and ⊞ on Windows both arrive as `metaKey`, so the key the user
+ * reaches for is the key that works. Alt/Option is accepted as well, because
+ * Windows swallows some ⊞ combinations before the browser ever sees them, and
+ * a control with no fallback on one of the two platforms is not a control.
  *
  * A trackpad pinch arrives as a wheel event with ctrlKey set and a much finer
  * delta, and the three deltaMode units (pixels, lines, pages) differ by about
  * an order of magnitude each, so normalise before using any of it.
  */
+const SIZE_MOD = (e) => e.metaKey || e.altKey;
+
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   const steps = (e.deltaY * unit) / 500;
 
-  // The wheel zooms whichever camera is on screen. Orbiting a torus, or
-  // watching a walker on one from a fixed camera, the thing that needs to move
-  // is the camera; only in first person — where the camera is the explorer's
-  // own eyes — does scale mean the explorer's size, as it does on a graph.
-  if (state.surfaceKind !== 'graph') {
-    const k = Math.exp(steps * 0.6);
-    if (walker && altView.mode === MODE_THIRD) {
-      altView.camDist = Math.max(state.worldSize * 0.02,
-        Math.min(state.worldSize * 20, altView.camDist * k));
-    } else if (altView.mode === MODE_DRONE) {
-      altCam.dist = Math.max(state.worldSize * 0.02,
-        Math.min(state.worldSize * 20, altCam.dist * k));
-    } else {
-      applyZoom(state.zoom * Math.pow(10, -steps * (e.ctrlKey ? 1.6 : 1)));
-    }
-    return;
-  }
-  // Wheel down (positive deltaY) shrinks the explorer, which magnifies the
-  // surface — the same direction as zooming out of a map does not apply here,
-  // so follow the pinch: apart means bigger explorer, closer look at nothing.
-  applyZoom(state.zoom * Math.pow(10, -steps * (e.ctrlKey ? 1.6 : 1)));
+  // Modifier held: the explorer grows or shrinks, and the camera stays put.
+  if (SIZE_MOD(e)) { applyZoom(state.zoom * Math.pow(10, -steps)); return; }
+
+  // Otherwise the camera comes closer or pulls back, and the explorer is
+  // exactly the size they were. Wheel up (negative deltaY) moves in, which is
+  // what every map in the world does.
+  applyCamZoom(state.camZoom * Math.exp(-steps * (e.ctrlKey ? 1.6 : 0.6)));
 }, { passive: false });
 
 $('click-catch').addEventListener('click', () => canvas.requestPointerLock());
@@ -996,6 +1018,11 @@ canvas.addEventListener('touchend', endTouch, { passive: true });
 canvas.addEventListener('touchcancel', endTouch, { passive: true });
 
 function readInput() {
+  // Held modifier: the same keys are aiming, not walking. Returning zero here
+  // rather than filtering downstream keeps every caller — the heightfield
+  // explorer, the walker, the orbit camera — from having to know about it.
+  if (lookMod) return { forward: 0, right: 0, up: 0, sprint: false };
+
   let forward = 0, right = 0, up = 0;
   if (keys.KeyW || keys.ArrowUp) forward += 1;
   if (keys.KeyS || keys.ArrowDown) forward -= 1;
@@ -1013,6 +1040,47 @@ function readInput() {
     up: Math.max(-1, Math.min(1, up)),
     sprint: !!(keys.ShiftLeft || keys.ShiftRight),
   };
+}
+
+/**
+ * Aiming from the keyboard, in radians per second.
+ *
+ * The same gesture the mouse makes, at a rate that is comfortable to hold: a
+ * little under a quarter turn a second, so a full look around takes about four
+ * seconds and a small correction is a tap.
+ */
+const LOOK_RATE = 1.5;
+
+function applyLookKeys(dt) {
+  if (!lookMod) return;
+  let dx = 0, dy = 0;
+  if (keys.KeyA || keys.ArrowLeft) dx -= 1;
+  if (keys.KeyD || keys.ArrowRight) dx += 1;
+  if (keys.KeyW || keys.ArrowUp) dy -= 1;
+  if (keys.KeyS || keys.ArrowDown) dy += 1;
+  if (!dx && !dy) return;
+
+  const a = LOOK_RATE * dt;
+  if (state.surfaceKind !== 'graph') {
+    if (altView.mode === MODE_DRONE || !walker) {
+      altCam.yaw -= dx * a;
+      altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch - dy * a));
+    } else if (altView.mode === MODE_FIRST) {
+      // On a surface, "turn" is a rotation of the heading inside the tangent
+      // plane; pitch is clamped short of vertical so the view never rolls under
+      // the ground it is standing on.
+      walker.turn(-dx * a);
+      altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * a));
+    } else {
+      altView.camYaw -= dx * a;
+      altView.camHeight += dy * (altView.camDist || 1) * a * 0.6;
+    }
+    return;
+  }
+  // player.look takes a sensitivity, so one unit of key press times the
+  // per-frame angle is exactly the rotation wanted. Its own pitch clamp keeps
+  // the camera the right way up.
+  if (player) player.look(dx, dy, a);
 }
 
 /* ------------------------------------------------------------ UI wiring */
@@ -1293,6 +1361,21 @@ function wireUI() {
     applyZoom(Math.pow(10, -parseFloat(e.target.value)));
   });
 
+  // The two dials on the right edge. A tablet has no wheel and no modifier
+  // key, so everything the wheel does has to be reachable by dragging as well.
+  if ($('in-camzoom')) {
+    $('in-camzoom').addEventListener('input', (e) => {
+      applyCamZoom(Math.pow(10, parseFloat(e.target.value)));
+    });
+    $('btn-camzoom-reset').addEventListener('click', () => applyCamZoom(1));
+  }
+  if ($('in-charscale')) {
+    $('in-charscale').addEventListener('input', (e) => {
+      applyZoom(Math.pow(10, parseFloat(e.target.value)));
+    });
+    $('btn-charscale-reset').addEventListener('click', () => applyZoom(1));
+  }
+
   bindCheck('t-opt', 'showOpt', () => withLoading(refreshOptimum));
 
   $('btn-goto').addEventListener('click', () => {
@@ -1475,16 +1558,30 @@ function ensureDisc() {
 const ZOOM_MIN = 1e-4;   // explorer 0.18 mm tall
 const ZOOM_MAX = 10;     // explorer 18 m tall
 
+// How far in and out the camera itself can be driven. Twenty times closer is
+// enough to read the arrowheads; a twentieth is enough to lose the whole
+// surface in the middle of the screen, which is as far out as is any use.
+//
+// The bounds are exactly ±1.3 decades because the dial's step is 0.01: a range
+// input snaps to min + k·step, so a limit of ±1.301 would put 1× — the one
+// value the control has to be able to return to — a hundredth of a decade off
+// the grid, and the neutral position would be unreachable.
+const CAM_DECADES = 1.3;
+const CAM_MIN = Math.pow(10, -CAM_DECADES);
+const CAM_MAX = Math.pow(10, CAM_DECADES);
+
 function updateZoomLabels() {
   const z = state.zoom;
   const decades = -Math.log10(z);
   // Below 1:1 the explorer shrinks and the ratio reads 1 : n; above it they
   // grow and it reads n : 1, the way a map scale does in either direction.
-  $('lbl-zoom').textContent = Math.abs(decades) < 0.005
+  const ratio = Math.abs(decades) < 0.005
     ? '1 : 1'
     : decades > 0
       ? `1 : ${Math.round(1 / z).toLocaleString()}`
       : `${z >= 10 ? Math.round(z) : z.toPrecision(2)} : 1`;
+  $('lbl-zoom').textContent = ratio;
+  if ($('lbl-charscale')) $('lbl-charscale').textContent = ratio;
   $('r-zoom').textContent = Math.abs(decades) < 0.005
     ? t('hud.scale11')
     : t('hud.tall', { h: (1.8 * z).toPrecision(2) });
@@ -1495,9 +1592,42 @@ function updateZoomLabels() {
 function applyZoom(z) {
   state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
-  const dial = $('in-zoom');
-  dial.value = String(-Math.log10(state.zoom));
+  $('in-zoom').value = String(-Math.log10(state.zoom));
+  // The panel dial and the dial on the right edge are two handles on one
+  // number, so whichever was moved, both have to end up showing it. They run
+  // in opposite directions on purpose: the panel dial is a zoom-in ruler and
+  // counts decades of magnification downwards, while a vertical dial has to
+  // obey the only thing a vertical dial can mean — up is more of the thing it
+  // is labelled with, and it is labelled with the explorer's size.
+  const side = $('in-charscale');
+  if (side) side.value = String(Math.log10(state.zoom));
   updateZoomLabels();
+}
+
+/**
+ * The one place the camera's magnification is set.
+ *
+ * Nothing about the mathematics or the explorer changes here: this only moves
+ * the camera nearer, or — where there is nowhere nearer to be, because the
+ * camera is somebody's eyes — puts a longer lens on it.
+ */
+function applyCamZoom(v) {
+  state.camZoom = Math.max(CAM_MIN, Math.min(CAM_MAX, v));
+  if (player) player.camZoom = state.camZoom;
+  const dial = $('in-camzoom');
+  if (dial) dial.value = String(Math.log10(state.camZoom));
+  const lbl = $('lbl-camzoom');
+  if (lbl) {
+    const z = state.camZoom;
+    lbl.textContent = z >= 1 ? `${z < 10 ? z.toFixed(1) : Math.round(z)}×` : `1/${(1 / z).toFixed(1)}`;
+  }
+}
+
+/** The field of view to compose with, for the views main.js drives itself. */
+function fovFor(throughTheEyes) {
+  return throughTheEyes
+    ? Math.max(FOV_MIN, Math.min(FOV_MAX, BASE_FOV / state.camZoom))
+    : BASE_FOV;
 }
 
 function updateRuler() {
@@ -1733,6 +1863,7 @@ function animate() {
 
   if (state.surfaceKind !== 'graph') {
     const inp = readInput();
+    applyLookKeys(dt);
 
     if (altView.mode === MODE_DRONE || !walker) {
       if (altHiker) altHiker.visible = !!walker;
@@ -1740,10 +1871,11 @@ function animate() {
       altCam.yaw -= inp.right * dt * 1.2;
       altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch + inp.up * dt * 1.2));
       altCam.dist *= Math.exp(-inp.forward * dt * (inp.sprint ? 2.2 : 0.9));
-      const r = altCam.dist;
+      const r = altCam.dist / state.camZoom;
       const cp = Math.cos(altCam.pitch);
       camera.position.set(Math.sin(altCam.yaw) * cp * r, -Math.sin(altCam.pitch) * r, Math.cos(altCam.yaw) * cp * r);
       camera.lookAt(0, 0, 0);
+      camera.fov = fovFor(false);
       camera.near = Math.max(0.05, r * 1e-4);
       camera.far = r * 20;
     } else {
@@ -1773,13 +1905,14 @@ function animate() {
         // Third person from a camera that holds a fixed height and circles the
         // surface. Static in the sense that matters: it never rolls with the
         // explorer, so their tumbling is visible as tumbling.
-        const d = altView.camDist || (altCam.dist * 0.55);
+        const d = (altView.camDist || (altCam.dist * 0.55)) / state.camZoom;
         camera.position.set(
           Math.sin(altView.camYaw) * d, altView.camHeight, Math.cos(altView.camYaw) * d,
         );
         camera.up.set(0, 1, 0);
         camera.lookAt(stance.p);
       }
+      camera.fov = fovFor(altView.mode === MODE_FIRST);
       camera.near = Math.max(1e-4, 0.02 * state.zoom * altView.charScale);
       camera.far = Math.max(altCam.dist, altView.camDist) * 20 + state.worldSize * 8;
     }
@@ -1802,6 +1935,7 @@ function animate() {
   // and the arrows are never buried under their own feet.
   player.extraLift = state.disc && gizmo.lift ? gizmo.lift : surfaceDetail.topLift;
 
+  applyLookKeys(dt);
   player.update(dt, readInput());
   player.updateCamera(camera, dt);
 

@@ -184,6 +184,11 @@ const STRINGS = {
 
     'sec.help': 'Help',
     'help.move': 'Move', 'help.run': 'run', 'help.look': 'look', 'help.mouse': 'mouse',
+    'help.keylook': 'Look without the mouse',
+    'help.orcmd': 'or \u2318/\u229e',
+    'help.zoomcam': 'Camera zoom',
+    'help.zoomsize': "explorer\u2019s size",
+    'help.wheel': 'wheel',
     'help.updown': 'Drone up/down',
     'help.release': 'Release the mouse', 'help.hide': 'hide this panel',
     'help.syntax': 'Write functions with <code>+ − * / ^</code>, and <code>sin cos tan exp ln sqrt abs min max hypot gauss</code>. Implicit products work: <code>2x</code>, <code>x y</code>. Constraints combine with <code>&&</code>, <code>||</code>, and chained comparisons like <code>0&lt;=x&lt;=1</code>.',
@@ -195,6 +200,11 @@ const STRINGS = {
     'hud.uat': 'u at {deg}°',
     'hud.undefined': 'undefined',
     'hud.rmshelp': 'RMS — |∂f/∂x ÷ ∂f/∂y|, the absolute slope of the level curve through the point you are standing on.',
+
+    'dial.camhelp': 'Camera zoom — the mouse wheel, or a pinch on the trackpad. Moves the camera closer; the explorer stays exactly the size they were.',
+    'dial.camreset': 'Back to the standard camera distance',
+    'dial.sizehelp': "The explorer's size — hold ⌘ (⊞ on Windows) or Alt/Option and use the wheel. Shrinking them magnifies the surface, the same as the ruler dial in the panel.",
+    'dial.sizereset': 'Back to 1 : 1 — the explorer 1.8 m tall',
 
     'cc.click': 'Click to look around',
     'cc.esc': 'Esc releases the mouse',
@@ -392,6 +402,11 @@ const STRINGS = {
 
     'sec.help': 'Ayuda',
     'help.move': 'Moverse', 'help.run': 'correr', 'help.look': 'mirar', 'help.mouse': 'ratón',
+    'help.keylook': 'Mirar sin el rat\u00f3n',
+    'help.orcmd': 'o \u2318/\u229e',
+    'help.zoomcam': 'Zoom de la c\u00e1mara',
+    'help.zoomsize': 'tama\u00f1o del explorador',
+    'help.wheel': 'rueda',
     'help.updown': 'Dron sube/baja',
     'help.release': 'Soltar el ratón', 'help.hide': 'ocultar este panel',
     'help.syntax': 'Escriba funciones con <code>+ − * / ^</code> y <code>sin cos tan exp ln sqrt abs min max hypot gauss</code>. El producto implícito funciona: <code>2x</code>, <code>x y</code>. Las restricciones se combinan con <code>&&</code>, <code>||</code> y comparaciones encadenadas como <code>0&lt;=x&lt;=1</code>.',
@@ -403,6 +418,11 @@ const STRINGS = {
     'hud.uat': 'u a {deg}°',
     'hud.undefined': 'indefinida',
     'hud.rmshelp': 'RMS — |∂f/∂x ÷ ∂f/∂y|, el valor absoluto de la pendiente de la curva de nivel en el punto donde está parado.',
+
+    'dial.camhelp': 'Zoom de la cámara — la rueda del ratón, o un gesto de pellizco en el trackpad. Acerca la cámara; el explorador conserva exactamente su tamaño.',
+    'dial.camreset': 'Volver a la distancia normal de la cámara',
+    'dial.sizehelp': 'Tamaño del explorador — mantenga ⌘ (⊞ en Windows) o Alt/Option y use la rueda. Al encogerlo se amplía la superficie, igual que el dial de la regla en el panel.',
+    'dial.sizereset': 'Volver a 1 : 1 — el explorador de 1,8 m',
 
     'cc.click': 'Haga clic para mirar alrededor',
     'cc.esc': 'Esc suelta el ratón',

@@ -21,6 +21,15 @@ export const MODE_DRONE = 'drone';
 const BODY_HEIGHT = 1.80;   // metres at zoom 1
 const EYE_HEIGHT = 1.66;
 
+/**
+ * The field of view the scene is composed for. Camera zoom is a dolly wherever
+ * there is room to dolly — third person, chase — and a telephoto only where
+ * there is not, which is any view shot down the barrel of someone's eyes.
+ */
+export const BASE_FOV = 62;
+export const FOV_MIN = 6;
+export const FOV_MAX = 110;
+
 function box(w, h, d, color) {
   const g = new THREE.BoxGeometry(w, h, d);
   const m = new THREE.MeshLambertMaterial({ color });
@@ -325,6 +334,10 @@ export class Player {
     this.yaw = 0;       // radians, 0 looks toward −Z (math +y)
     this.pitch = -0.15;
     this.zoom = 1;      // 1, 0.1, 0.01, ... the "zoom-in ruler"
+    // Where the camera is, which is a different question from how big the
+    // explorer is. Moving one used to move the other; a student wanting a
+    // closer look had to shrink the person they were looking at.
+    this.camZoom = 1;
     this.frozen = false;
     this.walkPhase = 0;
     this.speedScale = 1;
@@ -695,7 +708,7 @@ export class Player {
         // Chase camera: behind and a little above the aircraft, so you can see
         // the drone, its beam and the ring it is casting all at once.
         const back = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
-        const d = Math.max(f.worldSize * 0.05, 6) * Math.max(1, f.worldSize / 200);
+        const d = Math.max(f.worldSize * 0.05, 6) * Math.max(1, f.worldSize / 200) / this.camZoom;
         this._camPos.copy(this.dronePos).addScaledVector(back, d);
         this._camPos.y += d * 0.22;
         if (!this._camReady) { this._smoothCam.copy(this._camPos); this._camReady = true; }
@@ -716,7 +729,7 @@ export class Player {
       camera.quaternion.copy(q);
     } else {
       // Over-the-shoulder third person: offset back, up, and slightly right.
-      const dist = this.thirdDistance * this.zoom;
+      const dist = (this.thirdDistance * this.zoom) / this.camZoom;
       const back = new THREE.Vector3(0, 0, 1).applyQuaternion(q).multiplyScalar(dist);
       const upOff = new THREE.Vector3(0, 1, 0).multiplyScalar(BODY_HEIGHT * 0.95 * this.zoom);
       const side = new THREE.Vector3(1, 0, 0).applyQuaternion(q).multiplyScalar(0.65 * this.zoom);
@@ -743,6 +756,15 @@ export class Player {
       camera.position.copy(this._smoothCam);
       camera.lookAt(this._camTarget);
     }
+
+    // Looking out of someone's eyes there is nowhere to dolly to, so zoom is a
+    // longer lens instead. Everywhere else the camera has already moved and the
+    // framing must not change twice over.
+    const throughTheEyes = this.mode === MODE_FIRST
+      || (this.mode === MODE_DRONE && this.droneView === MODE_FIRST);
+    camera.fov = throughTheEyes
+      ? Math.max(FOV_MIN, Math.min(FOV_MAX, BASE_FOV / this.camZoom))
+      : BASE_FOV;
 
     // The near plane has to track the zoom. At 10^-4 scale the third-person
     // camera sits 0.5 mm from the explorer, so a fixed 1 mm near plane would
