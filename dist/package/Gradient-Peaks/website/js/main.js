@@ -14,9 +14,16 @@ import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
   maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo, traceLevelCurve,
 } from './analysis.js';
-import { Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE } from './player.js';
+import {
+  Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE,
+  BASE_FOV, FOV_MIN, FOV_MAX,
+} from './player.js';
 import { ParametricWalker, ImplicitWalker } from './walker.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
+import {
+  buildGraphGrid, buildParametricGrid, buildImplicitGrid, disposeGrid,
+} from './gridlines.js';
+import { Compass, angles } from './compass.js';
 import { Projection } from './projection.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
@@ -121,6 +128,8 @@ const state = {
   contourStep: 0,      // 0 = choose a round interval automatically
   pathWidth: 1.4,      // world metres; wide enough to walk along
   heightColors: false,
+  surfGrid: false,     // the coordinate grid, drawn on the surface itself
+  compass: true,       // the direction indicator, top right
   curCurve: false,
   curTangent: false,
   decor: true,
@@ -137,7 +146,8 @@ const state = {
   dirAngle: 0,
   tangent: false,
 
-  zoom: 1,             // continuous, and never above 1
+  zoom: 1,             // the explorer's own size, in units of 1.8 m
+  camZoom: 1,          // how close the camera is, which is a separate question
   showOpt: false,
 
   charStyle: 'explorer',
@@ -172,6 +182,7 @@ let curveGizmo = null;
 let tangentLine = null;
 let optimum = null;
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
+let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
 let decorations = new Decorations();
 let player = null;
 
@@ -204,6 +215,19 @@ const altView = {
 const projection = $('minimap') ? new Projection($('minimap')) : null;
 const projState = { mode: 'ramp', opacity: 0.88, size: 1 };
 let topCam = null;
+
+/*
+ * The direction indicator, top right.
+ *
+ * It reads the live camera rather than any one of the three things that can be
+ * driving it — the explorer's head, the walker's heading, the aircraft's gimbal
+ * — because whichever of those is in charge, the camera is where the answer
+ * ends up. `_emphasis` counts down the seconds since the instrument was last
+ * being consulted rather than glanced at.
+ */
+const compass = $('compass') ? new Compass($('compass')) : null;
+const compassState = { emphasis: 0, freed: false };
+const _camDir = new THREE.Vector3();
 
 const world = new THREE.Group();
 scene.add(world);
@@ -415,8 +439,57 @@ function rebuildAlternate() {
   if (player) player.group.visible = false;
   ensureAltHiker();
   applyOrientation();
+  refreshSurfaceGrid();
   frameAlternate();
   return true;
+}
+
+/**
+ * Build — or tear down — the coordinate grid on whatever surface is on screen.
+ *
+ * Called on every rebuild and whenever the checkbox moves. The three kinds of
+ * surface have three different notions of "coordinate grid", so this is where
+ * the choice is made; gridlines.js knows how to draw each one.
+ *
+ * It is rebuilt rather than kept and hidden, because the lines are tied to the
+ * surface's own geometry: change the function, the domain, the axis scales or a
+ * named surface's parameters, and every vertex of the grid has moved.
+ */
+function refreshSurfaceGrid() {
+  if (surfGrid) { world.remove(surfGrid); disposeGrid(surfGrid); surfGrid = null; }
+  if (!state.surfGrid) return;
+
+  const ws = state.worldSize;
+  try {
+    if (state.surfaceKind === 'graph') {
+      if (field) surfGrid = buildGraphGrid(field);
+    } else if (state.surfaceKind === 'implicit') {
+      const span = Math.max(state.xmax - state.xmin, state.ymax - state.ymin,
+        state.zmax - state.zmin) || 1;
+      surfGrid = buildImplicitGrid(compile(state.implicitSrc, ['x', 'y', 'z']), {
+        sx: state.sx, sy: state.sy, sz: state.sz,
+        xmin: state.xmin, xmax: state.xmax,
+        ymin: state.ymin, ymax: state.ymax,
+        zmin: state.zmin, zmax: state.zmax,
+        scale: ws / span, radius: ws / 2,
+      });
+    } else {
+      surfGrid = buildParametricGrid({
+        X: compile(state.pxSrc, ['u', 'v']),
+        Y: compile(state.pySrc, ['u', 'v']),
+        Z: compile(state.pzSrc, ['u', 'v']),
+      }, {
+        sx: state.sx, sy: state.sy, sz: state.sz,
+        umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
+        scale: ws / 4, radius: ws / 3,
+      });
+    }
+  } catch (err) {
+    // A formula that will not compile has already been reported where it was
+    // typed; the grid simply has nothing to draw.
+    surfGrid = null;
+  }
+  if (surfGrid) world.add(surfGrid);
 }
 
 /**
@@ -448,18 +521,27 @@ function applyOrientation() {
 }
 
 /**
- * Stand the character on the surface, facing along the walker's heading.
+ * Stand the character on the surface, turned the way they last moved.
  *
  * The basis is (side, up, −forward) because the character models look down
  * their own −Z. `up` is normally the surface normal — which is what makes a
  * sphere feel like a planet — but can be pinned to a world axis instead, for
  * students who find a tumbling horizon harder to read than a fixed one.
+ *
+ * Two directions are in play and they are not the same. The heading is where
+ * the explorer is *looking*, which the mouse turns and the first-person camera
+ * follows; the facing is which way the body is *pointed*, and a body points the
+ * way it last travelled. Strafe left around a torus and you should watch
+ * someone walk left, not watch someone walk forwards sideways. So the body
+ * takes the facing and the returned frame keeps the heading for the camera.
  */
 const _hbasis = new THREE.Matrix4();
 function placeAltHiker() {
   if (!walker || !altHiker) return null;
   const p = walker.position(new THREE.Vector3());
-  const { n, fwd, side } = walker.frame();
+  const fr = walker.frame();
+  const { n, side } = fr;
+  const fwd = walker.facing ? walker.facing(fr) : fr.fwd;
 
   let up = n;
   if (state.upAxis !== 'normal') {
@@ -469,18 +551,27 @@ function placeAltHiker() {
     up = axis.multiplyScalar(walker.sign);
   }
 
-  // Re-orthogonalise: pinning "up" to an axis leaves the heading out of plane.
-  const f = fwd.clone().addScaledVector(up, -fwd.dot(up));
-  if (f.lengthSq() < 1e-12) f.copy(side);
-  f.normalize();
-  const sd = new THREE.Vector3().crossVectors(up, f).normalize();
+  // Re-orthogonalise: pinning "up" to an axis leaves both directions out of
+  // plane, and a character built on a skewed basis leans.
+  const flatten = (v, fallback) => {
+    const w = v.clone().addScaledVector(up, -v.dot(up));
+    if (w.lengthSq() < 1e-12) w.copy(fallback);
+    return w.normalize();
+  };
+  const face = flatten(fwd, side);            // the body
+  const head = flatten(fr.fwd, side);         // the eyes
+  const sd = new THREE.Vector3().crossVectors(up, head).normalize();
 
-  _hbasis.makeBasis(sd, up, f.clone().negate());
+  _hbasis.makeBasis(
+    new THREE.Vector3().crossVectors(up, face).normalize(),
+    up,
+    face.clone().negate(),
+  );
   altHiker.position.copy(p);
   altHiker.quaternion.setFromRotationMatrix(_hbasis);
   altHiker.scale.setScalar(state.zoom * altView.charScale);
   altHiker.visible = altView.mode !== MODE_FIRST;
-  return { p, up, fwd: f, side: sd };
+  return { p, up, fwd: head, face, side: sd };
 }
 
 /** Put the drone where the whole alternate surface is in shot. */
@@ -614,6 +705,7 @@ function rebuild() {
   applyPalette();
   applyIsolation();
   refreshContours();
+  refreshSurfaceGrid();
   refreshProjection();
   refreshOptimum();
   reportStats();
@@ -795,14 +887,32 @@ const keys = Object.create(null);
 let pointerLocked = false;
 let rightDown = false;
 
+// True while ⌘/⊞ or Alt/Option is down. Held, the movement keys stop being
+// movement keys and become a look control — the keyboard equivalent of the
+// mouse, for anyone on a tablet keyboard or without a trackpad they can aim
+// with. The state is tracked rather than read per-event because looking is
+// continuous: it has to keep happening for as long as the key is held.
+let lookMod = false;
+
 const isTypingTarget = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
 
+const LOOK_CODES = ['KeyW', 'KeyA', 'KeyS', 'KeyD',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
 window.addEventListener('keydown', (e) => {
+  lookMod = SIZE_MOD(e);
   if (isTypingTarget(e.target)) {
     if (e.key === 'Enter') { e.target.blur(); applyInputs(); }
     return;
   }
   keys[e.code] = true;
+
+  // Alt+letter is a dead key on a Mac and a menu accelerator on Windows, so
+  // e.key is not the letter that was pressed. Shortcuts only fire unmodified.
+  if (e.ctrlKey || e.metaKey || e.altKey) {
+    if (LOOK_CODES.includes(e.code)) e.preventDefault();
+    return;
+  }
 
   const k = e.key.toLowerCase();
   switch (k) {
@@ -813,6 +923,8 @@ window.addEventListener('keydown', (e) => {
     case 'r': player.resetToDomainCentre(); break;
     case 'c': toggleCheckbox('t-contours'); break;
     case 'm': toggleCheckbox('t-heightcol'); break;
+    case 'n': toggleCheckbox('t-surfgrid'); break;
+    case 'i': toggleCheckbox('t-compass'); break;
     case 'f': toggleCheckbox('t-feas'); break;
     case 'g': toggleCheckbox('t-isolate'); break;
     case 'h': toggleCheckbox('t-disc'); break;
@@ -827,11 +939,17 @@ window.addEventListener('keydown', (e) => {
     default: break;
   }
   if (e.code === 'Tab') { e.preventDefault(); togglePanel(); }
-  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) e.preventDefault();
+  if (LOOK_CODES.includes(e.code) || e.code === 'Space') e.preventDefault();
 });
 
-window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+  lookMod = SIZE_MOD(e);
+});
+window.addEventListener('blur', () => {
+  for (const k in keys) keys[k] = false;
+  lookMod = false;
+});
 
 function toggleCheckbox(id) {
   const el = $(id);
@@ -851,38 +969,32 @@ window.addEventListener('mouseup', (e) => { if (e.button === 2) rightDown = fals
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 /**
- * The wheel drives the scale, the way it drives the zoom of a map.
+ * The wheel moves the camera; the wheel with a modifier held resizes the
+ * explorer. These are two different questions and used to share one control.
+ *
+ * ⌘ on a Mac and ⊞ on Windows both arrive as `metaKey`, so the key the user
+ * reaches for is the key that works. Alt/Option is accepted as well, because
+ * Windows swallows some ⊞ combinations before the browser ever sees them, and
+ * a control with no fallback on one of the two platforms is not a control.
  *
  * A trackpad pinch arrives as a wheel event with ctrlKey set and a much finer
  * delta, and the three deltaMode units (pixels, lines, pages) differ by about
  * an order of magnitude each, so normalise before using any of it.
  */
+const SIZE_MOD = (e) => e.metaKey || e.altKey;
+
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   const steps = (e.deltaY * unit) / 500;
 
-  // The wheel zooms whichever camera is on screen. Orbiting a torus, or
-  // watching a walker on one from a fixed camera, the thing that needs to move
-  // is the camera; only in first person — where the camera is the explorer's
-  // own eyes — does scale mean the explorer's size, as it does on a graph.
-  if (state.surfaceKind !== 'graph') {
-    const k = Math.exp(steps * 0.6);
-    if (walker && altView.mode === MODE_THIRD) {
-      altView.camDist = Math.max(state.worldSize * 0.02,
-        Math.min(state.worldSize * 20, altView.camDist * k));
-    } else if (altView.mode === MODE_DRONE) {
-      altCam.dist = Math.max(state.worldSize * 0.02,
-        Math.min(state.worldSize * 20, altCam.dist * k));
-    } else {
-      applyZoom(state.zoom * Math.pow(10, -steps * (e.ctrlKey ? 1.6 : 1)));
-    }
-    return;
-  }
-  // Wheel down (positive deltaY) shrinks the explorer, which magnifies the
-  // surface — the same direction as zooming out of a map does not apply here,
-  // so follow the pinch: apart means bigger explorer, closer look at nothing.
-  applyZoom(state.zoom * Math.pow(10, -steps * (e.ctrlKey ? 1.6 : 1)));
+  // Modifier held: the explorer grows or shrinks, and the camera stays put.
+  if (SIZE_MOD(e)) { applyZoom(state.zoom * Math.pow(10, -steps)); return; }
+
+  // Otherwise the camera comes closer or pulls back, and the explorer is
+  // exactly the size they were. Wheel up (negative deltaY) moves in, which is
+  // what every map in the world does.
+  applyCamZoom(state.camZoom * Math.exp(-steps * (e.ctrlKey ? 1.6 : 0.6)));
 }, { passive: false });
 
 $('click-catch').addEventListener('click', () => canvas.requestPointerLock());
@@ -926,11 +1038,20 @@ document.addEventListener('pointerlockchange', () => {
 });
 
 document.addEventListener('mousemove', (e) => {
-  if (!pointerLocked) return;
+  // Escape gives the mouse back; moving it after that means you have stopped
+  // flying and started reading the instruments. Light the compass up.
+  if (!pointerLocked) { compassState.emphasis = 2.2; return; }
   const dx = e.movementX || 0, dy = e.movementY || 0;
 
   if (state.surfaceKind !== 'graph') {
-    if (!walker || altView.mode === MODE_DRONE) return;
+    if (altView.mode === MODE_DRONE || !walker) {
+      // Flying around a torus, the mouse aims the camera exactly as it aims
+      // the explorer's head — two angles, and between them every direction on
+      // the unit sphere with the aircraft at its centre.
+      altCam.yaw -= dx * 0.0022;
+      altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * 0.0022));
+      return;
+    }
     if (altView.mode === MODE_FIRST) {
       // Turning is a rotation of the heading *in the tangent plane*, which is
       // the only thing "turn left" can mean on a surface with no fixed up.
@@ -996,6 +1117,11 @@ canvas.addEventListener('touchend', endTouch, { passive: true });
 canvas.addEventListener('touchcancel', endTouch, { passive: true });
 
 function readInput() {
+  // Held modifier: the same keys are aiming, not walking. Returning zero here
+  // rather than filtering downstream keeps every caller — the heightfield
+  // explorer, the walker, the orbit camera — from having to know about it.
+  if (lookMod) return { forward: 0, right: 0, up: 0, sprint: false };
+
   let forward = 0, right = 0, up = 0;
   if (keys.KeyW || keys.ArrowUp) forward += 1;
   if (keys.KeyS || keys.ArrowDown) forward -= 1;
@@ -1013,6 +1139,74 @@ function readInput() {
     up: Math.max(-1, Math.min(1, up)),
     sprint: !!(keys.ShiftLeft || keys.ShiftRight),
   };
+}
+
+/**
+ * Point the direction indicator wherever the live camera is pointing.
+ *
+ * World axes into the plot's own: math x is world x, math y is world −z, math z
+ * is world y — the same convention the terrain and the walker use, so the cage's
+ * labelled x, y and z are the axes on screen and not a second set of them.
+ */
+function updateCompass(dt) {
+  if (!compass || !state.compass) return;
+  compassState.emphasis = Math.max(0, compassState.emphasis - dt);
+  compass.active = lookMod ? 1 : Math.min(1, compassState.emphasis / 0.4);
+
+  camera.getWorldDirection(_camDir);
+  compass.setDirection(_camDir.x, -_camDir.z, _camDir.y);
+  compass.setDrone(state.surfaceKind === 'graph'
+    ? !!(player && player.mode === MODE_DRONE)
+    : (altView.mode === MODE_DRONE || !walker));
+
+  const wrap = $('compass-wrap');
+  if (wrap) wrap.classList.toggle('on', compass.active > 0.5);
+
+  const { az, el } = angles(compass.dir[0], compass.dir[1], compass.dir[2]);
+  $('cmp-az').textContent = `${az}°`;
+  $('cmp-el').textContent = `${el >= 0 ? '+' : ''}${el}°`;
+  compass.draw();
+}
+
+/**
+ * Aiming from the keyboard, in radians per second.
+ *
+ * The same gesture the mouse makes, at a rate that is comfortable to hold: a
+ * little under a quarter turn a second, so a full look around takes about four
+ * seconds and a small correction is a tap.
+ */
+const LOOK_RATE = 1.5;
+
+function applyLookKeys(dt) {
+  if (!lookMod) return;
+  let dx = 0, dy = 0;
+  if (keys.KeyA || keys.ArrowLeft) dx -= 1;
+  if (keys.KeyD || keys.ArrowRight) dx += 1;
+  if (keys.KeyW || keys.ArrowUp) dy -= 1;
+  if (keys.KeyS || keys.ArrowDown) dy += 1;
+  if (!dx && !dy) return;
+
+  const a = LOOK_RATE * dt;
+  if (state.surfaceKind !== 'graph') {
+    if (altView.mode === MODE_DRONE || !walker) {
+      altCam.yaw -= dx * a;
+      altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * a));
+    } else if (altView.mode === MODE_FIRST) {
+      // On a surface, "turn" is a rotation of the heading inside the tangent
+      // plane; pitch is clamped short of vertical so the view never rolls under
+      // the ground it is standing on.
+      walker.turn(-dx * a);
+      altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * a));
+    } else {
+      altView.camYaw -= dx * a;
+      altView.camHeight += dy * (altView.camDist || 1) * a * 0.6;
+    }
+    return;
+  }
+  // player.look takes a sensitivity, so one unit of key press times the
+  // per-frame angle is exactly the rotation wanted. Its own pitch clamp keeps
+  // the camera the right way up.
+  if (player) player.look(dx, dy, a);
 }
 
 /* ------------------------------------------------------------ UI wiring */
@@ -1239,6 +1433,14 @@ function wireUI() {
   bindCheck('t-isolate', 'isolate', () => { applyIsolation(); });
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
+  bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
+
+  if ($('t-compass')) {
+    $('t-compass').addEventListener('change', (e) => {
+      state.compass = e.target.checked;
+      $('compass-wrap').hidden = !state.compass;
+    });
+  }
   bindCheck('t-curcurve', 'curCurve', () => { if (state.curCurve) goToExplorer(); });
   bindCheck('t-curtan', 'curTangent', () => { if (state.curTangent) goToExplorer(); });
 
@@ -1292,6 +1494,21 @@ function wireUI() {
   $('in-zoom').addEventListener('input', (e) => {
     applyZoom(Math.pow(10, -parseFloat(e.target.value)));
   });
+
+  // The two dials on the right edge. A tablet has no wheel and no modifier
+  // key, so everything the wheel does has to be reachable by dragging as well.
+  if ($('in-camzoom')) {
+    $('in-camzoom').addEventListener('input', (e) => {
+      applyCamZoom(Math.pow(10, parseFloat(e.target.value)));
+    });
+    $('btn-camzoom-reset').addEventListener('click', () => applyCamZoom(1));
+  }
+  if ($('in-charscale')) {
+    $('in-charscale').addEventListener('input', (e) => {
+      applyZoom(Math.pow(10, parseFloat(e.target.value)));
+    });
+    $('btn-charscale-reset').addEventListener('click', () => applyZoom(1));
+  }
 
   bindCheck('t-opt', 'showOpt', () => withLoading(refreshOptimum));
 
@@ -1475,16 +1692,30 @@ function ensureDisc() {
 const ZOOM_MIN = 1e-4;   // explorer 0.18 mm tall
 const ZOOM_MAX = 10;     // explorer 18 m tall
 
+// How far in and out the camera itself can be driven. Twenty times closer is
+// enough to read the arrowheads; a twentieth is enough to lose the whole
+// surface in the middle of the screen, which is as far out as is any use.
+//
+// The bounds are exactly ±1.3 decades because the dial's step is 0.01: a range
+// input snaps to min + k·step, so a limit of ±1.301 would put 1× — the one
+// value the control has to be able to return to — a hundredth of a decade off
+// the grid, and the neutral position would be unreachable.
+const CAM_DECADES = 1.3;
+const CAM_MIN = Math.pow(10, -CAM_DECADES);
+const CAM_MAX = Math.pow(10, CAM_DECADES);
+
 function updateZoomLabels() {
   const z = state.zoom;
   const decades = -Math.log10(z);
   // Below 1:1 the explorer shrinks and the ratio reads 1 : n; above it they
   // grow and it reads n : 1, the way a map scale does in either direction.
-  $('lbl-zoom').textContent = Math.abs(decades) < 0.005
+  const ratio = Math.abs(decades) < 0.005
     ? '1 : 1'
     : decades > 0
       ? `1 : ${Math.round(1 / z).toLocaleString()}`
       : `${z >= 10 ? Math.round(z) : z.toPrecision(2)} : 1`;
+  $('lbl-zoom').textContent = ratio;
+  if ($('lbl-charscale')) $('lbl-charscale').textContent = ratio;
   $('r-zoom').textContent = Math.abs(decades) < 0.005
     ? t('hud.scale11')
     : t('hud.tall', { h: (1.8 * z).toPrecision(2) });
@@ -1495,9 +1726,42 @@ function updateZoomLabels() {
 function applyZoom(z) {
   state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
-  const dial = $('in-zoom');
-  dial.value = String(-Math.log10(state.zoom));
+  $('in-zoom').value = String(-Math.log10(state.zoom));
+  // The panel dial and the dial on the right edge are two handles on one
+  // number, so whichever was moved, both have to end up showing it. They run
+  // in opposite directions on purpose: the panel dial is a zoom-in ruler and
+  // counts decades of magnification downwards, while a vertical dial has to
+  // obey the only thing a vertical dial can mean — up is more of the thing it
+  // is labelled with, and it is labelled with the explorer's size.
+  const side = $('in-charscale');
+  if (side) side.value = String(Math.log10(state.zoom));
   updateZoomLabels();
+}
+
+/**
+ * The one place the camera's magnification is set.
+ *
+ * Nothing about the mathematics or the explorer changes here: this only moves
+ * the camera nearer, or — where there is nowhere nearer to be, because the
+ * camera is somebody's eyes — puts a longer lens on it.
+ */
+function applyCamZoom(v) {
+  state.camZoom = Math.max(CAM_MIN, Math.min(CAM_MAX, v));
+  if (player) player.camZoom = state.camZoom;
+  const dial = $('in-camzoom');
+  if (dial) dial.value = String(Math.log10(state.camZoom));
+  const lbl = $('lbl-camzoom');
+  if (lbl) {
+    const z = state.camZoom;
+    lbl.textContent = z >= 1 ? `${z < 10 ? z.toFixed(1) : Math.round(z)}×` : `1/${(1 / z).toFixed(1)}`;
+  }
+}
+
+/** The field of view to compose with, for the views main.js drives itself. */
+function fovFor(throughTheEyes) {
+  return throughTheEyes
+    ? Math.max(FOV_MIN, Math.min(FOV_MAX, BASE_FOV / state.camZoom))
+    : BASE_FOV;
 }
 
 function updateRuler() {
@@ -1707,7 +1971,12 @@ function renderTopDown(rect) {
 
 // Orbit state used only when an implicit or parametric surface is on screen:
 // there is nothing to stand on, so the drone simply circles it.
+//
+// The pitch limit is a whisker short of vertical rather than the old 1.5 rad,
+// so the orbit really does cover the sphere — a torus can be looked at squarely
+// down its hole, which is the one view that shows what a torus is.
 const altCam = { yaw: 0, pitch: -0.5, dist: 400 };
+const ALT_PITCH_LIM = Math.PI / 2 - 1e-4;
 
 let altWalkPhase = 0;
 
@@ -1733,17 +2002,25 @@ function animate() {
 
   if (state.surfaceKind !== 'graph') {
     const inp = readInput();
+    applyLookKeys(dt);
 
     if (altView.mode === MODE_DRONE || !walker) {
       if (altHiker) altHiker.visible = !!walker;
       if (walker) placeAltHiker();
       altCam.yaw -= inp.right * dt * 1.2;
-      altCam.pitch = Math.max(-1.5, Math.min(1.5, altCam.pitch + inp.up * dt * 1.2));
+      altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch + inp.up * dt * 1.2));
       altCam.dist *= Math.exp(-inp.forward * dt * (inp.sprint ? 2.2 : 0.9));
-      const r = altCam.dist;
+      const r = altCam.dist / state.camZoom;
       const cp = Math.cos(altCam.pitch);
       camera.position.set(Math.sin(altCam.yaw) * cp * r, -Math.sin(altCam.pitch) * r, Math.cos(altCam.yaw) * cp * r);
-      camera.lookAt(0, 0, 0);
+      // The orientation is the same two angles the position was built from,
+      // which is exactly the attitude lookAt(0,0,0) would produce — but defined
+      // at the poles, where lookAt's up vector becomes parallel to the view and
+      // the frame collapses. Looking straight down the axis of a torus is a
+      // view worth having, so it has to be a view that works.
+      camera.up.set(0, 1, 0);
+      camera.quaternion.setFromEuler(new THREE.Euler(altCam.pitch, altCam.yaw, 0, 'YXZ'));
+      camera.fov = fovFor(false);
       camera.near = Math.max(0.05, r * 1e-4);
       camera.far = r * 20;
     } else {
@@ -1773,19 +2050,21 @@ function animate() {
         // Third person from a camera that holds a fixed height and circles the
         // surface. Static in the sense that matters: it never rolls with the
         // explorer, so their tumbling is visible as tumbling.
-        const d = altView.camDist || (altCam.dist * 0.55);
+        const d = (altView.camDist || (altCam.dist * 0.55)) / state.camZoom;
         camera.position.set(
           Math.sin(altView.camYaw) * d, altView.camHeight, Math.cos(altView.camYaw) * d,
         );
         camera.up.set(0, 1, 0);
         camera.lookAt(stance.p);
       }
+      camera.fov = fovFor(altView.mode === MODE_FIRST);
       camera.near = Math.max(1e-4, 0.02 * state.zoom * altView.charScale);
       camera.far = Math.max(altCam.dist, altView.camDist) * 20 + state.worldSize * 8;
     }
 
     camera.updateProjectionMatrix();
     if (sky) sky.position.copy(camera.position);
+    updateCompass(dt);
     updateHUD(null);
     renderer.render(scene, camera);
     if (projection) projection.draw({});
@@ -1802,6 +2081,7 @@ function animate() {
   // and the arrows are never buried under their own feet.
   player.extraLift = state.disc && gizmo.lift ? gizmo.lift : surfaceDetail.topLift;
 
+  applyLookKeys(dt);
   player.update(dt, readInput());
   player.updateCamera(camera, dt);
 
@@ -1851,6 +2131,7 @@ function animate() {
 
   if (state.showOpt && optimum) optMarker.animate(t, camera.position);
 
+  updateCompass(dt);
   updateHUD(readout);
   renderer.render(scene, camera);
   drawProjection();

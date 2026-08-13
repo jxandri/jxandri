@@ -6,7 +6,7 @@
  * keeps working on the bus. Bump CACHE when you ship a change.
  */
 
-const CACHE = 'gradient-peaks-v6';
+const CACHE = 'gradient-peaks-v7';
 
 const SHELL = [
   './',
@@ -21,6 +21,8 @@ const SHELL = [
   './js/surfaces.js',
   './js/walker.js',
   './js/projection.js',
+  './js/gridlines.js',
+  './js/compass.js',
   './lab.html',
   './css/lab.css',
   './js/mathexpr.js',

@@ -227,6 +227,30 @@ the slope in their hands while watching <code>z</code> climb.</p>
 <p>Press <kbd>1</kbd> to see through the explorer's own eyes, <kbd>3</kbd> to go back to the drone,
 and <kbd>2</kbd> to return to the over-the-shoulder view.</p>
 
+<h2>Zooming, and the two things it could mean</h2>
+<p>"Zoom in" is two different requests, and they used to share one control.</p>
+<p><strong>The wheel moves the camera.</strong> Scroll up to come closer, down to pull back; on a
+trackpad, pinch. Nothing about the mathematics changes — the explorer is exactly the size they
+were, and so is every measurement made against them. Where the camera is somebody's own eyes and
+there is nowhere nearer to be, the wheel puts a longer lens on instead.</p>
+<p><strong>The wheel with <kbd>⌘</kbd> held resizes the explorer</strong> (<kbd>⊞</kbd> on Windows;
+<kbd>Alt</kbd> or <kbd>Option</kbd> works everywhere, and is the one to reach for if your system
+swallows the other). This is the zoom-in ruler of Part 4 under a different hand: shrinking the
+explorer magnifies the surface, and it is how you get down to the scale where a differentiable
+function is indistinguishable from its tangent plane.</p>
+<p>Both jobs also have a <strong>dial on the right edge of the screen</strong>, because a tablet
+has no wheel and no modifier key at all. The upper dial is the camera, the lower one the
+explorer's size, and each has a small button above it that returns it to normal. They run the only
+direction a vertical dial can run: up is more of whatever it is labelled with.</p>
+
+<h2>Looking around without a mouse</h2>
+<p>Hold <kbd>⌘</kbd>/<kbd>⊞</kbd> or <kbd>Alt</kbd> and the movement keys stop moving you and start
+aiming you instead: <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrow keys swing the
+view, at about a quarter turn a second, so a full look round takes four seconds and a small
+correction is a tap. It is clamped short of vertical, so the view never rolls under the ground it
+is standing on. This is for anyone working on a laptop without a trackpad they can aim with, or
+demonstrating at a board where a mouse is not to hand.</p>
+
 <h2>Step four: get the panel back</h2>
 <p>Press <kbd>Esc</kbd> to release the mouse, then press <kbd>Tab</kbd> to hide or show the control
 panel. You can also click the <kbd>‹</kbd> button in its top corner, or the <kbd>☰</kbd> button that
@@ -317,6 +341,26 @@ the surface goes back to the eight terrain bands — water, beach, deep vegetati
 vegetation, arid, volcanic rock, snow, cloud — which say the same thing in the language of a
 landscape. Combine either with <kbd>T</kbd> (look straight down) to turn the 3D scene into the
 flat map students already know.</p>
+<p><strong>Coordinate grid on the surface</strong> <kbd>N</kbd> — draws the coordinate system
+<em>on</em> the surface, which is the mesh a textbook picture almost always has and which is not
+decoration: it is what lets you see what the coordinates are doing. What it draws depends on the
+kind of surface, and in each case it is the intersection of the surface with a family of level
+sets of the coordinates:</p>
+<ul>
+  <li><strong>a graph</strong> <code>z = f(x, y)</code> — the grid of the <code>(x, y)</code> plane
+  lifted onto the surface: the curves <code>x = constant</code> and <code>y = constant</code> with
+  <code>z = f</code>. Where the lines crowd together on screen, the surface is steep.</li>
+  <li><strong>a parametric surface</strong> <code>r(u, v)</code> — the parameter lines themselves.
+  A sphere in polar coordinates has lines that crowd at the poles; a helicoid's do not meet at
+  right angles; a Möbius strip's long parameter closes up while its short one does not. None of
+  that is visible on a bare shaded surface, and all of it is worth seeing.</li>
+  <li><strong>an implicit surface</strong> <code>F(x, y, z) = 0</code> — where the surface cuts the
+  coordinate planes <code>x = constant</code>, <code>y = constant</code> and
+  <code>z = constant</code>. On a sphere these are the circles of latitude and longitude, found
+  the same way the level curves on the terrain are.</li>
+</ul>
+<p>The grid is drawn on <em>both sides</em>, so it stays readable when the explorer is walking on
+the inside of a torus — a single copy would be buried in the surface it is meant to be marking.</p>
 <p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off. The scenery sits
 <em>on top of</em> the surface and never changes its shape.</p>
 <p><strong>Water in the depressions</strong> — a translucent lake surface at height zero, so any
@@ -425,6 +469,18 @@ All four are exactly 1.80 m tall, so the scale reference never changes.</p>
 <p><strong>Look straight down</strong> <kbd>T</kbd> flies the drone directly overhead, which
 projects the surface onto the plane <code>z = 0</code> — the flat map view.
 <strong>Return to the centre</strong> <kbd>R</kbd> rescues an explorer who has wandered off.</p>
+
+<p><strong>Direction indicator</strong> <kbd>I</kbd> — the small globe in the top right corner. In
+a first-person view of a surface with no landmarks — the inside of a torus, a Möbius strip, a
+paraboloid at one part in ten thousand — it is genuinely easy to lose track of which way you are
+facing, and losing it makes every number on the screen harder to read. The globe answers it: a
+cage of latitude and longitude with a small figure inside, turned the way the camera is turned,
+and the bearing and the elevation in figures underneath. In drone mode the figure becomes the
+aircraft, with its lens pointing where the camera points.</p>
+<p>Hold <kbd>⌘</kbd> (<kbd>⊞</kbd> on Windows) or <kbd>Alt</kbd>, or press <kbd>Esc</kbd> and move
+the mouse, and it enlarges — those are the moments you are consulting it rather than glancing at
+it. The wires on the far side of the globe are drawn faintly, so it reads as a globe and not as a
+flat doily; when you are looking away from the reader you see the back of the figure's head.</p>
 
 <!-- =========================================================== PART 5 -->
 <h1 class="part"><span class="num">5</span>Writing your own functions</h1>
@@ -1048,13 +1104,18 @@ licence text travels with the files in <code>website/vendor/</code>.</p>
   <tr><td class="k"><kbd>Shift</kbd></td><td>Hold to move faster</td></tr>
   <tr><td class="k"><kbd>Space</kbd> / <kbd>Ctrl</kbd></td><td>Drone altitude, up / down</td></tr>
   <tr><td class="k">mouse</td><td>Look around (click the scene first)</td></tr>
+  <tr><td class="k">wheel</td><td>Camera zoom — the explorer's size does not change</td></tr>
+  <tr><td class="k"><kbd>⌘</kbd>/<kbd>⊞</kbd>/<kbd>Alt</kbd> + wheel</td><td>The explorer's size (the zoom-in ruler)</td></tr>
+  <tr><td class="k"><kbd>⌘</kbd>/<kbd>⊞</kbd>/<kbd>Alt</kbd> + <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows</td><td>Look around without the mouse</td></tr>
   <tr><td class="k"><kbd>Esc</kbd></td><td><strong>Release the mouse pointer</strong></td></tr>
   <tr><td class="k"><kbd>Tab</kbd></td><td>Hide or show the control panel</td></tr>
   <tr><td class="k"><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>First person / third person / drone</td></tr>
   <tr><td class="k"><kbd>T</kbd></td><td>Look straight down (map view)</td></tr>
   <tr><td class="k"><kbd>R</kbd></td><td>Return to the centre</td></tr>
+  <tr><td class="k"><kbd>I</kbd></td><td>Direction indicator (the globe, top right)</td></tr>
   <tr><td class="k"><kbd>C</kbd></td><td>Level curves</td></tr>
   <tr><td class="k"><kbd>M</kbd></td><td>Colour the surface by height</td></tr>
+  <tr><td class="k"><kbd>N</kbd></td><td>Coordinate grid on the surface</td></tr>
   <tr><td class="k"><kbd>J</kbd></td><td>The level curve you are standing on</td></tr>
   <tr><td class="k"><kbd>K</kbd></td><td>Its tangent line, projected on the surface</td></tr>
   <tr><td class="k"><kbd>F</kbd></td><td>Frontier walls of the feasible set</td></tr>

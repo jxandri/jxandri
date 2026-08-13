@@ -232,6 +232,31 @@ el estudiante siente la pendiente en las manos mientras ve subir <code>z</code>.
 <p>Presione <kbd>1</kbd> para ver por los ojos del propio explorador, <kbd>3</kbd> para volver al
 dron y <kbd>2</kbd> para regresar a la vista por encima del hombro.</p>
 
+<h2>El zoom, y las dos cosas que puede significar</h2>
+<p>«Acercar» son dos peticiones distintas, y antes compartían un solo control.</p>
+<p><strong>La rueda mueve la cámara.</strong> Gírela hacia arriba para acercarse y hacia abajo para
+alejarse; en un trackpad, haga el gesto de pellizco. Nada de la matemática cambia: el explorador
+conserva exactamente su tamaño, y con él toda medida tomada contra él. Donde la cámara son los
+ojos de alguien y no hay nada más cerca adonde ir, la rueda pone en su lugar un objetivo más
+largo.</p>
+<p><strong>La rueda con <kbd>⌘</kbd> pulsada cambia el tamaño del explorador</strong>
+(<kbd>⊞</kbd> en Windows; <kbd>Alt</kbd> u <kbd>Option</kbd> funciona en todas partes, y es la
+tecla a la que conviene recurrir si su sistema se traga la otra). Es la regla de acercamiento de
+la Parte 4 en otra mano: encoger al explorador amplía la superficie, y así se llega a la escala en
+la que una función diferenciable es indistinguible de su plano tangente.</p>
+<p>Ambas tareas tienen además un <strong>dial en el borde derecho de la pantalla</strong>, porque
+una tableta no tiene rueda ni tecla modificadora. El dial de arriba es la cámara y el de abajo el
+tamaño del explorador, y cada uno lleva encima un botoncito que lo devuelve a lo normal. Corren en
+la única dirección en que puede correr un dial vertical: arriba es más de aquello que rotula.</p>
+
+<h2>Mirar alrededor sin ratón</h2>
+<p>Mantenga <kbd>⌘</kbd>/<kbd>⊞</kbd> o <kbd>Alt</kbd> y las teclas de movimiento dejan de moverle
+y pasan a apuntarle: <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> o las flechas giran la
+vista, a un cuarto de vuelta por segundo, de modo que una vuelta completa lleva cuatro segundos y
+una corrección pequeña es un toque. Está limitado justo antes de la vertical, así que la vista
+nunca se vuelca por debajo del suelo sobre el que está. Esto es para quien trabaja en un portátil
+sin un trackpad con el que apuntar, o demuestra en una pizarra sin un ratón a mano.</p>
+
 <h2>Paso cuatro: recupere el panel</h2>
 <p>Presione <kbd>Esc</kbd> para soltar el ratón y luego <kbd>Tab</kbd> para ocultar o mostrar el
 panel de control. También puede usar el botón <kbd>‹</kbd> de su esquina, o el botón
@@ -322,6 +347,28 @@ curvas concuerdan. Apáguelo y la superficie vuelve a las ocho bandas de terreno
 vegetación profunda, vegetación más clara, árido, roca volcánica, nieve, nube—, que dicen lo mismo
 en el idioma de un paisaje. Combine cualquiera de las dos con <kbd>T</kbd> (mirar desde arriba) y
 la escena 3D se convierte en el mapa plano que los estudiantes ya conocen.</p>
+<p><strong>Retícula de coordenadas sobre la superficie</strong> <kbd>N</kbd> — dibuja el sistema
+de coordenadas <em>sobre</em> la superficie. Es la malla que casi siempre aparece en la figura de
+un libro de texto, y no es un adorno: es lo que permite ver qué están haciendo las coordenadas. Lo
+que dibuja depende del tipo de superficie, y en cada caso es la intersección de la superficie con
+una familia de conjuntos de nivel de las coordenadas:</p>
+<ul>
+  <li><strong>una gráfica</strong> <code>z = f(x, y)</code> — la retícula del plano
+  <code>(x, y)</code> levantada sobre la superficie: las curvas <code>x = constante</code> e
+  <code>y = constante</code> con <code>z = f</code>. Donde las líneas se apretujan en pantalla, la
+  superficie es empinada.</li>
+  <li><strong>una superficie paramétrica</strong> <code>r(u, v)</code> — las propias líneas de
+  parámetro. Una esfera en coordenadas polares tiene líneas que se agolpan en los polos; las del
+  helicoide no se cortan en ángulo recto; en la banda de Möbius el parámetro largo se cierra y el
+  corto no. Nada de eso se ve en una superficie sombreada a secas, y todo ello merece verse.</li>
+  <li><strong>una superficie implícita</strong> <code>F(x, y, z) = 0</code> — dónde corta la
+  superficie a los planos coordenados <code>x = constante</code>, <code>y = constante</code> y
+  <code>z = constante</code>. En una esfera son los paralelos y los meridianos, hallados igual que
+  las curvas de nivel del terreno.</li>
+</ul>
+<p>La retícula se dibuja por <em>ambos lados</em>, de modo que sigue siendo legible cuando el
+explorador camina por dentro de un toro: una sola copia quedaría enterrada en la superficie que
+pretende marcar.</p>
 <p><strong>Vegetación, rocas y nieve</strong> — enciende y apaga el decorado. El decorado se
 apoya <em>encima</em> de la superficie y nunca cambia su forma.</p>
 <p><strong>Agua en las depresiones</strong> — una lámina de agua translúcida a la altura cero, de
@@ -437,6 +484,18 @@ cambia.</p>
 <p><strong>Mirar desde arriba</strong> <kbd>T</kbd> lleva el dron justo encima, lo que proyecta la
 superficie sobre el plano <code>z = 0</code>: la vista de mapa plano. <strong>Volver al
 centro</strong> <kbd>R</kbd> rescata a un explorador que se haya perdido.</p>
+
+<p><strong>Indicador de dirección</strong> <kbd>I</kbd> — el pequeño globo de la esquina superior
+derecha. En una vista en primera persona de una superficie sin puntos de referencia —el interior
+de un toro, una banda de Möbius, un paraboloide a una parte en diez mil— es realmente fácil perder
+de vista hacia dónde se está mirando, y perderlo hace más difícil leer cualquier número de la
+pantalla. El globo lo responde: una jaula de paralelos y meridianos con una figurita dentro,
+orientada igual que la cámara, y debajo el rumbo y la elevación en cifras. En modo dron la figura
+pasa a ser la aeronave, con su objetivo apuntando adonde apunta la cámara.</p>
+<p>Mantenga <kbd>⌘</kbd> (<kbd>⊞</kbd> en Windows) o <kbd>Alt</kbd>, o pulse <kbd>Esc</kbd> y mueva
+el ratón, y se agranda: esos son los momentos en que uno lo consulta en vez de mirarlo de reojo.
+Los hilos de la cara oculta del globo se dibujan tenues, para que se lea como un globo y no como un
+tapete plano; cuando la mirada se aleja del lector se ve la nuca de la figura.</p>
 
 <!-- =========================================================== PARTE 5 -->
 <h1 class="part"><span class="num">5</span>Cómo escribir sus propias funciones</h1>
@@ -1113,13 +1172,18 @@ three.js), cuyo texto de licencia viaja con los archivos en <code>website/vendor
   <tr><td class="k"><kbd>Shift</kbd></td><td>Mantener para ir más rápido</td></tr>
   <tr><td class="k"><kbd>Espacio</kbd> / <kbd>Ctrl</kbd></td><td>Altitud del dron, sube / baja</td></tr>
   <tr><td class="k">ratón</td><td>Mirar alrededor (haga clic en la escena primero)</td></tr>
+  <tr><td class="k">rueda</td><td>Zoom de la cámara — el tamaño del explorador no cambia</td></tr>
+  <tr><td class="k"><kbd>⌘</kbd>/<kbd>⊞</kbd>/<kbd>Alt</kbd> + rueda</td><td>Tamaño del explorador (la regla de acercamiento)</td></tr>
+  <tr><td class="k"><kbd>⌘</kbd>/<kbd>⊞</kbd>/<kbd>Alt</kbd> + <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o flechas</td><td>Mirar alrededor sin el ratón</td></tr>
   <tr><td class="k"><kbd>Esc</kbd></td><td><strong>Soltar el puntero del ratón</strong></td></tr>
   <tr><td class="k"><kbd>Tab</kbd></td><td>Ocultar o mostrar el panel de control</td></tr>
   <tr><td class="k"><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>Primera persona / tercera persona / dron</td></tr>
   <tr><td class="k"><kbd>T</kbd></td><td>Mirar desde arriba (vista de mapa)</td></tr>
   <tr><td class="k"><kbd>R</kbd></td><td>Volver al centro</td></tr>
+  <tr><td class="k"><kbd>I</kbd></td><td>Indicador de dirección (el globo, arriba a la derecha)</td></tr>
   <tr><td class="k"><kbd>C</kbd></td><td>Curvas de nivel</td></tr>
   <tr><td class="k"><kbd>M</kbd></td><td>Colorear la superficie por altura</td></tr>
+  <tr><td class="k"><kbd>N</kbd></td><td>Retícula de coordenadas sobre la superficie</td></tr>
   <tr><td class="k"><kbd>J</kbd></td><td>La curva de nivel sobre la que está parado</td></tr>
   <tr><td class="k"><kbd>K</kbd></td><td>Su recta tangente, proyectada sobre la superficie</td></tr>
   <tr><td class="k"><kbd>F</kbd></td><td>Muros de la frontera del conjunto factible</td></tr>

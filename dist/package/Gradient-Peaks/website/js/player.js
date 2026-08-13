@@ -21,6 +21,18 @@ export const MODE_DRONE = 'drone';
 const BODY_HEIGHT = 1.80;   // metres at zoom 1
 const EYE_HEIGHT = 1.66;
 
+/**
+ * The field of view the scene is composed for. Camera zoom is a dolly wherever
+ * there is room to dolly — third person, chase — and a telephoto only where
+ * there is not, which is any view shot down the barrel of someone's eyes.
+ */
+export const BASE_FOV = 62;
+export const FOV_MIN = 6;
+export const FOV_MAX = 110;
+
+/** How far above the view axis the chase camera rides, in chase distances. */
+const CHASE_LIFT = 0.22;
+
 function box(w, h, d, color) {
   const g = new THREE.BoxGeometry(w, h, d);
   const m = new THREE.MeshLambertMaterial({ color });
@@ -280,17 +292,39 @@ function buildPlumb() {
   return group;
 }
 
-/** Small quadrotor for the flying camera. */
+// The matching aim correction: the chase camera is lifted off the view axis, so
+// it has to look back down by the angle that lift subtends. Built once.
+const _chaseTilt = new THREE.Quaternion().setFromAxisAngle(
+  new THREE.Vector3(1, 0, 0), -Math.atan(CHASE_LIFT),
+);
+
+/**
+ * Small quadrotor for the flying camera.
+ *
+ * The camera hangs in a gimbal rather than being bolted to the airframe, which
+ * is how a real one is built and which is what lets the aircraft hold a heading
+ * while the lens swings all the way from straight up to straight down.
+ */
 function buildDrone() {
   const root = new THREE.Group();
   const body = box(0.5, 0.16, 0.5, 0x2b3440);
   root.add(body);
+
+  const gimbal = new THREE.Group();
+  gimbal.position.y = 0.10;
+  root.add(gimbal);
+  root.userData.gimbal = gimbal;
+
   const dome = new THREE.Mesh(
     new THREE.SphereGeometry(0.16, 12, 8),
     new THREE.MeshLambertMaterial({ color: 0x6fd6ff }),
   );
-  dome.position.y = 0.10;
-  root.add(dome);
+  gimbal.add(dome);
+  // A stub barrel, so which way the lens is aimed is legible from outside.
+  const lens = cyl(0.055, 0.055, 0.14, 0x11161d, 12);
+  lens.rotation.x = Math.PI / 2;
+  lens.position.z = -0.19;
+  gimbal.add(lens);
   for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
     const arm = box(0.5, 0.05, 0.05, 0x39434f);
     arm.position.set(sx * 0.3, 0, sz * 0.3);
@@ -325,6 +359,10 @@ export class Player {
     this.yaw = 0;       // radians, 0 looks toward −Z (math +y)
     this.pitch = -0.15;
     this.zoom = 1;      // 1, 0.1, 0.01, ... the "zoom-in ruler"
+    // Where the camera is, which is a different question from how big the
+    // explorer is. Moving one used to move the other; a student wanting a
+    // closer look had to shrink the person they were looking at.
+    this.camZoom = 1;
     this.frozen = false;
     this.walkPhase = 0;
     this.speedScale = 1;
@@ -522,12 +560,29 @@ export class Player {
     return { centreY, dist };
   }
 
-  /** Mouse look. dx/dy are raw pointer-lock deltas. */
+  /**
+   * Mouse look. dx/dy are raw pointer-lock deltas.
+   *
+   * Yaw and pitch together are two angles on the unit sphere, and in the drone
+   * they are allowed to reach every point of it: the aircraft sits at the
+   * centre and the lens can be aimed at any direction whatever, including
+   * straight up and straight down. On foot the same pair stops a hair short of
+   * vertical, because a person looking further than that has fallen over.
+   *
+   * The reserved sliver is 1e-4 rather than zero only because a view direction
+   * exactly parallel to the world up would leave `lookAt` with no way to decide
+   * which way is up; the camera orientation itself is a quaternion and has no
+   * such problem, which is why the poles are reachable at all.
+   */
   look(dx, dy, sensitivity = 0.0022) {
     this.yaw -= dx * sensitivity;
     this.pitch -= dy * sensitivity;
-    const lim = Math.PI / 2 - 0.01;
+    const lim = Math.PI / 2 - (this.mode === MODE_DRONE ? 1e-4 : 0.01);
     this.pitch = Math.max(-lim, Math.min(lim, this.pitch));
+    // Keep yaw bounded, so a long spin cannot drift into the range where
+    // single-precision trigonometry starts to grain.
+    if (this.yaw > Math.PI) this.yaw -= Math.PI * 2;
+    else if (this.yaw < -Math.PI) this.yaw += Math.PI * 2;
   }
 
   /**
@@ -552,7 +607,12 @@ export class Player {
 
     if (this.mode === MODE_DRONE) {
       this.drone.position.copy(this.dronePos);
+      // The airframe holds the heading; the gimbal takes the elevation. Aim the
+      // lens straight down and the aircraft stays level, which is both what the
+      // hardware does and what makes the picture readable.
       this.drone.rotation.y = this.yaw;
+      const g = this.drone.userData.gimbal;
+      if (g) g.rotation.x = this.pitch;
       const s = Math.max(1, f.worldSize / 200) * 1.2;
       this.drone.scale.setScalar(s);
     }
@@ -694,14 +754,25 @@ export class Player {
       if (this.droneView === MODE_THIRD) {
         // Chase camera: behind and a little above the aircraft, so you can see
         // the drone, its beam and the ring it is casting all at once.
+        //
+        // "Above" is the camera's own up, not the world's, and the aim is a
+        // quaternion rather than a lookAt. Both for the same reason: aimed
+        // straight down, the old chase camera sat directly over the drone with
+        // its view parallel to the world up, and lookAt has no answer for that
+        // — the frame collapsed. Rotating with the sphere instead of against it
+        // means the whole sphere is reachable, poles included.
         const back = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
-        const d = Math.max(f.worldSize * 0.05, 6) * Math.max(1, f.worldSize / 200);
-        this._camPos.copy(this.dronePos).addScaledVector(back, d);
-        this._camPos.y += d * 0.22;
+        const upl = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+        const d = Math.max(f.worldSize * 0.05, 6) * Math.max(1, f.worldSize / 200) / this.camZoom;
+        this._camPos.copy(this.dronePos)
+          .addScaledVector(back, d)
+          .addScaledVector(upl, d * CHASE_LIFT);
         if (!this._camReady) { this._smoothCam.copy(this._camPos); this._camReady = true; }
         this._smoothCam.lerp(this._camPos, 1 - Math.exp(-dt * 12));
         camera.position.copy(this._smoothCam);
-        camera.lookAt(this.dronePos);
+        // Tilt down by exactly the angle the lift introduced, so the aircraft
+        // stays in the middle of the frame at every attitude.
+        camera.quaternion.copy(q).multiply(_chaseTilt);
       } else {
         camera.position.copy(this.dronePos);
         camera.quaternion.copy(q);
@@ -716,7 +787,7 @@ export class Player {
       camera.quaternion.copy(q);
     } else {
       // Over-the-shoulder third person: offset back, up, and slightly right.
-      const dist = this.thirdDistance * this.zoom;
+      const dist = (this.thirdDistance * this.zoom) / this.camZoom;
       const back = new THREE.Vector3(0, 0, 1).applyQuaternion(q).multiplyScalar(dist);
       const upOff = new THREE.Vector3(0, 1, 0).multiplyScalar(BODY_HEIGHT * 0.95 * this.zoom);
       const side = new THREE.Vector3(1, 0, 0).applyQuaternion(q).multiplyScalar(0.65 * this.zoom);
@@ -743,6 +814,15 @@ export class Player {
       camera.position.copy(this._smoothCam);
       camera.lookAt(this._camTarget);
     }
+
+    // Looking out of someone's eyes there is nowhere to dolly to, so zoom is a
+    // longer lens instead. Everywhere else the camera has already moved and the
+    // framing must not change twice over.
+    const throughTheEyes = this.mode === MODE_FIRST
+      || (this.mode === MODE_DRONE && this.droneView === MODE_FIRST);
+    camera.fov = throughTheEyes
+      ? Math.max(FOV_MIN, Math.min(FOV_MAX, BASE_FOV / this.camZoom))
+      : BASE_FOV;
 
     // The near plane has to track the zoom. At 10^-4 scale the third-person
     // camera sits 0.5 mm from the explorer, so a fixed 1 mm near plane would

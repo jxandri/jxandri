@@ -119,6 +119,131 @@ html, body {
 #crosshair::before { left: 7px; top: 0; width: 2px; height: 16px; }
 #crosshair::after { top: 7px; left: 0; height: 2px; width: 16px; }
 
+/* ----------------------------------------------- the right-hand rail --- */
+
+/*
+ * The compass and the two dials share one column down the right edge. They are
+ * on the right because the panel is on the left, and in one column because two
+ * separately positioned overlays will eventually overlap on somebody's screen.
+ */
+#right-rail {
+  position: fixed; right: max(10px, env(safe-area-inset-right));
+  top: 84px; bottom: 84px; z-index: 6;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 14px;
+  pointer-events: none;              /* only the controls themselves take input */
+}
+#right-rail > * { pointer-events: auto; }
+
+/* --- the direction indicator ------------------------------------------- */
+
+#compass-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 6px 4px; border-radius: 14px;
+  background: rgba(16, 21, 28, .55); border: 1px solid rgba(255, 255, 255, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: border-color .18s ease, background .18s ease;
+}
+/* Held modifier, or the mouse just released: the instrument is being consulted
+   rather than glanced at, so it says so. */
+#compass-wrap.on {
+  border-color: rgba(89, 247, 214, .55);
+  background: rgba(16, 21, 28, .78);
+}
+#compass { display: block; width: 108px; height: 108px; }
+#compass-wrap.on #compass { width: 132px; height: 132px; }
+.cmp-read {
+  display: flex; gap: 8px;
+  font: 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink-dim);
+}
+
+/* --- the two dials ------------------------------------------------------ */
+
+/*
+ * A tablet has no wheel and no modifier key, so the wheel's two jobs — move the
+ * camera, resize the explorer — need handles that a thumb can find.
+ *
+ * The sliders are ordinary horizontal ranges turned on their side. A rotation
+ * behaves identically in every browser, which `writing-mode: vertical-*` on a
+ * range input still does not.
+ */
+#side-dials {
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.sd {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 5px; border-radius: 12px;
+  background: rgba(16, 21, 28, .55); border: 1px solid rgba(255, 255, 255, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+
+.sd-cap {
+  font-size: 15px; line-height: 1; padding: 3px 5px; cursor: pointer;
+  color: var(--ink-dim); background: none; border: 0; border-radius: 6px;
+}
+.sd-cap:hover { color: var(--ink); background: rgba(255, 255, 255, .10); }
+
+/*
+ * The slot is the space the dial occupies; the input inside it is a normal
+ * horizontal range, placed so that its centre lands on the slot's centre and
+ * then turned a quarter turn about that centre. Explicit offsets rather than
+ * grid centring, because an item wider than its track is an overflow case and
+ * browsers do not agree on where to put it.
+ */
+.sd-slot { position: relative; width: 30px; height: 132px; }
+.sd-slot input[type=range] {
+  position: absolute; left: -51px; top: 55px;   /* (30−132)/2, (132−22)/2 */
+  width: 132px; height: 22px; margin: 0; cursor: pointer;
+  transform: rotate(-90deg);
+  -webkit-appearance: none; appearance: none; background: none;
+}
+/*
+ * The track and thumb are drawn by hand. The stock control is a hairline that
+ * all but vanishes against a translucent panel over a bright sky, and a dial
+ * you cannot see is a dial nobody will drag.
+ */
+.sd-slot input[type=range]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px;
+  background: rgba(255, 255, 255, .22);
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+.sd-slot input[type=range]::-moz-range-track {
+  height: 6px; border-radius: 3px;
+  background: rgba(255, 255, 255, .22);
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+.sd-slot input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; margin-top: -7px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #0d1117;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+.sd-slot input[type=range]::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #0d1117;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+
+.sd-val {
+  font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink-dim); white-space: nowrap;
+}
+
+/* A phone held sideways is the case these were added for, so they shrink to
+   fit rather than disappearing — which is what a wheel-less screen needs. */
+@media (max-height: 620px) {
+  #right-rail { top: 62px; bottom: 62px; gap: 8px; }
+  #side-dials { gap: 8px; }
+  .sd { padding: 5px 4px; }
+  .sd-slot { height: 74px; }
+  .sd-slot input[type=range] { width: 74px; }
+  #compass { width: 74px; height: 74px; }
+  #compass-wrap.on #compass { width: 88px; height: 88px; }
+  .cmp-read { font-size: 9px; }
+}
+
 /* ------------------------------------------------------------- panel --- */
 
 #panel {

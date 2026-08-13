@@ -40,6 +40,41 @@
 
 <div id="crosshair" hidden></div>
 
+<!-- ========================= the right-hand rail ======================== -->
+<!-- The direction indicator, and everything the wheel does for a screen that
+     has no wheel. One column, so the two can never land on top of each other. -->
+<div id="right-rail">
+
+<div id="compass-wrap">
+  <canvas id="compass" width="132" height="132"></canvas>
+  <div class="cmp-read"><span id="cmp-az">0°</span><span id="cmp-el">0°</span></div>
+</div>
+
+<div id="side-dials">
+  <div class="sd">
+    <button id="btn-camzoom-reset" type="button" class="sd-cap"
+            data-i18n-title="dial.camreset" title="Reset the camera zoom">⌕</button>
+    <div class="sd-slot">
+      <input id="in-camzoom" type="range" min="-1.3" max="1.3" step="0.01" value="0"
+             data-i18n-title="dial.camhelp" title="Camera zoom — mouse wheel"
+             aria-label="Camera zoom">
+    </div>
+    <span class="sd-val" id="lbl-camzoom">1.0×</span>
+  </div>
+  <div class="sd">
+    <button id="btn-charscale-reset" type="button" class="sd-cap"
+            data-i18n-title="dial.sizereset" title="Reset the explorer to 1 : 1">☺</button>
+    <div class="sd-slot">
+      <input id="in-charscale" type="range" min="-4" max="1" step="0.01" value="0"
+             data-i18n-title="dial.sizehelp" title="Explorer's size — ⌘/⊞ or Alt + wheel"
+             aria-label="Explorer size">
+    </div>
+    <span class="sd-val" id="lbl-charscale">1 : 1</span>
+  </div>
+</div>
+
+</div>
+
 <!-- ================================ panel ============================== -->
 <aside id="panel">
   <header id="panel-head">
@@ -235,6 +270,8 @@
         <input id="in-cwidth" type="range" min="0.3" max="5" step="0.1" value="1.4">
       </label>
       <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
+      <label class="check"><input id="t-surfgrid" type="checkbox"><span><span data-i18n="map.grid">Coordinate grid on the surface</span> <kbd>N</kbd></span></label>
+      <p class="note" id="note-grid" data-i18n="map.gridnote">On a graph this is the grid of the (x, y) plane lifted onto the surface; on a parametric surface it is the parameter lines themselves; on an implicit one it is where the surface cuts the coordinate planes. It is drawn on both sides, so it stays readable from inside.</p>
       <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
       <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
       <label class="range">
@@ -319,6 +356,8 @@
           <option value="buddy" data-i18n="style.buddy">Round buddy</option>
         </select>
       </label>
+      <label class="check"><input id="t-compass" type="checkbox" checked><span><span data-i18n="view.compass">Direction indicator</span> <kbd>I</kbd></span></label>
+      <p class="note" data-i18n="view.compassnote">The globe in the top right shows which way you are looking: latitude and longitude around a small figure turned to face the same direction, with the bearing and the elevation underneath. Hold ⌘/⊞ or Alt, or press Esc and move the mouse, and it enlarges.</p>
       <button id="btn-top" class="ghost"><span data-i18n="view.top">Look straight down</span> <kbd>T</kbd></button>
       <button id="btn-reset" class="ghost"><span data-i18n="view.reset">Return to the centre</span> <kbd>R</kbd></button>
     </section>
@@ -328,6 +367,9 @@
       <div class="help">
         <p><b data-i18n="help.move">Move</b> W A S D · <b data-i18n="help.run">run</b> Shift ·
         <b data-i18n="help.look">look</b> <span data-i18n="help.mouse">mouse</span><br>
+        <b data-i18n="help.keylook">Look without the mouse</b> Alt (⌥) <span data-i18n="help.orcmd">or ⌘/⊞</span> + W A S D<br>
+        <b data-i18n="help.zoomcam">Camera zoom</b> <span data-i18n="help.wheel">wheel</span> ·
+        <b data-i18n="help.zoomsize">explorer&#8217;s size</b> Alt/⌘ + <span data-i18n="help.wheel">wheel</span><br>
         <b data-i18n="help.updown">Drone up/down</b> Space / Ctrl<br>
         <b data-i18n="help.release">Release the mouse</b> Esc · <b data-i18n="help.hide">hide this panel</b> Tab</p>
         <p class="note" data-i18n-html="help.syntax"></p>
