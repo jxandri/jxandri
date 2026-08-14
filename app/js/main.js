@@ -21,6 +21,7 @@ import {
 import { ParametricWalker, ImplicitWalker, standBasis, graphWalker } from './walker.js';
 import { IntrinsicGizmo, GeodesicDisc } from './intrinsic.js';
 import { buildImplicit, buildParametric, paintMesh } from './surfaces.js';
+import { mapUV, setMapMaterial } from './worldmap.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, buildGeodesicGrid,
   disposeGrid,
@@ -133,6 +134,7 @@ const state = {
   // same ruler — and so it stays walkable when the explorer changes size.
   pathHeights: 2,
   heightColors: false,
+  worldMap: false,     // the Earth's map, laid on whatever surface is shown
   surfGrid: false,     // the coordinate grid, drawn on the surface itself
   geoGrid: false,      // ...built from geodesics rather than from coordinates
   compass: true,       // the direction indicator, top right
@@ -1044,6 +1046,7 @@ function applyPalette() {
   } else if (surface) {
     recolorSurface(field, grid, surface.geometry, paletteMode());
   }
+  applyWorldMap();
 
   // In height-colour mode, flatten the lighting. The ramp only means anything
   // if the colour on screen is the colour in the legend, so trade some of the
@@ -1053,6 +1056,38 @@ function applyPalette() {
   if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
   }
+}
+
+/**
+ * Lay the Earth's map on whatever is on screen, or take it off.
+ *
+ * Where the map's rectangle goes is decided per kind of surface — see
+ * worldmap.js — and the answer is different for each because "where is the
+ * rectangle" is a different question for each. The detail patch under the
+ * explorer stands down while the map is on: it is a second, terrain-coloured
+ * copy of the ground drawn over the first, and it would show through the
+ * Atlantic.
+ */
+function applyWorldMap() {
+  const on = state.worldMap;
+  const graph = state.surfaceKind === 'graph';
+  const mesh = graph ? (surface && surface.mesh) : altSurface;
+  if (!mesh) return;
+
+  if (on) {
+    const ok = graph
+      ? mapUV(mesh, 'graph', { field })
+      : state.surfaceKind === 'parametric'
+        ? mapUV(mesh, 'parametric', {
+          umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
+        })
+        : mapUV(mesh, 'implicit', {
+          centre: mesh.geometry.boundingSphere ? mesh.geometry.boundingSphere.center : null,
+        });
+    if (!ok) return;
+  }
+  setMapMaterial(graph ? surface.materials : mesh.material, on);
+  if (surfaceDetail) surfaceDetail.group.visible = !on;
 }
 
 function applyIsolation() {
@@ -1882,6 +1917,7 @@ function wireUI() {
   bindCheck('t-isolate', 'isolate', () => { applyIsolation(); });
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
+  bindCheck('t-worldmap', 'worldMap', () => withLoading(applyPalette));
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
   bindCheck('t-geogrid', 'geoGrid', () => withLoading(refreshSurfaceGrid));
 

@@ -1,5 +1,6 @@
 // A curved surface is terrain too: it carries the bands and the forest, and
-// the dial changes how big the forest is. Serve app/ on 8125 first.
+// the dial changes how big the forest is. Also that the world map goes on, and
+// comes off again, on every kind of surface. Serve app/ on 8125 first.
 const { chromium } = require('playwright-core');
 let fails = 0;
 const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FAIL'} ${n}${d ? '  — ' + d : ''}`); };
@@ -94,6 +95,39 @@ const palette = (p) => p.evaluate(() => {
     await p.waitForTimeout(500);
   }
 
+  // The world map, on every kind of surface. It is a texture on the material,
+  // so that is what is asked about — the picture itself was checked against the
+  // geography in check-worldmap.mjs.
+  const mapped = (p) => p.evaluate(() => {
+    const a = window.__peaks;
+    const mesh = a.state.surfaceKind === 'graph'
+      ? a.world.getObjectByName('surface') : a.altSurface;
+    if (!mesh) return null;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    return {
+      textured: mats.every((m) => !!m.map),
+      bare: mats.every((m) => !m.map),
+      vertexColours: mats.some((m) => m.vertexColors),
+      uv: !!mesh.geometry.getAttribute('uv'),
+    };
+  });
+
+  for (const kind of ['parametric', 'implicit', 'graph']) {
+    await p.selectOption('#sel-surface', kind);
+    await p.waitForTimeout(2600);
+    await p.evaluate(() => document.getElementById('t-worldmap').scrollIntoView({ block: 'center' }));
+    await p.evaluate(() => document.getElementById('t-worldmap').click());
+    await p.waitForTimeout(1800);
+    const on = await mapped(p);
+    check(`${kind}: the world map goes on`,
+      on && on.textured && on.uv && !on.vertexColours, JSON.stringify(on));
+    await p.evaluate(() => document.getElementById('t-worldmap').click());
+    await p.waitForTimeout(1500);
+    const off = await mapped(p);
+    check(`${kind}: and comes off again, colours and all`,
+      off && off.bare && off.vertexColours, JSON.stringify(off));
+  }
+
   // A graph must be untouched by all of this.
   await p.selectOption('#sel-surface', 'graph');
   await p.waitForTimeout(2600);
@@ -102,6 +136,6 @@ const palette = (p) => p.evaluate(() => {
 
   check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
   await b.close();
-  console.log(fails === 0 ? '\nCURVED SURFACES ARE TERRAIN TOO' : `\n${fails} FAILURE(S)`);
+  console.log(fails === 0 ? '\nCURVED SURFACES ARE TERRAIN, AND THE MAP GOES ON THEM' : `\n${fails} FAILURE(S)`);
   process.exit(fails ? 1 : 0);
 })();

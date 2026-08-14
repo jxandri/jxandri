@@ -391,6 +391,25 @@ region where <code>f &lt; 0</code> fills with water.</p>
 <p><strong>Decoration density</strong> — how much scenery. Turn it down to speed things up.</p>
 <p><strong>Shadows</strong> — prettier, noticeably slower. Off by default.</p>
 
+<h3>Paint the world map on it</h3>
+<p>Puts the Earth's map on whatever surface is showing: longitude across, latitude up, the plainest
+projection there is, with a graticule every 30° so the stretching is legible. Where the rectangle
+lands depends on what kind of surface it is — the parameter rectangle, or the domain of a graph, or
+longitude and latitude about the centre of an implicit surface.</p>
+<p>Choose Parametric → Sphere and it becomes the globe it was traced from: the flat map's
+distortion visibly undoes itself, Greenland shrinks back to a large island, Antarctica stops being
+a continent-wide smear along the bottom. Then switch to a torus, or to a graph with a mountain on
+it, and watch the same rectangle distort in a way that belongs to <em>that</em> surface. No sheet
+of paper can carry a sphere without stretching it — that is Gauss's <em>Theorema Egregium</em> —
+and a class that has been told this can now see it happen in both directions.</p>
+<p>The coastlines travel inside the program (Natural Earth, public domain, about 60 000 points),
+so this works with the network off, like everything else here.</p>
+
+<h3>Size of the trees</h3>
+<p>Scales the vegetation, rocks and grass from a tenth to five times. Left at 1× the scenery is
+sized against the world it stands on, the same rule a graph uses; a small sphere with a full-height
+forest on it is a picture worth seeing once and turning down afterwards.</p>
+
 <h2>Grid on the surface</h2>
 <p>Its own section in the panel, and live on every kind of surface — a graph, a parametric patch and an implicit surface all have coordinates worth drawing, so unlike the level curves and the terrain colouring above it this one never greys out.</p>
 <p><strong>Coordinate grid on the surface</strong> <kbd>N</kbd> — draws the coordinate system
@@ -475,6 +494,40 @@ mode, hold the <strong>right</strong> mouse button.</p>
 hillside they bend with the hillside; each ends in a flat arrowhead, proportioned to the width of
 its own shaft.</p>
 
+<h3>On a surface that is not a graph</h3>
+<p>A torus has no height function, so there is nothing to take a partial derivative
+<em>of</em> — and yet every object in this section still exists, because they are objects of the
+surface rather than of the formula. Pick Implicit or Parametric and the same five switches mean
+the following instead.</p>
+<p><strong>Geodesic circle around you</strong> <kbd>H</kbd> — the set of points you can reach by
+walking the given distance along a <em>straightest path</em>, in every direction. On a plane that
+is a circle of circumference 2πr. On anything curved it is not, and the badge reports the ratio
+C/2πr: below 1 the surface curves like a sphere, above 1 like a saddle. The shortfall is the
+Gaussian curvature — <code>C = 2πr(1 − K r²/6 + …)</code>, Bertrand and Puiseux, 1848 — and it is
+on screen and measured rather than asserted. On a graph you can switch the ordinary
+neighbourhood to this one too, with <strong>measure it with geodesics instead</strong>, and watch
+the two rims part company as the hill steepens.</p>
+<p><strong>First and second coordinate direction</strong> <kbd>X</kbd> <kbd>Y</kbd> — the blue and
+red arrows now point along the coordinate directions of <em>whichever grid is switched on</em>: the
+parameter lines <code>∂r/∂u</code> and <code>∂r/∂v</code>, or the directions in which the ambient
+<code>x</code> and <code>y</code> increase while staying on the surface, or the two axes of the
+geodesic grid. That is what makes them <em>partial</em>: the question has no answer until a
+coordinate system is named, and changing the grid changes the arrows. The badge reports the angle
+between them, which is 90° for longitude and latitude on a sphere, 90° by construction for the
+geodesic grid, and something else entirely on a helicoid.</p>
+<p>Occasionally an arrow simply is not there, and the badge says the axis is perpendicular to the
+surface. Where the sphere <code>x²+y²+z²=1</code> meets the plane <code>x = 1</code> it is tangent
+to that plane: <code>x</code> is stationary, and "the direction in which x increases" is not a
+direction. Nothing is drawn, because there is nothing to draw.</p>
+<p><strong>Velocity vector</strong> <kbd>B</kbd> — the amber arrow is the direction you are
+actually travelling, tangent to the surface: γ'(0) for the path under your feet. On a graph the
+directional derivative is a number, the slope you feel; here there is no height to have a slope,
+and what is left is the vector that number was a derivative of. Walk, and it moves with you.</p>
+<p><strong>Tangent plane at your feet</strong> <kbd>P</kbd> — T<sub>p</sub>S itself, drawn flat and
+straight in space, which is where those vectors live. The arrows curve away along the surface and
+the plane does not; they agree at your feet and part at second order, and shrinking the explorer
+closes the gap. That is differentiability, on a surface with no graph to draw it over.</p>
+
 <h2>The curve under your feet</h2>
 <p><strong>Level curve you are standing on</strong> <kbd>J</kbd> — traces the contour through the
 explorer's exact height, not the nearest round one, and re-traces it continuously as they walk.
@@ -520,7 +573,11 @@ The report underneath gives the maximum value, where it is, whether it sits in t
   <li><strong>First person</strong> <kbd>1</kbd> — through the explorer's own eyes, walking on the
   surface. The slope is felt rather than seen.</li>
   <li><strong>Third person</strong> <kbd>2</kbd> — over the explorer's shoulder. The best view for
-  the derivative arrows, because you can see both the ground and the figure standing on it.</li>
+  the derivative arrows, because you can see both the ground and the figure standing on it. On a
+  sphere or a torus the camera rides behind the heading in the explorer's own frame, so the mouse
+  steers them and the camera comes round with them, exactly as in first person; the vertical
+  movement raises and lowers the camera instead. It also stays close: however far you pull back with
+  the wheel, it will not put the surface between itself and the person it is following.</li>
   <li><strong>Drone</strong> <kbd>3</kbd> — a flying camera, off the surface altogether.</li>
 </ul>
 <p><strong>Drone camera</strong> — visible only in drone mode, and offering the same choice again
@@ -570,6 +627,13 @@ is what keeps forward from collapsing into the frame.</p>
 
 <p>Type into the <code>f(x, y) =</code> box and press <kbd>Enter</kbd>. The notation is the ordinary
 one you would use in a calculator or a spreadsheet, with two conveniences added.</p>
+
+<h2>How fast the explorer walks</h2>
+<p><strong>Walking speed</strong> in the View section multiplies the ordinary pace, from about a
+quarter to twenty-five times. The pace itself is already measured in explorer heights per second,
+so an explorer a tenth the size still crosses the same ground in the same time; this is for when
+you want to get to the far side of a torus without narrating the journey. Holding <kbd>Shift</kbd>
+still sprints on top of it.</p>
 
 <h2>The rules</h2>
 <table class="compact">

@@ -18,8 +18,10 @@ import {
   Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE,
   BASE_FOV, FOV_MIN, FOV_MAX,
 } from './player.js';
-import { ParametricWalker, ImplicitWalker, standBasis } from './walker.js';
-import { buildImplicit, buildParametric } from './surfaces.js';
+import { ParametricWalker, ImplicitWalker, standBasis, graphWalker } from './walker.js';
+import { IntrinsicGizmo, GeodesicDisc } from './intrinsic.js';
+import { buildImplicit, buildParametric, paintMesh } from './surfaces.js';
+import { mapUV, setMapMaterial } from './worldmap.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, buildGeodesicGrid,
   disposeGrid,
@@ -127,8 +129,12 @@ const state = {
   isolate: false,
   contours: false,
   contourStep: 0,      // 0 = choose a round interval automatically
-  pathWidth: 1.4,      // world metres; wide enough to walk along
+  // How wide a level curve is painted, in explorer heights. Two, so a contour
+  // is exactly as wide as the side of a grid square and both read against the
+  // same ruler — and so it stays walkable when the explorer changes size.
+  pathHeights: 2,
   heightColors: false,
+  worldMap: false,     // the Earth's map, laid on whatever surface is shown
   surfGrid: false,     // the coordinate grid, drawn on the surface itself
   geoGrid: false,      // ...built from geodesics rather than from coordinates
   compass: true,       // the direction indicator, top right
@@ -136,6 +142,7 @@ const state = {
   curCurve: false,
   curTangent: false,
   decor: true,
+  decorScale: 1,       // how big the trees, rocks and grass are drawn
   water: true,
 
   // The window follows the explorer: reaching an edge slides that axis along by
@@ -148,6 +155,7 @@ const state = {
   shadows: false,
 
   disc: false,
+  geoDisc: false,      // measure the neighbourhood with geodesics, not with rays
   radius: 3,
   showDx: false,
   showDy: false,
@@ -156,6 +164,7 @@ const state = {
   dirAngle: 0,
   tangent: false,
 
+  walkSpeed: 1,        // a multiple of the ordinary pace
   zoom: 1,             // the explorer's own size, in units of 1.8 m
   camZoom: 1,          // how close the camera is, which is a separate question
   showOpt: false,
@@ -191,6 +200,9 @@ let optMarker = null;
 let curveGizmo = null;
 let tangentLine = null;
 let optimum = null;
+let intrinsic = null;    // the geodesic circle, the arrows and the tangent plane
+let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
+let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
 let decorations = new Decorations();
@@ -207,9 +219,8 @@ let altHiker = null;
 const altView = {
   mode: MODE_DRONE,
   pitch: -0.1,          // first person only; third person stays level
-  camYaw: 0.6,          // third person: where the fixed camera sits
+  camPitch: 0.32,       // third person: how high behind the explorer it rides
   camDist: 0,
-  camHeight: 0,
   scale: 1,             // world units per unit of the surface's own coordinates
   charScale: 1,         // world units per unit of the character
 };
@@ -261,12 +272,14 @@ function clearGraphWorld() {
   if (surfaceDetail) { disposeTree(surfaceDetail.group); surfaceDetail.dispose(); }
   if (gizmo) { disposeTree(gizmo.group); gizmo.dispose(); }
   if (tangentPlane) { disposeTree(tangentPlane.mesh); tangentPlane.dispose(); }
+  if (graphDisc) { disposeTree(graphDisc.group); graphDisc.dispose(); }
   if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
   if (curveGizmo) { disposeTree(curveGizmo.mesh); curveGizmo.dispose(); }
   if (tangentLine) { disposeTree(tangentLine.mesh); tangentLine.dispose(); }
   decorations.clear();
   surface = water = walls = contourLines = null;
   surfaceDetail = gizmo = tangentPlane = optMarker = curveGizmo = tangentLine = null;
+  graphGeo = graphDisc = null;
   contourInfo = null;
   optimum = null;
 }
@@ -436,6 +449,7 @@ function rebuildAlternate() {
 
   world.add(altSurface);
   setMessage('');
+  chooseOutwardSide();
 
   // Sky and fog still want a sensible scale even without a Field.
   disposeTree(sky);
@@ -451,6 +465,8 @@ function rebuildAlternate() {
   applyOrientation();
   refreshSurfaceGrid();
   frameAlternate();
+  applyPalette();
+  refreshAltDecor();
   return true;
 }
 
@@ -530,6 +546,28 @@ function refreshSurfaceGrid() {
 const GRID_HEIGHTS = 2;
 
 /**
+ * How wide a level curve is painted, in world metres.
+ *
+ * A width in metres would be a width in metres whatever the explorer's size,
+ * and the explorer's size is the plot's whole sense of scale: shrink to a
+ * tenth to look at local linearity and every contour would still be 1.4 m
+ * across, which at that scale is a motorway. Tied to the explorer instead, a
+ * contour is a footpath at every scale — and at the default two heights it is
+ * exactly as wide as the side of a grid square, so the two rulers agree.
+ */
+function pathWidth() { return state.pathHeights * 1.8 * state.zoom; }
+
+function updatePathWidthLabel() {
+  const el = $('lbl-cwidth');
+  if (!el) return;
+  const n = state.pathHeights;
+  const m = pathWidth();
+  const metres = m >= 100 ? Math.round(m).toLocaleString()
+    : m >= 1 ? m.toPrecision(3) : m.toPrecision(2);
+  el.textContent = `${n} × 1.8 m = ${metres} m`;
+}
+
+/**
  * Say what the chosen key costs, if anything, and only then.
  *
  * A warning that is always on screen is furniture; one that appears exactly
@@ -539,6 +577,39 @@ function applyHoldKeyNote() {
   const el = $('note-holdkey');
   if (!el) return;
   el.textContent = t(state.holdKey === 'alt' ? 'hold.notealt' : 'hold.note');
+}
+
+function decorOptions() {
+  return { density: state.density, shadows: state.shadows, scale: state.decorScale };
+}
+
+/** Rebuild whichever forest is on screen — a graph's or a curved surface's. */
+function rebuildDecor() {
+  if (state.surfaceKind !== 'graph') { refreshAltDecor(); return; }
+  if (!field || !grid) return;
+  decorations.build(field, grid, predicate, decorOptions());
+  decorations.setVisible(state.decor);
+  decorations.setIsolate(state.isolate && state.feasible);
+}
+
+/**
+ * Scatter the same forest over a surface that is not a graph.
+ *
+ * Deliberately the same forest and the same rules: a student who has learned
+ * to read the bands on a hillside — dark timber low down, thinning woodland,
+ * scree, snow — reads a torus the same way, and the height that decides them
+ * is the same height that coloured the surface. The scale is the explorer's,
+ * so the trees say how big the explorer is exactly as they do on a graph.
+ */
+function refreshAltDecor() {
+  if (state.surfaceKind === 'graph') return;
+  if (!state.decor || !altSurface) { decorations.clear(); return; }
+  decorations.buildOnMesh(altSurface, {
+    ...decorOptions(),
+    radius: altSurfaceRadius(),
+    sign: walker ? walker.sign : 1,
+  });
+  decorations.setVisible(state.decor);
 }
 
 /** The radius of whatever non-graph surface is on screen. */
@@ -581,6 +652,21 @@ function scheduleGridRebuild() {
   gridTimer = setTimeout(() => refreshSurfaceGrid(), 220);
 }
 
+/** And for the forest on a curved surface, which is sized against the explorer. */
+let decorTimer = 0;
+function scheduleDecorRebuild() {
+  clearTimeout(decorTimer);
+  decorTimer = setTimeout(() => refreshAltDecor(), 300);
+}
+
+/** The same, for the contour set, whose width is baked into its triangles. */
+let contourTimer = 0;
+function scheduleContourRebuild() {
+  if (!state.contours || state.surfaceKind !== 'graph') return;
+  clearTimeout(contourTimer);
+  contourTimer = setTimeout(() => refreshContours(), 260);
+}
+
 /**
  * Drop the implicit walker onto an actual vertex of the mesh.
  *
@@ -604,10 +690,38 @@ function ensureAltHiker() {
   world.add(altHiker);
 }
 
+/**
+ * Decide which side of the surface counts as the outside.
+ *
+ * A walker's normal is whatever the formula hands it — r_u × r_v for a
+ * parametric patch, ∇F for an implicit one — and neither has any obligation to
+ * point away from the middle of the shape. The usual sphere is the case in
+ * point: with v running from 0 to π, r_u × r_v points *inwards*, so the
+ * explorer was standing on the inner wall with their head towards the centre,
+ * while the checkbox that is supposed to say so was unticked. Everything built
+ * on their up vector inherited that, the following camera included, which is
+ * why it kept ending up inside the ball looking at the far wall.
+ *
+ * So the side is chosen rather than inherited: whichever way the normal has to
+ * point to face away from the surface's own centre. That is the outside of
+ * anything closed, and on a Möbius strip — which has no outside — it is at
+ * least the side the explorer is standing on when they arrive.
+ */
+function chooseOutwardSide() {
+  if (!walker) return;
+  const b = altSurface && altSurface.geometry.boundingSphere;
+  const centre = b ? b.center : new THREE.Vector3();
+  const away = walker.position(new THREE.Vector3()).sub(centre);
+  walker.baseSign = away.lengthSq() > 1e-12
+    && walker.normal(new THREE.Vector3()).dot(away) < 0 ? -1 : 1;
+  applyOrientation();
+}
+
 function applyOrientation() {
   // Through flip(), not by assignment: swapping sides swaps which way is right,
   // and with it the sense of the angle the body is held at.
-  const want = state.inside ? -1 : 1;
+  const base = walker && walker.baseSign ? walker.baseSign : 1;
+  const want = base * (state.inside ? -1 : 1);
   if (walker && walker.sign !== want) walker.flip();
   $('fld-orient').hidden = state.surfaceKind === 'graph';
 }
@@ -666,13 +780,52 @@ function placeAltHiker() {
 }
 
 /**
- * Keep the following camera above the explorer's feet and short of straight
- * overhead — at exactly overhead its view is parallel to the world up and
- * lookAt has nothing left to orient against.
+ * Keep the following camera short of straight overhead and straight underneath
+ * — at either the view is parallel to the up it is being oriented against, and
+ * lookAt has nothing left to work with.
  */
-function clampCamHeight(h) {
-  const lim = (altView.camDist || 1) * 2.2;
-  return Math.max(-lim, Math.min(lim, h));
+function clampCamPitch(a) {
+  const lim = 1.35;                      // ~77°, comfortably short of vertical
+  return Math.max(-lim, Math.min(lim, a));
+}
+
+/**
+ * How far behind the explorer the following camera may ride.
+ *
+ * Near enough that the surface underfoot is what fills the screen, and — the
+ * point of the clamp — never so far that it leaves the neighbourhood. Beyond
+ * about half the surface's own radius a camera behind someone standing on a
+ * sphere is no longer looking at a hillside, it is looking at a ball; and on a
+ * torus it is inside the hole.
+ */
+function clampCamDist(d) {
+  const body = 1.8 * state.zoom * (altView.charScale || 1);
+  return Math.max(body * 1.6, Math.min(d, altSurfaceRadius() * 0.55));
+}
+
+/**
+ * Stop the surface from getting between the camera and the explorer.
+ *
+ * A distance clamp is not enough on its own. Standing in the hole of a torus
+ * and backing away puts the far wall of the tube in the way long before any
+ * fixed limit is reached, and what the student then sees is a solid colour.
+ * So the last word belongs to the surface itself: cast a ray out along the
+ * camera's own direction and, if it meets the surface, stop short of it. This
+ * is the ordinary camera-collision test of a third-person game, and here it is
+ * also the guarantee the view stays local — the camera can never be on the
+ * other side of a wall from the person it is following.
+ */
+const camRay = new THREE.Raycaster();
+function clearOfSurface(from, dir, d) {
+  if (!altSurface) return d;
+  const body = 1.8 * state.zoom * (altView.charScale || 1);
+  const near = body * 0.25;                   // clear of the ground underfoot
+  camRay.set(from.clone().addScaledVector(dir, near), dir);
+  camRay.near = 0;
+  camRay.far = d - near;
+  const hit = camRay.intersectObject(altSurface, false)[0];
+  if (!hit) return d;
+  return Math.max(body * 1.2, near + hit.distance * 0.82);
 }
 
 /** Put the drone where the whole alternate surface is in shot. */
@@ -697,7 +850,7 @@ function frameAlternate() {
   // enough that they are a figure rather than a speck.
   const body = 1.8 * altView.charScale;
   altView.camDist = body * 7;
-  altView.camHeight = body * 2.6;
+  altView.camPitch = 0.32;
 }
 
 function rebuild() {
@@ -773,6 +926,13 @@ function rebuild() {
   tangentPlane = new TangentPlane(field);
   world.add(tangentPlane.mesh);
 
+  // A graph is a surface, and can be asked a surface's questions: this walker
+  // carries the geodesics of z = f(x,y), which is what the geodesic circle
+  // needs and what the compass-direction disc cannot supply.
+  graphGeo = graphWalker(field);
+  graphDisc = new GeodesicDisc();
+  world.add(graphDisc.group);
+
   optMarker = new OptimumMarker(field);
   world.add(optMarker.group);
 
@@ -782,7 +942,7 @@ function rebuild() {
   tangentLine = new TangentLineGizmo(field);
   world.add(tangentLine.mesh);
 
-  decorations.build(field, grid, predicate, { density: state.density, shadows: state.shadows });
+  decorations.build(field, grid, predicate, decorOptions());
   decorations.setVisible(state.decor);
   decorations.setIsolate(state.isolate && state.feasible);
 
@@ -806,6 +966,7 @@ function rebuild() {
     player.resetToDomainCentre();
   }
   player.setZoom(state.zoom);
+  player.speedScale = state.walkSpeed;
 
   applyPalette();
   applyIsolation();
@@ -878,17 +1039,55 @@ function configureShadows() {
 function paletteMode() { return state.heightColors ? 'height' : 'biome'; }
 
 function applyPalette() {
-  if (!surface) return;
-  recolorSurface(field, grid, surface.geometry, paletteMode());
+  // The lighting change below applies whichever kind of surface is on screen,
+  // and a curved one has its own painter.
+  if (state.surfaceKind !== 'graph') {
+    paintMesh(altSurface, paletteMode());
+  } else if (surface) {
+    recolorSurface(field, grid, surface.geometry, paletteMode());
+  }
+  applyWorldMap();
 
   // In height-colour mode, flatten the lighting. The ramp only means anything
   // if the colour on screen is the colour in the legend, so trade some of the
   // directional shading for fidelity to the palette.
   if (state.heightColors) { hemi.intensity = 4.2; sun.intensity = 1.1; }
   else { hemi.intensity = 3.1; sun.intensity = 3.4; }
-  if (surfaceDetail && player) {
+  if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
   }
+}
+
+/**
+ * Lay the Earth's map on whatever is on screen, or take it off.
+ *
+ * Where the map's rectangle goes is decided per kind of surface — see
+ * worldmap.js — and the answer is different for each because "where is the
+ * rectangle" is a different question for each. The detail patch under the
+ * explorer stands down while the map is on: it is a second, terrain-coloured
+ * copy of the ground drawn over the first, and it would show through the
+ * Atlantic.
+ */
+function applyWorldMap() {
+  const on = state.worldMap;
+  const graph = state.surfaceKind === 'graph';
+  const mesh = graph ? (surface && surface.mesh) : altSurface;
+  if (!mesh) return;
+
+  if (on) {
+    const ok = graph
+      ? mapUV(mesh, 'graph', { field })
+      : state.surfaceKind === 'parametric'
+        ? mapUV(mesh, 'parametric', {
+          umin: state.umin, umax: state.umax, vmin: state.vmin, vmax: state.vmax,
+        })
+        : mapUV(mesh, 'implicit', {
+          centre: mesh.geometry.boundingSphere ? mesh.geometry.boundingSphere.center : null,
+        });
+    if (!ok) return;
+  }
+  setMapMaterial(graph ? surface.materials : mesh.material, on);
+  if (surfaceDetail) surfaceDetail.group.visible = !on;
 }
 
 function applyIsolation() {
@@ -909,7 +1108,7 @@ function refreshContours() {
 
   const picked = chooseLevels(grid.zmin, grid.zmax, { step: state.contourStep, target: 40 });
   contourInfo = picked;
-  contourLines = buildContours(field, grid, picked.levels || [], { width: state.pathWidth });
+  contourLines = buildContours(field, grid, picked.levels || [], { width: pathWidth() });
   if (contourLines) world.add(contourLines);
   updateContourNote();
   refreshProjection();
@@ -1215,14 +1414,16 @@ document.addEventListener('mousemove', (e) => {
       altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * 0.0022));
       return;
     }
+    // Turning is a rotation of the heading *in the tangent plane*, which is
+    // the only thing "turn left" can mean on a surface with no fixed up. It is
+    // the same gesture in both views on purpose: in third person the camera
+    // rides behind the heading, so steering the explorer swings the camera
+    // round with them, and changing view does not change what the mouse does.
+    walker.turn(-dx * 0.0022);
     if (altView.mode === MODE_FIRST) {
-      // Turning is a rotation of the heading *in the tangent plane*, which is
-      // the only thing "turn left" can mean on a surface with no fixed up.
-      walker.turn(-dx * 0.0022);
       altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * 0.0022));
     } else {
-      altView.camYaw -= dx * 0.004;
-      altView.camHeight = clampCamHeight(altView.camHeight - dy * altView.camDist * 0.004);
+      altView.camPitch = clampCamPitch(altView.camPitch + dy * 0.0022);
     }
     return;
   }
@@ -1354,15 +1555,16 @@ function applyLookKeys(dt) {
     if (altView.mode === MODE_DRONE || !walker) {
       altCam.yaw -= dx * a;
       altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * a));
-    } else if (altView.mode === MODE_FIRST) {
+    } else {
       // On a surface, "turn" is a rotation of the heading inside the tangent
       // plane; pitch is clamped short of vertical so the view never rolls under
       // the ground it is standing on.
       walker.turn(-dx * a);
-      altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * a));
-    } else {
-      altView.camYaw -= dx * a;
-      altView.camHeight = clampCamHeight(altView.camHeight - dy * (altView.camDist || 1) * a * 0.9);
+      if (altView.mode === MODE_FIRST) {
+        altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * a));
+      } else {
+        altView.camPitch = clampCamPitch(altView.camPitch + dy * a);
+      }
     }
     return;
   }
@@ -1408,11 +1610,33 @@ function applySurfaceKindUI() {
 
   if (projection) applyProjectionStyle();
 
-  // Grey out the sections that only mean something on a graph.
-  for (const id of ['sec-feasible', 'sec-map', 'sec-deriv', 'sec-curve', 'sec-zoom', 'sec-opt']) {
+  // Grey out the sections that only mean something on a graph. The derivatives
+  // and the tangent plane are not among them any more: a surface has a
+  // neighbourhood, coordinate directions, a velocity and a tangent plane
+  // whether or not it happens to be the graph of anything.
+  for (const id of ['sec-feasible', 'sec-map', 'sec-curve', 'sec-opt']) {
     const el = $(id);
     if (el) { el.style.opacity = graph ? '' : '0.4'; el.style.pointerEvents = graph ? '' : 'none'; }
   }
+
+  // Within the derivatives section, the two rows that really do need an f: the
+  // gradient is a gradient of something, and the free directional derivative is
+  // steered by the mouse while the explorer is frozen, which is a heightfield
+  // control. On a curved surface those rows are replaced rather than greyed.
+  $('row-grad').hidden = !graph;
+  $('fld-geodisc').hidden = !graph;
+  for (const [id, key] of [
+    ['lbl-dx', graph ? 'deriv.dx' : 'deriv.axisa'],
+    ['lbl-dy', graph ? 'deriv.dy' : 'deriv.axisb'],
+    ['lbl-dir', graph ? 'deriv.dir' : 'deriv.velocity'],
+    ['lbl-disc', graph ? 'deriv.disc' : 'deriv.geocircle'],
+    ['lbl-tangent', graph ? 'deriv.tangent' : 'deriv.tangentp'],
+  ]) {
+    const el = $(id);
+    if (el) { el.dataset.i18n = key; el.textContent = t(key); }
+  }
+  $('note-intrinsic').hidden = graph;
+  $('note-arcnote').hidden = !graph;
   // Walking works on all three kinds of surface, so the view buttons stay live.
   $('fld-orient').hidden = graph;
   $('note-alt').hidden = graph;
@@ -1693,6 +1917,7 @@ function wireUI() {
   bindCheck('t-isolate', 'isolate', () => { applyIsolation(); });
   bindCheck('t-contours', 'contours', refreshContours);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
+  bindCheck('t-worldmap', 'worldMap', () => withLoading(applyPalette));
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
   bindCheck('t-geogrid', 'geoGrid', () => withLoading(refreshSurfaceGrid));
 
@@ -1735,27 +1960,38 @@ function wireUI() {
   });
 
   $('in-cwidth').addEventListener('input', (e) => {
-    state.pathWidth = parseFloat(e.target.value);
-    $('lbl-cwidth').textContent = `${state.pathWidth.toFixed(1)} m`;
+    state.pathHeights = parseFloat(e.target.value);
+    updatePathWidthLabel();
   });
   $('in-cwidth').addEventListener('change', () => {
     if (state.contours) withLoading(refreshContours);
   });
-  bindCheck('t-decor', 'decor', () => decorations.setVisible(state.decor));
+  bindCheck('t-decor', 'decor', () => {
+    decorations.setVisible(state.decor);
+    // On a curved surface the forest is not built until it is asked for, so
+    // the first tick has to build it rather than just unhide nothing.
+    if (state.decor && state.surfaceKind !== 'graph' && !decorations.layers.length) {
+      withLoading(refreshAltDecor);
+    }
+  });
   bindCheck('t-water', 'water', () => { if (water) water.visible = state.water && !(state.feasible && state.isolate); });
   bindCheck('t-shadow', 'shadows', () => {
     configureShadows();
-    withLoading(() => decorations.build(field, grid, predicate, { density: state.density, shadows: state.shadows }));
+    withLoading(rebuildDecor);
   });
+
+  // Logarithmic: a tenth and five times sit the same distance from the middle.
+  $('in-decsize').addEventListener('input', (e) => {
+    state.decorScale = Math.pow(10, parseFloat(e.target.value));
+    $('lbl-decsize').textContent = state.decorScale >= 1
+      ? `${state.decorScale.toFixed(1)}×` : `${state.decorScale.toFixed(2)}×`;
+  });
+  $('in-decsize').addEventListener('change', () => withLoading(rebuildDecor));
 
   $('in-den').addEventListener('input', (e) => { $('lbl-den').textContent = `${parseFloat(e.target.value).toFixed(1)}×`; });
   $('in-den').addEventListener('change', (e) => {
     state.density = parseFloat(e.target.value);
-    withLoading(() => {
-      decorations.build(field, grid, predicate, { density: state.density, shadows: state.shadows });
-      decorations.setVisible(state.decor);
-      decorations.setIsolate(state.feasible && state.isolate);
-    });
+    withLoading(rebuildDecor);
   });
 
   bindCheck('t-disc', 'disc', () => { if (state.disc) goToExplorer(); });
@@ -1763,11 +1999,17 @@ function wireUI() {
   bindCheck('t-dy', 'showDy', ensureDisc);
   bindCheck('t-grad', 'showGrad', ensureDisc);
   bindCheck('t-tangent', 'tangent', () => { if (state.tangent) goToExplorer(); });
+  bindCheck('t-geodisc', 'geoDisc');
   bindCheck('t-dir', 'showDir', () => {
     ensureDisc();
-    player.frozen = state.showDir;
-    $('note-dir').hidden = !state.showDir;
-    if (state.showDir) state.dirAngle = player.facing || 0;
+    // On a graph the free direction u is steered by the mouse, so the explorer
+    // has to hold still while it is. On a curved surface the arrow *is* the
+    // explorer's velocity, and freezing them would freeze the thing being
+    // shown — there, walking around is how you use it.
+    const graph = state.surfaceKind === 'graph';
+    player.frozen = graph && state.showDir;
+    $('note-dir').hidden = !(graph && state.showDir);
+    if (graph && state.showDir) state.dirAngle = player.facing || 0;
   });
 
   $('in-rad').addEventListener('input', (e) => {
@@ -1777,6 +2019,16 @@ function wireUI() {
 
   $('in-zoom').addEventListener('input', (e) => {
     applyZoom(Math.pow(10, -parseFloat(e.target.value)));
+  });
+
+  // Logarithmic, so a quarter pace and four times pace are the same distance
+  // from the middle and neither end of the dial is a dead zone.
+  $('in-speed').addEventListener('input', (e) => {
+    state.walkSpeed = Math.pow(10, parseFloat(e.target.value));
+    if (player) player.speedScale = state.walkSpeed;
+    $('lbl-speed').textContent = state.walkSpeed >= 10
+      ? `${Math.round(state.walkSpeed)}×`
+      : `${state.walkSpeed.toFixed(state.walkSpeed < 1 ? 2 : 1)}×`;
   });
 
   // The two dials on the right edge. A tablet has no wheel and no modifier
@@ -1963,9 +2215,11 @@ function wireLanguage() {
  * section is written for.
  */
 function goToExplorer() {
-  if (player && player.mode === MODE_DRONE && state.surfaceKind === 'graph') {
-    setMode(MODE_THIRD);
+  if (state.surfaceKind !== 'graph') {
+    if (walker && altView.mode === MODE_DRONE) setMode(MODE_THIRD);
+    return;
   }
+  if (player && player.mode === MODE_DRONE) setMode(MODE_THIRD);
 }
 
 function ensureDisc() {
@@ -2024,9 +2278,13 @@ function applyZoom(z) {
   const before = state.zoom;
   state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
-  // The grid squares are one explorer tall, so they are no longer the right
-  // size once the explorer is not.
-  if (state.zoom !== before) scheduleGridRebuild();
+  // The grid squares and the contour paths are both measured in explorer
+  // heights, so neither is the right size once the explorer is not.
+  if (state.zoom !== before) {
+    scheduleGridRebuild();
+    scheduleContourRebuild();
+  }
+  updatePathWidthLabel();
   $('in-zoom').value = String(-Math.log10(state.zoom));
   // The panel dial and the dial on the right edge are two handles on one
   // number, so whichever was moved, both have to end up showing it. They run
@@ -2084,6 +2342,13 @@ const chipEls = {
   dx: $('c-dx'), dy: $('c-dy'), grad: $('c-grad'), dir: $('c-dir'),
 };
 
+/** What to call the two coordinate directions, per kind of grid. */
+const GRID_AXIS_NAMES = {
+  param: ['∂r/∂u', '∂r/∂v'],
+  coord: ['∂/∂x', '∂/∂y'],
+  geodesic: ['e₁', 'e₂'],
+};
+
 function setChip(el, on, label, value, avg) {
   el.hidden = !on;
   if (on) el.innerHTML = `${label} <b>${value}</b> <i>${t('hud.avg')} ${avg}</i>`;
@@ -2125,7 +2390,38 @@ function updateHUD(readout) {
       $('r-x').textContent = '—'; $('r-y').textContent = '—'; $('r-z').textContent = '—';
     }
     $('r-rms').textContent = '—';
-    for (const k in chipEls) chipEls[k].hidden = true;
+    chipEls.grad.hidden = true;                 // there is no f, so no ∇f
+    if (!readout) {
+      for (const k in chipEls) chipEls[k].hidden = true;
+      return;
+    }
+
+    // What the two coordinate arrows are, and the angle between them — which
+    // is the whole content of a coordinate system on a curved surface. On the
+    // usual sphere the parameter lines meet at 90°, on a helicoid they do not,
+    // and the geodesic axes meet at 90° by construction.
+    const names = GRID_AXIS_NAMES[gridMode()];
+    const deg = (a) => (isFinite(a) ? `${(a * 180 / Math.PI).toFixed(1)}°` : '—');
+    for (const [chip, on, name, have] of [
+      [chipEls.dx, state.showDx, names[0], readout.hasA],
+      [chipEls.dy, state.showDy, names[1], readout.hasB],
+    ]) {
+      chip.hidden = !on;
+      if (on) {
+        chip.innerHTML = have
+          ? `${name} <i>${t('hud.angle')} ${deg(readout.angleAB)}</i>`
+          : `${name} <i>${t('hud.noaxis')}</i>`;
+      }
+    }
+
+    chipEls.dir.hidden = !state.showDir;
+    if (state.showDir) {
+      const c = isFinite(readout.circumference)
+        ? ` · C/2πr ${fmt(readout.ratio, 4)}` : '';
+      chipEls.dir.innerHTML = `<b>v</b> <i>${t('hud.frombase', {
+        a: names[0], deg: deg(readout.headingAngle),
+      })}${c}</i>`;
+    }
     return;
   }
   const z = player.height();
@@ -2293,6 +2589,51 @@ function animateAltHiker(dt, moving) {
   p.hips.position.y = p.hipsY + (moving ? Math.abs(Math.sin(altWalkPhase)) * 0.045 : 0);
 }
 
+/**
+ * Which coordinate system the partial derivatives are partial *with respect
+ * to* — which is a question about the grid on screen, and has no answer
+ * without one.
+ */
+function gridMode() {
+  if (state.geoGrid) return 'geodesic';
+  return state.surfaceKind === 'parametric' ? 'param' : 'coord';
+}
+
+/**
+ * The derivatives of a surface with no f: the geodesic circle, the coordinate
+ * vectors of the grid in force, the velocity, and the tangent plane.
+ *
+ * Built on demand rather than at surface-build time, because it belongs to the
+ * walker and not to the mesh — change the formula and the same gizmo goes on
+ * answering, about the new surface.
+ */
+function updateIntrinsic() {
+  if (!walker) {
+    if (intrinsic) intrinsic.setVisible(false);
+    return null;
+  }
+  const anyOn = state.disc || state.showDx || state.showDy || state.showDir || state.tangent;
+  if (!anyOn) {
+    if (intrinsic) intrinsic.setVisible(false);
+    return null;
+  }
+  if (!intrinsic) {
+    intrinsic = new IntrinsicGizmo();
+    world.add(intrinsic.group);
+  }
+  const r = altSurfaceRadius();
+  return intrinsic.update(walker, {
+    radiusMetres: state.radius * state.zoom * (altView.charScale || 1),
+    clearance: r * 0.0016,
+    gridMode: gridMode(),
+    showDisc: state.disc,
+    showA: state.showDx,
+    showB: state.showDy,
+    showVel: state.showDir,
+    showPlane: state.tangent,
+  });
+}
+
 const clock = new THREE.Clock();
 const curveRGB = [0, 0, 0];
 
@@ -2327,7 +2668,8 @@ function animate() {
     } else {
       // Walking. Speed is in world metres, so a step feels the same whatever
       // the surface's own parameterisation happens to be doing.
-      const speed = 4.2 * state.zoom * altView.charScale * (inp.sprint ? 2.6 : 1);
+      const speed = 4.2 * state.zoom * altView.charScale * state.walkSpeed
+        * (inp.sprint ? 2.6 : 1);
       const dist = speed * dt;
       if (Math.abs(inp.forward) > 1e-4 || Math.abs(inp.right) > 1e-4) {
         walker.move(dist, inp.forward, inp.right);
@@ -2351,25 +2693,35 @@ function animate() {
         camera.position.copy(stance.p).addScaledVector(stance.up, eye);
         camera.quaternion.copy(q);
       } else {
-        // Third person from a camera that never rolls: its up is the world's,
-        // so an explorer going round the underside of a torus is seen to go
-        // upside down instead of the picture quietly turning with them. That
-        // was the point of calling it static.
+        // Third person, over the shoulder — built entirely in the explorer's
+        // own frame, because on a sphere there is no other frame to build it
+        // in. The camera sits behind the heading, raised by its own elevation
+        // angle, with the explorer's up as its up. Turn, and it comes round
+        // with you; walk under a torus, and it goes under with you.
         //
-        // It follows at a fixed offset from the explorer rather than orbiting
-        // the origin, though, because orbiting the origin means zooming in
-        // walks the camera towards the centre of the surface — and the centre
-        // of a torus is inside the torus. You ended up looking at the far wall
-        // in the dark with the explorer nowhere in frame.
-        const d = (altView.camDist || (altCam.dist * 0.35)) / state.camZoom;
-        const h = (altView.camHeight || 0) / state.camZoom;
-        camera.position.set(
-          stance.p.x + Math.sin(altView.camYaw) * d,
-          stance.p.y + h,
-          stance.p.z + Math.cos(altView.camYaw) * d,
-        );
-        camera.up.set(0, 1, 0);
-        camera.lookAt(stance.p);
+        // The two things this replaces were both world-space, and both broke
+        // here. A camera at a fixed world yaw does not follow a turn, so in
+        // third person there was no way to steer. And a camera placed at a
+        // world offset walks through the surface as soon as the offset is
+        // larger than the surface — zoom out on a sphere and you came out the
+        // far side, looking at the inside of it.
+        //
+        // Staying in the frame fixes the first. The distance clamp fixes the
+        // second: back along a tangent from a point of a convex surface never
+        // re-enters it, and capping the reach at a fraction of the surface's
+        // own radius keeps it from wandering off into a torus's hole either.
+        const c = Math.cos(altView.camPitch), s = Math.sin(altView.camPitch);
+        const eye = 1.66 * state.zoom * altView.charScale;
+        const target = stance.p.clone().addScaledVector(stance.up, eye * 0.6);
+        const back = new THREE.Vector3()
+          .addScaledVector(stance.fwd, -c)
+          .addScaledVector(stance.up, s)
+          .normalize();
+        const d = clearOfSurface(target, back,
+          clampCamDist((altView.camDist || (altCam.dist * 0.35)) / state.camZoom));
+        camera.position.copy(target).addScaledVector(back, d);
+        camera.up.copy(stance.up);
+        camera.lookAt(target);
       }
       camera.fov = fovFor(altView.mode === MODE_FIRST);
       camera.near = Math.max(1e-4, 0.02 * state.zoom * altView.charScale);
@@ -2379,7 +2731,7 @@ function animate() {
     camera.updateProjectionMatrix();
     if (sky) sky.position.copy(camera.position);
     updateCompass(dt);
-    updateHUD(null);
+    updateHUD(updateIntrinsic());
     renderer.render(scene, camera);
     if (projection) projection.draw({});
     return;
@@ -2413,12 +2765,26 @@ function animate() {
     readout = gizmo.update(player.x, player.y, {
       radiusMetres: state.radius * player.zoom,
       clearance: surfaceDetail.topLift,
+      showDisc: !state.geoDisc,
       showX: state.showDx,
       showY: state.showDy,
       showGrad: state.showGrad,
       showDir: state.showDir,
       dirAngle: state.dirAngle,
     });
+  }
+
+  // The other neighbourhood: the set of points a fixed walk away along the
+  // straightest path, rather than along a fixed compass bearing. The two agree
+  // to second order and part company exactly where the surface curves, which is
+  // the comparison the toggle exists to make.
+  if (wantGizmo && state.geoDisc && graphGeo && graphDisc) {
+    graphGeo.placeAtUV(player.x, player.y);
+    if (!graphDisc.update(graphGeo, state.radius * player.zoom, gizmo.lift)) {
+      graphDisc.setVisible(false);
+    }
+  } else if (graphDisc) {
+    graphDisc.setVisible(false);
   }
 
   if (state.tangent && isFinite(player.height())) {
@@ -2433,13 +2799,13 @@ function animate() {
   const onGround = isFinite(player.height());
   if (state.curCurve && onGround) {
     heightColor(grid.norm(player.height()), curveRGB);
-    curveGizmo.update(player.x, player.y, state.pathWidth * 1.35, curveRGB);
+    curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
   } else {
     curveGizmo.setVisible(false);
   }
 
   if (state.curTangent && onGround) {
-    tangentLine.update(player.x, player.y, field.worldSize * 0.22, state.pathWidth * 0.9);
+    tangentLine.update(player.x, player.y, field.worldSize * 0.22, pathWidth() * 0.9);
   } else {
     tangentLine.setVisible(false);
   }
@@ -2464,6 +2830,21 @@ function onResize() {
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
 
+/**
+ * A window onto the scene, for the checks in tools/.
+ *
+ * Read-only by convention and never used by the application itself. What it
+ * buys is that a test can ask "is the geodesic circle actually being drawn"
+ * and get an answer about the scene graph, instead of diffing screenshots and
+ * arguing about pixels. Anything reachable here is reachable from the page's
+ * own source in any case.
+ */
+window.__peaks = {
+  THREE, scene, world, state, camera, altView,
+  get walker() { return walker; },
+  get altSurface() { return altSurface; },
+};
+
 state.holdKey = readHoldKey();
 
 wireLanguage();
@@ -2472,6 +2853,7 @@ applyHoldKeyNote();
 applyVocabulary();
 applyShape();
 applySurfaceKindUI();
+updatePathWidthLabel();
 onResize();
 
 withLoading(() => {

@@ -19,7 +19,7 @@
  */
 
 import * as THREE from '../vendor/three.module.js';
-import { heightColor } from './terrain.js';
+import { heightColor, biomeColor } from './terrain.js';
 
 /* ----------------------------------------------------------- parametric */
 
@@ -251,4 +251,56 @@ export function buildImplicit(F, opts) {
   }));
   mesh.name = 'implicit-surface';
   return { mesh, ymin: lo, ymax: hi, triangles: pos.length / 9, bounds: geom.boundingSphere };
+}
+
+/* ----------------------------------------------------------- painting */
+
+/**
+ * Repaint a parametric or implicit surface as terrain, or as a height ramp.
+ *
+ * Both surfaces are built with the ramp, which is the right default for reading
+ * a shape — but it is not what the vegetation is scattered against. The forest
+ * grows in bands: dark timber low down, thinning woodland, scree, snow. Painted
+ * with the ramp underneath it, a snowfield sits on bright red ground, and the
+ * one thing the decoration is for — saying at a glance how high you are —
+ * contradicts the colour it stands on. Painted with the bands, the two agree,
+ * exactly as they do on a heightfield.
+ *
+ * "How high" is the vertex's world y over the surface's own range, the same
+ * number that chose the band for the tree standing there. Nothing is steep
+ * (see decor.js for why the local vertical is the normal here), and nothing is
+ * underwater, so the two arguments biomeColor uses to darken cliffs and lake
+ * beds are passed as their neutral values.
+ *
+ * @param palette 'biome' (terrain) or 'height' (the ramp)
+ */
+export function paintMesh(mesh, palette) {
+  if (!mesh) return;
+  const geom = mesh.geometry;
+  const pos = geom.getAttribute('position');
+  if (!pos) return;
+  const n = pos.count;
+
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const y = pos.getY(i);
+    if (y < lo) lo = y;
+    if (y > hi) hi = y;
+  }
+  if (!(hi > lo)) { lo = 0; hi = 1; }
+
+  let attr = geom.getAttribute('color');
+  if (!attr || attr.count !== n) {
+    attr = new THREE.BufferAttribute(new Float32Array(n * 3), 3);
+    geom.setAttribute('color', attr);
+  }
+  const rgb = [0, 0, 0];
+  const biome = palette !== 'height';
+  for (let i = 0; i < n; i++) {
+    const h = (pos.getY(i) - lo) / (hi - lo);
+    if (biome) biomeColor(h, 1, 0, pos.getX(i), pos.getZ(i), rgb);
+    else heightColor(h, rgb);
+    attr.setXYZ(i, rgb[0], rgb[1], rgb[2]);
+  }
+  attr.needsUpdate = true;
 }

@@ -208,7 +208,7 @@
       </select>
       <div id="err-fn" class="err" hidden></div>
       </div>
-      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so partial derivatives and level curves of a height do not apply — but you can still walk on it. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
+      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so there is no height to read level curves off. Everything else applies, and applies in the surface’s own terms: walk on it, and the Derivatives section gives you the geodesic circle, the coordinate directions of whichever grid is on, your velocity and the tangent plane. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
     </section>
 
     <section>
@@ -272,16 +272,24 @@
       <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
         <input id="in-cstep" type="number" step="any" min="0" placeholder="auto"></label>
       <label class="range">
-        <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">1.4 m</b></span>
-        <input id="in-cwidth" type="range" min="0.3" max="5" step="0.1" value="1.4">
+        <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">2 × 1.8 m</b></span>
+        <input id="in-cwidth" type="range" min="0.25" max="6" step="0.25" value="2">
       </label>
+      <p class="note" data-i18n="map.cwidthnote">Measured in explorer heights, so the paths stay walkable at every scale: shrink the explorer and the contours narrow with them. Two heights is the same width as a grid square’s side.</p>
       <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
+      <label class="check"><input id="t-worldmap" type="checkbox"><span><span data-i18n="map.world">Paint the world map on it</span></span></label>
+      <p class="note" data-i18n="map.worldnote">Longitude across, latitude up — the flattest map there is — laid on the parameter rectangle, or on the domain of a graph, or on longitude and latitude about the centre of an implicit surface. On the standard sphere it becomes the globe it was traced from and the flat map’s distortion visibly undoes itself. On anything else it distorts in that surface’s own way. No sheet of paper can carry a sphere without stretching it: that is Gauss’s Theorema Egregium, and this is what it looks like.</p>
       <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
       <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
       <label class="range">
         <span><span data-i18n="map.density">Decoration density</span> <b id="lbl-den">1.0×</b></span>
         <input id="in-den" type="range" min="0" max="2" step="0.1" value="1">
       </label>
+      <label class="range">
+        <span><span data-i18n="map.decorsize">Size of the trees</span> <b id="lbl-decsize">1.0×</b></span>
+        <input id="in-decsize" type="range" min="-1" max="0.7" step="0.05" value="0">
+      </label>
+      <p class="note" data-i18n="map.decorsizenote">At 1× a tree is about four times the explorer’s height, which is what a tree is. On a small sphere that makes for a very tall forest, so this is here to be turned down.</p>
       <label class="check"><input id="t-shadow" type="checkbox"><span><span data-i18n="map.shadows">Shadows (costs performance)</span></span></label>
     </section>
 
@@ -296,16 +304,21 @@
 
     <section id="sec-deriv">
       <h2 data-i18n="sec.deriv">Derivatives</h2>
-      <label class="check"><input id="t-disc" type="checkbox"><span><span data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
+      <label class="check"><input id="t-disc" type="checkbox"><span><span id="lbl-disc" data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
       <label class="range">
         <span><span data-i18n="deriv.radius">Radius</span> <b id="lbl-rad">3 m</b></span>
         <input id="in-rad" type="range" min="0.5" max="12" step="0.5" value="3">
       </label>
-      <p class="note" data-i18n="deriv.arcnote">The radius is arc length — the distance actually walked over the surface, not on the flat floor underneath. On a steep slope the patch therefore covers less of the (x, y) plane, and the rim is no longer a circle.</p>
-      <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i><span data-i18n="deriv.dx">∂f/∂x arrow</span> <kbd>X</kbd></span></label>
-      <label class="check"><input id="t-dy" type="checkbox"><span><i class="sw sw-dy"></i><span data-i18n="deriv.dy">∂f/∂y arrow</span> <kbd>Y</kbd></span></label>
-      <label class="check"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i><span data-i18n="deriv.grad">Gradient ∇f</span> <kbd>V</kbd></span></label>
-      <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i><span data-i18n="deriv.dir">Directional derivative</span> <kbd>B</kbd></span></label>
+      <div id="fld-geodisc">
+        <label class="check"><input id="t-geodisc" type="checkbox"><span data-i18n="deriv.geodisc">Measure it with geodesics instead</span></label>
+        <p class="note" data-i18n="deriv.geodiscnote">The rim becomes the set of points a walk of that length away along the straightest path, rather than along a fixed compass bearing. The two agree on a plane and nowhere else.</p>
+      </div>
+      <p class="note" id="note-arcnote" data-i18n="deriv.arcnote">The radius is arc length — the distance actually walked over the surface, not on the flat floor underneath. On a steep slope the patch therefore covers less of the (x, y) plane, and the rim is no longer a circle.</p>
+      <p class="note" id="note-intrinsic" hidden data-i18n="deriv.intrinsic">There is no f here, so there is nothing to take the partial derivative of a function — what is left are the objects of the surface itself. The neighbourhood is the geodesic circle; the two arrows are the coordinate directions of whichever grid is switched on, tangent to the surface; the velocity is the direction you are actually travelling.</p>
+      <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i><span id="lbl-dx" data-i18n="deriv.dx">∂f/∂x arrow</span> <kbd>X</kbd></span></label>
+      <label class="check"><input id="t-dy" type="checkbox"><span><i class="sw sw-dy"></i><span id="lbl-dy" data-i18n="deriv.dy">∂f/∂y arrow</span> <kbd>Y</kbd></span></label>
+      <label class="check" id="row-grad"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i><span data-i18n="deriv.grad">Gradient ∇f</span> <kbd>V</kbd></span></label>
+      <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i><span id="lbl-dir" data-i18n="deriv.dir">Directional derivative</span> <kbd>B</kbd></span></label>
       <p class="note" id="note-dir" hidden data-i18n-html="deriv.dirnote">The explorer is frozen — move the mouse to swing <b>u</b> around the rim.</p>
     </section>
 
@@ -318,7 +331,7 @@
 
     <section id="sec-zoom">
       <h2 data-i18n="sec.zoom">Tangent plane &amp; scale</h2>
-      <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
+      <label class="check"><input id="t-tangent" type="checkbox"><span><span id="lbl-tangent" data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
       <p class="note" data-i18n="zoom.note">Turn this on and take the explorer scale down a decade or two: a differentiable surface becomes indistinguishable from its tangent plane, which is what differentiable means.</p>
     </section>
 
@@ -366,6 +379,11 @@
         </select>
       </label>
       <p class="note" data-i18n="view.dronenote">The drone flies level: W A S D move it over the (x, y) plane, Space and Ctrl set its altitude, and the mouse only aims the camera. The beam under it drops straight down to the point of the domain you are above.</p>
+      <label class="range">
+        <span><span data-i18n="view.speed">Walking speed</span> <b id="lbl-speed">1.0×</b></span>
+        <input id="in-speed" type="range" min="-0.6" max="1.4" step="0.05" value="0">
+      </label>
+      <p class="note" data-i18n="view.speednote">A multiple of the ordinary walking pace, which is already measured in explorer heights per second — so an explorer a tenth the size still crosses the same ground in the same time. Hold Shift to sprint on top of whatever is set here.</p>
       <label class="field"><span data-i18n="view.style">Explorer's look</span>
         <select id="sel-style" class="preset">
           <option value="explorer" data-i18n="style.explorer">Hiker</option>

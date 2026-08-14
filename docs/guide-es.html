@@ -403,6 +403,27 @@ modo que toda región donde <code>f &lt; 0</code> se llena de agua.</p>
 <p><strong>Densidad de la decoración</strong> — cuánto decorado. Bájela para ganar velocidad.</p>
 <p><strong>Sombras</strong> — más bonito, notablemente más lento. Apagadas por defecto.</p>
 
+<h3>Pintar encima el mapamundi</h3>
+<p>Pone el mapa de la Tierra sobre la superficie que esté a la vista: longitud en horizontal,
+latitud en vertical, la proyección más sencilla que hay, con una cuadrícula cada 30° para que el
+estiramiento se lea. Dónde cae ese rectángulo depende del tipo de superficie: el rectángulo de
+parámetros, o el dominio de una gráfica, o la longitud y la latitud respecto del centro de una
+superficie implícita.</p>
+<p>Elija Paramétrica → Esfera y vuelve a ser el globo del que se trazó: la distorsión del mapa plano
+se deshace a la vista, Groenlandia se encoge hasta ser una isla grande, la Antártida deja de ser un
+borrón del ancho del mundo. Cambie después a un toro, o a una gráfica con una montaña, y vea el
+mismo rectángulo deformarse a la manera de <em>esa</em> superficie. Ninguna hoja de papel puede
+llevar una esfera sin estirarla —el <em>Teorema Egregio</em> de Gauss— y una clase a la que se lo
+han contado puede ahora verlo ocurrir en los dos sentidos.</p>
+<p>Las costas viajan dentro del programa (Natural Earth, dominio público, unos 60 000 puntos), así
+que esto funciona con la red apagada, como todo lo demás aquí.</p>
+
+<h3>Tamaño de los árboles</h3>
+<p>Escala la vegetación, las rocas y la hierba entre una décima parte y cinco veces. En 1× el
+decorado se dimensiona respecto del mundo sobre el que se apoya, la misma regla que usa una gráfica;
+una esfera pequeña con un bosque de altura completa encima es una imagen que merece verse una vez y
+bajarse después.</p>
+
 <h2>Retícula sobre la superficie</h2>
 <p>Tiene sección propia en el panel, y está activa en todos los tipos de superficie: una gráfica, un parche paramétrico y una superficie implícita tienen coordenadas que merece la pena dibujar, así que, a diferencia de las curvas de nivel y el coloreado del terreno que la preceden, esta no se apaga nunca.</p>
 <p><strong>Retícula de coordenadas sobre la superficie</strong> <kbd>N</kbd> — dibuja el sistema
@@ -491,6 +512,43 @@ Para mirar alrededor en este modo, mantenga presionado el botón <strong>derecho
 arco, así que en una ladera se doblan con la ladera; cada una termina en una punta de flecha
 plana, proporcionada al ancho de su propio cuerpo.</p>
 
+<h3>En una superficie que no es una gráfica</h3>
+<p>Un toro no tiene función altura, así que no hay nada de lo que tomar una derivada parcial; y aun
+así todos los objetos de esta sección siguen existiendo, porque son objetos de la superficie y no de
+la fórmula. Elija Implícita o Paramétrica y los mismos cinco interruptores significan lo
+siguiente.</p>
+<p><strong>Círculo geodésico a su alrededor</strong> <kbd>H</kbd> — el conjunto de puntos que puede
+alcanzar caminando esa distancia por el <em>camino más recto</em>, en todas las direcciones. En un
+plano es una circunferencia de longitud 2πr. En cualquier cosa curvada no lo es, y la etiqueta
+informa del cociente C/2πr: por debajo de 1 la superficie se curva como una esfera, por encima como
+una silla de montar. Lo que falta es la curvatura de Gauss —
+<code>C = 2πr(1 − K r²/6 + …)</code>, Bertrand y Puiseux, 1848 — y está en pantalla, medida y no
+afirmada. En una gráfica también puede cambiar la vecindad ordinaria por esta, con
+<strong>medirla con geodésicas</strong>, y ver cómo los dos bordes se separan según se empina la
+ladera.</p>
+<p><strong>Primera y segunda dirección coordenada</strong> <kbd>X</kbd> <kbd>Y</kbd> — las flechas
+azul y roja apuntan ahora según las direcciones coordenadas de <em>la rejilla que esté activada</em>:
+las líneas paramétricas <code>∂r/∂u</code> y <code>∂r/∂v</code>, o las direcciones en las que crecen
+la <code>x</code> y la <code>y</code> del espacio sin salir de la superficie, o los dos ejes de la
+rejilla geodésica. Eso es lo que las hace <em>parciales</em>: la pregunta no tiene respuesta hasta
+que se nombra un sistema de coordenadas, y cambiar la rejilla cambia las flechas. La etiqueta
+informa del ángulo entre ellas: 90° para longitud y latitud en una esfera, 90° por construcción para
+la rejilla geodésica, y otra cosa muy distinta en un helicoide.</p>
+<p>A veces una flecha sencillamente no está, y la etiqueta dice que el eje es perpendicular a la
+superficie. Donde la esfera <code>x²+y²+z²=1</code> corta al plano <code>x = 1</code> es tangente a
+ese plano: <code>x</code> es estacionaria y «la dirección en la que crece x» no es una dirección. No
+se dibuja nada porque no hay nada que dibujar.</p>
+<p><strong>Vector velocidad</strong> <kbd>B</kbd> — la flecha ámbar es la dirección en la que se
+desplaza de verdad, tangente a la superficie: γ'(0) del camino bajo sus pies. En una gráfica la
+derivada direccional es un número, la pendiente que se siente; aquí no hay altura que tenga
+pendiente, y lo que queda es el vector del que ese número era la derivada. Camine y se mueve con
+usted.</p>
+<p><strong>Plano tangente a sus pies</strong> <kbd>P</kbd> — el propio T<sub>p</sub>S, dibujado
+plano y recto en el espacio, que es donde viven esos vectores. Las flechas se curvan siguiendo la
+superficie y el plano no; coinciden a sus pies y se separan a segundo orden, y encoger al explorador
+cierra la diferencia. Eso es la diferenciabilidad, en una superficie sin gráfica sobre la que
+dibujarla.</p>
+
 <h2>La curva bajo sus pies</h2>
 <p><strong>Curva de nivel sobre la que está parado</strong> <kbd>J</kbd> — traza la curva de nivel
 que pasa por la altura exacta del explorador, no por la altura redonda más cercana, y la vuelve a
@@ -541,7 +599,10 @@ cualquier parte. El informe de abajo da el valor máximo, dónde está, si queda
   caminando sobre la superficie. La pendiente se siente más que se ve.</li>
   <li><strong>Tercera persona</strong> <kbd>2</kbd> — por encima del hombro del explorador. Es la
   mejor vista para las flechas de derivadas, porque se ven a la vez el suelo y la figura parada
-  sobre él.</li>
+  sobre él. En una esfera o un toro la cámara va detrás del rumbo, en el
+  marco del propio explorador, así que el ratón lo dirige y la cámara gira con él, igual que en
+  primera persona; el movimiento vertical sube y baja la cámara. Además se queda cerca: por mucho que
+  se aleje con la rueda, no pondrá la superficie entre ella y la persona a la que sigue.</li>
   <li><strong>Dron</strong> <kbd>3</kbd> — una cámara voladora, fuera de la superficie.</li>
 </ul>
 <p><strong>Cámara del dron</strong> — aparece solo en modo dron y ofrece la misma elección un
@@ -593,6 +654,13 @@ marco.</p>
 <p>Escriba en la caja <code>f(x, y) =</code> y presione <kbd>Enter</kbd>. La notación es la
 corriente, la que usaría en una calculadora o en una hoja de cálculo, con dos comodidades
 añadidas.</p>
+
+<h2>A qué velocidad camina el explorador</h2>
+<p><strong>Velocidad al caminar</strong>, en la sección Vista, multiplica el paso normal, desde
+aproximadamente un cuarto hasta veinticinco veces. El paso ya se mide en alturas del explorador por
+segundo, así que un explorador diez veces más pequeño recorre el mismo terreno en el mismo tiempo;
+esto es para cuando quiere llegar al otro lado de un toro sin narrar el viaje. Mantener
+<kbd>Mayús</kbd> sigue esprintando por encima.</p>
 
 <h2>Las reglas</h2>
 <table class="compact">
