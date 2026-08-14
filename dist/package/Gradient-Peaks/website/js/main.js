@@ -132,6 +132,7 @@ const state = {
   surfGrid: false,     // the coordinate grid, drawn on the surface itself
   geoGrid: false,      // ...built from geodesics rather than from coordinates
   compass: true,       // the direction indicator, top right
+  holdKey: 'either',   // which key holds the look control: alt, meta, or both
   curCurve: false,
   curTangent: false,
   decor: true,
@@ -527,6 +528,18 @@ function refreshSurfaceGrid() {
  * thing whichever is on screen.
  */
 const GRID_HEIGHTS = 2;
+
+/**
+ * Say what the chosen key costs, if anything, and only then.
+ *
+ * A warning that is always on screen is furniture; one that appears exactly
+ * when it applies is information.
+ */
+function applyHoldKeyNote() {
+  const el = $('note-holdkey');
+  if (!el) return;
+  el.textContent = t(state.holdKey === 'alt' ? 'hold.notealt' : 'hold.note');
+}
 
 /** The radius of whatever non-graph surface is on screen. */
 function altSurfaceRadius() {
@@ -1104,7 +1117,34 @@ canvas.addEventListener('contextmenu', (e) => e.preventDefault());
  * delta, and the three deltaMode units (pixels, lines, pages) differ by about
  * an order of magnitude each, so normalise before using any of it.
  */
-const SIZE_MOD = (e) => e.metaKey || e.altKey;
+/**
+ * Which key has to be down. A setting, because the three candidates are not
+ * equal and which one is safe depends on the machine.
+ *
+ * The operating system takes some combinations before any web page sees them.
+ * ⌘+W closes a tab on a Mac and nothing a page does can stop it; ⊞+arrows is
+ * window snapping on Windows and never arrives at all. Alt/Option is the only
+ * one free with every key on every platform. Rather than ask a student to
+ * remember that, the choice is theirs and it is remembered: lose a tab once to
+ * ⌘+W and you can switch to Option and never think about it again.
+ *
+ * The default accepts either, which is the widest thing that can be offered
+ * without knowing whose keyboard this is.
+ */
+const HOLD_KEYS = ['either', 'alt', 'meta'];
+const HOLD_STORE = 'gradient-peaks-holdkey';
+
+function readHoldKey() {
+  try {
+    const v = localStorage.getItem(HOLD_STORE);
+    if (HOLD_KEYS.includes(v)) return v;
+  } catch (err) { /* storage blocked */ }
+  return 'either';
+}
+
+const SIZE_MOD = (e) => (state.holdKey === 'alt' ? e.altKey
+  : state.holdKey === 'meta' ? e.metaKey
+    : e.metaKey || e.altKey);
 
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
@@ -1667,6 +1707,18 @@ function wireUI() {
   followStep('in-followg', 'followG');
   followStep('in-followh', 'followH');
 
+  if ($('sel-holdkey')) {
+    const sel = $('sel-holdkey');
+    sel.value = state.holdKey;
+    sel.addEventListener('change', () => {
+      state.holdKey = HOLD_KEYS.includes(sel.value) ? sel.value : 'either';
+      try { localStorage.setItem(HOLD_STORE, state.holdKey); } catch (err) { /* blocked */ }
+      // Changing the modifier mid-hold would leave the old one latched.
+      setLookMod(false);
+      applyHoldKeyNote();
+    });
+  }
+
   if ($('t-compass')) {
     $('t-compass').addEventListener('change', (e) => {
       state.compass = e.target.checked;
@@ -1889,6 +1941,8 @@ function wireLanguage() {
     applyVocabulary();
     updateZoomLabels();
     updateContourNote();
+    applyHoldKeyNote();
+    updateGridUI();
     renderOptimum();
     if (surface) reportStats();
     for (const id of ['err-fn', 'err-feas']) {
@@ -2410,8 +2464,11 @@ function onResize() {
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
 
+state.holdKey = readHoldKey();
+
 wireLanguage();
 wireUI();
+applyHoldKeyNote();
 applyVocabulary();
 applyShape();
 applySurfaceKindUI();

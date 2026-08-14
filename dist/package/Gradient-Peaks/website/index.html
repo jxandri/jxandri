@@ -376,6 +376,14 @@
       </label>
       <label class="check"><input id="t-compass" type="checkbox" checked><span><span data-i18n="view.compass">Direction indicator</span> <kbd>I</kbd></span></label>
       <p class="note" data-i18n="view.compassnote">The globe in the top right shows which way you are looking: latitude and longitude around a small figure turned to face the same direction, with the bearing and the elevation underneath. Hold ⌘/⊞ or Alt, or press Esc and move the mouse, and it enlarges.</p>
+      <label class="field"><span data-i18n="view.holdkey">Key to hold for looking</span>
+        <select id="sel-holdkey" class="preset">
+          <option value="either" data-i18n="hold.either">Either — Alt/⌥ or ⌘/⊞</option>
+          <option value="alt" data-i18n="hold.alt">Alt / ⌥ Option only</option>
+          <option value="meta" data-i18n="hold.meta">⌘ Command / ⊞ Windows only</option>
+        </select>
+      </label>
+      <p class="note" id="note-holdkey" data-i18n="hold.note"></p>
       <button id="btn-top" class="ghost"><span data-i18n="view.top">Look straight down</span> <kbd>T</kbd></button>
       <button id="btn-reset" class="ghost"><span data-i18n="view.reset">Return to the centre</span> <kbd>R</kbd></button>
     </section>
