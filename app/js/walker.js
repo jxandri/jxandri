@@ -105,6 +105,11 @@ class SurfaceWalker {
   constructor() {
     this.sign = 1;                        // +1 outside, −1 inside
     this.dir = new THREE.Vector3();       // unit world tangent: where the eyes point
+    // A second tangent vector, carried along every step and never turned by
+    // hand: the parallel transport of wherever it was last set. The heading is
+    // no use as a reference frame because the mouse spins it, and a grid whose
+    // axes follow the mouse is not a grid. See gridFrame.
+    this.ref = new THREE.Vector3();
     this.moveAngle = 0;                   // the body, relative to the eyes
     this._n = new THREE.Vector3();
     this._n1 = new THREE.Vector3();
@@ -134,6 +139,32 @@ class SurfaceWalker {
     const n = this.normal(new THREE.Vector3());
     const fwd = this.ensureDir().clone();
     return { n, fwd, side: new THREE.Vector3().crossVectors(n, fwd).normalize() };
+  }
+
+  /** The reference direction, made a unit tangent here, seeded if it is stale. */
+  ensureRef() {
+    const n = this.normal(this._n);
+    this.ref.addScaledVector(n, -this.ref.dot(n));
+    if (this.ref.lengthSq() < 1e-16) this.ref.copy(this.ensureDir());
+    this.ref.normalize();
+    return this.ref;
+  }
+
+  /**
+   * The frame a grid of geodesics is built on, and read off at, { n, e1, e2 }.
+   *
+   * e1 is the reference direction, which is parallel-transported along whatever
+   * path the explorer has walked. That is what makes it answer the question the
+   * geodesic grid asks — "which way do the grid lines run *here*" — everywhere
+   * along a path, and not only at the point the grid was anchored on. Walk a
+   * closed loop on a curved surface and it comes back rotated: that is holonomy,
+   * it is the Gaussian curvature enclosed, and it is not an error.
+   */
+  gridFrame() {
+    const n = this.normal(new THREE.Vector3());
+    const e1 = this.ensureRef().clone();
+    const e2 = new THREE.Vector3().crossVectors(n, e1).normalize();
+    return { n, e1, e2 };
   }
 
   /** Which way the body is pointed: the direction of the last step taken. */
@@ -184,29 +215,45 @@ class SurfaceWalker {
       this.moveAngle = Math.atan2(sideAmt, fwdAmt);
     }
 
-    // The heading's angle to the velocity is constant along a geodesic, so it
-    // is enough to record it here and rebuild the heading at the far end.
-    const ang = Math.atan2(fr.fwd.dot(new THREE.Vector3().crossVectors(fr.n, v)),
-      fr.fwd.dot(v));
+    // The angle a tangent vector makes with the velocity is constant along a
+    // geodesic, so any vector being carried along is recorded as an angle here
+    // and rebuilt from the transported velocity at the far end. Two are: where
+    // the eyes point, and the reference direction the grid is read against.
+    const sideHere = new THREE.Vector3().crossVectors(fr.n, v);
+    const bearing = (w) => Math.atan2(w.dot(sideHere), w.dot(v));
+    const ang = bearing(fr.fwd);
+    const angRef = bearing(this.ensureRef());
 
     const end = this.flow(v, dist);
     if (!end) return;
     const side1 = new THREE.Vector3().crossVectors(end.n, end.v);
-    this.dir.set(0, 0, 0)
-      .addScaledVector(end.v, Math.cos(ang))
-      .addScaledVector(side1, Math.sin(ang))
+    const rebuild = (out, a) => out.set(0, 0, 0)
+      .addScaledVector(end.v, Math.cos(a))
+      .addScaledVector(side1, Math.sin(a))
       .normalize();
+    rebuild(this.dir, ang);
+    rebuild(this.ref, angRef);
   }
 
   /**
    * Integrate the geodesic, moving the walker as it goes.
    *
+   * `onSample(p, n, v, s)` is handed the arc length `s` walked so far, because
+   * a caller drawing something *along* the geodesic — a ribbon, a ring of
+   * points a fixed distance out — needs to know where it is on it, and the step
+   * is not a constant it can count.
+   *
+   * @param minSteps  never take fewer than this many steps, however short the
+   *   run. A stride's worth of step is the right size for a stride, and far too
+   *   coarse for a three-metre arrow: without this a short flow would be a
+   *   single straight chord, and everything drawn along it a straight line.
+   *
    * @returns { n, v } the normal and the transported velocity at the far end,
    *          or null if the surface ran out underneath.
    */
-  flow(v0, dist, onSample) {
+  flow(v0, dist, onSample, minSteps = 1) {
     if (!(dist > 0)) return null;
-    const h0 = this.stepLength();
+    const h0 = Math.min(this.stepLength(), dist / Math.max(1, minSteps));
     const p0 = new THREE.Vector3(), p1 = new THREE.Vector3();
     let nrm = this.normal(new THREE.Vector3());
 
@@ -242,7 +289,7 @@ class SurfaceWalker {
 
       if (!carry(v, nrm, n1, v).lengthSq()) return null;
       nrm = n1;
-      if (onSample) onSample(p1.clone(), nrm, v);
+      if (onSample) onSample(p1.clone(), nrm, v, gone);
     }
     return { n: nrm, v };
   }
@@ -253,14 +300,38 @@ class SurfaceWalker {
    *
    * @returns { p: [x,y,z,...], n: [x,y,z,...] } in world space
    */
-  geodesic(dir0, length, onSample) {
+  geodesic(dir0, length, onSample, minSteps = 1) {
     const saved = this.snapshot();
     const p = [], nr = [];
     const push = (q, nn) => { p.push(q.x, q.y, q.z); nr.push(nn.x, nn.y, nn.z); };
     push(this.position(new THREE.Vector3()), this.normal(new THREE.Vector3()));
-    this.flow(dir0, length, (q, nn, vv) => { push(q, nn); if (onSample) onSample(q, nn, vv); });
+    this.flow(dir0, length, (q, nn, vv, s) => {
+      push(q, nn);
+      if (onSample) onSample(q, nn, vv, s);
+    }, minSteps);
     this.restore(saved);
     return { p, n: nr };
+  }
+
+  /**
+   * A geodesic ray from where the walker stands, sampled with its arc length —
+   * the raw material for anything drawn out from the explorer's feet.
+   *
+   * The walker is put back where it was found, so this is a question asked of
+   * the surface rather than a walk taken on it.
+   *
+   * @returns [{ s, p, n }] beginning with s = 0 at the explorer.
+   */
+  ray(dir0, length, minSteps = 8) {
+    const saved = this.snapshot();
+    const out = [{
+      s: 0,
+      p: this.position(new THREE.Vector3()),
+      n: this.normal(new THREE.Vector3()),
+    }];
+    this.flow(dir0, length, (q, nn, vv, s) => out.push({ s, p: q, n: nn.clone() }), minSteps);
+    this.restore(saved);
+    return out;
   }
 }
 
@@ -291,9 +362,15 @@ export class ParametricWalker extends SurfaceWalker {
 
   scaleHint() { return (this.o.scale || 1) * 2; }
 
-  snapshot() { return { u: this.u, v: this.v, dir: this.dir.clone() }; }
+  snapshot() {
+    return { u: this.u, v: this.v, dir: this.dir.clone(), ref: this.ref.clone() };
+  }
 
-  restore(s) { this.u = s.u; this.v = s.v; this.dir.copy(s.dir); }
+  restore(s) {
+    this.u = s.u; this.v = s.v;
+    this.dir.copy(s.dir);
+    if (s.ref) this.ref.copy(s.ref);
+  }
 
   /** World position of r(u, v). */
   at(u, v, out) {
@@ -442,9 +519,15 @@ export class ImplicitWalker extends SurfaceWalker {
     return Math.max(b.xmax - b.xmin, b.ymax - b.ymin, b.zmax - b.zmin) * (this.o.scale || 1);
   }
 
-  snapshot() { return { p: this.p.clone(), dir: this.dir.clone() }; }
+  snapshot() {
+    return { p: this.p.clone(), dir: this.dir.clone(), ref: this.ref.clone() };
+  }
 
-  restore(s) { this.p.copy(s.p); this.dir.copy(s.dir); }
+  restore(s) {
+    this.p.copy(s.p);
+    this.dir.copy(s.dir);
+    if (s.ref) this.ref.copy(s.ref);
+  }
 
   /** ∇F at a math-space point. */
   grad(p, out) {
@@ -534,4 +617,33 @@ export class ImplicitWalker extends SurfaceWalker {
     );
     if (this.project(p, 6)) { this.p.copy(p); this.ensureDir(); }
   }
+}
+
+/* --------------------------------------------------------------- graph */
+
+/**
+ * A walker for z = f(x, y).
+ *
+ * A graph is a parametric surface — r(x, y) = (x, y, f(x,y)) — and saying so
+ * costs three closures and buys the whole apparatus: geodesics, parallel
+ * transport, geodesic circles, arc length that is arc length. The heightfield
+ * explorer is a different object with a different job (it has a domain to stay
+ * inside, contours to stand on, a gradient to read), so this is not a
+ * replacement for it. It is the same surface asked geometric questions.
+ *
+ * The parameters are math x and math y, recentred, because ParametricWalker
+ * writes r into the world as (X·S·sx, Z·S·sz, −Y·S·sy) and Field puts the
+ * surface at ((x−cx)·S·sx, f·S·sz, −(y−cy)·S·sy). Matching them exactly is what
+ * makes a length measured here the same length measured there.
+ */
+export function graphWalker(field) {
+  return new ParametricWalker({
+    X: (u) => u - field.cx,
+    Y: (u, v) => v - field.cy,
+    Z: (u, v) => field.height(u, v),
+  }, {
+    umin: field.xmin, umax: field.xmax, vmin: field.ymin, vmax: field.ymax,
+    scale: field.S, sx: field.sx, sy: field.sy, sz: field.sz,
+    wrapU: false, wrapV: false,
+  });
 }

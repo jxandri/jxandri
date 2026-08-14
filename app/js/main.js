@@ -18,7 +18,8 @@ import {
   Player, buildCharacter, MODE_FIRST, MODE_THIRD, MODE_DRONE,
   BASE_FOV, FOV_MIN, FOV_MAX,
 } from './player.js';
-import { ParametricWalker, ImplicitWalker, standBasis } from './walker.js';
+import { ParametricWalker, ImplicitWalker, standBasis, graphWalker } from './walker.js';
+import { IntrinsicGizmo, GeodesicDisc } from './intrinsic.js';
 import { buildImplicit, buildParametric } from './surfaces.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, buildGeodesicGrid,
@@ -148,6 +149,7 @@ const state = {
   shadows: false,
 
   disc: false,
+  geoDisc: false,      // measure the neighbourhood with geodesics, not with rays
   radius: 3,
   showDx: false,
   showDy: false,
@@ -191,6 +193,9 @@ let optMarker = null;
 let curveGizmo = null;
 let tangentLine = null;
 let optimum = null;
+let intrinsic = null;    // the geodesic circle, the arrows and the tangent plane
+let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
+let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
 let decorations = new Decorations();
@@ -261,12 +266,14 @@ function clearGraphWorld() {
   if (surfaceDetail) { disposeTree(surfaceDetail.group); surfaceDetail.dispose(); }
   if (gizmo) { disposeTree(gizmo.group); gizmo.dispose(); }
   if (tangentPlane) { disposeTree(tangentPlane.mesh); tangentPlane.dispose(); }
+  if (graphDisc) { disposeTree(graphDisc.group); graphDisc.dispose(); }
   if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
   if (curveGizmo) { disposeTree(curveGizmo.mesh); curveGizmo.dispose(); }
   if (tangentLine) { disposeTree(tangentLine.mesh); tangentLine.dispose(); }
   decorations.clear();
   surface = water = walls = contourLines = null;
   surfaceDetail = gizmo = tangentPlane = optMarker = curveGizmo = tangentLine = null;
+  graphGeo = graphDisc = null;
   contourInfo = null;
   optimum = null;
 }
@@ -772,6 +779,13 @@ function rebuild() {
 
   tangentPlane = new TangentPlane(field);
   world.add(tangentPlane.mesh);
+
+  // A graph is a surface, and can be asked a surface's questions: this walker
+  // carries the geodesics of z = f(x,y), which is what the geodesic circle
+  // needs and what the compass-direction disc cannot supply.
+  graphGeo = graphWalker(field);
+  graphDisc = new GeodesicDisc();
+  world.add(graphDisc.group);
 
   optMarker = new OptimumMarker(field);
   world.add(optMarker.group);
@@ -1408,11 +1422,33 @@ function applySurfaceKindUI() {
 
   if (projection) applyProjectionStyle();
 
-  // Grey out the sections that only mean something on a graph.
-  for (const id of ['sec-feasible', 'sec-map', 'sec-deriv', 'sec-curve', 'sec-zoom', 'sec-opt']) {
+  // Grey out the sections that only mean something on a graph. The derivatives
+  // and the tangent plane are not among them any more: a surface has a
+  // neighbourhood, coordinate directions, a velocity and a tangent plane
+  // whether or not it happens to be the graph of anything.
+  for (const id of ['sec-feasible', 'sec-map', 'sec-curve', 'sec-opt']) {
     const el = $(id);
     if (el) { el.style.opacity = graph ? '' : '0.4'; el.style.pointerEvents = graph ? '' : 'none'; }
   }
+
+  // Within the derivatives section, the two rows that really do need an f: the
+  // gradient is a gradient of something, and the free directional derivative is
+  // steered by the mouse while the explorer is frozen, which is a heightfield
+  // control. On a curved surface those rows are replaced rather than greyed.
+  $('row-grad').hidden = !graph;
+  $('fld-geodisc').hidden = !graph;
+  for (const [id, key] of [
+    ['lbl-dx', graph ? 'deriv.dx' : 'deriv.axisa'],
+    ['lbl-dy', graph ? 'deriv.dy' : 'deriv.axisb'],
+    ['lbl-dir', graph ? 'deriv.dir' : 'deriv.velocity'],
+    ['lbl-disc', graph ? 'deriv.disc' : 'deriv.geocircle'],
+    ['lbl-tangent', graph ? 'deriv.tangent' : 'deriv.tangentp'],
+  ]) {
+    const el = $(id);
+    if (el) { el.dataset.i18n = key; el.textContent = t(key); }
+  }
+  $('note-intrinsic').hidden = graph;
+  $('note-arcnote').hidden = !graph;
   // Walking works on all three kinds of surface, so the view buttons stay live.
   $('fld-orient').hidden = graph;
   $('note-alt').hidden = graph;
@@ -1763,11 +1799,17 @@ function wireUI() {
   bindCheck('t-dy', 'showDy', ensureDisc);
   bindCheck('t-grad', 'showGrad', ensureDisc);
   bindCheck('t-tangent', 'tangent', () => { if (state.tangent) goToExplorer(); });
+  bindCheck('t-geodisc', 'geoDisc');
   bindCheck('t-dir', 'showDir', () => {
     ensureDisc();
-    player.frozen = state.showDir;
-    $('note-dir').hidden = !state.showDir;
-    if (state.showDir) state.dirAngle = player.facing || 0;
+    // On a graph the free direction u is steered by the mouse, so the explorer
+    // has to hold still while it is. On a curved surface the arrow *is* the
+    // explorer's velocity, and freezing them would freeze the thing being
+    // shown — there, walking around is how you use it.
+    const graph = state.surfaceKind === 'graph';
+    player.frozen = graph && state.showDir;
+    $('note-dir').hidden = !(graph && state.showDir);
+    if (graph && state.showDir) state.dirAngle = player.facing || 0;
   });
 
   $('in-rad').addEventListener('input', (e) => {
@@ -1963,9 +2005,11 @@ function wireLanguage() {
  * section is written for.
  */
 function goToExplorer() {
-  if (player && player.mode === MODE_DRONE && state.surfaceKind === 'graph') {
-    setMode(MODE_THIRD);
+  if (state.surfaceKind !== 'graph') {
+    if (walker && altView.mode === MODE_DRONE) setMode(MODE_THIRD);
+    return;
   }
+  if (player && player.mode === MODE_DRONE) setMode(MODE_THIRD);
 }
 
 function ensureDisc() {
@@ -2084,6 +2128,13 @@ const chipEls = {
   dx: $('c-dx'), dy: $('c-dy'), grad: $('c-grad'), dir: $('c-dir'),
 };
 
+/** What to call the two coordinate directions, per kind of grid. */
+const GRID_AXIS_NAMES = {
+  param: ['∂r/∂u', '∂r/∂v'],
+  coord: ['∂/∂x', '∂/∂y'],
+  geodesic: ['e₁', 'e₂'],
+};
+
 function setChip(el, on, label, value, avg) {
   el.hidden = !on;
   if (on) el.innerHTML = `${label} <b>${value}</b> <i>${t('hud.avg')} ${avg}</i>`;
@@ -2125,7 +2176,38 @@ function updateHUD(readout) {
       $('r-x').textContent = '—'; $('r-y').textContent = '—'; $('r-z').textContent = '—';
     }
     $('r-rms').textContent = '—';
-    for (const k in chipEls) chipEls[k].hidden = true;
+    chipEls.grad.hidden = true;                 // there is no f, so no ∇f
+    if (!readout) {
+      for (const k in chipEls) chipEls[k].hidden = true;
+      return;
+    }
+
+    // What the two coordinate arrows are, and the angle between them — which
+    // is the whole content of a coordinate system on a curved surface. On the
+    // usual sphere the parameter lines meet at 90°, on a helicoid they do not,
+    // and the geodesic axes meet at 90° by construction.
+    const names = GRID_AXIS_NAMES[gridMode()];
+    const deg = (a) => (isFinite(a) ? `${(a * 180 / Math.PI).toFixed(1)}°` : '—');
+    for (const [chip, on, name, have] of [
+      [chipEls.dx, state.showDx, names[0], readout.hasA],
+      [chipEls.dy, state.showDy, names[1], readout.hasB],
+    ]) {
+      chip.hidden = !on;
+      if (on) {
+        chip.innerHTML = have
+          ? `${name} <i>${t('hud.angle')} ${deg(readout.angleAB)}</i>`
+          : `${name} <i>${t('hud.noaxis')}</i>`;
+      }
+    }
+
+    chipEls.dir.hidden = !state.showDir;
+    if (state.showDir) {
+      const c = isFinite(readout.circumference)
+        ? ` · C/2πr ${fmt(readout.ratio, 4)}` : '';
+      chipEls.dir.innerHTML = `<b>v</b> <i>${t('hud.frombase', {
+        a: names[0], deg: deg(readout.headingAngle),
+      })}${c}</i>`;
+    }
     return;
   }
   const z = player.height();
@@ -2293,6 +2375,51 @@ function animateAltHiker(dt, moving) {
   p.hips.position.y = p.hipsY + (moving ? Math.abs(Math.sin(altWalkPhase)) * 0.045 : 0);
 }
 
+/**
+ * Which coordinate system the partial derivatives are partial *with respect
+ * to* — which is a question about the grid on screen, and has no answer
+ * without one.
+ */
+function gridMode() {
+  if (state.geoGrid) return 'geodesic';
+  return state.surfaceKind === 'parametric' ? 'param' : 'coord';
+}
+
+/**
+ * The derivatives of a surface with no f: the geodesic circle, the coordinate
+ * vectors of the grid in force, the velocity, and the tangent plane.
+ *
+ * Built on demand rather than at surface-build time, because it belongs to the
+ * walker and not to the mesh — change the formula and the same gizmo goes on
+ * answering, about the new surface.
+ */
+function updateIntrinsic() {
+  if (!walker) {
+    if (intrinsic) intrinsic.setVisible(false);
+    return null;
+  }
+  const anyOn = state.disc || state.showDx || state.showDy || state.showDir || state.tangent;
+  if (!anyOn) {
+    if (intrinsic) intrinsic.setVisible(false);
+    return null;
+  }
+  if (!intrinsic) {
+    intrinsic = new IntrinsicGizmo();
+    world.add(intrinsic.group);
+  }
+  const r = altSurfaceRadius();
+  return intrinsic.update(walker, {
+    radiusMetres: state.radius * state.zoom * (altView.charScale || 1),
+    clearance: r * 0.0016,
+    gridMode: gridMode(),
+    showDisc: state.disc,
+    showA: state.showDx,
+    showB: state.showDy,
+    showVel: state.showDir,
+    showPlane: state.tangent,
+  });
+}
+
 const clock = new THREE.Clock();
 const curveRGB = [0, 0, 0];
 
@@ -2379,7 +2506,7 @@ function animate() {
     camera.updateProjectionMatrix();
     if (sky) sky.position.copy(camera.position);
     updateCompass(dt);
-    updateHUD(null);
+    updateHUD(updateIntrinsic());
     renderer.render(scene, camera);
     if (projection) projection.draw({});
     return;
@@ -2413,12 +2540,26 @@ function animate() {
     readout = gizmo.update(player.x, player.y, {
       radiusMetres: state.radius * player.zoom,
       clearance: surfaceDetail.topLift,
+      showDisc: !state.geoDisc,
       showX: state.showDx,
       showY: state.showDy,
       showGrad: state.showGrad,
       showDir: state.showDir,
       dirAngle: state.dirAngle,
     });
+  }
+
+  // The other neighbourhood: the set of points a fixed walk away along the
+  // straightest path, rather than along a fixed compass bearing. The two agree
+  // to second order and part company exactly where the surface curves, which is
+  // the comparison the toggle exists to make.
+  if (wantGizmo && state.geoDisc && graphGeo && graphDisc) {
+    graphGeo.placeAtUV(player.x, player.y);
+    if (!graphDisc.update(graphGeo, state.radius * player.zoom, gizmo.lift)) {
+      graphDisc.setVisible(false);
+    }
+  } else if (graphDisc) {
+    graphDisc.setVisible(false);
   }
 
   if (state.tangent && isFinite(player.height())) {
@@ -2463,6 +2604,17 @@ function onResize() {
 }
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
+
+/**
+ * A window onto the scene, for the checks in tools/.
+ *
+ * Read-only by convention and never used by the application itself. What it
+ * buys is that a test can ask "is the geodesic circle actually being drawn"
+ * and get an answer about the scene graph, instead of diffing screenshots and
+ * arguing about pixels. Anything reachable here is reachable from the page's
+ * own source in any case.
+ */
+window.__peaks = { scene, world, state, get walker() { return walker; } };
 
 state.holdKey = readHoldKey();
 

@@ -626,7 +626,14 @@ export class DerivativeGizmo {
   }
 
   /**
-   * @param opts { radiusMetres, showX, showY, showGrad, showDir, dirAngle }
+   * @param opts { radiusMetres, showDisc, showX, showY, showGrad, showDir,
+   *              dirAngle }
+   *
+   * `showDisc: false` keeps the arrows and stands the shaded patch down, for
+   * when the geodesic circle is being drawn in its place. The arrows still
+   * reach the same arc length, so the two rims can be compared directly — and
+   * on anything curved they do not coincide.
+   *
    * @returns readouts for the HUD
    */
   update(cx, cy, opts) {
@@ -647,7 +654,10 @@ export class DerivativeGizmo {
       sag * 1.35, (opts.clearance || 0) * 2.6);
     this.lift = lift;
 
-    this._updateDisc(cx, cy, L, lift);
+    const wantDisc = opts.showDisc !== false;
+    this.disc.visible = wantDisc;
+    this.rim.visible = wantDisc;
+    if (wantDisc) this._updateDisc(cx, cy, L, lift);
 
     const h = rTypical * 1e-3;
     const fx = field.partialX(cx, cy, h);

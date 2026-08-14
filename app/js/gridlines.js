@@ -486,10 +486,15 @@ export function buildGeodesicGrid(walker, opts = {}) {
   const polys = [];
 
   try {
-    const seed = walker.frame();
+    // Anchored on the walker's reference frame, not on where it happens to be
+    // looking. The reference is parallel-transported along whatever path the
+    // explorer walks and is never turned by the mouse, so the grid keeps still
+    // while they look around — and the arrows that read the grid's directions
+    // off at the explorer's feet agree with the lines actually drawn.
+    const seed = walker.gridFrame();
     const axes = [
-      { along: seed.fwd.clone(), across: seed.side.clone() },
-      { along: seed.side.clone(), across: seed.fwd.clone().negate() },
+      { along: seed.e1.clone(), across: seed.e2.clone() },
+      { along: seed.e2.clone(), across: seed.e1.clone().negate() },
     ];
 
     for (const axis of axes) {

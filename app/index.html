@@ -296,16 +296,21 @@
 
     <section id="sec-deriv">
       <h2 data-i18n="sec.deriv">Derivatives</h2>
-      <label class="check"><input id="t-disc" type="checkbox"><span><span data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
+      <label class="check"><input id="t-disc" type="checkbox"><span><span id="lbl-disc" data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
       <label class="range">
         <span><span data-i18n="deriv.radius">Radius</span> <b id="lbl-rad">3 m</b></span>
         <input id="in-rad" type="range" min="0.5" max="12" step="0.5" value="3">
       </label>
-      <p class="note" data-i18n="deriv.arcnote">The radius is arc length — the distance actually walked over the surface, not on the flat floor underneath. On a steep slope the patch therefore covers less of the (x, y) plane, and the rim is no longer a circle.</p>
-      <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i><span data-i18n="deriv.dx">∂f/∂x arrow</span> <kbd>X</kbd></span></label>
-      <label class="check"><input id="t-dy" type="checkbox"><span><i class="sw sw-dy"></i><span data-i18n="deriv.dy">∂f/∂y arrow</span> <kbd>Y</kbd></span></label>
-      <label class="check"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i><span data-i18n="deriv.grad">Gradient ∇f</span> <kbd>V</kbd></span></label>
-      <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i><span data-i18n="deriv.dir">Directional derivative</span> <kbd>B</kbd></span></label>
+      <div id="fld-geodisc">
+        <label class="check"><input id="t-geodisc" type="checkbox"><span data-i18n="deriv.geodisc">Measure it with geodesics instead</span></label>
+        <p class="note" data-i18n="deriv.geodiscnote">The rim becomes the set of points a walk of that length away along the straightest path, rather than along a fixed compass bearing. The two agree on a plane and nowhere else.</p>
+      </div>
+      <p class="note" id="note-arcnote" data-i18n="deriv.arcnote">The radius is arc length — the distance actually walked over the surface, not on the flat floor underneath. On a steep slope the patch therefore covers less of the (x, y) plane, and the rim is no longer a circle.</p>
+      <p class="note" id="note-intrinsic" hidden data-i18n="deriv.intrinsic">There is no f here, so there is nothing to take the partial derivative of a function — what is left are the objects of the surface itself. The neighbourhood is the geodesic circle; the two arrows are the coordinate directions of whichever grid is switched on, tangent to the surface; the velocity is the direction you are actually travelling.</p>
+      <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i><span id="lbl-dx" data-i18n="deriv.dx">∂f/∂x arrow</span> <kbd>X</kbd></span></label>
+      <label class="check"><input id="t-dy" type="checkbox"><span><i class="sw sw-dy"></i><span id="lbl-dy" data-i18n="deriv.dy">∂f/∂y arrow</span> <kbd>Y</kbd></span></label>
+      <label class="check" id="row-grad"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i><span data-i18n="deriv.grad">Gradient ∇f</span> <kbd>V</kbd></span></label>
+      <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i><span id="lbl-dir" data-i18n="deriv.dir">Directional derivative</span> <kbd>B</kbd></span></label>
       <p class="note" id="note-dir" hidden data-i18n-html="deriv.dirnote">The explorer is frozen — move the mouse to swing <b>u</b> around the rim.</p>
     </section>
 
@@ -318,7 +323,7 @@
 
     <section id="sec-zoom">
       <h2 data-i18n="sec.zoom">Tangent plane &amp; scale</h2>
-      <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
+      <label class="check"><input id="t-tangent" type="checkbox"><span><span id="lbl-tangent" data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
       <p class="note" data-i18n="zoom.note">Turn this on and take the explorer scale down a decade or two: a differentiable surface becomes indistinguishable from its tangent plane, which is what differentiable means.</p>
     </section>
 
