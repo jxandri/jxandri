@@ -128,7 +128,10 @@ const state = {
   isolate: false,
   contours: false,
   contourStep: 0,      // 0 = choose a round interval automatically
-  pathWidth: 1.4,      // world metres; wide enough to walk along
+  // How wide a level curve is painted, in explorer heights. Two, so a contour
+  // is exactly as wide as the side of a grid square and both read against the
+  // same ruler — and so it stays walkable when the explorer changes size.
+  pathHeights: 2,
   heightColors: false,
   surfGrid: false,     // the coordinate grid, drawn on the surface itself
   geoGrid: false,      // ...built from geodesics rather than from coordinates
@@ -158,6 +161,7 @@ const state = {
   dirAngle: 0,
   tangent: false,
 
+  walkSpeed: 1,        // a multiple of the ordinary pace
   zoom: 1,             // the explorer's own size, in units of 1.8 m
   camZoom: 1,          // how close the camera is, which is a separate question
   showOpt: false,
@@ -212,9 +216,8 @@ let altHiker = null;
 const altView = {
   mode: MODE_DRONE,
   pitch: -0.1,          // first person only; third person stays level
-  camYaw: 0.6,          // third person: where the fixed camera sits
+  camPitch: 0.32,       // third person: how high behind the explorer it rides
   camDist: 0,
-  camHeight: 0,
   scale: 1,             // world units per unit of the surface's own coordinates
   charScale: 1,         // world units per unit of the character
 };
@@ -443,6 +446,7 @@ function rebuildAlternate() {
 
   world.add(altSurface);
   setMessage('');
+  chooseOutwardSide();
 
   // Sky and fog still want a sensible scale even without a Field.
   disposeTree(sky);
@@ -537,6 +541,28 @@ function refreshSurfaceGrid() {
 const GRID_HEIGHTS = 2;
 
 /**
+ * How wide a level curve is painted, in world metres.
+ *
+ * A width in metres would be a width in metres whatever the explorer's size,
+ * and the explorer's size is the plot's whole sense of scale: shrink to a
+ * tenth to look at local linearity and every contour would still be 1.4 m
+ * across, which at that scale is a motorway. Tied to the explorer instead, a
+ * contour is a footpath at every scale — and at the default two heights it is
+ * exactly as wide as the side of a grid square, so the two rulers agree.
+ */
+function pathWidth() { return state.pathHeights * 1.8 * state.zoom; }
+
+function updatePathWidthLabel() {
+  const el = $('lbl-cwidth');
+  if (!el) return;
+  const n = state.pathHeights;
+  const m = pathWidth();
+  const metres = m >= 100 ? Math.round(m).toLocaleString()
+    : m >= 1 ? m.toPrecision(3) : m.toPrecision(2);
+  el.textContent = `${n} × 1.8 m = ${metres} m`;
+}
+
+/**
  * Say what the chosen key costs, if anything, and only then.
  *
  * A warning that is always on screen is furniture; one that appears exactly
@@ -588,6 +614,14 @@ function scheduleGridRebuild() {
   gridTimer = setTimeout(() => refreshSurfaceGrid(), 220);
 }
 
+/** The same, for the contour set, whose width is baked into its triangles. */
+let contourTimer = 0;
+function scheduleContourRebuild() {
+  if (!state.contours || state.surfaceKind !== 'graph') return;
+  clearTimeout(contourTimer);
+  contourTimer = setTimeout(() => refreshContours(), 260);
+}
+
 /**
  * Drop the implicit walker onto an actual vertex of the mesh.
  *
@@ -611,10 +645,38 @@ function ensureAltHiker() {
   world.add(altHiker);
 }
 
+/**
+ * Decide which side of the surface counts as the outside.
+ *
+ * A walker's normal is whatever the formula hands it — r_u × r_v for a
+ * parametric patch, ∇F for an implicit one — and neither has any obligation to
+ * point away from the middle of the shape. The usual sphere is the case in
+ * point: with v running from 0 to π, r_u × r_v points *inwards*, so the
+ * explorer was standing on the inner wall with their head towards the centre,
+ * while the checkbox that is supposed to say so was unticked. Everything built
+ * on their up vector inherited that, the following camera included, which is
+ * why it kept ending up inside the ball looking at the far wall.
+ *
+ * So the side is chosen rather than inherited: whichever way the normal has to
+ * point to face away from the surface's own centre. That is the outside of
+ * anything closed, and on a Möbius strip — which has no outside — it is at
+ * least the side the explorer is standing on when they arrive.
+ */
+function chooseOutwardSide() {
+  if (!walker) return;
+  const b = altSurface && altSurface.geometry.boundingSphere;
+  const centre = b ? b.center : new THREE.Vector3();
+  const away = walker.position(new THREE.Vector3()).sub(centre);
+  walker.baseSign = away.lengthSq() > 1e-12
+    && walker.normal(new THREE.Vector3()).dot(away) < 0 ? -1 : 1;
+  applyOrientation();
+}
+
 function applyOrientation() {
   // Through flip(), not by assignment: swapping sides swaps which way is right,
   // and with it the sense of the angle the body is held at.
-  const want = state.inside ? -1 : 1;
+  const base = walker && walker.baseSign ? walker.baseSign : 1;
+  const want = base * (state.inside ? -1 : 1);
   if (walker && walker.sign !== want) walker.flip();
   $('fld-orient').hidden = state.surfaceKind === 'graph';
 }
@@ -673,13 +735,52 @@ function placeAltHiker() {
 }
 
 /**
- * Keep the following camera above the explorer's feet and short of straight
- * overhead — at exactly overhead its view is parallel to the world up and
- * lookAt has nothing left to orient against.
+ * Keep the following camera short of straight overhead and straight underneath
+ * — at either the view is parallel to the up it is being oriented against, and
+ * lookAt has nothing left to work with.
  */
-function clampCamHeight(h) {
-  const lim = (altView.camDist || 1) * 2.2;
-  return Math.max(-lim, Math.min(lim, h));
+function clampCamPitch(a) {
+  const lim = 1.35;                      // ~77°, comfortably short of vertical
+  return Math.max(-lim, Math.min(lim, a));
+}
+
+/**
+ * How far behind the explorer the following camera may ride.
+ *
+ * Near enough that the surface underfoot is what fills the screen, and — the
+ * point of the clamp — never so far that it leaves the neighbourhood. Beyond
+ * about half the surface's own radius a camera behind someone standing on a
+ * sphere is no longer looking at a hillside, it is looking at a ball; and on a
+ * torus it is inside the hole.
+ */
+function clampCamDist(d) {
+  const body = 1.8 * state.zoom * (altView.charScale || 1);
+  return Math.max(body * 1.6, Math.min(d, altSurfaceRadius() * 0.55));
+}
+
+/**
+ * Stop the surface from getting between the camera and the explorer.
+ *
+ * A distance clamp is not enough on its own. Standing in the hole of a torus
+ * and backing away puts the far wall of the tube in the way long before any
+ * fixed limit is reached, and what the student then sees is a solid colour.
+ * So the last word belongs to the surface itself: cast a ray out along the
+ * camera's own direction and, if it meets the surface, stop short of it. This
+ * is the ordinary camera-collision test of a third-person game, and here it is
+ * also the guarantee the view stays local — the camera can never be on the
+ * other side of a wall from the person it is following.
+ */
+const camRay = new THREE.Raycaster();
+function clearOfSurface(from, dir, d) {
+  if (!altSurface) return d;
+  const body = 1.8 * state.zoom * (altView.charScale || 1);
+  const near = body * 0.25;                   // clear of the ground underfoot
+  camRay.set(from.clone().addScaledVector(dir, near), dir);
+  camRay.near = 0;
+  camRay.far = d - near;
+  const hit = camRay.intersectObject(altSurface, false)[0];
+  if (!hit) return d;
+  return Math.max(body * 1.2, near + hit.distance * 0.82);
 }
 
 /** Put the drone where the whole alternate surface is in shot. */
@@ -704,7 +805,7 @@ function frameAlternate() {
   // enough that they are a figure rather than a speck.
   const body = 1.8 * altView.charScale;
   altView.camDist = body * 7;
-  altView.camHeight = body * 2.6;
+  altView.camPitch = 0.32;
 }
 
 function rebuild() {
@@ -820,6 +921,7 @@ function rebuild() {
     player.resetToDomainCentre();
   }
   player.setZoom(state.zoom);
+  player.speedScale = state.walkSpeed;
 
   applyPalette();
   applyIsolation();
@@ -923,7 +1025,7 @@ function refreshContours() {
 
   const picked = chooseLevels(grid.zmin, grid.zmax, { step: state.contourStep, target: 40 });
   contourInfo = picked;
-  contourLines = buildContours(field, grid, picked.levels || [], { width: state.pathWidth });
+  contourLines = buildContours(field, grid, picked.levels || [], { width: pathWidth() });
   if (contourLines) world.add(contourLines);
   updateContourNote();
   refreshProjection();
@@ -1229,14 +1331,16 @@ document.addEventListener('mousemove', (e) => {
       altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * 0.0022));
       return;
     }
+    // Turning is a rotation of the heading *in the tangent plane*, which is
+    // the only thing "turn left" can mean on a surface with no fixed up. It is
+    // the same gesture in both views on purpose: in third person the camera
+    // rides behind the heading, so steering the explorer swings the camera
+    // round with them, and changing view does not change what the mouse does.
+    walker.turn(-dx * 0.0022);
     if (altView.mode === MODE_FIRST) {
-      // Turning is a rotation of the heading *in the tangent plane*, which is
-      // the only thing "turn left" can mean on a surface with no fixed up.
-      walker.turn(-dx * 0.0022);
       altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * 0.0022));
     } else {
-      altView.camYaw -= dx * 0.004;
-      altView.camHeight = clampCamHeight(altView.camHeight - dy * altView.camDist * 0.004);
+      altView.camPitch = clampCamPitch(altView.camPitch + dy * 0.0022);
     }
     return;
   }
@@ -1368,15 +1472,16 @@ function applyLookKeys(dt) {
     if (altView.mode === MODE_DRONE || !walker) {
       altCam.yaw -= dx * a;
       altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * a));
-    } else if (altView.mode === MODE_FIRST) {
+    } else {
       // On a surface, "turn" is a rotation of the heading inside the tangent
       // plane; pitch is clamped short of vertical so the view never rolls under
       // the ground it is standing on.
       walker.turn(-dx * a);
-      altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * a));
-    } else {
-      altView.camYaw -= dx * a;
-      altView.camHeight = clampCamHeight(altView.camHeight - dy * (altView.camDist || 1) * a * 0.9);
+      if (altView.mode === MODE_FIRST) {
+        altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * a));
+      } else {
+        altView.camPitch = clampCamPitch(altView.camPitch + dy * a);
+      }
     }
     return;
   }
@@ -1771,8 +1876,8 @@ function wireUI() {
   });
 
   $('in-cwidth').addEventListener('input', (e) => {
-    state.pathWidth = parseFloat(e.target.value);
-    $('lbl-cwidth').textContent = `${state.pathWidth.toFixed(1)} m`;
+    state.pathHeights = parseFloat(e.target.value);
+    updatePathWidthLabel();
   });
   $('in-cwidth').addEventListener('change', () => {
     if (state.contours) withLoading(refreshContours);
@@ -1819,6 +1924,16 @@ function wireUI() {
 
   $('in-zoom').addEventListener('input', (e) => {
     applyZoom(Math.pow(10, -parseFloat(e.target.value)));
+  });
+
+  // Logarithmic, so a quarter pace and four times pace are the same distance
+  // from the middle and neither end of the dial is a dead zone.
+  $('in-speed').addEventListener('input', (e) => {
+    state.walkSpeed = Math.pow(10, parseFloat(e.target.value));
+    if (player) player.speedScale = state.walkSpeed;
+    $('lbl-speed').textContent = state.walkSpeed >= 10
+      ? `${Math.round(state.walkSpeed)}×`
+      : `${state.walkSpeed.toFixed(state.walkSpeed < 1 ? 2 : 1)}×`;
   });
 
   // The two dials on the right edge. A tablet has no wheel and no modifier
@@ -2068,9 +2183,10 @@ function applyZoom(z) {
   const before = state.zoom;
   state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
-  // The grid squares are one explorer tall, so they are no longer the right
-  // size once the explorer is not.
-  if (state.zoom !== before) scheduleGridRebuild();
+  // The grid squares and the contour paths are both measured in explorer
+  // heights, so neither is the right size once the explorer is not.
+  if (state.zoom !== before) { scheduleGridRebuild(); scheduleContourRebuild(); }
+  updatePathWidthLabel();
   $('in-zoom').value = String(-Math.log10(state.zoom));
   // The panel dial and the dial on the right edge are two handles on one
   // number, so whichever was moved, both have to end up showing it. They run
@@ -2454,7 +2570,8 @@ function animate() {
     } else {
       // Walking. Speed is in world metres, so a step feels the same whatever
       // the surface's own parameterisation happens to be doing.
-      const speed = 4.2 * state.zoom * altView.charScale * (inp.sprint ? 2.6 : 1);
+      const speed = 4.2 * state.zoom * altView.charScale * state.walkSpeed
+        * (inp.sprint ? 2.6 : 1);
       const dist = speed * dt;
       if (Math.abs(inp.forward) > 1e-4 || Math.abs(inp.right) > 1e-4) {
         walker.move(dist, inp.forward, inp.right);
@@ -2478,25 +2595,35 @@ function animate() {
         camera.position.copy(stance.p).addScaledVector(stance.up, eye);
         camera.quaternion.copy(q);
       } else {
-        // Third person from a camera that never rolls: its up is the world's,
-        // so an explorer going round the underside of a torus is seen to go
-        // upside down instead of the picture quietly turning with them. That
-        // was the point of calling it static.
+        // Third person, over the shoulder — built entirely in the explorer's
+        // own frame, because on a sphere there is no other frame to build it
+        // in. The camera sits behind the heading, raised by its own elevation
+        // angle, with the explorer's up as its up. Turn, and it comes round
+        // with you; walk under a torus, and it goes under with you.
         //
-        // It follows at a fixed offset from the explorer rather than orbiting
-        // the origin, though, because orbiting the origin means zooming in
-        // walks the camera towards the centre of the surface — and the centre
-        // of a torus is inside the torus. You ended up looking at the far wall
-        // in the dark with the explorer nowhere in frame.
-        const d = (altView.camDist || (altCam.dist * 0.35)) / state.camZoom;
-        const h = (altView.camHeight || 0) / state.camZoom;
-        camera.position.set(
-          stance.p.x + Math.sin(altView.camYaw) * d,
-          stance.p.y + h,
-          stance.p.z + Math.cos(altView.camYaw) * d,
-        );
-        camera.up.set(0, 1, 0);
-        camera.lookAt(stance.p);
+        // The two things this replaces were both world-space, and both broke
+        // here. A camera at a fixed world yaw does not follow a turn, so in
+        // third person there was no way to steer. And a camera placed at a
+        // world offset walks through the surface as soon as the offset is
+        // larger than the surface — zoom out on a sphere and you came out the
+        // far side, looking at the inside of it.
+        //
+        // Staying in the frame fixes the first. The distance clamp fixes the
+        // second: back along a tangent from a point of a convex surface never
+        // re-enters it, and capping the reach at a fraction of the surface's
+        // own radius keeps it from wandering off into a torus's hole either.
+        const c = Math.cos(altView.camPitch), s = Math.sin(altView.camPitch);
+        const eye = 1.66 * state.zoom * altView.charScale;
+        const target = stance.p.clone().addScaledVector(stance.up, eye * 0.6);
+        const back = new THREE.Vector3()
+          .addScaledVector(stance.fwd, -c)
+          .addScaledVector(stance.up, s)
+          .normalize();
+        const d = clearOfSurface(target, back,
+          clampCamDist((altView.camDist || (altCam.dist * 0.35)) / state.camZoom));
+        camera.position.copy(target).addScaledVector(back, d);
+        camera.up.copy(stance.up);
+        camera.lookAt(target);
       }
       camera.fov = fovFor(altView.mode === MODE_FIRST);
       camera.near = Math.max(1e-4, 0.02 * state.zoom * altView.charScale);
@@ -2574,13 +2701,13 @@ function animate() {
   const onGround = isFinite(player.height());
   if (state.curCurve && onGround) {
     heightColor(grid.norm(player.height()), curveRGB);
-    curveGizmo.update(player.x, player.y, state.pathWidth * 1.35, curveRGB);
+    curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
   } else {
     curveGizmo.setVisible(false);
   }
 
   if (state.curTangent && onGround) {
-    tangentLine.update(player.x, player.y, field.worldSize * 0.22, state.pathWidth * 0.9);
+    tangentLine.update(player.x, player.y, field.worldSize * 0.22, pathWidth() * 0.9);
   } else {
     tangentLine.setVisible(false);
   }
@@ -2614,7 +2741,11 @@ window.addEventListener('orientationchange', onResize);
  * arguing about pixels. Anything reachable here is reachable from the page's
  * own source in any case.
  */
-window.__peaks = { scene, world, state, get walker() { return walker; } };
+window.__peaks = {
+  THREE, scene, world, state, camera, altView,
+  get walker() { return walker; },
+  get altSurface() { return altSurface; },
+};
 
 state.holdKey = readHoldKey();
 
@@ -2624,6 +2755,7 @@ applyHoldKeyNote();
 applyVocabulary();
 applyShape();
 applySurfaceKindUI();
+updatePathWidthLabel();
 onResize();
 
 withLoading(() => {

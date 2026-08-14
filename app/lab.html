@@ -216,7 +216,7 @@
       </select>
       <div id="err-fn" class="err" hidden></div>
       </div>
-      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so partial derivatives and level curves of a height do not apply — but you can still walk on it. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
+      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so there is no height to read level curves off. Everything else applies, and applies in the surface’s own terms: walk on it, and the Derivatives section gives you the geodesic circle, the coordinate directions of whichever grid is on, your velocity and the tangent plane. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
     </section>
 
     <section>
@@ -280,9 +280,10 @@
       <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
         <input id="in-cstep" type="number" step="any" min="0" placeholder="auto"></label>
       <label class="range">
-        <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">1.4 m</b></span>
-        <input id="in-cwidth" type="range" min="0.3" max="5" step="0.1" value="1.4">
+        <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">2 × 1.8 m</b></span>
+        <input id="in-cwidth" type="range" min="0.25" max="6" step="0.25" value="2">
       </label>
+      <p class="note" data-i18n="map.cwidthnote">Measured in explorer heights, so the paths stay walkable at every scale: shrink the explorer and the contours narrow with them. Two heights is the same width as a grid square’s side.</p>
       <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
       <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
       <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
@@ -401,6 +402,11 @@
         </select>
       </label>
       <p class="note" data-i18n="view.dronenote">The drone flies level: W A S D move it over the (x, y) plane, Space and Ctrl set its altitude, and the mouse only aims the camera. The beam under it drops straight down to the point of the domain you are above.</p>
+      <label class="range">
+        <span><span data-i18n="view.speed">Walking speed</span> <b id="lbl-speed">1.0×</b></span>
+        <input id="in-speed" type="range" min="-0.6" max="1.4" step="0.05" value="0">
+      </label>
+      <p class="note" data-i18n="view.speednote">A multiple of the ordinary walking pace, which is already measured in explorer heights per second — so an explorer a tenth the size still crosses the same ground in the same time. Hold Shift to sprint on top of whatever is set here.</p>
       <label class="field"><span data-i18n="view.style">Explorer's look</span>
         <select id="sel-style" class="preset">
           <option value="explorer" data-i18n="style.explorer">Hiker</option>
