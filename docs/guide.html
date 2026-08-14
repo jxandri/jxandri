@@ -363,6 +363,15 @@ survives the move. <code>G</code> and <code>H</code> default to 0.2, which buys 
 width of walking before the next move; raise them for longer strides between rebuilds. The feature
 is left off in the consumer problem, where the domain is not a window onto anything but the set of
 bundles that exist.</p>
+<p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off. The scenery sits
+<em>on top of</em> the surface and never changes its shape.</p>
+<p><strong>Water in the depressions</strong> — a translucent lake surface at height zero, so any
+region where <code>f &lt; 0</code> fills with water.</p>
+<p><strong>Decoration density</strong> — how much scenery. Turn it down to speed things up.</p>
+<p><strong>Shadows</strong> — prettier, noticeably slower. Off by default.</p>
+
+<h2>Grid on the surface</h2>
+<p>Its own section in the panel, and live on every kind of surface — a graph, a parametric patch and an implicit surface all have coordinates worth drawing, so unlike the level curves and the terrain colouring above it this one never greys out.</p>
 <p><strong>Coordinate grid on the surface</strong> <kbd>N</kbd> — draws the coordinate system
 <em>on</em> the surface, which is the mesh a textbook picture almost always has and which is not
 decoration: it is what lets you see what the coordinates are doing.</p>
@@ -412,12 +421,6 @@ it is the curvature. Geodesics that set off parallel do not stay parallel; how f
 or spread apart <em>is</em> the Gaussian curvature. On a sphere the squares close up as you go away
 from the explorer; on a saddle they splay open. It is the clearest picture of curvature a student
 is likely to meet, and it is anchored where the explorer was standing when it was drawn.</p>
-<p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off. The scenery sits
-<em>on top of</em> the surface and never changes its shape.</p>
-<p><strong>Water in the depressions</strong> — a translucent lake surface at height zero, so any
-region where <code>f &lt; 0</code> fills with water.</p>
-<p><strong>Decoration density</strong> — how much scenery. Turn it down to speed things up.</p>
-<p><strong>Shadows</strong> — prettier, noticeably slower. Off by default.</p>
 
 <h2>Derivatives</h2>
 <p><strong>Highlight neighbourhood</strong> <kbd>H</kbd> — lights up a disc on the surface centred on
@@ -469,7 +472,8 @@ is perpendicular to <code>∇f</code>, and the projected line leaves the contour
 order: the two run together near the explorer and part slowly further out. Shrink the explorer
 with the zoom dial and they close up again — which is what "tangent" means.</p>
 
-<h2>Tangent plane &amp; scale</h2>
+<h2>Tangent plane, and the explorer&#8217;s scale</h2>
+<p>Two sections in the panel now. The tangent plane is a statement about the graph of a function and greys out on the other two kinds of surface; the explorer&#8217;s scale is not, and stays live everywhere — an explorer on a torus has a size, and everything measured against them, the grid squares included, changes with it.</p>
 <p><strong>Tangent plane</strong> <kbd>P</kbd> — draws the flat plane that best matches the
 surface at the explorer's feet.</p>
 <p><strong>Explorer scale</strong> — changes the explorer's size by a factor of ten per notch.

@@ -284,11 +284,6 @@
         <input id="in-cwidth" type="range" min="0.3" max="5" step="0.1" value="1.4">
       </label>
       <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
-      <label class="check"><input id="t-surfgrid" type="checkbox"><span><span data-i18n="map.grid">Coordinate grid on the surface</span> <kbd>N</kbd></span></label>
-      <label class="check" id="fld-geogrid" hidden><input id="t-geogrid" type="checkbox"><span data-i18n="map.geogrid">Build it from geodesics instead</span></label>
-      <p class="note" id="grid-scale" hidden></p>
-      <p class="note" id="note-grid" data-i18n="map.gridnote">Every square is two explorers on a side, measured along the surface, in all three regimes — so the mesh is a ruler and not decoration. On a graph it is the grid of the (x, y) plane lifted onto the surface; on a parametric surface, its parameter lines; on an implicit one, where the surface cuts the coordinate planes. It is drawn on both sides, so it stays readable from inside.</p>
-      <p class="note" data-i18n="map.geonote">The geodesic grid is built only from straightest paths and arc length, so its squares really are that size wherever they sit — which the other two cannot promise, since their spacing comes from how the surface was written down rather than from the surface. Where the squares stop meeting at right angles, that is the curvature.</p>
       <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
       <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
       <label class="range">
@@ -296,6 +291,15 @@
         <input id="in-den" type="range" min="0" max="2" step="0.1" value="1">
       </label>
       <label class="check"><input id="t-shadow" type="checkbox"><span><span data-i18n="map.shadows">Shadows (costs performance)</span></span></label>
+    </section>
+
+    <section id="sec-grid">
+      <h2 data-i18n="sec.grid">Grid on the surface</h2>
+      <label class="check"><input id="t-surfgrid" type="checkbox"><span><span data-i18n="map.grid">Coordinate grid on the surface</span> <kbd>N</kbd></span></label>
+      <label class="check" id="fld-geogrid" hidden><input id="t-geogrid" type="checkbox"><span data-i18n="map.geogrid">Build it from geodesics instead</span></label>
+      <p class="note" id="grid-scale" hidden></p>
+      <p class="note" id="note-grid" data-i18n="map.gridnote">Every square is two explorers on a side, measured along the surface, in all three regimes — so the mesh is a ruler and not decoration. On a graph it is the grid of the (x, y) plane lifted onto the surface; on a parametric surface, its parameter lines; on an implicit one, where the surface cuts the coordinate planes. It is drawn on both sides, so it stays readable from inside.</p>
+      <p class="note" data-i18n="map.geonote">The geodesic grid is built only from straightest paths and arc length, so its squares really are that size wherever they sit — which the other two cannot promise, since their spacing comes from how the surface was written down rather than from the surface. Where the squares stop meeting at right angles, that is the curvature.</p>
     </section>
 
     <section id="sec-deriv">
@@ -323,12 +327,17 @@
     <section id="sec-zoom">
       <h2 data-i18n="sec.zoom">Tangent plane &amp; scale</h2>
       <label class="check"><input id="t-tangent" type="checkbox"><span><span data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
+      <p class="note" data-i18n="zoom.note">Turn this on and take the explorer scale down a decade or two: a differentiable surface becomes indistinguishable from its tangent plane, which is what differentiable means.</p>
+    </section>
+
+    <section id="sec-scale">
+      <h2 data-i18n="sec.scale">Explorer scale</h2>
       <label class="range">
         <span><span data-i18n="zoom.scale">Explorer scale</span> <b id="lbl-zoom">1 : 1</b></span>
         <input id="in-zoom" type="range" min="-2" max="4" step="0.01" value="0">
       </label>
       <div id="ruler"></div>
-      <p class="note" data-i18n="zoom.note">Slide right and the explorer shrinks, down to 0.18 mm; slide left and they grow to ten times life size. The mouse wheel does the same thing, the way it zooms a map — a trackpad pinch works too. Turn on the tangent plane and slide right: a differentiable surface becomes indistinguishable from its plane.</p>
+      <p class="note" data-i18n="zoom.scalenote">Slide right and the explorer shrinks, down to 0.18 mm; slide left and they grow to a hundred times life size. The mouse wheel with ⌘/⊞ or Alt held does the same thing. Everything measured against them — the neighbourhood, the arrows, the grid squares — changes with them, which is what makes this a ruler and not a camera control.</p>
     </section>
 
     <section id="sec-opt">

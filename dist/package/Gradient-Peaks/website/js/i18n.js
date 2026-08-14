@@ -126,6 +126,8 @@ const STRINGS = {
     'feas.isolate': 'Make the outside translucent',
 
     'sec.map': 'Map & terrain',
+    'sec.grid': 'Grid on the surface',
+    'sec.scale': 'Explorer scale',
     'map.contours': 'Level curves',
     'map.cstep': 'Contour interval Δz (blank = automatic)',
     'map.cwidth': 'Path width',
@@ -158,9 +160,10 @@ const STRINGS = {
     'curve.tangent': 'Tangent line to that curve',
     'curve.note': 'Both are painted on the surface itself and follow the explorer continuously. The tangent is the tangent direction pushed back down onto the surface, so it hugs the ground; it parts from the level curve only at second order, and shrinking the explorer closes the gap. Each curve takes its colour from its own height on the ramp.',
 
-    'sec.zoom': 'Tangent plane & scale',
+    'sec.zoom': 'Tangent plane',
     'zoom.scale': 'Explorer scale',
-    'zoom.note': 'Slide right and the explorer shrinks, down to 0.18 mm; slide left and they grow to ten times life size. The mouse wheel does the same thing, the way it zooms a map — a trackpad pinch works too. Turn on the tangent plane and slide right: a differentiable surface becomes indistinguishable from its plane.',
+    'zoom.note': 'Turn this on and take the explorer scale down a decade or two: a differentiable surface becomes indistinguishable from its tangent plane, which is what differentiable means.',
+    'zoom.scalenote': 'Slide right and the explorer shrinks, down to 0.18 mm; slide left and they grow to a hundred times life size. The mouse wheel with \u2318/\u229e or Alt held does the same thing. Everything measured against them — the neighbourhood, the arrows, the grid squares — changes with them, which is what makes this a ruler and not a camera control.',
 
     'sec.opt': 'Optimisation',
     'opt.show': 'Show optimum',
@@ -356,6 +359,8 @@ const STRINGS = {
     'feas.isolate': 'Volver translúcido lo que está afuera',
 
     'sec.map': 'Mapa y terreno',
+    'sec.grid': 'Ret\u00edcula sobre la superficie',
+    'sec.scale': 'Escala del explorador',
     'map.contours': 'Curvas de nivel',
     'map.cstep': 'Intervalo entre curvas Δz (vacío = automático)',
     'map.cwidth': 'Ancho del sendero',
@@ -388,9 +393,10 @@ const STRINGS = {
     'curve.tangent': 'Recta tangente a esa curva',
     'curve.note': 'Ambas se dibujan sobre la propia superficie y siguen al explorador continuamente. La tangente es la dirección tangente proyectada de vuelta sobre la superficie, así que se pega al terreno; se separa de la curva de nivel solo en segundo orden, y al encoger al explorador esa separación desaparece. Cada curva toma su color de su propia altura en la rampa.',
 
-    'sec.zoom': 'Plano tangente y escala',
+    'sec.zoom': 'Plano tangente',
     'zoom.scale': 'Escala del explorador',
-    'zoom.note': 'Deslice a la derecha y el explorador se encoge, hasta 0,18 mm; deslice a la izquierda y crece hasta diez veces su tamaño natural. La rueda del ratón hace lo mismo, como al acercar un mapa, y el gesto de pellizco del trackpad también. Active el plano tangente y deslice a la derecha: una superficie diferenciable se vuelve indistinguible de su plano.',
+    'zoom.note': 'Act\u00edvelo y baje una o dos d\u00e9cadas la escala del explorador: una superficie diferenciable se vuelve indistinguible de su plano tangente, que es lo que significa diferenciable.',
+    'zoom.scalenote': 'Deslice a la derecha y el explorador encoge, hasta 0,18 mm; deslice a la izquierda y crece hasta cien veces su tama\u00f1o natural. La rueda del rat\u00f3n con \u2318/\u229e o Alt pulsado hace lo mismo. Todo lo que se mide contra \u00e9l —el entorno, las flechas, los cuadrados de la ret\u00edcula— cambia con \u00e9l, y eso es lo que hace de esto una regla y no un control de c\u00e1mara.',
 
     'sec.opt': 'Optimización',
     'opt.show': 'Mostrar el óptimo',
