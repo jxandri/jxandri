@@ -249,12 +249,27 @@ which is the only way six orders of magnitude fit on one slider: a linear dial w
 tenths of its travel inside the largest decade and leave the interesting end unreachable.</p>
 
 <h2>Looking around without a mouse</h2>
-<p>Hold <kbd>⌘</kbd>/<kbd>⊞</kbd> or <kbd>Alt</kbd> and the movement keys stop moving you and start
-aiming you instead: <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrow keys swing the
-view, at about a quarter turn a second, so a full look round takes four seconds and a small
-correction is a tap. It is clamped short of vertical, so the view never rolls under the ground it
-is standing on. This is for anyone working on a laptop without a trackpad they can aim with, or
-demonstrating at a board where a mouse is not to hand.</p>
+<p><strong>Hold</strong> <kbd>⌘</kbd>/<kbd>⊞</kbd> or <kbd>Alt</kbd> and the movement keys stop
+moving you and start aiming you instead: <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the
+arrow keys swing the view, at about a quarter turn a second, so a full look round takes four
+seconds and a small correction is a tap. It is clamped short of vertical, so the view never rolls
+under the ground it is standing on. This is for anyone working on a laptop without a trackpad they
+can aim with, or demonstrating at a board where a mouse is not to hand.</p>
+<p>Held, not tapped — the way a 3D game does it. The mode lasts exactly as long as the key is down
+and ends the instant it comes up, and any key that was down at that moment is let go of too. That
+last part matters more than it sounds: while <kbd>⌘</kbd> is held, macOS does not deliver the
+release of an ordinary key at all, so a program that did not let go on its own would think you were
+still holding <kbd>W</kbd> and set off walking the moment you released <kbd>⌘</kbd>.</p>
+<div class="warn">
+  <span class="label">Which modifier, on which machine</span>
+  <p>All three work, but the operating system reserves some combinations before any web page sees
+  them. On a Mac, <kbd>⌘</kbd>+<kbd>W</kbd> closes the tab and nothing a page does can stop it — so
+  use <kbd>⌥</kbd> (Option) there if you want <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>;
+  <kbd>⌘</kbd> with the arrow keys is fine. On Windows, <kbd>⊞</kbd>+arrows is window snapping and
+  never reaches the browser, so use <kbd>⊞</kbd> with <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd>
+  <kbd>D</kbd>, or <kbd>Alt</kbd> with either. <kbd>Alt</kbd>/<kbd>⌥</kbd> is the one that works
+  everywhere with everything.</p>
+</div>
 
 <h2>Step four: get the panel back</h2>
 <p>Press <kbd>Esc</kbd> to release the mouse, then press <kbd>Tab</kbd> to hide or show the control

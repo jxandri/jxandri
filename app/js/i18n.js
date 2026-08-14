@@ -206,6 +206,7 @@ const STRINGS = {
     'help.wheel': 'wheel',
     'help.updown': 'Drone up/down',
     'help.release': 'Release the mouse', 'help.hide': 'hide this panel',
+    'help.modnote': 'The modifier is <b>held</b>, not tapped: the look control lasts exactly as long as the key is down. Any of <kbd>Alt</kbd>/<kbd>\u2325</kbd>, <kbd>\u2318</kbd> or <kbd>\u229e</kbd> will do — but note that on a Mac <kbd>\u2318</kbd>+<kbd>W</kbd> closes the tab and no web page can stop it, so use <kbd>\u2325</kbd> if you want W A S D there; and Windows keeps <kbd>\u229e</kbd>+arrows for itself, so use <kbd>Alt</kbd> or W A S D there.',
     'help.syntax': 'Write functions with <code>+ − * / ^</code>, and <code>sin cos tan exp ln sqrt abs min max hypot gauss</code>. Implicit products work: <code>2x</code>, <code>x y</code>. Constraints combine with <code>&&</code>, <code>||</code>, and chained comparisons like <code>0&lt;=x&lt;=1</code>.',
 
     'hud.z': 'z = f(x,y)',
@@ -439,6 +440,7 @@ const STRINGS = {
     'help.wheel': 'rueda',
     'help.updown': 'Dron sube/baja',
     'help.release': 'Soltar el ratón', 'help.hide': 'ocultar este panel',
+    'help.modnote': 'La tecla modificadora se <b>mantiene pulsada</b>, no se pulsa y suelta: el control de la mirada dura exactamente lo que dura la pulsaci\u00f3n. Sirve cualquiera de <kbd>Alt</kbd>/<kbd>\u2325</kbd>, <kbd>\u2318</kbd> o <kbd>\u229e</kbd>; pero tenga en cuenta que en un Mac <kbd>\u2318</kbd>+<kbd>W</kbd> cierra la pesta\u00f1a y ninguna p\u00e1gina web puede impedirlo, as\u00ed que use <kbd>\u2325</kbd> si quiere W A S D ah\u00ed; y Windows se reserva <kbd>\u229e</kbd>+flechas, de modo que all\u00ed conviene <kbd>Alt</kbd> o W A S D.',
     'help.syntax': 'Escriba funciones con <code>+ − * / ^</code> y <code>sin cos tan exp ln sqrt abs min max hypot gauss</code>. El producto implícito funciona: <code>2x</code>, <code>x y</code>. Las restricciones se combinan con <code>&&</code>, <code>||</code> y comparaciones encadenadas como <code>0&lt;=x&lt;=1</code>.',
 
     'hud.z': 'z = f(x,y)',

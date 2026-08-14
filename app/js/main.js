@@ -982,9 +982,33 @@ let rightDown = false;
 // True while ⌘/⊞ or Alt/Option is down. Held, the movement keys stop being
 // movement keys and become a look control — the keyboard equivalent of the
 // mouse, for anyone on a tablet keyboard or without a trackpad they can aim
-// with. The state is tracked rather than read per-event because looking is
+// with. Held, not toggled: it is read from the modifier flag every event
+// carries, so the moment the key is up the mode is over.
+//
+// The state is tracked rather than read per-event because looking is
 // continuous: it has to keep happening for as long as the key is held.
 let lookMod = false;
+
+/**
+ * Enter or leave look mode, forgetting every key that was down.
+ *
+ * This is not tidiness, it is the whole of the bug. While Command is held,
+ * macOS does not deliver keyup for character keys — so hold ⌘, tap W, release
+ * W, release ⌘, and the program still believes W is down. The instant ⌘ comes
+ * up, W means "walk", and the explorer sets off across the surface on their
+ * own. From the outside that is indistinguishable from the modifier having been
+ * a toggle, which is exactly how it was reported.
+ *
+ * Clearing on both transitions also settles the ambiguous case honestly: keys
+ * held at the moment the mode changes are neither carried over nor half
+ * carried over. Hold-to-modify means the direction key is pressed inside the
+ * mode, which is what every game that does this expects of you anyway.
+ */
+function setLookMod(next) {
+  if (next === lookMod) return;
+  lookMod = next;
+  for (const k in keys) keys[k] = false;
+}
 
 const isTypingTarget = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
 
@@ -992,7 +1016,7 @@ const LOOK_CODES = ['KeyW', 'KeyA', 'KeyS', 'KeyD',
   'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
 window.addEventListener('keydown', (e) => {
-  lookMod = SIZE_MOD(e);
+  setLookMod(SIZE_MOD(e));
   if (isTypingTarget(e.target)) {
     if (e.key === 'Enter') { e.target.blur(); applyInputs(); }
     return;
@@ -1036,11 +1060,18 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
   keys[e.code] = false;
-  lookMod = SIZE_MOD(e);
+  setLookMod(SIZE_MOD(e));
 });
-window.addEventListener('blur', () => {
+
+// Leaving the page at all — alt-tabbing, switching desktop, ⌘-tab — ends every
+// key that was down, and the browser will not tell us they came back up.
+const releaseEverything = () => {
   for (const k in keys) keys[k] = false;
   lookMod = false;
+};
+window.addEventListener('blur', releaseEverything);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) releaseEverything();
 });
 
 function toggleCheckbox(id) {
