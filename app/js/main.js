@@ -20,7 +20,7 @@ import {
 } from './player.js';
 import { ParametricWalker, ImplicitWalker, standBasis, graphWalker } from './walker.js';
 import { IntrinsicGizmo, GeodesicDisc } from './intrinsic.js';
-import { buildImplicit, buildParametric } from './surfaces.js';
+import { buildImplicit, buildParametric, paintMesh } from './surfaces.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, buildGeodesicGrid,
   disposeGrid,
@@ -140,6 +140,7 @@ const state = {
   curCurve: false,
   curTangent: false,
   decor: true,
+  decorScale: 1,       // how big the trees, rocks and grass are drawn
   water: true,
 
   // The window follows the explorer: reaching an edge slides that axis along by
@@ -462,6 +463,8 @@ function rebuildAlternate() {
   applyOrientation();
   refreshSurfaceGrid();
   frameAlternate();
+  applyPalette();
+  refreshAltDecor();
   return true;
 }
 
@@ -574,6 +577,39 @@ function applyHoldKeyNote() {
   el.textContent = t(state.holdKey === 'alt' ? 'hold.notealt' : 'hold.note');
 }
 
+function decorOptions() {
+  return { density: state.density, shadows: state.shadows, scale: state.decorScale };
+}
+
+/** Rebuild whichever forest is on screen — a graph's or a curved surface's. */
+function rebuildDecor() {
+  if (state.surfaceKind !== 'graph') { refreshAltDecor(); return; }
+  if (!field || !grid) return;
+  decorations.build(field, grid, predicate, decorOptions());
+  decorations.setVisible(state.decor);
+  decorations.setIsolate(state.isolate && state.feasible);
+}
+
+/**
+ * Scatter the same forest over a surface that is not a graph.
+ *
+ * Deliberately the same forest and the same rules: a student who has learned
+ * to read the bands on a hillside — dark timber low down, thinning woodland,
+ * scree, snow — reads a torus the same way, and the height that decides them
+ * is the same height that coloured the surface. The scale is the explorer's,
+ * so the trees say how big the explorer is exactly as they do on a graph.
+ */
+function refreshAltDecor() {
+  if (state.surfaceKind === 'graph') return;
+  if (!state.decor || !altSurface) { decorations.clear(); return; }
+  decorations.buildOnMesh(altSurface, {
+    ...decorOptions(),
+    radius: altSurfaceRadius(),
+    sign: walker ? walker.sign : 1,
+  });
+  decorations.setVisible(state.decor);
+}
+
 /** The radius of whatever non-graph surface is on screen. */
 function altSurfaceRadius() {
   const b = altSurface && altSurface.geometry.boundingSphere;
@@ -612,6 +648,13 @@ function scheduleGridRebuild() {
   if (!state.surfGrid) return;
   clearTimeout(gridTimer);
   gridTimer = setTimeout(() => refreshSurfaceGrid(), 220);
+}
+
+/** And for the forest on a curved surface, which is sized against the explorer. */
+let decorTimer = 0;
+function scheduleDecorRebuild() {
+  clearTimeout(decorTimer);
+  decorTimer = setTimeout(() => refreshAltDecor(), 300);
 }
 
 /** The same, for the contour set, whose width is baked into its triangles. */
@@ -897,7 +940,7 @@ function rebuild() {
   tangentLine = new TangentLineGizmo(field);
   world.add(tangentLine.mesh);
 
-  decorations.build(field, grid, predicate, { density: state.density, shadows: state.shadows });
+  decorations.build(field, grid, predicate, decorOptions());
   decorations.setVisible(state.decor);
   decorations.setIsolate(state.isolate && state.feasible);
 
@@ -994,15 +1037,20 @@ function configureShadows() {
 function paletteMode() { return state.heightColors ? 'height' : 'biome'; }
 
 function applyPalette() {
-  if (!surface) return;
-  recolorSurface(field, grid, surface.geometry, paletteMode());
+  // The lighting change below applies whichever kind of surface is on screen,
+  // and a curved one has its own painter.
+  if (state.surfaceKind !== 'graph') {
+    paintMesh(altSurface, paletteMode());
+  } else if (surface) {
+    recolorSurface(field, grid, surface.geometry, paletteMode());
+  }
 
   // In height-colour mode, flatten the lighting. The ramp only means anything
   // if the colour on screen is the colour in the legend, so trade some of the
   // directional shading for fidelity to the palette.
   if (state.heightColors) { hemi.intensity = 4.2; sun.intensity = 1.1; }
   else { hemi.intensity = 3.1; sun.intensity = 3.4; }
-  if (surfaceDetail && player) {
+  if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
   }
 }
@@ -1882,21 +1930,32 @@ function wireUI() {
   $('in-cwidth').addEventListener('change', () => {
     if (state.contours) withLoading(refreshContours);
   });
-  bindCheck('t-decor', 'decor', () => decorations.setVisible(state.decor));
+  bindCheck('t-decor', 'decor', () => {
+    decorations.setVisible(state.decor);
+    // On a curved surface the forest is not built until it is asked for, so
+    // the first tick has to build it rather than just unhide nothing.
+    if (state.decor && state.surfaceKind !== 'graph' && !decorations.layers.length) {
+      withLoading(refreshAltDecor);
+    }
+  });
   bindCheck('t-water', 'water', () => { if (water) water.visible = state.water && !(state.feasible && state.isolate); });
   bindCheck('t-shadow', 'shadows', () => {
     configureShadows();
-    withLoading(() => decorations.build(field, grid, predicate, { density: state.density, shadows: state.shadows }));
+    withLoading(rebuildDecor);
   });
+
+  // Logarithmic: a tenth and five times sit the same distance from the middle.
+  $('in-decsize').addEventListener('input', (e) => {
+    state.decorScale = Math.pow(10, parseFloat(e.target.value));
+    $('lbl-decsize').textContent = state.decorScale >= 1
+      ? `${state.decorScale.toFixed(1)}×` : `${state.decorScale.toFixed(2)}×`;
+  });
+  $('in-decsize').addEventListener('change', () => withLoading(rebuildDecor));
 
   $('in-den').addEventListener('input', (e) => { $('lbl-den').textContent = `${parseFloat(e.target.value).toFixed(1)}×`; });
   $('in-den').addEventListener('change', (e) => {
     state.density = parseFloat(e.target.value);
-    withLoading(() => {
-      decorations.build(field, grid, predicate, { density: state.density, shadows: state.shadows });
-      decorations.setVisible(state.decor);
-      decorations.setIsolate(state.feasible && state.isolate);
-    });
+    withLoading(rebuildDecor);
   });
 
   bindCheck('t-disc', 'disc', () => { if (state.disc) goToExplorer(); });
@@ -2185,7 +2244,10 @@ function applyZoom(z) {
   if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
   // The grid squares and the contour paths are both measured in explorer
   // heights, so neither is the right size once the explorer is not.
-  if (state.zoom !== before) { scheduleGridRebuild(); scheduleContourRebuild(); }
+  if (state.zoom !== before) {
+    scheduleGridRebuild();
+    scheduleContourRebuild();
+  }
   updatePathWidthLabel();
   $('in-zoom').value = String(-Math.log10(state.zoom));
   // The panel dial and the dial on the right edge are two handles on one

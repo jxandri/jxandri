@@ -143,6 +143,8 @@ const STRINGS = {
     'map.decor': 'Vegetation, rocks & snow',
     'map.water': 'Water in the depressions',
     'map.density': 'Decoration density',
+    'map.decorsize': 'Size of the trees',
+    'map.decorsizenote': 'At 1× a tree is about four times the explorer’s height, which is what a tree is. On a small sphere that makes for a very tall forest, so this is here to be turned down.',
     'map.shadows': 'Shadows (costs performance)',
 
     'sec.deriv': 'Derivatives',
@@ -397,6 +399,8 @@ const STRINGS = {
     'map.decor': 'Vegetación, rocas y nieve',
     'map.water': 'Agua en las depresiones',
     'map.density': 'Densidad de la decoración',
+    'map.decorsize': 'Tamaño de los árboles',
+    'map.decorsizenote': 'A 1× un árbol mide unas cuatro veces la altura del explorador, que es lo que mide un árbol. En una esfera pequeña eso da un bosque altísimo, así que este mando está aquí para bajarlo.',
     'map.shadows': 'Sombras (cuesta rendimiento)',
 
     'sec.deriv': 'Derivadas',

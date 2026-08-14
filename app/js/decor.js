@@ -256,7 +256,7 @@ export class Decorations {
     const S = field.S;
     // Decoration size is tied to world scale: a tree is ~7 m tall regardless of
     // what the domain numbers are, so the human stays the reference for scale.
-    const unit = Math.max(0.4, field.worldSize / 200) * 1.0;
+    const unit = Math.max(0.4, field.worldSize / 200) * (o.scale ?? 1);
 
     const area = field.worldSize * field.worldSize;
     const cap = (per10k) => Math.max(16, Math.round((area / 10000) * per10k * density));
@@ -368,6 +368,176 @@ export class Decorations {
       const grassChance = wBeach * 0.25 + wDeep * 0.7 + wLight * 0.8;
       if (r < grassChance && slope < 3.0) {
         place(grass, x, y, z, 0.7, unit * (0.45 + rnd() * 0.55), yaw);
+      }
+    }
+
+    for (const l of this.layers) { l.finish(); this.group.add(l.mesh); }
+  }
+
+  /**
+   * The same forest, scattered over a surface that is not a graph.
+   *
+   * A heightfield can be seeded by picking (x, y) at random, because every
+   * (x, y) is one point of the surface. A torus has no such chart, and picking
+   * parameters at random would pile everything up wherever the parametrisation
+   * happens to crowd — a sphere would grow a thicket at each pole and nothing
+   * on the equator. So the seeding is done on the *triangles the student can
+   * see*, chosen with probability proportional to their area, which is the
+   * definition of uniform on the surface and needs no chart at all.
+   *
+   * Which band a point belongs to is read off its height exactly as on a
+   * heightfield — the same normalised height that coloured the surface
+   * underneath it, so what grows where still matches the colour it stands on.
+   * The only thing that changes is which way is up: on a graph a tree grows
+   * along the world vertical, and on a planet it grows along the normal. Here
+   * it is the normal, which is what makes a sphere read as a small world
+   * rather than as a ball with a comb-over.
+   */
+  buildOnMesh(mesh, options) {
+    const o = options || {};
+    const density = o.density ?? 1;
+    const shadows = !!o.shadows;
+    this.clear();
+    if (!mesh || density <= 0) return;
+
+    const geom = mesh.geometry;
+    const posAttr = geom.getAttribute('position');
+    const norAttr = geom.getAttribute('normal');
+    if (!posAttr || !norAttr) return;
+    const index = geom.index ? geom.index.array : null;
+    const triCount = index ? Math.floor(index.length / 3) : Math.floor(posAttr.count / 3);
+    if (triCount < 1) return;
+
+    const vi = (t, k) => (index ? index[t * 3 + k] : t * 3 + k);
+
+    // Cumulative area, so a uniform draw in [0, total] picks a triangle with
+    // probability proportional to its area.
+    const cum = new Float64Array(triCount);
+    const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3();
+    const AB = new THREE.Vector3(), AC = new THREE.Vector3(), X = new THREE.Vector3();
+    let total = 0;
+    let ymin = Infinity, ymax = -Infinity;
+    for (let t = 0; t < triCount; t++) {
+      A.fromBufferAttribute(posAttr, vi(t, 0));
+      B.fromBufferAttribute(posAttr, vi(t, 1));
+      C.fromBufferAttribute(posAttr, vi(t, 2));
+      total += 0.5 * X.crossVectors(AB.subVectors(B, A), AC.subVectors(C, A)).length();
+      cum[t] = total;
+      ymin = Math.min(ymin, A.y, B.y, C.y);
+      ymax = Math.max(ymax, A.y, B.y, C.y);
+    }
+    if (!(total > 0) || !(ymax > ymin)) return;
+
+    // One unit of decoration, in world metres — set by the size of the world,
+    // exactly as it is on a heightfield, where it is worldSize / 200.
+    //
+    // Not by the explorer, tempting as that is. On a graph the two agree, but
+    // on a closed surface the explorer is deliberately drawn oversized — about
+    // a fourteenth of the radius, so that a person is visible against a sphere
+    // at all — and that is a lie told about the explorer, not about the world.
+    // Propagating it to the trees puts thirty-metre boulders on a torus and
+    // buries the surface under its own scenery. The world's own diameter is the
+    // honest yardstick, and the dial is there for taste.
+    const span = (o.radius || 100) * 2;
+    const unit = Math.max(0.4, span / 200) * (o.scale ?? 1);
+
+    const cap = (per10k) => Math.max(16, Math.round((total / 10000) * per10k * density));
+    const conifer = new DecorLayer(makeTreeGeometry('conifer'), cap(190), shadows);
+    const broadleaf = new DecorLayer(makeTreeGeometry('broadleaf'), cap(120), shadows);
+    const rock = new DecorLayer(makeRockGeometry(7, false), cap(130), shadows);
+    const snowRock = new DecorLayer(makeRockGeometry(13, true), cap(70), false);
+    const grass = new DecorLayer(makeGrassGeometry(), cap(420), false);
+    this.layers = [conifer, broadleaf, rock, snowRock, grass];
+
+    const rnd = mulberry32(0x5eed);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const spin = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const scl = new THREE.Vector3();
+    const p = new THREE.Vector3();
+    const n = new THREE.Vector3();
+    const na = new THREE.Vector3(), nb = new THREE.Vector3(), nc = new THREE.Vector3();
+
+    const pick = (r) => {
+      // Binary search on the cumulative areas.
+      let lo = 0, hi = triCount - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (cum[mid] < r) lo = mid + 1; else hi = mid;
+      }
+      return lo;
+    };
+
+    const place = (layer, scale, yaw) => {
+      q.setFromUnitVectors(up, n);
+      spin.setFromAxisAngle(up, yaw);
+      q.multiply(spin);
+      scl.setScalar(scale);
+      m.compose(p, q, scl);
+      layer.push(m, true);
+    };
+
+    const tries = Math.round((conifer.capacity + broadleaf.capacity + rock.capacity
+      + snowRock.capacity + grass.capacity) * 1.6);
+
+    for (let i = 0; i < tries; i++) {
+      const t = pick(rnd() * total);
+      // A uniform point of a triangle, by the fold-the-square trick.
+      let u = rnd(), v = rnd();
+      if (u + v > 1) { u = 1 - u; v = 1 - v; }
+      const ia = vi(t, 0), ib = vi(t, 1), ic = vi(t, 2);
+      A.fromBufferAttribute(posAttr, ia);
+      B.fromBufferAttribute(posAttr, ib);
+      C.fromBufferAttribute(posAttr, ic);
+      p.copy(A).addScaledVector(AB.subVectors(B, A), u).addScaledVector(AC.subVectors(C, A), v);
+
+      na.fromBufferAttribute(norAttr, ia);
+      nb.fromBufferAttribute(norAttr, ib);
+      nc.fromBufferAttribute(norAttr, ic);
+      n.set(0, 0, 0).addScaledVector(na, 1 - u - v).addScaledVector(nb, u).addScaledVector(nc, v);
+      if (n.lengthSq() < 1e-12) continue;
+      n.normalize();
+      if (o.sign < 0) n.negate();          // walking the inside: grow inwards
+
+      const hN = (p.y - ymin) / (ymax - ymin);
+      const yaw = rnd() * Math.PI * 2;
+      const r = rnd();
+
+      // Nothing here is steep. On a heightfield "steep" is measured against the
+      // world vertical, because that is where gravity points and it is why bare
+      // rock sheds soil. On a closed surface the local vertical is the normal —
+      // that is the whole premise of standing on it — so the ground is level
+      // underfoot everywhere, and measuring the tilt of the normal against the
+      // world's y axis instead would call the side of a torus a cliff and grow
+      // nothing on nine tenths of it. (It did, before this comment existed.)
+      const flat = 1;
+
+      const wBeach = bandWeight(1, hN);
+      const wDeep = bandWeight(2, hN);
+      const wLight = bandWeight(3, hN);
+      const wArid = bandWeight(4, hN);
+      const wVolcanic = bandWeight(5, hN);
+      const wSnow = bandWeight(6, hN);
+
+      if (wSnow > 0.02 && r < wSnow * 0.42 * flat + 0.06) {
+        place(snowRock, unit * (0.22 + rnd() * 0.45), yaw);
+        continue;
+      }
+      const stony = wArid * 0.5 + wVolcanic * 0.9;
+      if (stony > 0.02 && r < 0.16 + stony * 0.5) {
+        place(rock, unit * (0.20 + rnd() * 0.60), yaw);
+        continue;
+      }
+      const treeChance = (wDeep * 0.85 + wLight * 0.30) * flat;
+      if (r < treeChance) {
+        place(wDeep > wLight ? conifer : (rnd() < 0.5 ? broadleaf : conifer),
+          unit * (0.70 + rnd() * 0.70), yaw);
+        continue;
+      }
+      const grassChance = wBeach * 0.25 + wDeep * 0.7 + wLight * 0.8;
+      if (r < grassChance) {
+        place(grass, unit * (0.45 + rnd() * 0.55), yaw);
       }
     }
 
