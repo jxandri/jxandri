@@ -270,19 +270,21 @@
 
     <section id="sec-map">
       <h2 data-i18n="sec.map">Map &amp; terrain</h2>
-      <label class="check"><input id="t-contours" type="checkbox"><span><span data-i18n="map.contours">Level curves</span> <kbd>C</kbd></span></label>
-      <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
-        <input id="in-cstep" type="number" step="any" min="0" placeholder="auto"></label>
-      <label class="range">
-        <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">2 × 1.8 m</b></span>
-        <input id="in-cwidth" type="range" min="0.25" max="6" step="0.25" value="2">
-      </label>
-      <p class="note" data-i18n="map.cwidthnote">Measured in explorer heights, so the paths stay walkable at every scale: shrink the explorer and the contours narrow with them. Two heights is the same width as a grid square’s side.</p>
+      <div id="fld-contours">
+        <label class="check"><input id="t-contours" type="checkbox"><span><span data-i18n="map.contours">Level curves</span> <kbd>C</kbd></span></label>
+        <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
+          <input id="in-cstep" type="number" step="any" min="0" placeholder="auto"></label>
+        <label class="range">
+          <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">2 × 1.8 m</b></span>
+          <input id="in-cwidth" type="range" min="0.25" max="6" step="0.25" value="2">
+        </label>
+        <p class="note" data-i18n="map.cwidthnote">Measured in explorer heights, so the paths stay walkable at every scale: shrink the explorer and the contours narrow with them. Two heights is the same width as a grid square’s side.</p>
+      </div>
       <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
       <label class="check"><input id="t-worldmap" type="checkbox"><span><span data-i18n="map.world">Paint the world map on it</span></span></label>
       <p class="note" data-i18n="map.worldnote">Longitude across, latitude up — the flattest map there is — laid on the parameter rectangle, or on the domain of a graph, or on longitude and latitude about the centre of an implicit surface. On the standard sphere it becomes the globe it was traced from and the flat map’s distortion visibly undoes itself. On anything else it distorts in that surface’s own way. No sheet of paper can carry a sphere without stretching it: that is Gauss’s Theorema Egregium, and this is what it looks like.</p>
       <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
-      <label class="check"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
+      <label class="check" id="fld-water"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
       <label class="range">
         <span><span data-i18n="map.density">Decoration density</span> <b id="lbl-den">1.0×</b></span>
         <input id="in-den" type="range" min="0" max="2" step="0.1" value="1">

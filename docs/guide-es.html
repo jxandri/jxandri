@@ -373,6 +373,12 @@ permitida es sólida. Activar ambas cosas es la manera más clara de plantear un
 optimización con restricciones.</p>
 
 <h2>Mapa y terreno</h2>
+<p>La mayor parte de esta sección funciona en los tres tipos de superficie: el color del terreno,
+el mapamundi, la vegetación y su densidad y tamaño salen directamente de la malla, sea cual sea su
+forma. Cuatro elementos son propios de la gráfica y quedan ocultos en una superficie paramétrica o
+implícita: las curvas de nivel y su intervalo necesitan una altura de la que ser curvas, el ancho
+del camino solo importa junto a ellas, y el agua es un plano en <code>z = 0</code>, que da por
+supuesta la idea particular de «abajo» de una gráfica.</p>
 <p><strong>Curvas de nivel</strong> <kbd>C</kbd> — dibuja las curvas de nivel sobre la superficie
 como caminos anchos y transitables, no como hilos, y las <em>tiende sobre el terreno</em>: el
 centro de cada camino está a altura constante, como debe estarlo una curva de nivel, pero la
@@ -383,15 +389,18 @@ color dice la altitud, esté o no coloreada la superficie.</p>
 redondo y le dice cuál. Escriba un número y ese es el intervalo, que es lo que hace falta cuando
 el intervalo es justamente lo que se está enseñando. Si pide uno tan pequeño que harían falta
 miles de caminos, se ensancha y aparece una nota diciéndolo.</p>
-<p><strong>Ancho del camino</strong> — cuán anchos son esos caminos, en metros, medidos contra el
-explorador de 1,80 m. El valor por defecto de 1,4 m es un sendero visible desde el aire y aun así
-transitable.</p>
+<p><strong>Ancho del camino</strong> — cuán anchos son esos caminos, medido en alturas del
+explorador contra el explorador de 1,80 m, así que se estrechan junto con el explorador en vez de
+convertirse en una autopista al encogerlo para la demostración de linealidad local. El valor por
+defecto, dos alturas, es un sendero visible desde el aire y aun así transitable: la misma longitud
+que el lado de un cuadrado de la rejilla.</p>
 <p><strong>Colorear la superficie por altura</strong> <kbd>M</kbd> — repinta toda la superficie
 con la misma rampa de diez colores que usan las curvas de nivel, de modo que la superficie y sus
-curvas concuerdan. Apáguelo y la superficie vuelve a las ocho bandas de terreno —agua, playa,
-vegetación profunda, vegetación más clara, árido, roca volcánica, nieve, nube—, que dicen lo mismo
-en el idioma de un paisaje. Combine cualquiera de las dos con <kbd>T</kbd> (mirar desde arriba) y
-la escena 3D se convierte en el mapa plano que los estudiantes ya conocen.</p>
+curvas concuerdan — en cualquier tipo de superficie, no solo en una gráfica. Apáguelo y la
+superficie vuelve a las ocho bandas de terreno —agua, playa, vegetación profunda, vegetación más
+clara, árido, roca volcánica, nieve, nube—, que dicen lo mismo en el idioma de un paisaje. En una
+gráfica, combine cualquiera de las dos con <kbd>T</kbd> (mirar desde arriba) y la escena 3D se
+convierte en el mapa plano que los estudiantes ya conocen.</p>
 <p><strong>La ventana sigue al explorador</strong> — camine hasta un borde del dominio y el
 dominio se mueve en vez de detenerle. La gráfica es una ventana sobre una función que no tiene
 bordes, y un muro en <code>x = b</code> dice algo falso sobre <code>f</code>. Al alcanzar un lado,
@@ -410,12 +419,18 @@ por defecto, lo que da un quinto de la anchura del dominio de caminata antes del
 desplazamiento; súbalos para andar más entre reconstrucciones. Queda desactivado en el problema del
 consumidor, donde el dominio no es una ventana sobre nada sino el conjunto de cestas que
 existen.</p>
-<p><strong>Vegetación, rocas y nieve</strong> — enciende y apaga el decorado. El decorado se
-apoya <em>encima</em> de la superficie y nunca cambia su forma.</p>
-<p><strong>Agua en las depresiones</strong> — una lámina de agua translúcida a la altura cero, de
-modo que toda región donde <code>f &lt; 0</code> se llena de agua.</p>
-<p><strong>Densidad de la decoración</strong> — cuánto decorado. Bájela para ganar velocidad.</p>
-<p><strong>Sombras</strong> — más bonito, notablemente más lento. Apagadas por defecto.</p>
+<p><strong>Vegetación, rocas y nieve</strong> — enciende y apaga el decorado, en cualquier tipo de
+superficie. El decorado se apoya <em>encima</em> de la superficie y nunca cambia su forma; en una
+superficie paramétrica o implícita se reparte por área del triángulo en vez de por parámetro, así
+que una esfera recibe un bosque uniforme en vez de un matorral en cada polo.</p>
+<p><strong>Agua en las depresiones</strong> — solo en gráficas: una lámina de agua translúcida a
+la altura cero, de modo que toda región donde <code>f &lt; 0</code> se llena de agua. No hay un
+«nivel del mar» comparable con el que cortar una superficie cerrada cualquiera, así que esto
+permanece oculto en los otros dos tipos.</p>
+<p><strong>Densidad de la decoración</strong> — cuánto decorado, en cualquier tipo de superficie.
+Bájela para ganar velocidad.</p>
+<p><strong>Sombras</strong> — más bonito, notablemente más lento, y ahora compartido por los tres
+tipos de superficie también. Apagadas por defecto.</p>
 
 <h3>Pintar encima el mapamundi</h3>
 <p>Pone el mapa de la Tierra sobre la superficie que esté a la vista: longitud en horizontal,

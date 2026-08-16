@@ -363,6 +363,12 @@ fades to a ghost, so only the permitted region is solid. Turning both of these o
 way to pose a constrained optimisation problem.</p>
 
 <h2>Map &amp; terrain</h2>
+<p>Most of this section is live on all three kinds of surface — the terrain colouring, the world
+map, the vegetation and its density and size all come straight off the mesh, whatever shape it
+happens to be. Four items are graph-specific and stay hidden on a parametric or implicit surface:
+level curves and the contour interval need a height to be curves <em>of</em>, path width only
+means anything alongside them, and water is a plane at <code>z = 0</code>, which presumes a graph's
+particular idea of "down".</p>
 <p><strong>Level curves</strong> <kbd>C</kbd> — draws the contours on the surface as wide,
 walkable paths rather than hairlines, and <em>drapes them over the ground</em>: the centre of each
 path is at constant height, as a level curve must be, but the band itself follows the hillside it
@@ -373,14 +379,16 @@ coloured.</p>
 and shows you which one. Type a number and that is the interval, which is the point when the
 interval is the thing being taught. Ask for one so small that thousands of paths would be needed
 and it is widened, with a note saying so.</p>
-<p><strong>Path width</strong> — how wide those paths are, in metres, against the 1.80 m explorer.
-The default 1.4 m is a footpath you can see from the air and still walk along.</p>
+<p><strong>Path width</strong> — how wide those paths are, measured in explorer heights against the
+1.80 m explorer, so they narrow along with the explorer rather than turning into a motorway once
+you shrink for the local-linearity demonstration. The default, two heights, is a footpath you can
+see from the air and still walk along — the same length a grid square's side is.</p>
 <p><strong>Colour the surface by height</strong> <kbd>M</kbd> — repaints the whole surface on the
-same ten-colour ramp the contours use, so the surface and its level curves agree. Turn it off and
-the surface goes back to the eight terrain bands — water, beach, deep vegetation, lighter
-vegetation, arid, volcanic rock, snow, cloud — which say the same thing in the language of a
-landscape. Combine either with <kbd>T</kbd> (look straight down) to turn the 3D scene into the
-flat map students already know.</p>
+same ten-colour ramp the contours use, so the surface and its level curves agree — on every kind of
+surface, not only a graph. Turn it off and the surface goes back to the eight terrain bands —
+water, beach, deep vegetation, lighter vegetation, arid, volcanic rock, snow, cloud — which say the
+same thing in the language of a landscape. On a graph, combine either with <kbd>T</kbd> (look
+straight down) to turn the 3D scene into the flat map students already know.</p>
 <p><strong>The window follows the explorer</strong> — walk to an edge of the domain and the
 domain moves rather than stopping you. The plot is a window onto a function that has no edges, and
 a wall at <code>x = b</code> says something false about <code>f</code>. Reaching a side slides that
@@ -398,12 +406,17 @@ survives the move. <code>G</code> and <code>H</code> default to 0.2, which buys 
 width of walking before the next move; raise them for longer strides between rebuilds. The feature
 is left off in the consumer problem, where the domain is not a window onto anything but the set of
 bundles that exist.</p>
-<p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off. The scenery sits
-<em>on top of</em> the surface and never changes its shape.</p>
-<p><strong>Water in the depressions</strong> — a translucent lake surface at height zero, so any
-region where <code>f &lt; 0</code> fills with water.</p>
-<p><strong>Decoration density</strong> — how much scenery. Turn it down to speed things up.</p>
-<p><strong>Shadows</strong> — prettier, noticeably slower. Off by default.</p>
+<p><strong>Vegetation, rocks &amp; snow</strong> — turns the scenery on and off, on any kind of
+surface. The scenery sits <em>on top of</em> the surface and never changes its shape; on a
+parametric or implicit surface it is scattered by triangle area rather than by parameter, so a
+sphere gets an even forest rather than a thicket at each pole.</p>
+<p><strong>Water in the depressions</strong> — graph only: a translucent lake surface at height
+zero, so any region where <code>f &lt; 0</code> fills with water. There is no comparably natural
+"sea level" to cut an arbitrary closed surface with, so this stays hidden on the other two kinds.</p>
+<p><strong>Decoration density</strong> — how much scenery, on any kind of surface. Turn it down to
+speed things up.</p>
+<p><strong>Shadows</strong> — prettier, noticeably slower, and now shared by every kind of surface
+too. Off by default.</p>
 
 <h3>Paint the world map on it</h3>
 <p>Puts the Earth's map on whatever surface is showing: longitude across, latitude up, the plainest

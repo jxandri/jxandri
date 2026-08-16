@@ -460,6 +460,7 @@ function rebuildAlternate() {
   const sunDist = ws * 2;
   sun.position.set(sunDist * 0.6, sunDist * 0.9, sunDist * 0.45);
   sun.target.position.set(0, 0, 0);
+  configureShadows();
 
   if (player) player.group.visible = false;
   ensureAltHiker();
@@ -1038,17 +1039,21 @@ function configureShadows() {
   renderer.shadowMap.enabled = state.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   sun.castShadow = state.shadows;
-  if (state.shadows && field) {
-    const r = field.worldSize * 0.75;
+  // state.worldSize rather than field.worldSize: the same number sizes
+  // whichever kind of surface is actually on screen, and field is null on a
+  // parametric or implicit one.
+  if (state.shadows) {
+    const r = state.worldSize * 0.75;
     const c = sun.shadow.camera;
     c.left = -r; c.right = r; c.top = r; c.bottom = -r;
-    c.near = field.worldSize * 0.5;
-    c.far = field.worldSize * 6;
+    c.near = state.worldSize * 0.5;
+    c.far = state.worldSize * 6;
     c.updateProjectionMatrix();
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.bias = -0.0012;
   }
   if (surface) surface.mesh.receiveShadow = state.shadows;
+  if (altSurface) altSurface.receiveShadow = state.shadows;
 }
 
 /* ---------------------------------------------------------- toggle logic */
@@ -1630,11 +1635,20 @@ function applySurfaceKindUI() {
   // Grey out the sections that only mean something on a graph. The derivatives
   // and the tangent plane are not among them any more: a surface has a
   // neighbourhood, coordinate directions, a velocity and a tangent plane
-  // whether or not it happens to be the graph of anything.
-  for (const id of ['sec-feasible', 'sec-map', 'sec-curve', 'sec-opt']) {
+  // whether or not it happens to be the graph of anything. Nor, now, is the
+  // whole of Map & terrain: the terrain palette, the vegetation and the world
+  // map are all built straight off the mesh (paintMesh, buildOnMesh, mapUV)
+  // and owe nothing to f. What is left genuinely graph-only inside that
+  // section — level curves, which need a height to be curves of — is hidden
+  // in its own block below rather than greying the whole section over them.
+  for (const id of ['sec-feasible', 'sec-curve', 'sec-opt']) {
     const el = $(id);
     if (el) { el.style.opacity = graph ? '' : '0.4'; el.style.pointerEvents = graph ? '' : 'none'; }
   }
+  $('fld-contours').hidden = !graph;
+  // Water is a flat plane at z = 0, which is a statement about a graph's own
+  // domain; a closed surface has no comparable "sea level" to cut it with.
+  $('fld-water').hidden = !graph;
 
   // Within the derivatives section, the two rows that really do need an f: the
   // gradient is a gradient of something, and the free directional derivative is
@@ -1735,7 +1749,21 @@ function updateCrochetNote() {
   if (el) el.hidden = $('in-fn').value.trim() !== CROCHET_FN;
 }
 
-function applyInputs() {
+/**
+ * @param reframe  after a graph rebuilds, put the camera back on the
+ *   establishing shot — the whole surface, from a three-quarter angle, in
+ *   drone mode. Only asked for when the caller has just swapped in a
+ *   genuinely different surface (the examples menu): the camera is otherwise
+ *   left exactly where the student put it, because jumping it on every
+ *   domain or axis-scale tweak would fight whatever they were doing with it.
+ *
+ *   A curved surface does not need this parameter: rebuildAlternate calls
+ *   frameAlternate on every rebuild regardless, because there the camera
+ *   orbits a fixed point (the origin) rather than free-flying, so refitting
+ *   the distance to a shape that just changed size is never a surprise.
+ *   A graph's drone camera free-flies, and would otherwise never move.
+ */
+function applyInputs(reframe = false) {
   state.fnSrc = $('in-fn').value;
   state.feasSrc = $('in-feas').value;
   state.xmin = parseFloat($('in-xmin').value);
@@ -1747,7 +1775,16 @@ function applyInputs() {
   state.sy = parseFloat($('in-sy').value);
   state.sz = parseFloat($('in-sz').value);
   updateCrochetNote();
-  withLoading(() => rebuild());
+  withLoading(() => {
+    const ok = rebuild();
+    if (ok && reframe && state.surfaceKind === 'graph' && player) {
+      // Both calls, in this order, exactly as the very first surface gets
+      // them: the player-level call frames the shot, the page-level one
+      // updates the mode buttons and HUD to agree that this is what happened.
+      player.establishingShot(camera);
+      setMode(MODE_DRONE);
+    }
+  });
 }
 
 /* ------------------------------------------- walking off the edge of it */
@@ -1878,7 +1915,7 @@ function bindCheck(id, key, after) {
 }
 
 function wireUI() {
-  $('btn-apply').addEventListener('click', applyInputs);
+  $('btn-apply').addEventListener('click', () => applyInputs());
   $('panel-toggle').addEventListener('click', () => togglePanel(true));
   $('panel-show').addEventListener('click', () => togglePanel(false));
 
@@ -1909,7 +1946,12 @@ function wireUI() {
       }
     }
     e.target.value = '';
-    applyInputs();
+    // A preset can land the surface somewhere the camera — left wherever the
+    // student last put it — no longer frames at all: the crochet ball's disk
+    // is a fifth the width of the default domain and its one ripple stands
+    // taller than that, so the establishing shot the very first surface got
+    // is exactly what a newly-loaded one needs too.
+    applyInputs(true);
   });
 
   bindCheck('t-consumer', 'consumer', () => {
@@ -1951,16 +1993,16 @@ function wireUI() {
   });
 
   for (const id of ['in-fn', 'in-feas']) {
-    $(id).addEventListener('blur', applyInputs);
+    $(id).addEventListener('blur', () => applyInputs());
   }
 
   $('in-res').addEventListener('input', (e) => { $('lbl-res').textContent = e.target.value; });
-  $('in-res').addEventListener('change', applyInputs);
+  $('in-res').addEventListener('change', () => applyInputs());
   for (const ax of ['sx', 'sy', 'sz']) {
     $(`in-${ax}`).addEventListener('input', (e) => {
       $(`lbl-${ax}`).textContent = `${parseFloat(e.target.value).toFixed(2)}×`;
     });
-    $(`in-${ax}`).addEventListener('change', applyInputs);
+    $(`in-${ax}`).addEventListener('change', () => applyInputs());
   }
   $('btn-isotropic').addEventListener('click', () => {
     for (const ax of ['sx', 'sy', 'sz']) {
