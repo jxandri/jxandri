@@ -205,8 +205,10 @@
         <option value="-(x^2+y^2)^0.5+1" data-i18n="fn.cone">Cone  1 − √(x²+y²)</option>
         <option value="(1-x)^2+100*(y-x^2)^2" data-i18n="fn.rosenbrock">Rosenbrock (try maximising!)</option>
         <option value="x*y*exp(-(x^2+y^2))" data-i18n="fn.xyexp">x·y·e^−(x²+y²)</option>
+        <option value="y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2-hypot(x,y)^2))" data-i18n="fn.crochet">Crochet hyperbolic ball (Nash–Kuiper, C¹)</option>
       </select>
       <div id="err-fn" class="err" hidden></div>
+      <p class="note" id="note-crochet" hidden data-i18n="fn.crochetnote">A once-differentiable, nowhere-twice-differentiable embedding of a piece of the hyperbolic disk of radius <code>a = 1/√3</code> — the mathematical model behind a real crochet hyperbolic surface. Hilbert's theorem rules out a <em>smooth</em> (C²) isometric copy of any unbounded piece of the hyperbolic plane in ordinary space; Nash and Kuiper showed C¹ has no such obstruction. This is the single-wave case of their construction: it matches the true metric only to fourth order in the radius, and the mismatch shows as the one ripple you see. The domain and feasible set are set to the disk ρ ≤ a this construction is valid on.</p>
       </div>
       <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so there is no height to read level curves off. Everything else applies, and applies in the surface’s own terms: walk on it, and the Derivatives section gives you the geodesic circle, the coordinate directions of whichever grid is on, your velocity and the tangent plane. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
     </section>

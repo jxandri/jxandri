@@ -6,7 +6,7 @@
  * keeps working on the bus. Bump CACHE when you ship a change.
  */
 
-const CACHE = 'gradient-peaks-v14';
+const CACHE = 'gradient-peaks-v15';
 
 const SHELL = [
   './',

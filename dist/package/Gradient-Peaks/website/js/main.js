@@ -143,6 +143,7 @@ const state = {
   curTangent: false,
   decor: true,
   decorScale: 1,       // how big the trees, rocks and grass are drawn
+  decorMatchPlayer: true, // ...and whether that also tracks the explorer's own scale dial
   water: true,
 
   // The window follows the explorer: reaching an edge slides that axis along by
@@ -579,8 +580,23 @@ function applyHoldKeyNote() {
   el.textContent = t(state.holdKey === 'alt' ? 'hold.notealt' : 'hold.note');
 }
 
+/**
+ * Total decoration scale: the dial, and — by default — the explorer's own.
+ *
+ * "The vegetation is the same scale as the player" is a statement about the
+ * *ratio* between the two, and the only way to keep a ratio fixed while one
+ * side moves is to move the other side by the same factor. So when the toggle
+ * is on, whatever the scale dial does to the explorer it does to a tree too:
+ * shrink to a tenth for the tangent-plane demonstration and the forest shrinks
+ * with you, rather than suddenly towering. The size-of-the-trees dial still
+ * multiplies on top, for taste.
+ */
+function decorScaleFactor() {
+  return state.decorScale * (state.decorMatchPlayer ? state.zoom : 1);
+}
+
 function decorOptions() {
-  return { density: state.density, shadows: state.shadows, scale: state.decorScale };
+  return { density: state.density, shadows: state.shadows, scale: decorScaleFactor() };
 }
 
 /** Rebuild whichever forest is on screen — a graph's or a curved surface's. */
@@ -652,11 +668,12 @@ function scheduleGridRebuild() {
   gridTimer = setTimeout(() => refreshSurfaceGrid(), 220);
 }
 
-/** And for the forest on a curved surface, which is sized against the explorer. */
+/** And for the forest, on any kind of surface — rebuilding is not free either. */
 let decorTimer = 0;
 function scheduleDecorRebuild() {
+  if (!state.decor) return;
   clearTimeout(decorTimer);
-  decorTimer = setTimeout(() => refreshAltDecor(), 300);
+  decorTimer = setTimeout(() => rebuildDecor(), 300);
 }
 
 /** The same, for the contour set, whose width is baked into its triangles. */
@@ -1703,6 +1720,21 @@ function applyVocabulary() {
   $('lbl-alpha-name').textContent = t(state.utility === 'ces' ? 'cons.rho' : 'cons.alpha');
 }
 
+/**
+ * The Nash–Kuiper crochet-ball formula (PDF eq. 13, N₀ = 1), verbatim — this
+ * exact string is both the preset's option value and the thing compared
+ * against to decide whether its explanatory note belongs on screen. a = 1/√3
+ * is written out as 1/sqrt(3) and sqrt(3) rather than as a decimal, so a
+ * student reading the formula box sees the same symbol the derivation uses.
+ */
+const CROCHET_FN = 'y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2-hypot(x,y)^2))';
+
+/** Show the crochet-ball note exactly when its formula is the one loaded. */
+function updateCrochetNote() {
+  const el = $('note-crochet');
+  if (el) el.hidden = $('in-fn').value.trim() !== CROCHET_FN;
+}
+
 function applyInputs() {
   state.fnSrc = $('in-fn').value;
   state.feasSrc = $('in-feas').value;
@@ -1714,6 +1746,7 @@ function applyInputs() {
   state.sx = parseFloat($('in-sx').value);
   state.sy = parseFloat($('in-sy').value);
   state.sz = parseFloat($('in-sz').value);
+  updateCrochetNote();
   withLoading(() => rebuild());
 }
 
@@ -1754,17 +1787,28 @@ function followEdges(dt) {
   // panning into bundles that do not exist.
   if (state.consumer) return;
 
-  const w = state.xmax - state.xmin, h = state.ymax - state.ymin;
+  // Against the *field's* domain, not the state's. Applying a preset or typing
+  // a new domain sets state.xmin/xmax synchronously, but the rebuild that
+  // actually moves the player and remeshes the surface is deferred two frames
+  // by withLoading, so there is a short window where state describes a domain
+  // the player has not been placed in yet. Comparing to field — which only
+  // ever changes at the moment the player does — reads the domain the player
+  // is actually standing in, so nothing here fires against a domain that has
+  // been asked for but not yet built. (It used to fire: switching to a
+  // preset with a much smaller domain than the player's previous position
+  // could read as "already past the edge" before the rebuild ever ran, and
+  // pan the brand-new window before anyone had seen it.)
+  const w = field.xmax - field.xmin, h = field.ymax - field.ymin;
   if (!(w > 0 && h > 0)) return;
 
   // A hair inside the edge, because the walker is clamped exactly onto it and
   // floating-point equality is not something to bet a rebuild on.
   const tx = w * 1e-6, ty = h * 1e-6;
   let dx = 0, dy = 0;
-  if (player.x >= state.xmax - tx) dx = 1;
-  else if (player.x <= state.xmin + tx) dx = -1;
-  if (player.y >= state.ymax - ty) dy = 1;
-  else if (player.y <= state.ymin + ty) dy = -1;
+  if (player.x >= field.xmax - tx) dx = 1;
+  else if (player.x <= field.xmin + tx) dx = -1;
+  if (player.y >= field.ymax - ty) dy = 1;
+  else if (player.y <= field.ymin + ty) dy = -1;
   if (!dx && !dy) return;
 
   followTimer = FOLLOW_COOLDOWN;
@@ -1841,11 +1885,28 @@ function wireUI() {
   $('preset-fn').addEventListener('change', (e) => {
     if (!e.target.value) return;
     $('in-fn').value = e.target.value;
-    // Presets centred on the origin want a symmetric window.
-    if (/x\^0\.|\(x\*y\)/.test(e.target.value)) {
-      $('in-xmin').value = 0; $('in-xmax').value = 2; $('in-ymin').value = 0; $('in-ymax').value = 2;
+    if (e.target.value === CROCHET_FN) {
+      // The construction is only claimed valid out to ρ = a = 1/√3; beyond
+      // that the single-wave amplitude keeps growing and stops being the
+      // mild correction the derivation is about. A domain a hair wider than
+      // a, masked to the disk ρ ≤ a by the feasible set exactly as the
+      // Consumer problem masks a budget line, shows precisely that disk and
+      // nothing past its edge.
+      const A = 1 / Math.sqrt(3);
+      const w = (A * 1.08).toFixed(4);
+      $('in-xmin').value = -w; $('in-xmax').value = w;
+      $('in-ymin').value = -w; $('in-ymax').value = w;
+      $('in-feas').value = `x^2+y^2<=${(A * A).toFixed(6)}`;
+      state.feasSrc = $('in-feas').value;
+      $('t-feas').checked = true; state.feasible = true;
+      $('t-isolate').checked = true; state.isolate = true;
     } else {
-      $('in-xmin').value = -2; $('in-xmax').value = 2; $('in-ymin').value = -2; $('in-ymax').value = 2;
+      // Presets centred on the origin want a symmetric window.
+      if (/x\^0\.|\(x\*y\)/.test(e.target.value)) {
+        $('in-xmin').value = 0; $('in-xmax').value = 2; $('in-ymin').value = 0; $('in-ymax').value = 2;
+      } else {
+        $('in-xmin').value = -2; $('in-xmax').value = 2; $('in-ymin').value = -2; $('in-ymax').value = 2;
+      }
     }
     e.target.value = '';
     applyInputs();
@@ -1987,6 +2048,13 @@ function wireUI() {
       ? `${state.decorScale.toFixed(1)}×` : `${state.decorScale.toFixed(2)}×`;
   });
   $('in-decsize').addEventListener('change', () => withLoading(rebuildDecor));
+
+  if ($('t-decormatch')) {
+    $('t-decormatch').addEventListener('change', (e) => {
+      state.decorMatchPlayer = e.target.checked;
+      withLoading(rebuildDecor);
+    });
+  }
 
   $('in-den').addEventListener('input', (e) => { $('lbl-den').textContent = `${parseFloat(e.target.value).toFixed(1)}×`; });
   $('in-den').addEventListener('change', (e) => {
@@ -2279,10 +2347,12 @@ function applyZoom(z) {
   state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   if (player && state.surfaceKind === 'graph') player.setZoom(state.zoom);
   // The grid squares and the contour paths are both measured in explorer
-  // heights, so neither is the right size once the explorer is not.
+  // heights, so neither is the right size once the explorer is not. Nor is the
+  // vegetation, while it is set to track the explorer's own scale.
   if (state.zoom !== before) {
     scheduleGridRebuild();
     scheduleContourRebuild();
+    if (state.decorMatchPlayer) scheduleDecorRebuild();
   }
   updatePathWidthLabel();
   $('in-zoom').value = String(-Math.log10(state.zoom));
@@ -2843,6 +2913,7 @@ window.__peaks = {
   THREE, scene, world, state, camera, altView,
   get walker() { return walker; },
   get altSurface() { return altSurface; },
+  get player() { return player; },
 };
 
 state.holdKey = readHoldKey();

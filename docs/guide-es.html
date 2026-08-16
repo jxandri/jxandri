@@ -317,15 +317,29 @@ pueda caminar.</p>
   curvas de nivel.</li>
   <li><strong>Implícita — F(x, y, z) = 0</strong>: todo lo que satisface una ecuación en tres
   variables —una esfera, un toro, un cono—. Puede haber varias hojas sobre un mismo
-  <code>(x, y)</code>, o ninguna, así que no hay nada que pisar ni <code>∂f/∂x</code> que calcular;
-  se recorre volando con el dron.</li>
-  <li><strong>Paramétrica — r(u, v)</strong>: una hoja barrida por dos parámetros. También se
-  sobrevuela en vez de caminarse.</li>
+  <code>(x, y)</code>, o ninguna, así que no hay un <code>∂f/∂x</code> de un solo valor que
+  calcular — pero la superficie en sí se puede pisar perfectamente, y la parte 8 explica qué
+  significan «derivada» y «rejilla» cuando no hay ninguna <code>f</code> que las tenga.</li>
+  <li><strong>Paramétrica — r(u, v)</strong>: una hoja barrida por dos parámetros. Se camina de
+  la misma manera, en sus propias coordenadas.</li>
 </ul>
 <p><strong><code>f(x, y) =</code></strong> — la fórmula que se convierte en el paisaje. Escriba
 una nueva y presione <kbd>Enter</kbd>. La parte 5 explica la notación completa.</p>
 <p><strong>— ejemplos —</strong> — un menú de funciones ya preparadas. Elegir una la carga y
-ajusta un dominio razonable. Es la forma más rápida de explorar.</p>
+ajusta un dominio razonable. Es la forma más rápida de explorar. Una de ellas, <strong>Bola de
+ganchillo hiperbólica (Nash–Kuiper, C¹)</strong>, merece mención aparte: es un raro retrato de un
+teorema real sobre clases de regularidad. Hilbert demostró en 1901 que ninguna superficie
+<em>suave</em> (<code>C²</code>) en el espacio ordinario puede llevar la métrica hiperbólica
+verdadera en ningún trozo que siga siendo hiperbólico sin límite: la curvatura tendría que
+dispararse en el borde. Nash y Kuiper mostraron en los años cincuenta que bajar a <code>C¹</code>
+—una derivada, continua, pero sin promesa sobre la segunda— elimina por completo esa obstrucción:
+existe una copia isométrica <code>C¹</code> en un disco de <em>cualquier</em> tamaño. La fórmula
+que carga este ejemplo es el caso explícito de una sola onda de su construcción, restringido al
+radio <code>a = 1/√3</code> donde el desajuste con la métrica verdadera es menor; el único rizo
+que se ve es precisamente ese desajuste, hecho visible. Tampoco es casualidad que sea el aspecto de
+una verdadera superficie hiperbólica de ganchillo: un modelo físico de exactamente este teorema,
+tejido punto a punto. Al elegirla también se limita el dominio al disco en el que la construcción
+es válida, mediante el mecanismo de conjunto factible que se explica a continuación.</p>
 <p>Si lo que escribe no tiene sentido, aparece debajo un mensaje rojo que nombra el problema y
 el carácter donde falló. <strong>La montaña que ya tenía permanece en pantalla</strong>: un error
 de escritura nunca destruye su trabajo.</p>
@@ -423,6 +437,13 @@ que esto funciona con la red apagada, como todo lo demás aquí.</p>
 decorado se dimensiona respecto del mundo sobre el que se apoya, la misma regla que usa una gráfica;
 una esfera pequeña con un bosque de altura completa encima es una imagen que merece verse una vez y
 bajarse después.</p>
+<p><strong>La vegetación se escala con el explorador</strong> — solo en el Lab, y activado por
+defecto: lo que el mando de escala del explorador le hace al explorador, ahora se lo hace también a
+cada árbol, roca y brizna de hierba en el mismo factor exacto, así que encoger para la demostración
+del plano tangente encoge el bosque con usted en vez de dejarlo de pronto gigantesco. El mando de
+tamaño de los árboles sigue multiplicando por encima de esto. Desactívelo para mantener el decorado
+en un tamaño fijo mientras la escala del propio explorador cambia por debajo — útil para mostrar,
+deliberadamente, lo grande que le parecería un árbol normal a un explorador diminuto.</p>
 
 <h2>Retícula sobre la superficie</h2>
 <p>Tiene sección propia en el panel, y está activa en todos los tipos de superficie: una gráfica, un parche paramétrico y una superficie implícita tienen coordenadas que merece la pena dibujar, así que, a diferencia de las curvas de nivel y el coloreado del terreno que la preceden, esta no se apaga nunca.</p>

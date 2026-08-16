@@ -44,6 +44,8 @@ const STRINGS = {
     'fn.cone': 'Cone  1 − √(x²+y²)',
     'fn.rosenbrock': 'Rosenbrock (try maximising!)',
     'fn.xyexp': 'x·y·e^−(x²+y²)',
+    'fn.crochet': 'Crochet hyperbolic ball (Nash–Kuiper, C¹)',
+    'fn.crochetnote': "A once-differentiable, nowhere-twice-differentiable embedding of a piece of the hyperbolic disk of radius a = 1/√3 — the mathematical model behind a real crochet hyperbolic surface. Hilbert's theorem rules out a smooth (C²) isometric copy of any unbounded piece of the hyperbolic plane in ordinary space; Nash and Kuiper showed C¹ has no such obstruction. This is the single-wave case of their construction: it matches the true metric only to fourth order in the radius, and the mismatch shows as the one ripple you see. The domain and feasible set are set to the disk ρ ≤ a this construction is valid on.",
 
     'shape.named': 'Named surface',
     'shape.custom': '— custom (type below) —',
@@ -147,6 +149,8 @@ const STRINGS = {
     'map.density': 'Decoration density',
     'map.decorsize': 'Size of the trees',
     'map.decorsizenote': 'At 1× a tree is about four times the explorer’s height, which is what a tree is. On a small sphere that makes for a very tall forest, so this is here to be turned down.',
+    'map.decormatch': 'Vegetation scales with the explorer',
+    'map.decormatchnote': "On by default: shrink or grow the explorer with the scale dial and every tree, rock and blade of grass shrinks or grows by exactly the same factor, so the picture you see keeps the same proportions at any scale. The dial above still multiplies on top of that. Turn this off to hold the vegetation at a fixed size while the explorer's own scale changes underneath it.",
     'map.shadows': 'Shadows (costs performance)',
 
     'sec.deriv': 'Derivatives',
@@ -302,6 +306,8 @@ const STRINGS = {
     'fn.cone': 'Cono  1 − √(x²+y²)',
     'fn.rosenbrock': 'Rosenbrock (¡intente maximizarla!)',
     'fn.xyexp': 'x·y·e^−(x²+y²)',
+    'fn.crochet': 'Bola de ganchillo hiperbólica (Nash–Kuiper, C¹)',
+    'fn.crochetnote': 'Una inmersión diferenciable una vez pero en ningún punto dos veces, de un trozo del disco hiperbólico de radio a = 1/√3: el modelo matemático detrás de una verdadera superficie hiperbólica de ganchillo. El teorema de Hilbert descarta una copia isométrica suave (C²) de cualquier trozo no acotado del plano hiperbólico en el espacio ordinario; Nash y Kuiper mostraron que en C¹ no existe tal obstrucción. Este es el caso de una sola onda de su construcción: solo iguala la métrica verdadera hasta cuarto orden en el radio, y ese desajuste es el único rizo que se ve. El dominio y el conjunto factible quedan fijados al disco ρ ≤ a en el que esta construcción es válida.',
 
     'cons.mode': 'Problema del consumidor',
     'shape.named': 'Superficie con nombre',
@@ -405,6 +411,8 @@ const STRINGS = {
     'map.density': 'Densidad de la decoración',
     'map.decorsize': 'Tamaño de los árboles',
     'map.decorsizenote': 'A 1× un árbol mide unas cuatro veces la altura del explorador, que es lo que mide un árbol. En una esfera pequeña eso da un bosque altísimo, así que este mando está aquí para bajarlo.',
+    'map.decormatch': 'La vegetación se escala con el explorador',
+    'map.decormatchnote': 'Activado por defecto: encoja o agrande al explorador con el mando de escala y cada árbol, roca y brizna de hierba encoge o crece exactamente en el mismo factor, así que la imagen conserva las mismas proporciones a cualquier escala. El mando de arriba sigue multiplicando por encima de esto. Desactívelo para mantener la vegetación en un tamaño fijo mientras la escala del propio explorador cambia por debajo.',
     'map.shadows': 'Sombras (cuesta rendimiento)',
 
     'sec.deriv': 'Derivadas',

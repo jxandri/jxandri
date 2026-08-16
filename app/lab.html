@@ -213,8 +213,10 @@
         <option value="-(x^2+y^2)^0.5+1" data-i18n="fn.cone">Cone  1 − √(x²+y²)</option>
         <option value="(1-x)^2+100*(y-x^2)^2" data-i18n="fn.rosenbrock">Rosenbrock (try maximising!)</option>
         <option value="x*y*exp(-(x^2+y^2))" data-i18n="fn.xyexp">x·y·e^−(x²+y²)</option>
+        <option value="y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2-hypot(x,y)^2))" data-i18n="fn.crochet">Crochet hyperbolic ball (Nash–Kuiper, C¹)</option>
       </select>
       <div id="err-fn" class="err" hidden></div>
+      <p class="note" id="note-crochet" hidden data-i18n="fn.crochetnote">A once-differentiable, nowhere-twice-differentiable embedding of a piece of the hyperbolic disk of radius <code>a = 1/√3</code> — the mathematical model behind a real crochet hyperbolic surface. Hilbert's theorem rules out a <em>smooth</em> (C²) isometric copy of any unbounded piece of the hyperbolic plane in ordinary space; Nash and Kuiper showed C¹ has no such obstruction. This is the single-wave case of their construction: it matches the true metric only to fourth order in the radius, and the mismatch shows as the one ripple you see. The domain and feasible set are set to the disk ρ ≤ a this construction is valid on.</p>
       </div>
       <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so there is no height to read level curves off. Everything else applies, and applies in the surface’s own terms: walk on it, and the Derivatives section gives you the geodesic circle, the coordinate directions of whichever grid is on, your velocity and the tangent plane. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
     </section>
@@ -297,6 +299,8 @@
         <span><span data-i18n="map.decorsize">Size of the trees</span> <b id="lbl-decsize">1.0×</b></span>
         <input id="in-decsize" type="range" min="-1" max="0.7" step="0.05" value="0">
       </label>
+      <label class="check"><input id="t-decormatch" type="checkbox" checked><span data-i18n="map.decormatch">Vegetation scales with the explorer</span></label>
+      <p class="note" data-i18n="map.decormatchnote">On by default: shrink or grow the explorer with the scale dial and every tree, rock and blade of grass shrinks or grows by exactly the same factor, so the picture you see keeps the same proportions at any scale. The dial above still multiplies on top of that. Turn this off to hold the vegetation at a fixed size while the explorer's own scale changes underneath it.</p>
       <p class="note" data-i18n="map.decorsizenote">At 1× a tree is about four times the explorer’s height, which is what a tree is. On a small sphere that makes for a very tall forest, so this is here to be turned down.</p>
       <label class="check"><input id="t-shadow" type="checkbox"><span><span data-i18n="map.shadows">Shadows (costs performance)</span></span></label>
     </section>

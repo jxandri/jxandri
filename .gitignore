@@ -3,3 +3,8 @@ node_modules/
 dist/package/
 *.log
 .DS_Store
+
+# Scratch screenshots written by tools/check-hold-to-look.js at the repo root
+/hold-a.png
+/hold-b.png
+/hold-c.png

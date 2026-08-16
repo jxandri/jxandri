@@ -311,14 +311,28 @@ walk on.</p>
   contoured.</li>
   <li><strong>Implicit — F(x, y, z) = 0</strong>: everything satisfying one equation in three
   variables — a sphere, a torus, a cone. There may be several sheets above one <code>(x, y)</code>,
-  or none, so there is nothing to walk on and no <code>∂f/∂x</code>; fly around it with the drone.</li>
-  <li><strong>Parametric — r(u, v)</strong>: a sheet swept out by two parameters. Also flown
-  around rather than walked on.</li>
+  or none, so there is no single-valued <code>∂f/∂x</code> — but the surface itself can absolutely
+  be walked on, and Part 8 covers what "derivative" and "grid" mean once there is no <code>f</code>
+  to have them.</li>
+  <li><strong>Parametric — r(u, v)</strong>: a sheet swept out by two parameters. Walked on the
+  same way, in its own coordinates.</li>
 </ul>
 <p><strong><code>f(x, y) =</code></strong> — the formula that becomes the landscape. Type a new one
 and press <kbd>Enter</kbd>. Part 5 explains the notation in full.</p>
 <p><strong>— examples —</strong> — a menu of ready-made functions. Choosing one loads it and sets a
-sensible domain. This is the fastest way to explore.</p>
+sensible domain. This is the fastest way to explore. One of them, <strong>Crochet hyperbolic ball
+(Nash–Kuiper, C¹)</strong>, is worth a special mention: it is a rare picture of a real theorem about
+regularity classes. Hilbert proved in 1901 that no <em>smooth</em> (<code>C²</code>) surface in
+ordinary space can carry the true hyperbolic metric on any patch that stays hyperbolic without
+bound — the curvature would have to blow up at the edge. Nash and Kuiper showed in the 1950s that
+dropping to <code>C¹</code> — one derivative, continuous, but no promise on the second — removes
+the obstruction completely: a <code>C¹</code> isometric copy exists on a disk of <em>any</em> size.
+The formula loaded by this preset is the explicit single-wave case of their construction, restricted
+to the radius <code>a = 1/√3</code> where the mismatch with the true metric is smallest; the one
+ripple you see is that mismatch, made visible. It is also, not by coincidence, what a real crochet
+hyperbolic surface looks like — a physical model of exactly this theorem, worked one stitch at a
+time. Selecting it also masks the domain to the disk the construction is valid on, through the
+feasible-set machinery covered next.</p>
 <p>If what you type does not make sense, a red message appears underneath naming the problem and
 the character where it went wrong. <strong>The mountain you already had stays on screen</strong> —
 a typing mistake never destroys your work.</p>
@@ -409,6 +423,13 @@ so this works with the network off, like everything else here.</p>
 <p>Scales the vegetation, rocks and grass from a tenth to five times. Left at 1× the scenery is
 sized against the world it stands on, the same rule a graph uses; a small sphere with a full-height
 forest on it is a picture worth seeing once and turning down afterwards.</p>
+<p><strong>Vegetation scales with the explorer</strong> — Lab only, and on by default: whatever the
+explorer scale dial does to the explorer, it now does to every tree, rock and blade of grass by
+exactly the same factor, so shrinking down for the tangent-plane demonstration shrinks the forest
+with you instead of leaving it suddenly towering. The size-of-the-trees dial still multiplies on
+top of that. Turn it off to hold the scenery at a fixed size while the explorer's own scale changes
+underneath it — useful for showing, deliberately, how large a small explorer would find an ordinary
+tree.</p>
 
 <h2>Grid on the surface</h2>
 <p>Its own section in the panel, and live on every kind of surface — a graph, a parametric patch and an implicit surface all have coordinates worth drawing, so unlike the level curves and the terrain colouring above it this one never greys out.</p>
