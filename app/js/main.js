@@ -27,6 +27,7 @@ import {
   disposeGrid,
 } from './gridlines.js';
 import { Compass, angles } from './compass.js';
+import { Pad, BTN } from './gamepad.js';
 import { Projection } from './projection.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
@@ -1302,6 +1303,7 @@ window.addEventListener('keyup', (e) => {
 const releaseEverything = () => {
   for (const k in keys) keys[k] = false;
   lookMod = false;
+  pad.reset();
 };
 window.addEventListener('blur', releaseEverything);
 document.addEventListener('visibilitychange', () => {
@@ -1467,6 +1469,85 @@ document.addEventListener('mousemove', (e) => {
 
 const touch = { move: null, look: null, mx: 0, my: 0 };
 
+/* ----------------------------------------------------------- the gamepad */
+
+/**
+ * An Xbox-layout controller, if there is one. Polled once a frame at the top
+ * of animate(); everything downstream reads the snapshot rather than the
+ * hardware, so the sticks behave like a third set of held keys.
+ *
+ *   left stick    walk and strafe          right stick   look / turn
+ *   LB / RB       drone altitude           RT            sprint
+ *   A             next view (1 / 2 / 3)    Y             world map
+ *   B             neighbourhood            X             coordinate grid
+ *   D-pad ↑↓      explorer scale           D-pad ←→      camera zoom
+ *   Start         show / hide the panel
+ */
+const pad = new Pad();
+
+const PAD_STORE = 'gradient-peaks-padinvert';
+
+function readPadInvert() {
+  try { return localStorage.getItem(PAD_STORE) === '1'; } catch (err) { return false; }
+}
+
+/** The look rate for a stick held to the stop, in radians per second. */
+const PAD_LOOK_RATE = 2.4;
+
+/**
+ * Everything the pad does that is not a stick: the buttons, on the frame they
+ * go down. Toggles are driven through the checkboxes rather than through
+ * `state` so that the panel and the controller can never disagree about what
+ * is switched on.
+ */
+function applyPadButtons() {
+  if (!pad.connected || !pad.pressed.length) return;
+  for (const b of pad.pressed) {
+    switch (b) {
+      case BTN.A: cycleMode(); break;
+      case BTN.B: toggleCheckbox('t-disc'); break;
+      case BTN.X: toggleCheckbox('t-surfgrid'); break;
+      case BTN.Y: toggleCheckbox('t-worldmap'); break;
+      case BTN.START: togglePanel(); break;
+      case BTN.UP: applyZoom(state.zoom * 1.6); break;
+      case BTN.DOWN: applyZoom(state.zoom / 1.6); break;
+      case BTN.LEFT: applyCamZoom(state.camZoom / 1.4); break;
+      case BTN.RIGHT: applyCamZoom(state.camZoom * 1.4); break;
+      default: break;
+    }
+  }
+}
+
+/** First → third → drone → first, on the A button. */
+function cycleMode() {
+  const now = state.surfaceKind === 'graph'
+    ? (player ? player.mode : MODE_THIRD)
+    : altView.mode;
+  setMode(now === MODE_FIRST ? MODE_THIRD : now === MODE_THIRD ? MODE_DRONE : MODE_FIRST);
+}
+
+/** The right stick, turned into the same swing a held key would make. */
+function applyPadLook(dt) {
+  if (!pad.connected) return;
+  const { x, y } = pad.look;
+  if (!x && !y) return;
+  // The stick's y is positive upwards and applyLook counts a positive dy as
+  // looking down, so it is negated here rather than in the reader — the
+  // reader's job is to say where the stick is, not what it means.
+  applyLook(x, -y, PAD_LOOK_RATE * dt);
+}
+
+/** Show which controller is talking, because a silent one looks broken. */
+function updatePadStatus() {
+  const el = $('pad-status');
+  if (!el) return;
+  const was = el.dataset.on === '1';
+  if (was === pad.connected) return;
+  el.dataset.on = pad.connected ? '1' : '0';
+  el.textContent = pad.connected ? t('view.padon', { name: pad.name }) : t('view.padoff');
+  el.classList.toggle('on', pad.connected);
+}
+
 canvas.addEventListener('touchstart', (e) => {
   for (const t of e.changedTouches) {
     if (t.clientX < window.innerWidth / 2 && touch.move === null) {
@@ -1486,8 +1567,11 @@ canvas.addEventListener('touchmove', (e) => {
     } else if (touch.look && t.identifier === touch.look.id) {
       const dx = t.clientX - touch.look.x, dy = t.clientY - touch.look.y;
       touch.look.x = t.clientX; touch.look.y = t.clientY;
-      if (state.showDir) state.dirAngle -= dx * 0.012;
-      else player.look(dx * 2.2, dy * 2.2);
+      // A finger drag is in pixels, and the mouse's own rate — 0.0022 rad per
+      // pixel — is the one already tuned against this scene, times a little
+      // for a thumb having less room than a mouse.
+      if (state.showDir && state.surfaceKind === 'graph') state.dirAngle -= dx * 0.012;
+      else applyLook(dx, dy, 0.0048);
     }
   }
   e.preventDefault();
@@ -1503,10 +1587,13 @@ canvas.addEventListener('touchend', endTouch, { passive: true });
 canvas.addEventListener('touchcancel', endTouch, { passive: true });
 
 function readInput() {
-  // Held modifier: the same keys are aiming, not walking. Returning zero here
-  // rather than filtering downstream keeps every caller — the heightfield
-  // explorer, the walker, the orbit camera — from having to know about it.
-  if (lookMod) return { forward: 0, right: 0, up: 0, sprint: false };
+  // Held modifier: the same *keys* are aiming, not walking. The gamepad has a
+  // stick for each job and is never ambiguous, so it keeps driving throughout.
+  if (lookMod) {
+    return {
+      forward: pad.move.y, right: pad.move.x, up: pad.lift, sprint: pad.sprint,
+    };
+  }
 
   let forward = 0, right = 0, up = 0;
   if (keys.KeyW || keys.ArrowUp) forward += 1;
@@ -1519,11 +1606,15 @@ function readInput() {
   forward += touch.my;
   right += touch.mx;
 
+  forward += pad.move.y;
+  right += pad.move.x;
+  up += pad.lift;
+
   return {
     forward: Math.max(-1, Math.min(1, forward)),
     right: Math.max(-1, Math.min(1, right)),
     up: Math.max(-1, Math.min(1, up)),
-    sprint: !!(keys.ShiftLeft || keys.ShiftRight),
+    sprint: !!(keys.ShiftLeft || keys.ShiftRight) || pad.sprint,
   };
 }
 
@@ -1571,8 +1662,24 @@ function applyLookKeys(dt) {
   if (keys.KeyW || keys.ArrowUp) dy -= 1;
   if (keys.KeyS || keys.ArrowDown) dy += 1;
   if (!dx && !dy) return;
+  applyLook(dx, dy, LOOK_RATE * dt);
+}
 
-  const a = LOOK_RATE * dt;
+/**
+ * Swing the view, whatever is doing the swinging and whatever is on screen.
+ *
+ * Three things now steer — held keys, a dragged finger, a gamepad stick — and
+ * "turn left" means four different operations depending on the surface and the
+ * camera: yaw the orbiting drone, rotate the walker's heading inside the
+ * tangent plane, tilt the following camera, or turn the heightfield explorer.
+ * Written out once per input device that would be four chances to get it
+ * wrong, and it had already gone wrong once: the touch look never reached the
+ * curved-surface branch at all, so dragging to look did nothing on a sphere.
+ *
+ * @param dx,dy  how much to turn, in whatever unit the caller counts in
+ * @param a      radians per unit of that
+ */
+function applyLook(dx, dy, a) {
   if (state.surfaceKind !== 'graph') {
     if (altView.mode === MODE_DRONE || !walker) {
       altCam.yaw -= dx * a;
@@ -2090,6 +2197,15 @@ function wireUI() {
       ? `${state.decorScale.toFixed(1)}×` : `${state.decorScale.toFixed(2)}×`;
   });
   $('in-decsize').addEventListener('change', () => withLoading(rebuildDecor));
+
+  if ($('t-padinvert')) {
+    const el = $('t-padinvert');
+    el.checked = pad.invertLook;
+    el.addEventListener('change', () => {
+      pad.invertLook = el.checked;
+      try { localStorage.setItem(PAD_STORE, el.checked ? '1' : '0'); } catch (err) { /* blocked */ }
+    });
+  }
 
   if ($('t-decormatch')) {
     $('t-decormatch').addEventListener('change', (e) => {
@@ -2754,9 +2870,18 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
+  // The gamepad is polled, not evented, so it is read once here and everything
+  // downstream — readInput, the look, the buttons — sees one consistent
+  // snapshot for the frame. Before any early return, so a controller works
+  // even on the frames where there is nothing yet to draw.
+  pad.poll();
+  applyPadButtons();
+  updatePadStatus();
+
   if (state.surfaceKind !== 'graph') {
     const inp = readInput();
     applyLookKeys(dt);
+    applyPadLook(dt);
 
     if (altView.mode === MODE_DRONE || !walker) {
       if (altHiker) altHiker.visible = !!walker;
@@ -2860,6 +2985,7 @@ function animate() {
   player.extraLift = state.disc && gizmo.lift ? gizmo.lift : surfaceDetail.topLift;
 
   applyLookKeys(dt);
+  applyPadLook(dt);
   player.update(dt, readInput());
   followEdges(dt);
   player.updateCamera(camera, dt);
@@ -2959,6 +3085,7 @@ window.__peaks = {
 };
 
 state.holdKey = readHoldKey();
+pad.invertLook = readPadInvert();
 
 wireLanguage();
 wireUI();

@@ -662,6 +662,36 @@ is what keeps forward from collapsing into the frame.</p>
 <p>Type into the <code>f(x, y) =</code> box and press <kbd>Enter</kbd>. The notation is the ordinary
 one you would use in a calculator or a spreadsheet, with two conveniences added.</p>
 
+<h2>Playing it with a gamepad</h2>
+<p>Any Xbox-layout controller drives the explorer directly — including on an iPhone or iPad, over
+Bluetooth, with nothing to install. Browsers expose gamepads through a standard interface, and
+Safari has done so since iOS 10.3, with full support for modern controllers since 14.5. The left
+stick walks and strafes; the right stick looks and turns; both work on a graph, on a sphere and on
+an implicit surface alike.</p>
+<table>
+  <tr><th>Left stick</th><td>walk and strafe</td><th>Right stick</th><td>look, and turn the heading</td></tr>
+  <tr><th>RT</th><td>sprint</td><th>LB / RB</th><td>drone down / up</td></tr>
+  <tr><th>A</th><td>next view: first, third, drone</td><th>B</th><td>the neighbourhood</td></tr>
+  <tr><th>X</th><td>the coordinate grid</td><th>Y</th><td>the world map</td></tr>
+  <tr><th>D-pad ↑ ↓</th><td>the explorer's scale</td><th>D-pad ← →</th><td>camera zoom</td></tr>
+  <tr><th>Start</th><td>show or hide the panel</td><th></th><td></td></tr>
+</table>
+<p>The View section shows which controller has been seen, by name. If it says there is none, press a
+button on the pad: for privacy, browsers keep a gamepad hidden until one is pressed, so a controller
+that is paired and working still reads as absent until you touch it. There is also a switch there to
+invert the right stick's up and down, which is remembered between sessions.</p>
+<p>A stick held to the stop walks at exactly the speed holding <kbd>W</kbd> does, so nothing about
+the readings changes because you picked up a controller. The dead zone is measured as a distance
+from the centre rather than on each axis separately — which is what keeps a gentle diagonal push
+from registering as nothing — and the response is curved, so small movements near the centre are
+fine and the edge is still full speed.</p>
+<p>One caveat about cheap telescopic controllers, including some Machenike models: many have a
+mode switch, and in "keyboard" mode they send letters rather than presenting themselves as a
+gamepad. In that mode the line in the View section will keep saying there is no gamepad — but the
+pad will very likely work anyway, because it is sending <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd>
+<kbd>D</kbd> and the arrow keys, which this program already answers to. If one mode does nothing,
+try the other.</p>
+
 <h2>How fast the explorer walks</h2>
 <p><strong>Walking speed</strong> in the View section multiplies the ordinary pace, from about a
 quarter to twenty-five times. The pace itself is already measured in explorer heights per second,

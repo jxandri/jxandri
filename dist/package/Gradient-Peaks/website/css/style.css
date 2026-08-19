@@ -359,6 +359,12 @@ button:disabled { opacity: .45; cursor: default; }
 
 .note { font-size: 11px; color: var(--ink-dim); line-height: 1.5; margin: 6px 0 0; }
 .note code { font-family: var(--mono); background: rgba(255, 255, 255, .07); padding: 1px 4px; border-radius: 3px; }
+
+/* The gamepad status. Dim while there is nothing to report, and lit the
+   moment a controller announces itself — the one line that tells the user
+   whether the pad in their hands has been seen at all. */
+#pad-status { font-family: var(--mono); }
+#pad-status.on { color: var(--accent); }
 .help p { margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: var(--ink-dim); }
 .help b { color: var(--ink); font-weight: 600; }
 

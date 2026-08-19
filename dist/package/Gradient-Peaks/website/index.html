@@ -383,6 +383,9 @@
         </select>
       </label>
       <p class="note" data-i18n="view.dronenote">The drone flies level: W A S D move it over the (x, y) plane, Space and Ctrl set its altitude, and the mouse only aims the camera. The beam under it drops straight down to the point of the domain you are above.</p>
+      <p class="note" id="pad-status" data-on="0" data-i18n="view.padoff">No gamepad — press a button on one to wake it up.</p>
+      <label class="check"><input id="t-padinvert" type="checkbox"><span data-i18n="view.padinvert">Invert the right stick's up / down</span></label>
+      <p class="note" data-i18n="view.padnote">An Xbox-layout controller works straight away, including on an iPhone or iPad over Bluetooth — no app to install. Left stick walks and strafes, right stick looks and turns. RT sprints, LB and RB take the drone down and up. A steps through the three views, B the neighbourhood, X the grid, Y the world map, Start hides the panel; the D-pad's up and down change the explorer's scale and its left and right the camera zoom. Browsers keep a gamepad hidden until a button on it is pressed, so if the line above says there is none, press one.</p>
       <label class="range">
         <span><span data-i18n="view.speed">Walking speed</span> <b id="lbl-speed">1.0×</b></span>
         <input id="in-speed" type="range" min="-0.6" max="1.4" step="0.05" value="0">
