@@ -35,6 +35,7 @@ body{
 button,input,select{font:inherit; color:inherit}
 .shell{max-width:1500px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
 
+
 .masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
   flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
 .masthead h1{margin:0; font-family:var(--f-display); font-size:26px; font-weight:600; letter-spacing:-.01em}
@@ -43,8 +44,16 @@ button,input,select{font:inherit; color:inherit}
 .preview-tag{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
   color:var(--accent-ink); background:var(--accent-soft); border-radius:2px; padding:3px 7px}
 
-.console{display:grid; grid-template-columns:286px minmax(0,1fr); gap:12px; align-items:start}
-@media (max-width:1040px){.console{grid-template-columns:1fr}}
+/* The three-across arrangement — rail, choice, demand — is the design, and it
+   has to survive a narrow embed rather than reflowing into something else the
+   moment the viewport is not a wide desktop. The rail goes fluid instead of
+   fixed, and the stacking breakpoints sit far below any realistic panel. */
+.console{
+  display:grid;
+  grid-template-columns:clamp(186px, 19vw, 286px) minmax(0,1fr);
+  gap:12px; align-items:start;
+}
+@media (max-width:620px){.console{grid-template-columns:1fr}}
 
 .rail{display:flex; flex-direction:column; gap:12px; background:var(--surface);
   border:1px solid var(--rule); border-radius:3px; padding:16px; box-shadow:var(--shadow)}
@@ -83,8 +92,8 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .check input{accent-color:var(--accent); width:14px; height:14px; margin:1px 0 0; cursor:pointer}
 
 .stage{display:flex; flex-direction:column; gap:12px; min-width:0}
-.viewports{display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0}
-@media (max-width:900px){.viewports{grid-template-columns:1fr}}
+.viewports{display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0; align-items:start}
+@media (max-width:520px){.viewports{grid-template-columns:1fr}}
 .viewport{display:flex; flex-direction:column; min-width:0; background:var(--surface);
   border:1px solid var(--rule); border-radius:3px; box-shadow:var(--shadow); overflow:hidden}
 .vp-bar{display:flex; align-items:center; justify-content:space-between; gap:8px;
@@ -119,6 +128,24 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .btn-primary:hover{filter:brightness(1.08)}
 .count{font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3)}
 .count span{color:var(--ink); font-weight:600}
+
+/* Narrow embeds, last so nothing later in the sheet cancels them. Chrome gives
+   way before the plots do: the strapline goes, padding tightens, the checkbox
+   grid drops to one column — the three-across arrangement itself does not move. */
+@media (max-width:1100px){
+  .shell{padding:10px; gap:10px}
+  .rail{padding:12px; gap:10px}
+  .checks{grid-template-columns:1fr}
+  .masthead p{display:none}
+  .masthead h1{font-size:22px}
+}
+@media (max-width:820px){
+  .vp-bar{padding:6px 8px}
+  .vp-title{font-size:9.5px; letter-spacing:.06em}
+  .cell{padding:5px 8px}
+  .cell dd{font-size:12.5px}
+  .chip{padding:3px 9px; font-size:11.5px}
+}
 .foot{color:var(--ink-3); font-size:11.5px; padding-top:8px; border-top:1px solid var(--rule-2)}
 </style>
 </head>
