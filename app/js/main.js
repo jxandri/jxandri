@@ -21,7 +21,10 @@ import {
 } from './player.js';
 import { ParametricWalker, ImplicitWalker, standBasis, graphWalker } from './walker.js';
 import { IntrinsicGizmo, GeodesicDisc } from './intrinsic.js';
-import { buildImplicit, buildParametric, paintMesh } from './surfaces.js';
+import {
+  buildImplicit, buildParametric, paintMesh, paintMobius,
+  MOBIUS_WHITE, MOBIUS_BLUE,
+} from './surfaces.js';
 import { mapUV, setMapMaterial } from './worldmap.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, buildGeodesicGrid,
@@ -207,6 +210,7 @@ let intrinsic = null;    // the geodesic circle, the arrows and the tangent plan
 let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
+let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
 let decorations = new Decorations();
 let player = null;
@@ -379,7 +383,9 @@ function applyShape() {
   $('in-pb').parentElement.hidden = !spec.labels[1];
 
   const note = spec.sides === 1 ? t('shape.nonorientable') : t('shape.orientable');
-  $('note-orientable').textContent = spec.immersed ? `${note} ${t('shape.immersion')}` : note;
+  let noteText = spec.immersed ? `${note} ${t('shape.immersion')}` : note;
+  if (state.shape === 'mobius') noteText += ` ${t('shape.mobiusflag')}`;
+  $('note-orientable').textContent = noteText;
   $('t-inside').disabled = spec.sides === 1;
 }
 
@@ -470,6 +476,7 @@ function rebuildAlternate() {
   refreshSurfaceGrid();
   frameAlternate();
   applyPalette();
+  refreshMobiusFlag();
   refreshAltDecor();
   return true;
 }
@@ -496,7 +503,7 @@ function refreshSurfaceGrid() {
     // the surface. The same number in all three regimes is what makes the grid
     // a ruler rather than three different rulers that happen to look alike.
     if (state.surfaceKind === 'graph') {
-      if (field) surfGrid = buildGraphGrid(field, { unit: GRID_HEIGHTS * 1.8 * state.zoom });
+      if (field) surfGrid = buildGraphGrid(field, { unit: GRID_HEIGHTS * 1.8 * state.zoom, grid });
     } else {
       const unit = GRID_HEIGHTS * 1.8 * state.zoom * (altView.charScale || 1);
       if (state.geoGrid && walker) {
@@ -873,12 +880,82 @@ function frameAlternate() {
   altView.camPitch = 0.32;
 }
 
+/**
+ * The golf flag at the Möbius strip's start: one pole, two pennants.
+ *
+ * It stands where the explorer's journey begins — mid-lap, mid-width — and runs
+ * straight through the surface: a blue pennant on the side they start on, and
+ * the same pole carrying a white pennant out the other face. The lap gradient
+ * (paintMobius) is white here on both faces, so the flag is the only thing that
+ * can tell the two visits apart: walk one full lap and you return to the very
+ * same point, on white ground, facing the *white* pennant. There is no "other
+ * side" to a Möbius strip — only the other side of the flag.
+ *
+ * Rebuilt with the surface, so it tracks the shape's parameters; anchored at
+ * the *default* start, not wherever the explorer happens to be now.
+ */
+function refreshMobiusFlag() {
+  if (mobiusFlag) { world.remove(mobiusFlag); disposeTree(mobiusFlag); mobiusFlag = null; }
+  if (state.surfaceKind !== 'parametric' || state.shape !== 'mobius'
+    || !walker || !altSurface) return;
+
+  // Read position, normal and tangent at the default start without disturbing
+  // the walker: it may already have been sent somewhere else.
+  const saved = walker.snapshot();
+  const p = new THREE.Vector3(), n = new THREE.Vector3(), e = new THREE.Vector3();
+  try {
+    walker.u = (state.umin + state.umax) / 2;
+    walker.v = (state.vmin + state.vmax) / 2;
+    walker.position(p);
+    walker.normal(n);
+    walker.tangentSeed(e).normalize();
+  } finally {
+    walker.restore(saved);
+  }
+  if (!isFinite(p.x) || !isFinite(n.x) || n.lengthSq() < 1e-12) return;
+
+  const body = 1.8 * (altView.charScale || 1);
+  const H = body * 2.6;               // the pole's reach, each side of the strip
+  const g = new THREE.Group();
+  g.name = 'mobius-flag';
+  g.position.copy(p);
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+    e, n, new THREE.Vector3().crossVectors(e, n)));
+
+  const poleGeom = new THREE.CylinderGeometry(body * 0.045, body * 0.045, H * 2, 10);
+  const poleMat = new THREE.MeshLambertMaterial({ color: 0xd9dee6 });
+  g.add(new THREE.Mesh(poleGeom, poleMat));
+
+  // Two triangular pennants, one per end. The far one is the near one rotated
+  // half a turn about the pole's foot — the same flag, seen from the far face.
+  const pennant = (rgb, sgn) => {
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute([
+      0, sgn * H * 0.98, 0,
+      0, sgn * H * 0.60, 0,
+      sgn * body * 1.5, sgn * H * 0.79, 0,
+    ], 3));
+    geom.computeVertexNormals();
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(rgb[0], rgb[1], rgb[2]),
+      side: THREE.DoubleSide, toneMapped: false,
+    });
+    g.add(new THREE.Mesh(geom, mat));
+  };
+  pennant(MOBIUS_BLUE, 1);            // the side the journey starts on
+  pennant(MOBIUS_WHITE, -1);          // the face a full lap turns you onto
+
+  world.add(g);
+  mobiusFlag = g;
+}
+
 function rebuild() {
   if (state.surfaceKind !== 'graph') return rebuildAlternate();
 
   disposeTree(altSurface);
   altSurface = null;
   walker = null;
+  refreshMobiusFlag();      // no strip on screen, so no flag either
   if (altHiker) altHiker.visible = false;
   if (player) player.group.visible = true;
 
@@ -1074,7 +1151,14 @@ function applyPalette() {
   // The lighting change below applies whichever kind of surface is on screen,
   // and a curved one has its own painter.
   if (state.surfaceKind !== 'graph') {
-    paintMesh(altSurface, paletteMode());
+    if (state.surfaceKind === 'parametric' && state.shape === 'mobius' && !state.heightColors) {
+      // The strip's own colouring is the lap gradient: white at the explorer's
+      // default start, deepest blue at the far side, white again on return.
+      // The height ramp stays available through its toggle, like everywhere.
+      paintMobius(altSurface, (state.umin + state.umax) / 2, state.umin, state.umax);
+    } else {
+      paintMesh(altSurface, paletteMode());
+    }
   } else if (surface) {
     recolorSurface(field, grid, surface.geometry, paletteMode());
   }
@@ -2273,12 +2357,12 @@ function wireUI() {
   bindCheck('t-geodisc', 'geoDisc');
   bindCheck('t-dir', 'showDir', () => {
     ensureDisc();
-    // On a graph the free direction u is steered by the mouse, so the explorer
-    // has to hold still while it is. On a curved surface the arrow *is* the
-    // explorer's velocity, and freezing them would freeze the thing being
-    // shown — there, walking around is how you use it.
+    // The mouse is repurposed to swing u while the arrow is on (hold the
+    // right button to look), but walking stays free — it used to freeze the
+    // explorer here, and because that freeze outlived the checkbox's context
+    // it could leave a later surface with an explorer that would not move at
+    // all. Nothing about showing a direction requires standing still.
     const graph = state.surfaceKind === 'graph';
-    player.frozen = graph && state.showDir;
     $('note-dir').hidden = !(graph && state.showDir);
     if (graph && state.showDir) state.dirAngle = player.facing || 0;
   });
@@ -3128,6 +3212,8 @@ window.__peaks = {
   get altSurface() { return altSurface; },
   get player() { return player; },
   get optimum() { return optimum; },
+  get field() { return field; },
+  get grid() { return grid; },
 };
 
 state.holdKey = readHoldKey();
