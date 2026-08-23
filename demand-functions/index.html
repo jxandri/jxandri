@@ -1,40 +1,30 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Funciones de Demanda — vista previa</title>
 <style>
+/* Dark is the design here, not a variant of it. Light is kept as an explicit
+   opt-out for projectors and printed handouts, chosen from the header. */
 :root{
-  --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
-  --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
-  --rule:#CBD4D8; --rule-2:#E1E7EA;
-  --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
-  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
-  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
-  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
-}
-@media (prefers-color-scheme:dark){
-  :root{
-    --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
-    --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
-    --rule:#2A353B; --rule-2:#212B30;
-    --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
-  }
-}
-:root[data-theme="dark"]{
   --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
   --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
   --rule:#2A353B; --rule-2:#212B30;
   --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
 }
 :root[data-theme="light"]{
   --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
   --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
   --rule:#CBD4D8; --rule-2:#E1E7EA;
   --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
 }
 *{box-sizing:border-box}
 body{
@@ -49,6 +39,7 @@ button,input,select{font:inherit; color:inherit}
   flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
 .masthead h1{margin:0; font-family:var(--f-display); font-size:26px; font-weight:600; letter-spacing:-.01em}
 .masthead p{margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:66ch}
+.head-actions{display:flex; align-items:center; gap:10px}
 .preview-tag{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
   color:var(--accent-ink); background:var(--accent-soft); border-radius:2px; padding:3px 7px}
 
@@ -124,10 +115,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
   color:var(--ink); border-radius:3px; padding:6px 12px; font-size:12.5px; font-weight:500}
 .btn:hover{border-color:var(--ink-3)}
 .btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
-.btn-primary{background:var(--accent); border-color:var(--accent); color:#fff}
-@media (prefers-color-scheme:dark){.btn-primary{color:#08171A}}
-:root[data-theme="dark"] .btn-primary{color:#08171A}
-:root[data-theme="light"] .btn-primary{color:#fff}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:var(--btn-ink)}
 .btn-primary:hover{filter:brightness(1.08)}
 .count{font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3)}
 .count span{color:var(--ink); font-weight:600}
@@ -144,7 +132,13 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
          mueve los precios y la renta, y mira cómo responde la canasta óptima — incluyendo el caso
          en que la demanda sube cuando sube el precio.</p>
     </div>
-    <span class="preview-tag">Vista previa</span>
+    <div class="head-actions">
+      <div class="seg" role="group" aria-label="Tema">
+        <button type="button" id="th-dark" aria-pressed="true">Oscuro</button>
+        <button type="button" id="th-light" aria-pressed="false">Claro</button>
+      </div>
+      <span class="preview-tag">Vista previa</span>
+    </div>
   </header>
 
   <div class="console">
@@ -601,6 +595,19 @@ document.querySelectorAll(".seg [data-axis]").forEach(btn=>btn.addEventListener(
   render();
 }));
 
+/* theme: dark unless the reader asks otherwise, remembered per browser */
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  $("th-dark").setAttribute("aria-pressed", String(t==="dark"));
+  $("th-light").setAttribute("aria-pressed", String(t==="light"));
+  try{ localStorage.setItem("demanda.theme", t); }catch(_){ }
+  render();
+}
+let theme0="dark";
+try{ theme0 = localStorage.getItem("demanda.theme") || "dark"; }catch(_){ }
+$("th-dark").addEventListener("click",()=>setTheme("dark"));
+$("th-light").addEventListener("click",()=>setTheme("light"));
+
 $("btn-rec").addEventListener("click",record);
 $("btn-clear").addEventListener("click",clearPts);
 $("btn-sweep").addEventListener("click",sweep);
@@ -613,8 +620,7 @@ buildChips(); syncParams(); buildLayers();
 ["alpha","r","a","beta","xlow","yup"].forEach(k=>bind(k,k));
 bind("px","px"); bind("py","py"); bind("inc","I");
 new ResizeObserver(()=>render()).observe(document.querySelector(".viewports"));
-matchMedia("(prefers-color-scheme:dark)").addEventListener("change",render);
-render();
+setTheme(theme0);
 </script>
 </body>
 </html>
