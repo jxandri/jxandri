@@ -331,7 +331,13 @@ export class Decorations {
       if (z < 0) continue;                  // below the waterline: leave the lake
 
       // Clouds hang above the highest ground rather than resting on it.
-      if (wCloud > 0.02 && r < wCloud * 0.5) {
+      // Clouds are a fact about altitude, not about the band ramp. In the
+      // temperate profile the cloud band only exists above 0.84 anyway, so
+      // this gate changes nothing there; in the alpine profile — where the
+      // snow band starts a sixth of the way up and the ramp toward the cloud
+      // band therefore spans most of the mountain — it keeps the puffs as a
+      // crown around the summit instead of a carpet over the whole massif.
+      if (hN > 0.8 && wCloud > 0.02 && r < wCloud * 0.5) {
         const lift = unit * (14 + rnd() * 22);
         posv.set(field.worldX(x), field.worldY(z) + lift, field.worldZ(y));
         q.identity();

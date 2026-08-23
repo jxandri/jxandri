@@ -16,7 +16,14 @@
  *   atom := number | const | var | func '(' args ')' | '(' or ')' | '|' or '|'
  *
  * Booleans are carried as 1 / 0 so that they compose with arithmetic.
+ *
+ * One function in the table is not mathematics but geography: elias(x, y) is
+ * a real digital elevation model of Mount Saint Elias, baked into the bundle
+ * and sampled bicubically (see elias.js). It is still just a function of two
+ * variables — which is the point of including it.
  */
+
+import { eliasHeight } from './elias.js';
 
 const CONSTANTS = {
   pi: Math.PI, PI: Math.PI, Pi: Math.PI,
@@ -48,6 +55,9 @@ const FUNCS = {
   mod: [2, 2, (a, b) => a - b * Math.floor(a / b)],
   clamp: [3, 3, (v, a, b) => Math.min(Math.max(v, a), b)],
   step: [2, 2, (edge, v) => (v < edge ? 0 : 1)],
+  // Mount Saint Elias, the real one: km east and north of the summit in, km of
+  // elevation out, NaN beyond the 40 km data window.
+  elias: [2, 2, eliasHeight],
   // Handy shapes for building test surfaces.
   gauss: [1, 3, (v, mu, s) => {
     const m = mu === undefined ? 0 : mu, sd = s === undefined ? 1 : s;

@@ -136,7 +136,25 @@ const BANDS = [
 
 // Where each band sits on the normalised height axis. Not evenly spaced: the
 // vegetated middle is where the eye spends its time, so it gets more room.
-const BAND_AT = [0.00, 0.10, 0.22, 0.40, 0.56, 0.70, 0.84, 1.00];
+// Two climates, same bands. The positions say at what normalised height each
+// band is centred, and that is a fact about a climate, not about terrain in
+// general. The temperate profile is the one the app has always had. The
+// alpine profile is for a surface that really is a glaciated coastal massif:
+// vegetation gives out a twentieth of the way up (treeline near Icy Bay is a
+// few hundred metres, the summit is 5.4 km), bare rock and moraine take over,
+// and everything above roughly a fifth of the relief is ice and snow — with
+// the snow-rock band scattering dark boulders across it, which is what the
+// nunataks of a real icefield look like from the air.
+const PROFILES = {
+  temperate: [0.00, 0.10, 0.22, 0.40, 0.56, 0.70, 0.84, 1.00],
+  alpine: [0.00, 0.008, 0.025, 0.055, 0.085, 0.115, 0.155, 0.90],
+};
+let BAND_AT = PROFILES.temperate;
+
+/** Choose which climate the bands describe. Takes effect on the next build. */
+export function setBiomeProfile(name) {
+  BAND_AT = PROFILES[name] || PROFILES.temperate;
+}
 
 export const BAND_COUNT = BANDS.length;
 

@@ -9,6 +9,9 @@
     "build:standalone": "node tools/build-standalone.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "pdfjs-dist": "^6.2.108",
+    "playwright-core": "^1.62.1",
+    "pngjs": "^7.0.0"
   }
 }

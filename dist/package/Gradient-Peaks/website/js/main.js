@@ -7,8 +7,9 @@ import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
   buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
-  GROUP_OUTSIDE, heightColor,
+  GROUP_OUTSIDE, heightColor, setBiomeProfile,
 } from './terrain.js';
+import { ELIAS_INFO } from './elias.js';
 import { Decorations } from './decor.js';
 import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
@@ -880,6 +881,14 @@ function rebuild() {
   walker = null;
   if (altHiker) altHiker.visible = false;
   if (player) player.group.visible = true;
+
+  // The climate follows the surface. A formula that calls the Saint Elias
+  // model is a glaciated coastal massif and gets the alpine bands — snowline
+  // a fifth of the way up, vegetation only at the very foot; anything else
+  // gets the temperate bands the app has always used. Derived from the
+  // formula itself rather than kept as a switch, so it can never be left
+  // pointing at the wrong climate.
+  setBiomeProfile(/\belias\s*\(/.test(state.fnSrc) ? 'alpine' : 'temperate');
 
   // --- parse first, so a typo never destroys a working scene -------------
   let fn, pred;
@@ -1850,10 +1859,33 @@ function applyVocabulary() {
  */
 const CROCHET_FN = 'y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2-hypot(x,y)^2))';
 
-/** Show the crochet-ball note exactly when its formula is the one loaded. */
+/** Mount Saint Elias: the baked elevation model, as a formula. */
+const ELIAS_FN = 'elias(x, y)';
+
+/**
+ * The Alaska side of the frontier, as one linear inequality.
+ *
+ * Locally the 1903 tribunal line really is straight — a segment through the
+ * boundary peaks, fitted here from Natural Earth's rendering of the treaty
+ * line — so "stay in the United States" is exactly a budget constraint:
+ * a half-plane whose boundary passes 470 m from the summit, with the summit
+ * on the Canadian side. (The full frontier also turns due north along the
+ * 141°W meridian at the window's northwest edge; one line keeps the algebra
+ * the lesson's, and inside this window the difference is a sliver of the
+ * far corner.)
+ */
+function eliasFeasible() {
+  const b = ELIAS_INFO.boundary;
+  return `y <= ${b.m.toFixed(4)}*x ${b.b < 0 ? '-' : '+'} ${Math.abs(b.b).toFixed(4)}`;
+}
+
+/** Show each formula's explanatory note exactly when it is the one loaded. */
 function updateCrochetNote() {
-  const el = $('note-crochet');
-  if (el) el.hidden = $('in-fn').value.trim() !== CROCHET_FN;
+  const fn = $('in-fn').value.trim();
+  const crochet = $('note-crochet');
+  if (crochet) crochet.hidden = fn !== CROCHET_FN;
+  const elias = $('note-elias');
+  if (elias) elias.hidden = fn !== ELIAS_FN;
 }
 
 /**
@@ -2029,7 +2061,20 @@ function wireUI() {
   $('preset-fn').addEventListener('change', (e) => {
     if (!e.target.value) return;
     $('in-fn').value = e.target.value;
-    if (e.target.value === CROCHET_FN) {
+    if (e.target.value === ELIAS_FN) {
+      // The real mountain: the domain is the survey's own window, the
+      // feasible set is Alaska, and the window must not follow the explorer —
+      // the data has edges, and panning past them would be panning off the
+      // survey. Isolation stays off so both countries stay solid; the wall
+      // marks the line.
+      $('in-xmin').value = ELIAS_INFO.xmin; $('in-xmax').value = ELIAS_INFO.xmax;
+      $('in-ymin').value = ELIAS_INFO.ymin; $('in-ymax').value = ELIAS_INFO.ymax;
+      $('in-feas').value = eliasFeasible();
+      state.feasSrc = $('in-feas').value;
+      $('t-feas').checked = true; state.feasible = true;
+      $('t-isolate').checked = false; state.isolate = false;
+      $('t-follow').checked = false; state.follow = false;
+    } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the
       // mild correction the derivation is about. A domain a hair wider than
@@ -3082,6 +3127,7 @@ window.__peaks = {
   get walker() { return walker; },
   get altSurface() { return altSurface; },
   get player() { return player; },
+  get optimum() { return optimum; },
 };
 
 state.holdKey = readHoldKey();

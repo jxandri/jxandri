@@ -333,6 +333,21 @@ ripple you see is that mismatch, made visible. It is also, not by coincidence, w
 hyperbolic surface looks like — a physical model of exactly this theorem, worked one stitch at a
 time. Selecting it also masks the domain to the disk the construction is valid on, through the
 feasible-set machinery covered next.</p>
+<p>A second special example is <strong>Mount Saint Elias (real terrain)</strong> — not a formula at
+all, but the actual mountain: a digital elevation model of the 40 km around the summit
+(Was’eitushaa, Boundary Peak 186, 5 489 m, on the Alaska–Yukon frontier), from the United States
+and Canadian national elevation surveys, carried inside the program and exposed to the formula box
+as the function <code>elias(x, y)</code> — km east and north of the summit in, km of elevation
+out. Everything in the program works on it unchanged, because nothing in the program ever needed
+<code>f</code> to be a formula — only to be callable. The reason it is here is the frontier: the
+1903 boundary is locally a straight line, it passes about six hundred metres from the summit, and
+the summit is on the Canadian side. Loading the example sets the feasible set to Alaska — one
+linear inequality, exactly a budget constraint — so the highest point of the United States is
+<em>not</em> the summit: press <kbd>O</kbd> and the optimiser pins it to the line, where the level
+curve is tangent to the frontier. Maximisation under a linear constraint, on a real mountain, with
+the Lagrange condition visible as geography. The surface wears its true climate — ice and snow
+with scattered rock, vegetation only near the sea — and the relief is real, so stretch the z-axis
+dial to exaggerate it the way an atlas would.</p>
 <p>If what you type does not make sense, a red message appears underneath naming the problem and
 the character where it went wrong. <strong>The mountain you already had stays on screen</strong> —
 a typing mistake never destroys your work.</p>
