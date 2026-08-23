@@ -126,6 +126,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
 .btn-primary{background:var(--accent); border-color:var(--accent); color:var(--btn-ink)}
 .btn-primary:hover{filter:brightness(1.08)}
+.check.auto{font-size:12.5px; color:var(--ink-2)}
 .count{font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3)}
 .count span{color:var(--ink); font-weight:600}
 
@@ -195,8 +196,11 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 
       <div class="group">
         <h2>Descubrir la demanda</h2>
-        <p class="hint">Mueve el precio, observa la nueva canasta óptima y registra el par
-           (precio, cantidad). Los puntos que acumules <em>son</em> la curva de demanda.</p>
+        <p class="hint">Mueve el precio y observa la nueva canasta óptima. Cada par
+           (precio, cantidad) queda marcado, así que el rastro que dejas al arrastrar
+           <em>es</em> la curva de demanda.</p>
+        <label class="check auto"><input type="checkbox" id="auto-mark" checked>
+          <span>Marcar al mover el precio</span></label>
         <div class="btnrow">
           <button type="button" class="btn btn-primary" id="btn-rec">Registrar punto</button>
           <button type="button" class="btn" id="btn-sweep">Barrido</button>
@@ -311,6 +315,7 @@ const st={
   /* points the student has collected, kept per horizontal axis: a pair
      recorded while sweeping p_x says nothing about a sweep of income */
   pts:{px:[],py:[],I:[]},
+  autoMark:true,
   layers:{budget:true, indiff:true, dx:true, dy:true, giffen:true, grid:true,
           curve:false, pts:true, join:true, pcc:true}
 };
@@ -377,9 +382,11 @@ function stroke(ctx,pts,col,wd,cas){
   path(); ctx.strokeStyle=col; ctx.lineWidth=wd; ctx.stroke();
 }
 function dot(ctx,X,Y,col){
-  ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(X,Y,7.5,0,7); ctx.fill();
-  ctx.fillStyle=MARK.white; ctx.beginPath(); ctx.arc(X,Y,5.5,0,7); ctx.fill();
-  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(X,Y,3.4,0,7); ctx.fill();
+  /* deliberately bigger and white-ringed: the current bundle has to stand out
+     from the trail of marks it is laying down */
+  ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(X,Y,9,0,7); ctx.fill();
+  ctx.fillStyle=MARK.white;  ctx.beginPath(); ctx.arc(X,Y,6.5,0,7); ctx.fill();
+  ctx.fillStyle=col;         ctx.beginPath(); ctx.arc(X,Y,4,0,7); ctx.fill();
 }
 
 /* ---------- panel 1: the choice in the (x,y) plane ---------- */
@@ -498,8 +505,8 @@ function drawDemand(){
       if(st.layers.join && ps.length>1)
         stroke(ctx,ps.map(q=>[SX(q.t),SY(q[key])]),row.col,1.6,true);
       for(const q of ps){
-        ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.t),SY(q[key]),5.4,0,7); ctx.fill();
-        ctx.fillStyle=row.col;     ctx.beginPath(); ctx.arc(SX(q.t),SY(q[key]),3.6,0,7); ctx.fill();
+        ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.t),SY(q[key]),4.6,0,7); ctx.fill();
+        ctx.fillStyle=row.col;     ctx.beginPath(); ctx.arc(SX(q.t),SY(q[key]),2.9,0,7); ctx.fill();
       }
     }
 
@@ -547,6 +554,7 @@ function paint(){
 
 /* --- collecting points --------------------------------------------------- */
 function curPts(){ return st.pts[st.axis]; }
+const axisKey=()=> st.axis==="I" ? "I" : st.axis;
 function record(){
   const A=axisInfo(), d=demandAt(A.cur);
   if(!fin(d[0])&&!fin(d[1])) return;
@@ -558,6 +566,18 @@ function record(){
   render();
 }
 function clearPts(){ st.pts[st.axis]=[]; render(); }
+/* Dragging a slider fires continuously, so record on a spacing grid rather than
+   on every event: about 80 marks across the axis is dense enough to read as a
+   curve and cheap enough to redraw while the thumb is still moving. */
+function autoRecord(){
+  if(!st.autoMark) return;
+  const A=axisInfo(), arr=curPts(), gap=A.max/80;
+  if(arr.some(q=>Math.abs(q.t-A.cur)<gap)) return;
+  const d=demandAt(A.cur);
+  if(!fin(d[0])&&!fin(d[1])) return;
+  arr.push({t:A.cur,x:d[0],y:d[1]});
+  arr.sort((a,b)=>a.t-b.t);
+}
 /* Points are only comparable when everything except the swept variable is
    held fixed, so changing anything else throws the collection away. */
 function invalidate(changed){
@@ -609,7 +629,9 @@ function bind(id,key){
   const set=v=>{ v=parseFloat(v); if(!fin(v))return;
     v=clamp(v,parseFloat(s.min),parseFloat(s.max));
     if(!sweeping) invalidate(key);
-    st[key]=v; s.value=v; b.value=v; render(); };
+    st[key]=v; s.value=v; b.value=v;
+    if(!sweeping && key===axisKey()) autoRecord();
+    render(); };
   s.addEventListener("input",()=>set(s.value));
   b.addEventListener("change",()=>set(b.value));
   b.value=st[key]; s.value=st[key];
@@ -635,6 +657,7 @@ try{ theme0 = localStorage.getItem("demanda.theme") || "dark"; }catch(_){ }
 $("th-dark").addEventListener("click",()=>setTheme("dark"));
 $("th-light").addEventListener("click",()=>setTheme("light"));
 
+$("auto-mark").addEventListener("change",e=>{ st.autoMark=e.target.checked; });
 $("btn-rec").addEventListener("click",record);
 $("btn-clear").addEventListener("click",clearPts);
 $("btn-sweep").addEventListener("click",sweep);
