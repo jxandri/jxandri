@@ -118,6 +118,19 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .verdict p{margin:0; color:var(--ink-2); font-size:13px; max-width:82ch}
 .verdict.is-giffen{border-left-color:#B14BE0}
 .verdict.is-inferior{border-left-color:#C9761B}
+.hint{margin:0; font-size:12px; color:var(--ink-3); line-height:1.4}
+.btnrow{display:flex; gap:6px; flex-wrap:wrap}
+.btn{appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); border-radius:3px; padding:6px 12px; font-size:12.5px; font-weight:500}
+.btn:hover{border-color:var(--ink-3)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:#fff}
+@media (prefers-color-scheme:dark){.btn-primary{color:#08171A}}
+:root[data-theme="dark"] .btn-primary{color:#08171A}
+:root[data-theme="light"] .btn-primary{color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+.count{font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3)}
+.count span{color:var(--ink); font-weight:600}
 .foot{color:var(--ink-3); font-size:11.5px; padding-top:8px; border-top:1px solid var(--rule-2)}
 </style>
 </head>
@@ -157,6 +170,18 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         <div class="slider-row"><span class="k">p<sub>x</sub></span><input type="range" id="px" min="0.05" max="10" step="0.01" value="1.83"><input class="v" id="px-v"></div>
         <div class="slider-row"><span class="k">p<sub>y</sub></span><input type="range" id="py" min="0.05" max="4" step="0.01" value="1.1"><input class="v" id="py-v"></div>
         <div class="slider-row"><span class="k">m</span><input type="range" id="inc" min="0.5" max="20" step="0.05" value="5.4"><input class="v" id="inc-v"></div>
+      </div>
+
+      <div class="group">
+        <h2>Descubrir la demanda</h2>
+        <p class="hint">Mueve el precio, observa la nueva canasta óptima y registra el par
+           (precio, cantidad). Los puntos que acumules <em>son</em> la curva de demanda.</p>
+        <div class="btnrow">
+          <button type="button" class="btn btn-primary" id="btn-rec">Registrar punto</button>
+          <button type="button" class="btn" id="btn-sweep">Barrido</button>
+          <button type="button" class="btn" id="btn-clear">Limpiar</button>
+        </div>
+        <div class="count"><span id="pt-count">0</span> puntos registrados</div>
       </div>
 
       <div class="group">
@@ -262,15 +287,21 @@ const st={
   fam:"cd", axis:"px",
   alpha:0.57, r:0.42, a:0.9, beta:0.889, xlow:0.27, yup:15.2,
   px:1.83, py:1.1, I:5.4,
-  layers:{budget:true, indiff:true, dx:true, dy:true, giffen:true, grid:true}
+  /* points the student has collected, kept per horizontal axis: a pair
+     recorded while sweeping p_x says nothing about a sweep of income */
+  pts:{px:[],py:[],I:[]},
+  layers:{budget:true, indiff:true, dx:true, dy:true, giffen:true, grid:true,
+          curve:false, pts:true, join:true, pcc:true}
 };
 const LAYERS=[
+  ["pts","Puntos registrados"],["join","Unir los puntos"],
+  ["curve","Revelar la curva"],["pcc","Senda precio-consumo"],
   ["budget","Recta presupuestaria"],["indiff","Curva de indiferencia"],
   ["dx","Demanda de x"],["dy","Demanda de y"],
   ["giffen","Resaltar tramo Giffen"],["grid","Retícula"]
 ];
 
-const MARK={x:"#00A8C7", y:"#E0631B", giffen:"#B14BE0", bundle:"#00C2DB",
+const MARK={x:"#00A8C7", y:"#E0631B", giffen:"#B14BE0", bundle:"#00C2DB", pcc:"#7A5AF8",
             casing:"rgba(6,9,14,.55)", white:"#fff"};
 
 const $=id=>document.getElementById(id);
@@ -365,6 +396,17 @@ function drawBundle(){
   if(st.layers.budget){
     stroke(ctx,[[SX(0),SY(st.I/st.py)],[SX(st.I/st.px),SY(0)]],MARK.x,2.4,true);
   }
+  /* every bundle collected so far — sweeping a price, these trace the
+     price-consumption path, which is where the demand curve comes from */
+  if(st.layers.pcc && curPts().length){
+    const ps=curPts().filter(q=>fin(q.x)&&fin(q.y));
+    if(st.layers.join && ps.length>1)
+      stroke(ctx,ps.map(q=>[SX(q.x),SY(q.y)]),MARK.pcc,1.8,true);
+    for(const q of ps){
+      ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.x),SY(q.y),4.6,0,7); ctx.fill();
+      ctx.fillStyle=MARK.pcc;    ctx.beginPath(); ctx.arc(SX(q.x),SY(q.y),3,0,7); ctx.fill();
+    }
+  }
   if(fin(xs)&&fin(ys)) dot(ctx,SX(xs),SY(ys),MARK.bundle);
   ctx.restore();
 }
@@ -404,15 +446,19 @@ function drawDemand(){
     let ymax=0;
     for(const v of row.s) if(fin(v)&&v>=0) ymax=Math.max(ymax,v);
     if(!(ymax>0)) ymax=1;
-    ymax*=1.18;
+    ymax*=1.18;   /* scaled to the true curve even when it is hidden, so the
+                     axis does not jump around as points accumulate */
     const rect={x0:0,y0:ri*hh,x1:w,y1:(ri+1)*hh};
     const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,ri===rows.length-1?A.lab:"",row.lab,true);
     ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
-    const pts=row.s.map((v,i)=> fin(v)&&v>=0 ? [SX(A.max*i/N),SY(v)] : null);
-    stroke(ctx,pts,row.col,2.4,true);
+    /* the analytic curve is the answer, so it stays hidden until asked for */
+    if(st.layers.curve){
+      const pts=row.s.map((v,i)=> fin(v)&&v>=0 ? [SX(A.max*i/N),SY(v)] : null);
+      stroke(ctx,pts,row.col,2.4,true);
+    }
 
-    if(row.giffen && st.layers.giffen && st.axis!=="I"){
+    if(row.giffen && st.layers.giffen && st.layers.curve && st.axis!=="I"){
       const seg=[];
       for(let i=1;i<=N;i++){
         const a=row.s[i-1], b=row.s[i];
@@ -422,6 +468,18 @@ function drawDemand(){
         } else if(seg.length){ stroke(ctx,seg,MARK.giffen,4.5,true); seg.length=0; }
       }
       if(seg.length) stroke(ctx,seg,MARK.giffen,4.5,true);
+    }
+
+    /* what the student has actually collected */
+    if(st.layers.pts && curPts().length){
+      const key=(ri===0&&st.layers.dx)?"x":"y";
+      const ps=curPts().filter(q=>fin(q[key])&&q[key]>=0);
+      if(st.layers.join && ps.length>1)
+        stroke(ctx,ps.map(q=>[SX(q.t),SY(q[key])]),row.col,1.6,true);
+      for(const q of ps){
+        ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.t),SY(q[key]),5.4,0,7); ctx.fill();
+        ctx.fillStyle=row.col;     ctx.beginPath(); ctx.arc(SX(q.t),SY(q[key]),3.6,0,7); ctx.fill();
+      }
     }
 
     ctx.strokeStyle=css("--rule"); ctx.lineWidth=1; ctx.setLineDash([4,4]);
@@ -466,14 +524,51 @@ function paint(){
   }
 }
 
-function render(){ drawBundle(); drawDemand(); paint(); }
+/* --- collecting points --------------------------------------------------- */
+function curPts(){ return st.pts[st.axis]; }
+function record(){
+  const A=axisInfo(), d=demandAt(A.cur);
+  if(!fin(d[0])&&!fin(d[1])) return;
+  const arr=curPts(), eps=A.max*2e-3;
+  const hit=arr.findIndex(q=>Math.abs(q.t-A.cur)<eps);
+  const rec={t:A.cur,x:d[0],y:d[1]};
+  if(hit>=0) arr[hit]=rec; else arr.push(rec);
+  arr.sort((a,b)=>a.t-b.t);
+  render();
+}
+function clearPts(){ st.pts[st.axis]=[]; render(); }
+/* Points are only comparable when everything except the swept variable is
+   held fixed, so changing anything else throws the collection away. */
+function invalidate(changed){
+  if(changed===st.axis) return;
+  if(st.pts[st.axis].length) st.pts[st.axis]=[];
+}
+let sweeping=null;
+function sweep(){
+  if(sweeping){ cancelAnimationFrame(sweeping); sweeping=null; $("btn-sweep").textContent="Barrido"; return; }
+  const A=axisInfo(), n=14, key=st.axis==="I"?"I":st.axis, slider=$(key==="I"?"inc":key);
+  st.pts[st.axis]=[]; let i=1;
+  $("btn-sweep").textContent="Parar";
+  const step=()=>{
+    if(i>n){ sweeping=null; $("btn-sweep").textContent="Barrido"; return; }
+    const t=clamp(A.max*i/(n+1), parseFloat(slider.min), parseFloat(slider.max));
+    st[key]=t; slider.value=t; $((key==="I"?"inc":key)+"-v").value=+t.toFixed(2);
+    record(); i++;
+    sweeping=requestAnimationFrame(()=>setTimeout(step,110));
+  };
+  step();
+}
+
+function render(){ drawBundle(); drawDemand(); paint();
+  $("pt-count").textContent=curPts().length; }
 
 /* ---------- wiring ---------- */
 function buildChips(){
   $("fam-chips").innerHTML=Object.entries(FAMS).map(([k,f])=>
     `<button type="button" class="chip" data-fam="${k}" aria-pressed="${k===st.fam}">${f.name}</button>`).join("");
   $("fam-chips").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
-    st.fam=c.dataset.fam; buildChips(); syncParams(); render();
+    st.fam=c.dataset.fam; st.pts={px:[],py:[],I:[]};
+    buildChips(); syncParams(); render();
   }));
   $("fam-formula").textContent=F().formula;
 }
@@ -491,7 +586,9 @@ function buildLayers(){
 function bind(id,key){
   const s=$(id), b=$(id+"-v");
   const set=v=>{ v=parseFloat(v); if(!fin(v))return;
-    v=clamp(v,parseFloat(s.min),parseFloat(s.max)); st[key]=v; s.value=v; b.value=v; render(); };
+    v=clamp(v,parseFloat(s.min),parseFloat(s.max));
+    if(!sweeping) invalidate(key);
+    st[key]=v; s.value=v; b.value=v; render(); };
   s.addEventListener("input",()=>set(s.value));
   b.addEventListener("change",()=>set(b.value));
   b.value=st[key]; s.value=st[key];
@@ -503,6 +600,14 @@ document.querySelectorAll(".seg [data-axis]").forEach(btn=>btn.addEventListener(
     : `Demanda · función de p<sub>${st.axis==="px"?"x":"y"}</sub>`;
   render();
 }));
+
+$("btn-rec").addEventListener("click",record);
+$("btn-clear").addEventListener("click",clearPts);
+$("btn-sweep").addEventListener("click",sweep);
+addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"&&e.target.type==="text") return;
+  if(e.key==="r"||e.key==="R"){ e.preventDefault(); record(); }
+});
 
 buildChips(); syncParams(); buildLayers();
 ["alpha","r","a","beta","xlow","yup"].forEach(k=>bind(k,k));
