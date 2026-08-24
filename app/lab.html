@@ -52,6 +52,18 @@
      has no wheel. One column, so the two can never land on top of each other. -->
 <div id="right-rail">
 
+<!-- The mountain's own photograph, for the border-mountain examples. The
+     aerial view with the frontier drawn across it is the thing that makes the
+     constraint concrete: that red corridor is the inequality in the box. -->
+<div id="peak-card" hidden>
+  <img id="peak-photo" alt="">
+  <div class="pk-body">
+    <div id="peak-name" class="pk-name"></div>
+    <div id="peak-where" class="pk-where"></div>
+    <div id="peak-credit" class="pk-credit"></div>
+  </div>
+</div>
+
 <div id="compass-wrap">
   <canvas id="compass" width="132" height="132"></canvas>
   <div class="cmp-read"><span id="cmp-az">0°</span><span id="cmp-el">0°</span></div>
@@ -215,10 +227,25 @@
         <option value="x*y*exp(-(x^2+y^2))" data-i18n="fn.xyexp">x·y·e^−(x²+y²)</option>
         <option value="y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2-hypot(x,y)^2))" data-i18n="fn.crochet">Crochet hyperbolic ball (Nash–Kuiper, C¹)</option>
         <option value="elias(x, y)" data-i18n="fn.elias">Mount Saint Elias (real terrain, AK/Yukon)</option>
+        <optgroup label="Border mountains — the frontier is the constraint" id="og-borders">
+          <option value="borderpeak(x, y)">American Border Peak  (US / Canada)</option>
+          <option value="natazhat(x, y)">Mount Natazhat  (US / Canada)</option>
+          <option value="richards(x, y)">Mount Richards  (Canada / US)</option>
+          <option value="tecate(x, y)">Tecate Peak (Kuuchamaa)  (US / Mexico)</option>
+          <option value="otay(x, y)">Otay Mountain  (US / Mexico)</option>
+          <option value="larrabee(x, y)">Mount Larrabee  (US / Canada)</option>
+          <option value="ummaddami(x, y)">Jabal Umm ad Dami  (Jordan / Saudi Arabia)</option>
+          <option value="sentinel(x, y)">Sentinel Mountain  (US / Canada)</option>
+          <option value="tomyhoi(x, y)">Tomyhoi Peak  (US / Canada)</option>
+          <option value="castlepeak(x, y)">Castle Peak  (US / Canada)</option>
+          <option value="bikkubitti(x, y)">Bikku Bitti  (Libya / Chad)</option>
+          <option value="kinnerly(x, y)">Kinnerly Peak  (US / Canada)</option>
+        </optgroup>
       </select>
       <div id="err-fn" class="err" hidden></div>
       <p class="note" id="note-crochet" hidden data-i18n="fn.crochetnote">A once-differentiable, nowhere-twice-differentiable embedding of a piece of the hyperbolic disk of radius <code>a = 1/√3</code> — the mathematical model behind a real crochet hyperbolic surface. Hilbert's theorem rules out a <em>smooth</em> (C²) isometric copy of any unbounded piece of the hyperbolic plane in ordinary space; Nash and Kuiper showed C¹ has no such obstruction. This is the single-wave case of their construction: it matches the true metric only to fourth order in the radius, and the mismatch shows as the one ripple you see. The domain and feasible set are set to the disk ρ ≤ a this construction is valid on.</p>
       <p class="note" id="note-elias" hidden data-i18n="fn.eliasnote">Real elevation data: the 40 km around Mount Saint Elias (Was’eitushaa, Boundary Peak 186, 5 489 m), from the USGS and Canadian national elevation models, sampled every 150 m and carried inside this file. Coordinates are km east and north of the summit; heights are km, so the HUD reads in real kilometres. The feasible set is Alaska: locally the 1903 boundary is a straight line — a linear constraint, exactly like a budget line — and it passes about 470 m north-west of the summit, leaving the peak in Canada. So the highest point of the United States side cannot be the summit: press O and the optimiser finds it, pinned to the line where the level curve is tangent to the frontier — a Lagrange condition you can walk to. The relief is real — 5.4 km over a 40 km window — so the mountain is honestly gentle at true scale; stretch the z-axis dial to exaggerate it the way an atlas does. The window does not follow the explorer here, because the survey has edges. One more honesty: what you walk on is not the raw survey grid but an infinitely differentiable approximation of it — a two-dimensional Fourier (cosine) series fitted to the data, staying within about 90 m of it on average. Interpolating every sample would make hundreds of pixel-sized relative maxima and a function differentiable only once; the smooth fit keeps the massif’s dozen real shoulders and gives every tool an exact object — gradients that vary smoothly, level curves that are differentiable curves, a true tangent plane at every point, geodesics of a smooth metric. The crags, snow and ice you see are decoration standing on the surface: mathematically, this mountain is as smooth as any formula above.</p>
+      <p class="note" id="note-border" hidden></p>
       </div>
       <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so there is no height to read level curves off. Everything else applies, and applies in the surface’s own terms: walk on it, and the Derivatives section gives you the geodesic circle, the coordinate directions of whichever grid is on, your velocity and the tangent plane. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
     </section>
@@ -276,12 +303,16 @@
       <div id="err-feas" class="err" hidden></div>
       <label class="check"><input id="t-feas" type="checkbox"><span><span data-i18n="feas.walls">Show frontier walls</span> <kbd>F</kbd></span></label>
       <label class="check"><input id="t-isolate" type="checkbox"><span><span data-i18n="feas.isolate">Make the outside translucent</span> <kbd>G</kbd></span></label>
+      <label class="check"><input id="t-rail" type="checkbox"><span><span data-i18n="feas.rail">Walk only along the frontier</span> <kbd>B</kbd></span></label>
+      <p class="note" data-i18n="feas.railnote">Ropes the explorer to the constraint curve itself: every step is projected back onto it, so pushing in any direction slides you along the frontier and pushing straight at it does nothing. Walk it end to end watching the height readout and you have solved the constrained problem on foot — the best point on the line is the one the optimiser marks. Works for a curved constraint as readily as a straight one.</p>
     </section>
 
     <section id="sec-map">
       <h2 data-i18n="sec.map">Map &amp; terrain</h2>
       <div id="fld-contours">
         <label class="check"><input id="t-contours" type="checkbox"><span><span data-i18n="map.contours">Level curves</span> <kbd>C</kbd></span></label>
+        <label class="check"><input id="t-curvesin" type="checkbox"><span><span data-i18n="map.inside">Level curves only inside the feasible set</span></span></label>
+        <p class="note" data-i18n="map.insidenote">Stops every level curve exactly at the constraint, which is how an economics textbook draws indifference curves over a budget set: the curves live in the feasible region, and the one that just touches the frontier is the answer.</p>
         <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
           <input id="in-cstep" type="number" step="any" min="0" placeholder="auto"></label>
         <label class="range">

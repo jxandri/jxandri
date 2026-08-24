@@ -368,6 +368,46 @@ rugosidad aparente —riscos, campos de nieve, roca dispersa y hielo— es decor
 <em>sobre</em> la superficie. Matemáticamente, la montaña que se pisa es tan suave como cualquier
 fórmula de la lista de ejemplos, y el máximo restringido sigue exactamente sobre la línea
 fronteriza.</p>
+<h2>Montañas cortadas por una frontera</h2>
+<p>Bajo <strong>Montañas fronterizas</strong>, en el menú de ejemplos, hay doce montañas reales
+que una frontera cruza por debajo de la cima. Proceden de un atlas de esa configuración rara: una
+montaña con nombre atravesada por un límite internacional cuyo <em>punto más alto</em> queda, aun
+así, estrictamente dentro de un país. Al elegir una se carga la montaña, el dominio se fija a una
+ventana alrededor de la cima y la frontera se escribe en la caja de restricciones: como conjunto
+factible del país que <em>no</em> posee el pico. Así la cima queda fuera de alcance por
+construcción, y lo mejor posible está en algún punto de la línea. Pulse <kbd>O</kbd> y el
+optimizador lo clava ahí, donde una curva de nivel es tangente a la frontera. Es la imagen de
+Lagrange, con una restricción negociada por diplomáticos y no inventada para un ejercicio.</p>
+<p>En la esquina superior derecha aparece una fotografía aérea con una breve descripción del lugar:
+los dos países, qué línea es la frontera y a qué distancia queda la cima. El grueso corredor rojo
+dibujado sobre la foto es la anotación del propio atlas: una proyección esquemática de la frontera,
+deliberadamente mucho más ancha que la línea real para que se lea a ese tamaño. Cuando el atlas
+admite que una imagen es contexto regional y no la montaña misma, el pie dice <em>Vista
+regional</em>.</p>
+<p>Ocho de las doce están cortadas por <strong>una línea definida por un número</strong>: el
+paralelo 49 en las Rocosas y las Cascadas, el meridiano 141 entre Alaska y el Yukón. En
+coordenadas locales eso es exactamente <code>y = constante</code> y <code>x = constante</code>, sin
+error de levantamiento que heredar: la restricción es de verdad la línea legal. Las demás son
+segmentos rectos de tratado reproducidos a partir de sus propios extremos definitorios.</p>
+<p>Cada superficie es un ajuste suave de Fourier del modelo público de elevación, igual que San
+Elías, y la ventana es el entorno de la cima donde la afirmación es realmente cierta. Ese último
+punto vale la pena señalarlo en clase: si se cruza más allá de la línea acaba apareciendo una
+segunda cumbre al otro lado, cuya cima no está cerca de la frontera. No existe un polígono canónico
+para «el cuerpo de una montaña», así que la ventana se elige como la más amplia en la que el
+enunciado se cumple, y todo lo que afirma está en pantalla para comprobarlo.</p>
+
+<h2>Caminar por la frontera</h2>
+<p><strong>Caminar solo por la frontera</strong> (<kbd>B</kbd>, en la sección Conjunto factible)
+ata al explorador a la curva de restricción. Cada paso se proyecta de vuelta sobre ella, así que
+empujar en cualquier dirección lo desliza a lo largo de la línea y empujar directamente contra ella
+no hace nada. Recórrala de un extremo al otro mirando la lectura de altura y habrá resuelto el
+problema restringido a pie: la lectura más alta que encuentre es el número que imprime el
+optimizador. Funciona igual con una restricción curva que con una recta.</p>
+<p><strong>Curvas de nivel solo dentro del conjunto factible</strong> (en Mapa y terreno) detiene
+cada curva exactamente en la restricción. Así dibuja un libro de economía las curvas de
+indiferencia sobre un conjunto presupuestario: las curvas viven dentro de la región factible, y la
+que apenas toca la frontera es la respuesta.</p>
+
 <p>Si lo que escribe no tiene sentido, aparece debajo un mensaje rojo que nombra el problema y
 el carácter donde falló. <strong>La montaña que ya tenía permanece en pantalla</strong>: un error
 de escritura nunca destruye su trabajo.</p>

@@ -360,6 +360,49 @@ answer. The apparent roughness — crags, snowfields, scattered rock and ice —
 standing <em>on</em> the surface. Mathematically, the mountain you walk is as smooth as any
 formula in the preset list, and the constrained maximum still sits exactly on the boundary
 line.</p>
+<h2>Mountains cut by a border</h2>
+<p>Under <strong>Border mountains</strong> in the examples menu are twelve real mountains that a
+frontier crosses below the summit. They come from an atlas of the rare configuration: a named
+mountain intersected by an international boundary whose <em>highest point</em> is nonetheless
+strictly inside one country. Choosing one loads the mountain, sets the domain to a window around
+the summit, and writes the frontier into the constraint box — as the feasible set for the country
+that does <em>not</em> own the peak. So the summit is out of reach by construction, and the best
+you can do lies somewhere on the line. Press <kbd>O</kbd> and the optimiser pins it there, at the
+point where a level curve runs tangent to the frontier. It is the Lagrange picture, and the
+constraint was negotiated by diplomats rather than invented for a problem set.</p>
+<p>An aerial photograph appears in the top right corner with a short description of where you are:
+the two countries, which line the frontier is, and how far the summit stands from it. The thick red
+corridor drawn across the photograph is the atlas's own annotation — a schematic projection of the
+boundary, deliberately far wider than the real line so that it reads at that size. Where the atlas
+admits a picture is regional context rather than the mountain itself, the caption says
+<em>Regional view</em>.</p>
+<p>Eight of the twelve are cut by <strong>a line defined by a number</strong>: the 49th parallel
+across the Rockies and Cascades, the 141st meridian between Alaska and the Yukon. In local
+coordinates those are exactly <code>y = constant</code> and <code>x = constant</code>, with no
+survey error to inherit — the constraint really is the legal line. The rest are straight treaty
+segments reproduced from their own defining endpoints: the 1848 Guadalupe Hidalgo line behind Otay
+Mountain and Tecate Peak, the sectors crossing Jabal Umm ad Dami and Bikku Bitti.</p>
+<p>Each surface is a smooth Fourier fit to the public elevation model, exactly as Saint Elias is,
+and the window is the neighbourhood of the summit in which the claim is actually true. That last
+point is worth making to a class: reach further across the line and you eventually collect a second
+summit over there, whose top is nowhere near the border — American Border Peak has Canadian Border
+Peak less than three kilometres north of it. There is no canonical polygon for "the body of a
+mountain", so the window is chosen to be the widest one in which the statement holds, and
+everything it claims is on screen to be checked.</p>
+
+<h2>Walking the frontier</h2>
+<p><strong>Walk only along the frontier</strong> (<kbd>B</kbd>, in the Feasible set section) ropes
+the explorer to the constraint curve. Every step is projected back onto it, so pushing in any
+direction slides you along the line and pushing straight at it does nothing. Walk from one end to
+the other watching the height readout and you have solved the constrained problem on foot: the
+highest reading you can find is the number the optimiser prints. It works for a curved constraint
+as readily as a straight one — the curve is read out of whatever inequality is in the box, so a
+circle or a Cobb–Douglas budget set ropes you just as well.</p>
+<p><strong>Level curves only inside the feasible set</strong> (in Map &amp; terrain) stops every
+contour exactly at the constraint. That is how an economics textbook draws indifference curves over
+a budget set — the curves live inside the feasible region, and the one that just touches the
+frontier is the answer.</p>
+
 <p>If what you type does not make sense, a red message appears underneath naming the problem and
 the character where it went wrong. <strong>The mountain you already had stays on screen</strong> —
 a typing mistake never destroys your work.</p>

@@ -10,6 +10,9 @@ import {
   GROUP_OUTSIDE, heightColor, setBiomeProfile,
 } from './terrain.js';
 import { ELIAS_INFO } from './elias.js';
+import { BORDERS } from './borders-data.js';
+import { feasibleFor, boundaryOf } from './borders.js';
+import { photoFor } from './borders-photos.js';
 import { Decorations } from './decor.js';
 import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
@@ -147,6 +150,9 @@ const state = {
   curCurve: false,
   curTangent: false,
   decor: true,
+  rail: false,          // rope the explorer to the constraint curve
+  curvesInside: false,  // draw level curves only inside the feasible set
+  smoothCurves: true,   // trace them finer than the render mesh
   decorScale: 1,       // how big the trees, rocks and grass are drawn
   decorMatchPlayer: true, // ...and whether that also tracks the explorer's own scale dial
   water: true,
@@ -967,7 +973,16 @@ function rebuild() {
   // gets the temperate bands the app has always used. Derived from the
   // formula itself rather than kept as a switch, so it can never be left
   // pointing at the wrong climate.
-  setBiomeProfile(/\belias\s*\(/.test(state.fnSrc) ? 'alpine' : 'temperate');
+  // The climate follows the surface. A formula that calls the Saint Elias
+  // model, or any of the glaciated border peaks, is a high cold massif and
+  // gets the alpine bands; the desert mountains get almost nothing growing on
+  // them; anything else gets the temperate bands the app has always used.
+  // Derived from the formula itself rather than kept as a switch, so it can
+  // never be left pointing at the wrong climate.
+  const borderId = currentBorder();
+  setBiomeProfile(/\belias\s*\(/.test(state.fnSrc) ? 'alpine'
+    : borderId ? BORDERS[borderId].meta.biome
+      : 'temperate');
 
   // --- parse first, so a typo never destroys a working scene -------------
   let fn, pred;
@@ -993,6 +1008,7 @@ function rebuild() {
   }
 
   predicate = pred;
+  applyRail();
 
   // --- tear the old world down ------------------------------------------
   clearGraphWorld();
@@ -1147,6 +1163,19 @@ function configureShadows() {
 
 /* ---------------------------------------------------------- toggle logic */
 
+/** Rope the explorer to the frontier, or let them off it. */
+function applyRail() {
+  if (!player) return;
+  const g = state.rail && state.feasible ? railFor(state.feasSrc) : null;
+  player.onRail = g;
+  // Stepping onto the rope should not leave you standing off it.
+  if (g && isFinite(player.x)) {
+    const saved = { x: player.x, y: player.y };
+    player.snapToRail && player.snapToRail();
+    if (!isFinite(player.height())) { player.x = saved.x; player.y = saved.y; }
+  }
+}
+
 function paletteMode() { return state.heightColors ? 'height' : 'biome'; }
 
 function applyPalette() {
@@ -1226,7 +1255,18 @@ function refreshContours() {
 
   const picked = chooseLevels(grid.zmin, grid.zmax, { step: state.contourStep, target: 40 });
   contourInfo = picked;
-  contourLines = buildContours(field, grid, picked.levels || [], { width: pathWidth() });
+  // Refine the marching-squares lattice past the render mesh on a real
+  // mountain. Terrain has structure between mesh nodes; a level curve traced
+  // at mesh resolution shows it as corners, and a level curve is exactly the
+  // object a student is being asked to believe is smooth.
+  const smooth = state.smoothCurves !== false;
+  const refine = smooth ? (currentBorder() || /\belias\s*\(/.test(state.fnSrc) ? 3 : 2) : 1;
+  contourLines = buildContours(field, grid, picked.levels || [], {
+    width: pathWidth(),
+    refine,
+    // Indifference-curve view: stop the curves at the constraint.
+    only: state.curvesInside && state.feasible && predicate ? predicate : null,
+  });
   if (contourLines) world.add(contourLines);
   updateContourNote();
   refreshProjection();
@@ -1373,6 +1413,7 @@ window.addEventListener('keydown', (e) => {
     case 'i': toggleCheckbox('t-compass'); break;
     case 'f': toggleCheckbox('t-feas'); break;
     case 'g': toggleCheckbox('t-isolate'); break;
+    case 'b': toggleCheckbox('t-rail'); break;
     case 'h': toggleCheckbox('t-disc'); break;
     case 'x': toggleCheckbox('t-dx'); break;
     case 'y': toggleCheckbox('t-dy'); break;
@@ -1965,6 +2006,99 @@ function eliasFeasible() {
   return `y <= ${b.m.toFixed(4)}*x ${b.b < 0 ? '-' : '+'} ${Math.abs(b.b).toFixed(4)}`;
 }
 
+/* ------------------------------------------------- the border mountains */
+
+/**
+ * Which border mountain, if any, the formula box is currently showing.
+ *
+ * Read off the formula rather than remembered in a variable, so that typing
+ * `natazhat(x, y)` by hand is exactly as good as choosing it from the menu —
+ * the same rule the rest of the program follows, where the formula is the
+ * single source of truth about what surface is on screen.
+ */
+function currentBorder() {
+  const m = /^\s*([a-z]+)\s*\(\s*x\s*,\s*y\s*\)\s*$/.exec(state.fnSrc || '');
+  return m && BORDERS[m[1]] ? m[1] : null;
+}
+
+/**
+ * The photograph and the sentence that says where you are.
+ *
+ * The card carries what the atlas carries: the two countries, which line the
+ * frontier is, which side the summit is on and by how far. The distance is
+ * the one computed from the elevation model and the exact boundary, not the
+ * atlas's stated figure — the program should quote its own arithmetic.
+ *
+ * When the atlas admits a photograph is regional context rather than the
+ * mountain itself, the caption says so. A picture captioned as something it
+ * is not would be worse than no picture at all.
+ */
+function updatePeakCard() {
+  const card = $('peak-card');
+  if (!card) return;
+  const id = currentBorder();
+  if (!id) { card.hidden = true; return; }
+
+  const s = BORDERS[id];
+  const m = s.meta;
+  const es = getLanguage() === 'es';
+  const photo = photoFor(id);
+  const img = $('peak-photo');
+  if (photo) { img.src = photo; img.hidden = false; } else { img.hidden = true; }
+  img.alt = es ? m.es : m.name;
+
+  $('peak-name').textContent = es ? m.es : m.name;
+  const [own, other] = es ? m.countriesEs : m.countries;
+  const km = s.frontierKm;
+  const dist = km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(2)} km`;
+  $('peak-where').innerHTML = es
+    ? `${own} / ${other}<br>Frontera: ${m.boundaryEs}.<br>`
+      + `Cima <b>${Math.round(s.summit.metres)} m</b>, a <b>${dist}</b> de la línea,`
+      + ` del lado de ${own.replace(/\s*\(.*\)/, '')}.`
+    : `${own} / ${other}<br>Frontier: ${m.boundary}.<br>`
+      + `Summit <b>${Math.round(s.summit.metres)} m</b>, <b>${dist}</b> from the line,`
+      + ` on the ${own.replace(/\s*\(.*\)/, '')} side.`;
+  $('peak-credit').textContent = (m.ofItself ? '' : (es ? 'Vista regional. ' : 'Regional view. ')) + m.credit;
+  card.hidden = false;
+}
+
+/**
+ * The constraint curve, as a function that vanishes on it.
+ *
+ * The feasible set is whatever inequality the student typed, so the frontier
+ * is read straight back out of that text: split the comparison at its top
+ * level and subtract. `x + y <= 2` becomes x + y − 2, `x^2+y^2 <= 1` becomes
+ * the circle, and a border mountain's half-plane becomes its treaty line. The
+ * explorer is then projected onto the zero set of that function, which is why
+ * walking the frontier works for a curved constraint and not only a straight
+ * one.
+ *
+ * A conjunction of several constraints has several edges and no single curve;
+ * the first comparison wins, which is the right answer for a budget line and
+ * an honest limitation everywhere else.
+ */
+function railFor(src) {
+  if (typeof src !== 'string' || !src.trim()) return null;
+  let depth = 0;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (depth === 0 && (c === '<' || c === '>')) {
+      const skip = src[i + 1] === '=' ? 2 : 1;
+      const lhs = src.slice(0, i), rhs = src.slice(i + skip);
+      try {
+        const L = compile(lhs, ['x', 'y']);
+        const R = compile(rhs, ['x', 'y']);
+        const g = (x, y) => L(x, y) - R(x, y);
+        if (!isFinite(g(0.3, 0.4))) return null;
+        return g;
+      } catch { return null; }
+    }
+  }
+  return null;
+}
+
 /** Show each formula's explanatory note exactly when it is the one loaded. */
 function updateCrochetNote() {
   const fn = $('in-fn').value.trim();
@@ -1972,6 +2106,16 @@ function updateCrochetNote() {
   if (crochet) crochet.hidden = fn !== CROCHET_FN;
   const elias = $('note-elias');
   if (elias) elias.hidden = fn !== ELIAS_FN;
+  const border = $('note-border');
+  const id = currentBorder();
+  if (border) {
+    border.hidden = !id;
+    if (id) {
+      const m = BORDERS[id].meta;
+      border.textContent = (getLanguage() === 'es' ? m.blurbEs : m.blurb) + ' ' + t('fn.bordernote');
+    }
+  }
+  updatePeakCard();
 }
 
 /**
@@ -2163,6 +2307,24 @@ function wireUI() {
       // The surface itself is a smooth Fourier fit; the crags are costume.
       // The preset insists on the costume, so the smoothing stays invisible.
       $('t-decor').checked = true; state.decor = true;
+    } else if (/^([a-z]+)\(x, y\)$/.test(e.target.value)
+      && BORDERS[e.target.value.replace(/\(.*/, '')]) {
+      // A border mountain: the survey window is the domain, and the feasible
+      // set is the *other* country — the one that does not own the summit.
+      // That is what forces the answer onto the frontier, and it is why these
+      // examples are worth having: the constraint was negotiated, not invented
+      // for a problem set.
+      const id = e.target.value.replace(/\(.*/, '');
+      const s = BORDERS[id];
+      const h = s.half.toFixed(3);
+      $('in-xmin').value = -h; $('in-xmax').value = h;
+      $('in-ymin').value = -h; $('in-ymax').value = h;
+      $('in-feas').value = feasibleFor(id);
+      state.feasSrc = $('in-feas').value;
+      $('t-feas').checked = true; state.feasible = true;
+      $('t-isolate').checked = false; state.isolate = false;
+      $('t-follow').checked = false; state.follow = false;   // the survey has edges
+      $('t-decor').checked = true; state.decor = true;
     } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the
@@ -2260,6 +2422,8 @@ function wireUI() {
   });
   bindCheck('t-isolate', 'isolate', () => { applyIsolation(); });
   bindCheck('t-contours', 'contours', refreshContours);
+  bindCheck('t-curvesin', 'curvesInside', refreshContours);
+  bindCheck('t-rail', 'rail', applyRail);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
   bindCheck('t-worldmap', 'worldMap', () => withLoading(applyPalette));
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));

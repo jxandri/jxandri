@@ -8,3 +8,7 @@ dist/package/
 /hold-a.png
 /hold-b.png
 /hold-c.png
+
+# Elevation tiles fetched by tools/build-borders.mjs — build scratch, refetchable
+.tilecache/
+.photocache/

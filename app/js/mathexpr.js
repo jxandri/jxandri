@@ -25,6 +25,7 @@
  */
 
 import { eliasHeight } from './elias.js';
+import { BORDER_FUNCS } from './borders.js';
 
 const CONSTANTS = {
   pi: Math.PI, PI: Math.PI, Pi: Math.PI,
@@ -59,6 +60,11 @@ const FUNCS = {
   // Mount Saint Elias, the real one: km east and north of the summit in, km of
   // elevation out, NaN beyond the 40 km data window.
   elias: [2, 2, eliasHeight],
+  // One entry per border mountain: natazhat(x, y), borderpeak(x, y), ...
+  // Same contract as any other function in this table — two numbers in, a
+  // number out — which is the whole reason a real mountain can be a
+  // "bivariate function" here at all.
+  ...BORDER_FUNCS,
   // Handy shapes for building test surfaces.
   gauss: [1, 3, (v, mu, s) => {
     const m = mu === undefined ? 0 : mu, sd = s === undefined ? 1 : s;

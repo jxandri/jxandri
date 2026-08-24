@@ -145,9 +145,25 @@ const BANDS = [
 // and everything above roughly a fifth of the relief is ice and snow — with
 // the snow-rock band scattering dark boulders across it, which is what the
 // nunataks of a real icefield look like from the air.
+// The desert profile is for the border mountains of the Sahara and the
+// Arabian sandstone — Bikku Bitti, Jabal Umm ad Dami. Nothing grows: the
+// vegetated bands are squeezed into the very bottom of the range, arid rock
+// takes almost the whole mountain, and the snow band is pushed above the
+// summit so it never appears at all. It is the same eight bands; only where
+// they sit changes, because that is what a climate is.
 const PROFILES = {
   temperate: [0.00, 0.10, 0.22, 0.40, 0.56, 0.70, 0.84, 1.00],
   alpine: [0.00, 0.008, 0.025, 0.055, 0.085, 0.115, 0.155, 0.90],
+  desert: [0.00, 0.02, 0.05, 0.09, 0.20, 0.55, 1.30, 1.60],
+  // A two-thousand-metre border peak in the Cascades or the northern Rockies:
+  // timber up the lower flanks, scree and rock above it, snow on the top third.
+  // The cloud band is pushed past the top of the range on purpose — cloud is a
+  // fact about absolute altitude, and a summit that would be under the cloud
+  // base in life should not be wearing one here.
+  peak: [0.00, 0.05, 0.13, 0.33, 0.52, 0.68, 0.80, 1.40],
+  // Coastal chaparral: Otay and Tecate are a thousand metres of dry scrub in a
+  // Mediterranean climate. Nothing above them is ever white.
+  chaparral: [0.00, 0.04, 0.12, 0.32, 0.58, 0.82, 1.25, 1.60],
 };
 let BAND_AT = PROFILES.temperate;
 
@@ -155,6 +171,18 @@ let BAND_AT = PROFILES.temperate;
 export function setBiomeProfile(name) {
   BAND_AT = PROFILES[name] || PROFILES.temperate;
 }
+
+/**
+ * Whether this climate has cloud in it at all.
+ *
+ * Cloud is a fact about absolute altitude, not about a fraction of the local
+ * relief: a 2 400 m border peak in the Cascades stands below the cloud base
+ * on a fine day, and putting a puff on its summit because the summit is the
+ * top of *this window* is simply wrong. A profile that parks its cloud band
+ * above the top of the normalised range is saying "no cloud here", and the
+ * decoration honours that rather than interpolating a little of it anyway.
+ */
+export function cloudsPossible() { return BAND_AT[7] <= 1.02; }
 
 export const BAND_COUNT = BANDS.length;
 

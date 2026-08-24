@@ -632,6 +632,32 @@ export class Player {
     this._animate(dt);
   }
 
+  /**
+   * Step onto the rope: project the explorer onto the constraint curve where
+   * they stand, so switching the toggle on does not leave them beside it.
+   */
+  snapToRail() {
+    const g = this.onRail;
+    if (!g) return;
+    const f = this.field;
+    let px = this.x, py = this.y;
+    for (let k = 0; k < 24; k++) {
+      const v = g(px, py);
+      if (!isFinite(v) || Math.abs(v) < 1e-10) break;
+      const h = Math.max(1e-6, (f.xmax - f.xmin) * 1e-5);
+      const gx = (g(px + h, py) - g(px - h, py)) / (2 * h);
+      const gy = (g(px, py + h) - g(px, py - h)) / (2 * h);
+      const m2 = gx * gx + gy * gy;
+      if (!(m2 > 1e-18)) break;
+      px -= gx * (v / m2);
+      py -= gy * (v / m2);
+    }
+    if (isFinite(px) && isFinite(py)) {
+      this.x = Math.max(f.xmin, Math.min(f.xmax, px));
+      this.y = Math.max(f.ymin, Math.min(f.ymax, py));
+    }
+  }
+
   _updateWalk(dt, input) {
     const f = this.field;
     const base = 4.2 * this.zoom * this.speedScale;
@@ -653,8 +679,42 @@ export class Player {
     const nx = this.x + (vx * distWorld) / (f.S * f.sx);
     const ny = this.y - (vz * distWorld) / (f.S * f.sy);
 
-    const cx = Math.max(f.xmin, Math.min(f.xmax, nx));
-    const cy = Math.max(f.ymin, Math.min(f.ymax, ny));
+    let cx = Math.max(f.xmin, Math.min(f.xmax, nx));
+    let cy = Math.max(f.ymin, Math.min(f.ymax, ny));
+
+    // Roped to the frontier.
+    //
+    // With `onRail` set, the explorer may only stand on the constraint curve
+    // itself. The step is taken as asked and then projected back onto the
+    // curve, so pushing in any direction slides you *along* it and pushing
+    // straight at it does nothing. Walking the line from end to end and
+    // watching the height readout is then the constrained problem solved by
+    // hand — the maximum you can reach is the one the optimiser prints, and
+    // you got there on foot rather than being teleported.
+    //
+    // Projection is by a few Newton steps along the constraint's own gradient,
+    // which handles a curved frontier as readily as a straight one: g is
+    // whatever the feasible-set formula says, so this works for a budget line,
+    // a circle, or anything else a student types.
+    if (this.onRail) {
+      const g = this.onRail;
+      let px = cx, py = cy;
+      for (let k = 0; k < 12; k++) {
+        const v = g(px, py);
+        if (!isFinite(v) || Math.abs(v) < 1e-9) break;
+        const h = Math.max(1e-6, (f.xmax - f.xmin) * 1e-5);
+        const gx = (g(px + h, py) - g(px - h, py)) / (2 * h);
+        const gy = (g(px, py + h) - g(px, py - h)) / (2 * h);
+        const m2 = gx * gx + gy * gy;
+        if (!(m2 > 1e-18)) break;
+        px -= gx * (v / m2);
+        py -= gy * (v / m2);
+      }
+      if (isFinite(px) && isFinite(py)) {
+        cx = Math.max(f.xmin, Math.min(f.xmax, px));
+        cy = Math.max(f.ymin, Math.min(f.ymax, py));
+      }
+    }
 
     // Refuse to walk into a region where f is undefined; slide along instead.
     if (isFinite(f.height(cx, cy))) {

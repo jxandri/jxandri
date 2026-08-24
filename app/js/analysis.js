@@ -121,7 +121,46 @@ export function buildContours(field, grid, levels, options) {
   const half = (o.width ?? 1.4) / 2;                       // world metres
   const lift = o.lift ?? Math.max(field.worldSize * 4e-4, half * 0.12);
 
-  const { n, w } = grid;
+  // Marching squares can be run on a finer lattice than the render mesh, and
+  // on real terrain it should be. The mesh is sized for triangles the eye can
+  // accept; a contour is a *curve*, and the eye is far less forgiving about a
+  // curve — the same cell that looks smooth as shaded ground reads as a
+  // staircase when a thin band traces its diagonal. `refine` re-samples f
+  // between mesh nodes, which costs a few thousand extra evaluations once and
+  // buys level curves that look like the differentiable curves they are.
+  const refine = Math.max(1, Math.round(o.refine || 1));
+  const n = grid.n * refine;
+  const x0g = grid.x(0), y0g = grid.y(0);
+  const dx = (grid.x(grid.n) - x0g) / n, dy = (grid.y(grid.n) - y0g) / n;
+  const gx = (i) => x0g + i * dx;
+  const gy = (j) => y0g + j * dy;
+
+  // One row of samples at a time, so a refined lattice never holds more than
+  // two rows of f in memory however fine it is.
+  const rowZ = (j) => {
+    const out = new Float64Array(n + 1);
+    const y = gy(j);
+    for (let i = 0; i <= n; i++) {
+      const z = refine === 1 ? grid.z[j * grid.w + i] : field.height(gx(i), y);
+      out[i] = z;
+    }
+    return out;
+  };
+  const rowOk = (j, z) => {
+    const out = new Uint8Array(n + 1);
+    const y = gy(j);
+    for (let i = 0; i <= n; i++) {
+      out[i] = (isFinite(z[i]) && (refine === 1 ? grid.valid[j * grid.w + i] : field.inDomain(gx(i), y))) ? 1 : 0;
+    }
+    return out;
+  };
+
+  // Only inside the feasible set, when asked. Level curves of a utility
+  // function drawn over a budget set are indifference curves, and the picture
+  // an economics course draws stops at the budget line — everything outside it
+  // is not part of the problem.
+  const keep = o.only || null;
+
   const pos = [];
   const col = [];
   const idx = [];
@@ -134,13 +173,14 @@ export function buildContours(field, grid, levels, options) {
   for (const level of levels) {
     heightColor(grid.norm(level), rgb);
 
+    let zA = rowZ(0), okA = rowOk(0, zA);
     for (let j = 0; j < n; j++) {
+      const zB = rowZ(j + 1), okB = rowOk(j + 1, zB);
       for (let i = 0; i < n; i++) {
-        const ka = j * w + i, kb = j * w + i + 1, kc = (j + 1) * w + i + 1, kd = (j + 1) * w + i;
-        if (!(grid.valid[ka] && grid.valid[kb] && grid.valid[kc] && grid.valid[kd])) continue;
+        if (!(okA[i] && okA[i + 1] && okB[i + 1] && okB[i])) continue;
 
-        const z0 = grid.z[ka], z1 = grid.z[kb], z2 = grid.z[kc], z3 = grid.z[kd];
-        const x0 = grid.x(i), x1 = grid.x(i + 1), y0 = grid.y(j), y1 = grid.y(j + 1);
+        const z0 = zA[i], z1 = zA[i + 1], z2 = zB[i + 1], z3 = zB[i];
+        const x0 = gx(i), x1 = gx(i + 1), y0 = gy(j), y1 = gy(j + 1);
 
         const b0 = z0 >= level, b1 = z1 >= level, b2 = z2 >= level, b3 = z3 >= level;
         if (b0 === b1 && b1 === b2 && b2 === b3) continue;
@@ -155,21 +195,41 @@ export function buildContours(field, grid, levels, options) {
         if (b2 !== b3) pts.push({ e: 2, p: lerp(z2, z3, x1, y1, x0, y1) });
         if (b3 !== b0) pts.push({ e: 3, p: lerp(z3, z0, x0, y1, x0, y0) });
 
+        const draw = (A, B) => {
+          // Clipped at the frontier rather than faded at it: a segment with one
+          // end outside is cut where it crosses, so the curve stops exactly on
+          // the constraint the way a drawn indifference curve does.
+          let ax = A[0], ay = A[1], bx = B[0], by = B[1];
+          if (keep) {
+            const ia = keep(ax, ay), ib = keep(bx, by);
+            if (!ia && !ib) return;
+            if (ia !== ib) {
+              // bisect to the crossing; a dozen halvings is far below a pixel
+              let lo = 0, hi = 1;
+              for (let k = 0; k < 14; k++) {
+                const m = (lo + hi) / 2;
+                if (keep(ax + (bx - ax) * m, ay + (by - ay) * m) === ia) lo = m; else hi = m;
+              }
+              const t = (lo + hi) / 2;
+              const cx = ax + (bx - ax) * t, cy = ay + (by - ay) * t;
+              if (ia) { bx = cx; by = cy; } else { ax = cx; ay = cy; }
+            }
+          }
+          pushPathQuad(field, sampleZ, pos, col, idx, ax, ay, bx, by, level, half, lift, rgb);
+        };
+
         if (pts.length === 2) {
-          pushPathQuad(field, sampleZ, pos, col, idx, pts[0].p[0], pts[0].p[1],
-            pts[1].p[0], pts[1].p[1], level, half, lift, rgb);
+          draw(pts[0].p, pts[1].p);
         } else if (pts.length === 4) {
           const centre = (z0 + z1 + z2 + z3) / 4;
           const pair = (centre >= level) === b0 ? [[3, 0], [1, 2]] : [[0, 1], [2, 3]];
           for (const [ea, eb] of pair) {
             const A = pts.find((q) => q.e === ea), B = pts.find((q) => q.e === eb);
-            if (A && B) {
-              pushPathQuad(field, sampleZ, pos, col, idx, A.p[0], A.p[1], B.p[0], B.p[1],
-                level, half, lift, rgb);
-            }
+            if (A && B) draw(A.p, B.p);
           }
         }
       }
+      zA = zB; okA = okB;
     }
   }
 

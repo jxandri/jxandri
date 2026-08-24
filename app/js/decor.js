@@ -11,7 +11,7 @@
  */
 
 import * as THREE from '../vendor/three.module.js';
-import { bandWeight } from './terrain.js';
+import { bandWeight, cloudsPossible } from './terrain.js';
 
 /* --------------------------------------------------------------- helpers */
 
@@ -337,7 +337,9 @@ export class Decorations {
       // snow band starts a sixth of the way up and the ramp toward the cloud
       // band therefore spans most of the mountain — it keeps the puffs as a
       // crown around the summit instead of a carpet over the whole massif.
-      if (hN > 0.8 && wCloud > 0.02 && r < wCloud * 0.5) {
+      // ...and a climate whose cloud band sits above the top of the range has
+      // no cloud in it at all, however the ramp happens to interpolate.
+      if (cloudsPossible() && hN > 0.8 && wCloud > 0.02 && r < wCloud * 0.5) {
         const lift = unit * (14 + rnd() * 22);
         posv.set(field.worldX(x), field.worldY(z) + lift, field.worldZ(y));
         q.identity();
