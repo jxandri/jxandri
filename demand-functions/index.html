@@ -8,6 +8,10 @@
 /* Dark is the design here, not a variant of it. Light is kept as an explicit
    opt-out for projectors and printed handouts, chosen from the header. */
 :root{
+  /* Native chrome — range thumbs, checkboxes, scrollbars — takes its cue from
+     here, not from the custom properties, and a host page may have declared
+     the opposite before this sheet is reached. */
+  color-scheme:dark;
   --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
   --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
   --rule:#2A353B; --rule-2:#212B30;
@@ -19,6 +23,7 @@
   --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
 }
 :root[data-theme="light"]{
+  color-scheme:light;
   --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
   --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
   --rule:#CBD4D8; --rule-2:#E1E7EA;
