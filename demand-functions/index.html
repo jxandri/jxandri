@@ -82,6 +82,17 @@ button,input,select{font:inherit; color:inherit}
 .slider-row .v:focus{outline:none; border-bottom-color:var(--accent); background:var(--sunk)}
 .slider-row[hidden]{display:none}
 .slider-row.is-swept .k{color:var(--accent-ink); font-weight:700}
+/* A range is two numbers, and a pair of sliders says that badly: the reader
+   has to compare two thumb positions to recover an interval. Type it. */
+.range-row{display:grid; grid-template-columns:auto 1fr auto 1fr; align-items:center; gap:8px}
+.range-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.6em}
+.range-row .dash{color:var(--ink-3); font-size:12.5px; text-align:center}
+.range-row .rb{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  width:100%; min-width:0; text-align:right; color:var(--ink);
+  background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:3px 6px}
+.range-row .rb:focus{outline:none; border-color:var(--accent); background:var(--panel)}
+.range-row .rb:invalid{border-color:var(--crit)}
+.range-row.is-swept .k{color:var(--accent-ink); font-weight:700}
 input[type=range]{appearance:none; -webkit-appearance:none; width:100%; height:20px;
   background:transparent; cursor:pointer; margin:0}
 input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
@@ -235,13 +246,20 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       </div>
 
       <div class="group">
-        <h2 data-t="gScales">Escalas</h2>
-        <p class="hint" data-t="scalesHint">Hasta dónde llegan los deslizadores y el eje horizontal del panel de demanda.</p>
-        <div class="slider-row"><span class="k">pₓ ≥</span><input type="range" id="minPx" min="0.05" max="5" step="0.05" value="1"><input class="v" id="minPx-v"></div>
-        <div class="slider-row"><span class="k">pₓ ≤</span><input type="range" id="maxPx" min="1" max="40" step="0.5" value="6"><input class="v" id="maxPx-v"></div>
-        <div class="slider-row"><span class="k">pᵧ ≥</span><input type="range" id="minPy" min="0.05" max="5" step="0.05" value="1"><input class="v" id="minPy-v"></div>
-        <div class="slider-row"><span class="k">pᵧ ≤</span><input type="range" id="maxPy" min="1" max="40" step="0.5" value="4"><input class="v" id="maxPy-v"></div>
-        <div class="slider-row"><span class="k">m ≤</span><input type="range" id="maxI" min="2" max="200" step="1" value="8"><input class="v" id="maxI-v"></div>
+        <h2 data-t="gScales">Intervalos</h2>
+        <p class="hint" data-t="scalesHint">El intervalo que se considera para cada variable. Es el recorrido del deslizador y también el tramo que dibuja el eje horizontal.</p>
+        <div class="range-row" data-var="px"><span class="k">pₓ</span>
+          <input type="number" class="rb" id="minPx" min="0.01" max="1000" step="any" value="1">
+          <span class="dash">–</span>
+          <input type="number" class="rb" id="maxPx" min="0.02" max="1000" step="any" value="6"></div>
+        <div class="range-row" data-var="py"><span class="k">pᵧ</span>
+          <input type="number" class="rb" id="minPy" min="0.01" max="1000" step="any" value="1">
+          <span class="dash">–</span>
+          <input type="number" class="rb" id="maxPy" min="0.02" max="1000" step="any" value="4"></div>
+        <div class="range-row" data-var="I"><span class="k">m</span>
+          <input type="number" class="rb" id="minI" min="0" max="1000" step="any" value="0">
+          <span class="dash">–</span>
+          <input type="number" class="rb" id="maxI" min="0.02" max="1000" step="any" value="8"></div>
         <label class="check auto"><input type="checkbox" id="fixed-axis" checked><span data-t="fixedAxis">Eje vertical fijo</span></label>
         <p class="hint" id="axis-bound"></p>
       </div>
@@ -471,7 +489,7 @@ const st={
      ceiling several times the demand anyone will actually see, and the curve
      ends up pressed flat along the axis, so the defaults keep the floor at 1
      and the income ceiling near the income in play. */
-  minPx:1, minPy:1, maxPx:6, maxPy:4, maxI:8,
+  minPx:1, minPy:1, maxPx:6, maxPy:4, minI:0, maxI:8,
   fixedAxis:true,
   overlay:true,
   customU:null, customSrc:"x^0.5*y^0.5",
@@ -490,7 +508,7 @@ const STR={
   title:"Algunas Funciones de Demanda",
   sub:"De la maximización de utilidad a la curva de demanda. Elige una familia de preferencias, mueve una variable y mira cómo responde la canasta óptima — incluyendo el caso en que la demanda sube cuando sube el precio.",
   dark:"Oscuro", light:"Claro",
-  gScales:"Escalas", scalesHint:"Hasta dónde llegan los deslizadores y el eje horizontal del panel de demanda.", onePanel:"Un panel", twoPanels:"Dos",
+  gScales:"Intervalos", scalesHint:"El intervalo que se considera para cada variable. Es el recorrido del deslizador y también el tramo que dibuja el eje horizontal.", onePanel:"Un panel", twoPanels:"Dos",
   fixedAxis:"Eje vertical fijo", boundIs:"Tope: m<sub>máx</sub>/p<sub>mín</sub> →", boundAuto:"El eje se ajusta a la curva; se mueve al cambiar parámetros.",
   gPref:"Preferencias", gParams:"Parámetros", gSweep:"Variable que varía",
   gPrices:"Precios y renta", gDiscover:"Descubrir la demanda", gLayers:"Capas",
@@ -523,7 +541,7 @@ const STR={
   title:"Some Demand Functions",
   sub:"From utility maximisation to the demand curve. Pick a preference family, move one variable and watch the optimal bundle respond — including the case where demand rises when the price rises.",
   dark:"Dark", light:"Light",
-  gScales:"Scales", scalesHint:"How far the sliders and the demand panel\u2019s horizontal axis reach.", onePanel:"One panel", twoPanels:"Two",
+  gScales:"Ranges", scalesHint:"The interval considered for each variable. It is the travel of the slider and also the stretch the horizontal axis draws.", onePanel:"One panel", twoPanels:"Two",
   fixedAxis:"Fixed vertical axis", boundIs:"Ceiling: m<sub>max</sub>/p<sub>min</sub> →", boundAuto:"The axis fits the curve, so it moves when a parameter changes.",
   gPref:"Preferences", gParams:"Parameters", gSweep:"Variable being swept",
   gPrices:"Prices and income", gDiscover:"Discover the demand curve", gLayers:"Layers",
@@ -577,10 +595,14 @@ function niceStep(range,target){const raw=range/target,p=Math.pow(10,Math.floor(
 const boundX = () => st.maxI / Math.max(st.minPx, 1e-6);
 const boundY = () => st.maxI / Math.max(st.minPy, 1e-6);
 
+/* The swept axis spans exactly the interval the boxes name. Starting it at
+   zero instead — as it used to — spends the left of the panel on the part of
+   a demand curve that is a near-vertical asymptote and tells the reader
+   nothing, and squeezes the interesting stretch into what is left. */
 function axisInfo(){
-  if(st.axis==="px") return {lab:"pₓ",cur:st.px,max:st.maxPx};
-  if(st.axis==="py") return {lab:"pᵧ",cur:st.py,max:st.maxPy};
-  return {lab:"m",cur:st.I,max:st.maxI};
+  if(st.axis==="px") return {lab:"pₓ",cur:st.px,min:st.minPx,max:st.maxPx};
+  if(st.axis==="py") return {lab:"pᵧ",cur:st.py,min:st.minPy,max:st.maxPy};
+  return {lab:"m",cur:st.I,min:st.minI,max:st.maxI};
 }
 function demandAt(t){
   if(st.axis==="px") return dem(t,st.py,st.I);
@@ -598,17 +620,22 @@ function setup(cv){
   const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
   return {ctx,w,h};
 }
-function frame(ctx,rect,xmax,ymax,xlab,ylab,noClear){
+function frame(ctx,rect,xmax,ymax,xlab,ylab,noClear,xmin){
+  xmin = xmin||0;
+  const span = (xmax-xmin)||1;
   const P={l:46,r:18,t:18,b:34};
   const bx={x0:rect.x0+P.l,y0:rect.y0+P.t,x1:rect.x1-P.r,y1:rect.y1-P.b};
-  const SX=x=>bx.x0+(x/xmax)*(bx.x1-bx.x0);
+  const SX=x=>bx.x0+((x-xmin)/span)*(bx.x1-bx.x0);
   const SY=y=>bx.y1-(y/ymax)*(bx.y1-bx.y0);
   if(!noClear){ ctx.clearRect(rect.x0,rect.y0,rect.x1-rect.x0,rect.y1-rect.y0);
     ctx.fillStyle=css("--surface"); ctx.fillRect(rect.x0,rect.y0,rect.x1-rect.x0,rect.y1-rect.y0); }
-  const gx=niceStep(xmax,7), gy=niceStep(ymax,5);
+  const gx=niceStep(span,7), gy=niceStep(ymax,5);
+  /* the first gridline at or after the left edge, so ticks stay on round
+     numbers whether the axis starts at 0 or at 0.85 */
+  const x0g=Math.ceil((xmin-1e-9)/gx)*gx;
   if(st.layers.grid){
     ctx.strokeStyle=css("--rule-2"); ctx.lineWidth=1; ctx.beginPath();
-    for(let x=gx;x<xmax;x+=gx){ctx.moveTo(SX(x),bx.y0);ctx.lineTo(SX(x),bx.y1);}
+    for(let x=x0g;x<xmax-1e-9;x+=gx){ if(x>xmin+1e-9){ctx.moveTo(SX(x),bx.y0);ctx.lineTo(SX(x),bx.y1);} }
     for(let y=gy;y<ymax;y+=gy){ctx.moveTo(bx.x0,SY(y));ctx.lineTo(bx.x1,SY(y));}
     ctx.stroke();
   }
@@ -616,7 +643,11 @@ function frame(ctx,rect,xmax,ymax,xlab,ylab,noClear){
   ctx.moveTo(bx.x0,bx.y0); ctx.lineTo(bx.x0,bx.y1); ctx.lineTo(bx.x1,bx.y1); ctx.stroke();
   ctx.fillStyle=css("--ink-3"); ctx.font=`11px ${css("--f-mono")}`;
   ctx.textAlign="center"; ctx.textBaseline="top";
-  for(let x=0;x<=xmax+1e-9;x+=gx) ctx.fillText(fmt(x,gx<1?1:0),SX(x),bx.y1+6);
+  const xdec = gx<1?(gx<0.1?2:1):0;
+  /* a left edge off a round number gets its own label, else the axis claims to
+     start somewhere it does not */
+  if(x0g>xmin+gx*0.35) ctx.fillText(fmt(xmin,xdec),SX(xmin),bx.y1+6);
+  for(let x=x0g;x<=xmax+1e-9;x+=gx) ctx.fillText(fmt(x,xdec),SX(x),bx.y1+6);
   ctx.textAlign="right"; ctx.textBaseline="middle";
   for(let y=0;y<=ymax+1e-9;y+=gy) ctx.fillText(fmt(y,gy<1?1:0),bx.x0-6,SY(y));
   ctx.fillStyle=css("--ink-2"); ctx.font=`italic 13px ${css("--f-display")}`;
@@ -688,8 +719,9 @@ function drawDemand(){
   /* a typed utility costs a full numeric optimisation per sample, so it gets a
      coarser grid than the closed-form families */
   const N=F().numeric?150:420;
+  const AT=i=>A.min+(A.max-A.min)*i/N;      // sample i of the swept interval
   const sx=[],sy=[];
-  for(let i=0;i<=N;i++){ const t=A.max*i/N||1e-6; const d=demandAt(t); sx.push(d[0]); sy.push(d[1]); }
+  for(let i=0;i<=N;i++){ const t=AT(i)||1e-6; const d=demandAt(t); sx.push(d[0]); sy.push(d[1]); }
 
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle=css("--surface"); ctx.fillRect(0,0,w,h);
@@ -733,20 +765,20 @@ function drawDemand(){
     if(!(ymax>0)) ymax=1;
     const ylab = rows.length>1 ? "" : rows[0].lab;
     const rect={x0:0,y0:gi*hh,x1:w,y1:(gi+1)*hh};
-    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,gi===groups.length-1?A.lab:"",ylab,true);
+    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,gi===groups.length-1?A.lab:"",ylab,true,A.min);
     ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
     for(const row of rows){
       if(st.layers.curve)
-        stroke(ctx,row.s.map((v,i)=>fin(v)&&v>=0?[SX(A.max*i/N),SY(v)]:null),row.col,2.4,true);
+        stroke(ctx,row.s.map((v,i)=>fin(v)&&v>=0?[SX(AT(i)),SY(v)]:null),row.col,2.4,true);
 
       if(row.giffen&&st.layers.giffen&&st.layers.curve&&st.axis!=="I"){
         const seg=[];
         for(let i=1;i<=N;i++){
           const a=row.s[i-1], b=row.s[i];
           if(fin(a)&&fin(b)&&(b-a)>1e-9){
-            if(!seg.length) seg.push([SX(A.max*(i-1)/N),SY(a)]);
-            seg.push([SX(A.max*i/N),SY(b)]);
+            if(!seg.length) seg.push([SX(AT(i-1)),SY(a)]);
+            seg.push([SX(AT(i)),SY(b)]);
           } else if(seg.length){ stroke(ctx,seg,MARK.giffen,4.5,true); seg.length=0; }
         }
         if(seg.length) stroke(ctx,seg,MARK.giffen,4.5,true);
@@ -817,7 +849,7 @@ function render(){ drawBundle(); drawDemand(); paint(); }
 function record(){
   const A=axisInfo(), d=demandAt(A.cur);
   if(!fin(d[0])&&!fin(d[1])) return;
-  const arr=curPts(), eps=A.max*2e-3;
+  const arr=curPts(), eps=(A.max-A.min)*2e-3;
   const hit=arr.findIndex(q=>Math.abs(q.t-A.cur)<eps);
   const rec={t:A.cur,x:d[0],y:d[1]};
   if(hit>=0) arr[hit]=rec; else arr.push(rec);
@@ -827,7 +859,9 @@ function record(){
 function clearPts(){ st.pts[st.axis]=[]; render(); }
 function autoRecord(){
   if(!st.autoMark) return;
-  const A=axisInfo(), arr=curPts(), gap=A.max/80;
+  /* spacing is in screen terms, so it follows the width of the interval on
+     display, not the size of the number at its right-hand end */
+  const A=axisInfo(), arr=curPts(), gap=(A.max-A.min)/80;
   if(arr.some(q=>Math.abs(q.t-A.cur)<gap)) return;
   const d=demandAt(A.cur);
   if(!fin(d[0])&&!fin(d[1])) return;
@@ -846,7 +880,7 @@ function sweep(){
   $("btn-sweep").textContent=T().stop;
   const step=()=>{
     if(i>n){ sweeping=null; $("btn-sweep").textContent=T().sweep; return; }
-    const t=clamp(A.max*i/(n+1),parseFloat(slider.min),parseFloat(slider.max));
+    const t=clamp(A.min+(A.max-A.min)*i/(n+1),parseFloat(slider.min),parseFloat(slider.max));
     st[key]=t; slider.value=t; $(sliderId+"-v").value=+t.toFixed(2);
     record(); i++;
     sweeping=requestAnimationFrame(()=>setTimeout(step,110));
@@ -891,31 +925,38 @@ function syncAxisUI(){
   const t=T();
   document.querySelectorAll("#axis-seg [data-axis]").forEach(b=>
     b.setAttribute("aria-pressed",String(b.dataset.axis===st.axis)));
-  document.querySelectorAll(".slider-row[data-var]").forEach(r=>
+  document.querySelectorAll("[data-var]").forEach(r=>
     r.classList.toggle("is-swept", r.dataset.var===st.axis));
   $("vp2-title").innerHTML = st.axis==="I" ? t.vpEngel
     : `${t.vpDem} ${st.axis==="px"?"pₓ":"pᵧ"}`;
 }
 /* Scale controls: they change the view and the slider range, not the economics,
-   so they must not discard collected points the way a price change does. */
-function bindScale(id,key,target,edge){
-  const s=$(id), b=$(id+"-v");
-  const varKey = target==="inc" ? "I" : target;
+   so they must not discard collected points the way a price change does.
+   `lo` and `hi` are the two boxes of one range; each keeps the slider it
+   governs inside the interval, and drags the live value along if the interval
+   has moved out from under it. */
+const GAP=0.02;   // a range narrower than this has no interior to plot
+function bindRange(loKey,hiKey,target){
+  const lo=$(loKey), hi=$(hiKey), varKey = target==="inc" ? "I" : target;
   const apply=()=>{
-    const t=$(target);
-    if(edge==="min"){ t.min=st[key]; if(st[varKey]<st[key]){ st[varKey]=st[key]; t.value=st[key]; $(target+"-v").value=st[key]; } }
-    else            { t.max=st[key]; if(st[varKey]>st[key]){ st[varKey]=st[key]; t.value=st[key]; $(target+"-v").value=st[key]; } }
+    const t=$(target), box=$(target+"-v");
+    t.min=st[loKey]; t.max=st[hiKey];
+    const v=clamp(st[varKey],st[loKey],st[hiKey]);
+    if(v!==st[varKey]){ st[varKey]=v; t.value=v; box.value=fmt(v,2); }
   };
-  const set=v=>{ v=parseFloat(v); if(!fin(v))return;
-    v=clamp(v,parseFloat(s.min),parseFloat(s.max));
-    /* a minimum above its maximum would invert the slider, so keep a gap */
-    if(edge==="min") v=Math.min(v, st[key==="minPx"?"maxPx":"maxPy"]-0.05);
-    else if(key!=="maxI") v=Math.max(v, st[key==="maxPx"?"minPx":"minPy"]+0.05);
-    st[key]=v; s.value=v; b.value=v;
-    apply(); render(); };
-  s.addEventListener("input",()=>set(s.value));
-  b.addEventListener("change",()=>set(b.value));
-  b.value=st[key]; s.value=st[key]; apply();
+  const set=(el,key,other,isLo)=>{
+    let v=parseFloat(el.value);
+    /* an empty or half-typed box should not blank the plot — leave the state
+       alone and let the box hold whatever is being typed until it parses */
+    if(!fin(v)){ return; }
+    v=clamp(v,parseFloat(el.min),parseFloat(el.max));
+    v = isLo ? Math.min(v, st[other]-GAP) : Math.max(v, st[other]+GAP);
+    st[key]=v; el.value=+v.toFixed(4);
+    apply(); render();
+  };
+  lo.addEventListener("change",()=>set(lo,loKey,hiKey,true));
+  hi.addEventListener("change",()=>set(hi,hiKey,loKey,false));
+  lo.value=st[loKey]; hi.value=st[hiKey]; apply();
 }
 
 function bind(id,key){
@@ -987,9 +1028,9 @@ addEventListener("keydown",e=>{
 
 ["alpha","r","a","beta","xlow","yup"].forEach(k=>bind(k,k));
 bind("px","px"); bind("py","py"); bind("inc","I");
-bindScale("minPx","minPx","px","min"); bindScale("maxPx","maxPx","px","max");
-bindScale("minPy","minPy","py","min"); bindScale("maxPy","maxPy","py","max");
-bindScale("maxI","maxI","inc","max");
+bindRange("minPx","maxPx","px");
+bindRange("minPy","maxPy","py");
+bindRange("minI","maxI","inc");
 $("fixed-axis").addEventListener("change",e=>{ st.fixedAxis=e.target.checked; render(); });
 
 document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventListener("click",()=>{
