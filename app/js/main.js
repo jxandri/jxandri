@@ -7,8 +7,9 @@ import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
   buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
-  GROUP_OUTSIDE, heightColor,
+  GROUP_OUTSIDE, heightColor, setBiomeProfile,
 } from './terrain.js';
+import { ELIAS_INFO } from './elias.js';
 import { Decorations } from './decor.js';
 import {
   buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
@@ -20,7 +21,10 @@ import {
 } from './player.js';
 import { ParametricWalker, ImplicitWalker, standBasis, graphWalker } from './walker.js';
 import { IntrinsicGizmo, GeodesicDisc } from './intrinsic.js';
-import { buildImplicit, buildParametric, paintMesh } from './surfaces.js';
+import {
+  buildImplicit, buildParametric, paintMesh, paintMobius,
+  MOBIUS_WHITE, MOBIUS_BLUE,
+} from './surfaces.js';
 import { mapUV, setMapMaterial } from './worldmap.js';
 import {
   buildGraphGrid, buildParametricGrid, buildImplicitGrid, buildGeodesicGrid,
@@ -206,6 +210,9 @@ let intrinsic = null;    // the geodesic circle, the arrows and the tangent plan
 let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
+let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
+let stillMemo = null;    // last frame's at-the-feet geometry, kept while the
+                         // explorer and the dials hold still
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
 let decorations = new Decorations();
 let player = null;
@@ -378,7 +385,9 @@ function applyShape() {
   $('in-pb').parentElement.hidden = !spec.labels[1];
 
   const note = spec.sides === 1 ? t('shape.nonorientable') : t('shape.orientable');
-  $('note-orientable').textContent = spec.immersed ? `${note} ${t('shape.immersion')}` : note;
+  let noteText = spec.immersed ? `${note} ${t('shape.immersion')}` : note;
+  if (state.shape === 'mobius') noteText += ` ${t('shape.mobiusflag')}`;
+  $('note-orientable').textContent = noteText;
   $('t-inside').disabled = spec.sides === 1;
 }
 
@@ -469,6 +478,7 @@ function rebuildAlternate() {
   refreshSurfaceGrid();
   frameAlternate();
   applyPalette();
+  refreshMobiusFlag();
   refreshAltDecor();
   return true;
 }
@@ -495,7 +505,7 @@ function refreshSurfaceGrid() {
     // the surface. The same number in all three regimes is what makes the grid
     // a ruler rather than three different rulers that happen to look alike.
     if (state.surfaceKind === 'graph') {
-      if (field) surfGrid = buildGraphGrid(field, { unit: GRID_HEIGHTS * 1.8 * state.zoom });
+      if (field) surfGrid = buildGraphGrid(field, { unit: GRID_HEIGHTS * 1.8 * state.zoom, grid });
     } else {
       const unit = GRID_HEIGHTS * 1.8 * state.zoom * (altView.charScale || 1);
       if (state.geoGrid && walker) {
@@ -872,14 +882,92 @@ function frameAlternate() {
   altView.camPitch = 0.32;
 }
 
+/**
+ * The golf flag at the Möbius strip's start: one pole, two pennants.
+ *
+ * It stands where the explorer's journey begins — mid-lap, mid-width — and runs
+ * straight through the surface: a blue pennant on the side they start on, and
+ * the same pole carrying a white pennant out the other face. The lap gradient
+ * (paintMobius) is white here on both faces, so the flag is the only thing that
+ * can tell the two visits apart: walk one full lap and you return to the very
+ * same point, on white ground, facing the *white* pennant. There is no "other
+ * side" to a Möbius strip — only the other side of the flag.
+ *
+ * Rebuilt with the surface, so it tracks the shape's parameters; anchored at
+ * the *default* start, not wherever the explorer happens to be now.
+ */
+function refreshMobiusFlag() {
+  if (mobiusFlag) { world.remove(mobiusFlag); disposeTree(mobiusFlag); mobiusFlag = null; }
+  if (state.surfaceKind !== 'parametric' || state.shape !== 'mobius'
+    || !walker || !altSurface) return;
+
+  // Read position, normal and tangent at the default start without disturbing
+  // the walker: it may already have been sent somewhere else.
+  const saved = walker.snapshot();
+  const p = new THREE.Vector3(), n = new THREE.Vector3(), e = new THREE.Vector3();
+  try {
+    walker.u = (state.umin + state.umax) / 2;
+    walker.v = (state.vmin + state.vmax) / 2;
+    walker.position(p);
+    walker.normal(n);
+    walker.tangentSeed(e).normalize();
+  } finally {
+    walker.restore(saved);
+  }
+  if (!isFinite(p.x) || !isFinite(n.x) || n.lengthSq() < 1e-12) return;
+
+  const body = 1.8 * (altView.charScale || 1);
+  const H = body * 2.6;               // the pole's reach, each side of the strip
+  const g = new THREE.Group();
+  g.name = 'mobius-flag';
+  g.position.copy(p);
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+    e, n, new THREE.Vector3().crossVectors(e, n)));
+
+  const poleGeom = new THREE.CylinderGeometry(body * 0.045, body * 0.045, H * 2, 10);
+  const poleMat = new THREE.MeshLambertMaterial({ color: 0xd9dee6 });
+  g.add(new THREE.Mesh(poleGeom, poleMat));
+
+  // Two triangular pennants, one per end. The far one is the near one rotated
+  // half a turn about the pole's foot — the same flag, seen from the far face.
+  const pennant = (rgb, sgn) => {
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute([
+      0, sgn * H * 0.98, 0,
+      0, sgn * H * 0.60, 0,
+      sgn * body * 1.5, sgn * H * 0.79, 0,
+    ], 3));
+    geom.computeVertexNormals();
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(rgb[0], rgb[1], rgb[2]),
+      side: THREE.DoubleSide, toneMapped: false,
+    });
+    g.add(new THREE.Mesh(geom, mat));
+  };
+  pennant(MOBIUS_BLUE, 1);            // the side the journey starts on
+  pennant(MOBIUS_WHITE, -1);          // the face a full lap turns you onto
+
+  world.add(g);
+  mobiusFlag = g;
+}
+
 function rebuild() {
   if (state.surfaceKind !== 'graph') return rebuildAlternate();
 
   disposeTree(altSurface);
   altSurface = null;
   walker = null;
+  refreshMobiusFlag();      // no strip on screen, so no flag either
   if (altHiker) altHiker.visible = false;
   if (player) player.group.visible = true;
+
+  // The climate follows the surface. A formula that calls the Saint Elias
+  // model is a glaciated coastal massif and gets the alpine bands — snowline
+  // a fifth of the way up, vegetation only at the very foot; anything else
+  // gets the temperate bands the app has always used. Derived from the
+  // formula itself rather than kept as a switch, so it can never be left
+  // pointing at the wrong climate.
+  setBiomeProfile(/\belias\s*\(/.test(state.fnSrc) ? 'alpine' : 'temperate');
 
   // --- parse first, so a typo never destroys a working scene -------------
   let fn, pred;
@@ -1065,7 +1153,14 @@ function applyPalette() {
   // The lighting change below applies whichever kind of surface is on screen,
   // and a curved one has its own painter.
   if (state.surfaceKind !== 'graph') {
-    paintMesh(altSurface, paletteMode());
+    if (state.surfaceKind === 'parametric' && state.shape === 'mobius' && !state.heightColors) {
+      // The strip's own colouring is the lap gradient: white at the explorer's
+      // default start, deepest blue at the far side, white again on return.
+      // The height ramp stays available through its toggle, like everywhere.
+      paintMobius(altSurface, (state.umin + state.umax) / 2, state.umin, state.umax);
+    } else {
+      paintMesh(altSurface, paletteMode());
+    }
   } else if (surface) {
     recolorSurface(field, grid, surface.geometry, paletteMode());
   }
@@ -1850,10 +1945,33 @@ function applyVocabulary() {
  */
 const CROCHET_FN = 'y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2-hypot(x,y)^2))';
 
-/** Show the crochet-ball note exactly when its formula is the one loaded. */
+/** Mount Saint Elias: the baked elevation model, as a formula. */
+const ELIAS_FN = 'elias(x, y)';
+
+/**
+ * The Alaska side of the frontier, as one linear inequality.
+ *
+ * Locally the 1903 tribunal line really is straight — a segment through the
+ * boundary peaks, fitted here from Natural Earth's rendering of the treaty
+ * line — so "stay in the United States" is exactly a budget constraint:
+ * a half-plane whose boundary passes 470 m from the summit, with the summit
+ * on the Canadian side. (The full frontier also turns due north along the
+ * 141°W meridian at the window's northwest edge; one line keeps the algebra
+ * the lesson's, and inside this window the difference is a sliver of the
+ * far corner.)
+ */
+function eliasFeasible() {
+  const b = ELIAS_INFO.boundary;
+  return `y <= ${b.m.toFixed(4)}*x ${b.b < 0 ? '-' : '+'} ${Math.abs(b.b).toFixed(4)}`;
+}
+
+/** Show each formula's explanatory note exactly when it is the one loaded. */
 function updateCrochetNote() {
-  const el = $('note-crochet');
-  if (el) el.hidden = $('in-fn').value.trim() !== CROCHET_FN;
+  const fn = $('in-fn').value.trim();
+  const crochet = $('note-crochet');
+  if (crochet) crochet.hidden = fn !== CROCHET_FN;
+  const elias = $('note-elias');
+  if (elias) elias.hidden = fn !== ELIAS_FN;
 }
 
 /**
@@ -2029,7 +2147,23 @@ function wireUI() {
   $('preset-fn').addEventListener('change', (e) => {
     if (!e.target.value) return;
     $('in-fn').value = e.target.value;
-    if (e.target.value === CROCHET_FN) {
+    if (e.target.value === ELIAS_FN) {
+      // The real mountain: the domain is the survey's own window, the
+      // feasible set is Alaska, and the window must not follow the explorer —
+      // the data has edges, and panning past them would be panning off the
+      // survey. Isolation stays off so both countries stay solid; the wall
+      // marks the line.
+      $('in-xmin').value = ELIAS_INFO.xmin; $('in-xmax').value = ELIAS_INFO.xmax;
+      $('in-ymin').value = ELIAS_INFO.ymin; $('in-ymax').value = ELIAS_INFO.ymax;
+      $('in-feas').value = eliasFeasible();
+      state.feasSrc = $('in-feas').value;
+      $('t-feas').checked = true; state.feasible = true;
+      $('t-isolate').checked = false; state.isolate = false;
+      $('t-follow').checked = false; state.follow = false;
+      // The surface itself is a smooth Fourier fit; the crags are costume.
+      // The preset insists on the costume, so the smoothing stays invisible.
+      $('t-decor').checked = true; state.decor = true;
+    } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the
       // mild correction the derivation is about. A domain a hair wider than
@@ -2228,12 +2362,12 @@ function wireUI() {
   bindCheck('t-geodisc', 'geoDisc');
   bindCheck('t-dir', 'showDir', () => {
     ensureDisc();
-    // On a graph the free direction u is steered by the mouse, so the explorer
-    // has to hold still while it is. On a curved surface the arrow *is* the
-    // explorer's velocity, and freezing them would freeze the thing being
-    // shown — there, walking around is how you use it.
+    // The mouse is repurposed to swing u while the arrow is on (hold the
+    // right button to look), but walking stays free — it used to freeze the
+    // explorer here, and because that freeze outlived the checkbox's context
+    // it could leave a later surface with an explorer that would not move at
+    // all. Nothing about showing a direction requires standing still.
     const graph = state.surfaceKind === 'graph';
-    player.frozen = graph && state.showDir;
     $('note-dir').hidden = !(graph && state.showDir);
     if (graph && state.showDir) state.dirAngle = player.facing || 0;
   });
@@ -2995,21 +3129,36 @@ function animate() {
   // High-resolution rings under the explorer.
   surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), false);
 
-  // Derivative gizmo.
+  // Derivative gizmo — and everything else drawn afresh at the explorer's
+  // feet. Each of these is a pure function of where the explorer stands and
+  // of a handful of settings, so while they stand still with the dials
+  // untouched, recomputing any of it draws the identical picture. That used
+  // to be a harmless habit; on the Fourier terrain, where every scattered
+  // evaluation of f costs a full double sum, it is the frame budget. One key
+  // covers the lot: when it repeats, last frame's geometry stands.
   const wantGizmo = state.disc && isFinite(player.height());
   gizmo.setVisible(wantGizmo);
   let readout = null;
+  const stillKey = `${player.x},${player.y},${player.zoom},${state.radius},` +
+    `${surfaceDetail.topLift},${player.extraLift},${state.geoDisc},${state.showDx},` +
+    `${state.showDy},${state.showGrad},${state.showDir},${state.dirAngle},` +
+    `${state.disc},${state.tangent},${state.curCurve},${state.curTangent},${state.zoom}`;
+  const still = stillMemo && stillMemo.gizmo === gizmo && stillMemo.key === stillKey;
   if (wantGizmo) {
-    readout = gizmo.update(player.x, player.y, {
-      radiusMetres: state.radius * player.zoom,
-      clearance: surfaceDetail.topLift,
-      showDisc: !state.geoDisc,
-      showX: state.showDx,
-      showY: state.showDy,
-      showGrad: state.showGrad,
-      showDir: state.showDir,
-      dirAngle: state.dirAngle,
-    });
+    if (still) {
+      readout = stillMemo.readout;
+    } else {
+      readout = gizmo.update(player.x, player.y, {
+        radiusMetres: state.radius * player.zoom,
+        clearance: surfaceDetail.topLift,
+        showDisc: !state.geoDisc,
+        showX: state.showDx,
+        showY: state.showDy,
+        showGrad: state.showGrad,
+        showDir: state.showDir,
+        dirAngle: state.dirAngle,
+      });
+    }
   }
 
   // The other neighbourhood: the set of points a fixed walk away along the
@@ -3017,17 +3166,21 @@ function animate() {
   // to second order and part company exactly where the surface curves, which is
   // the comparison the toggle exists to make.
   if (wantGizmo && state.geoDisc && graphGeo && graphDisc) {
-    graphGeo.placeAtUV(player.x, player.y);
-    if (!graphDisc.update(graphGeo, state.radius * player.zoom, gizmo.lift)) {
-      graphDisc.setVisible(false);
+    if (!still) {
+      graphGeo.placeAtUV(player.x, player.y);
+      if (!graphDisc.update(graphGeo, state.radius * player.zoom, gizmo.lift)) {
+        graphDisc.setVisible(false);
+      }
     }
   } else if (graphDisc) {
     graphDisc.setVisible(false);
   }
 
   if (state.tangent && isFinite(player.height())) {
-    tangentPlane.update(player.x, player.y, state.radius * player.zoom,
-      Math.max(player.extraLift, surfaceDetail.topLift * 2.6));
+    if (!still) {
+      tangentPlane.update(player.x, player.y, state.radius * player.zoom,
+        Math.max(player.extraLift, surfaceDetail.topLift * 2.6));
+    }
   } else {
     tangentPlane.setVisible(false);
   }
@@ -3036,17 +3189,21 @@ function animate() {
   // afresh from the player's exact height, so they follow continuously.
   const onGround = isFinite(player.height());
   if (state.curCurve && onGround) {
-    heightColor(grid.norm(player.height()), curveRGB);
-    curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
+    if (!still) {
+      heightColor(grid.norm(player.height()), curveRGB);
+      curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
+    }
   } else {
     curveGizmo.setVisible(false);
   }
 
   if (state.curTangent && onGround) {
-    tangentLine.update(player.x, player.y, field.worldSize * 0.22, pathWidth() * 0.9);
+    if (!still) tangentLine.update(player.x, player.y, field.worldSize * 0.22, pathWidth() * 0.9);
   } else {
     tangentLine.setVisible(false);
   }
+
+  stillMemo = { gizmo, key: stillKey, readout };
 
   if (state.showOpt && optimum) optMarker.animate(t, camera.position);
 
@@ -3082,6 +3239,9 @@ window.__peaks = {
   get walker() { return walker; },
   get altSurface() { return altSurface; },
   get player() { return player; },
+  get optimum() { return optimum; },
+  get field() { return field; },
+  get grid() { return grid; },
 };
 
 state.holdKey = readHoldKey();

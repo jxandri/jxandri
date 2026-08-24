@@ -274,6 +274,57 @@ export function buildImplicit(F, opts) {
  *
  * @param palette 'biome' (terrain) or 'height' (the ramp)
  */
+/**
+ * The Möbius lap gradient: one journey's worth of colour.
+ *
+ * White where the explorer starts, deepest blue at the far side of the lap,
+ * white again on return — colour as a function of the long parameter alone,
+ *
+ *     t(u) = (1 − cos(2π (u − u0) / period)) / 2,
+ *
+ * which is periodic and smooth, so it closes up over the strip's seam. It has
+ * to be a function of u only to be well defined at all: the seam glues (umin, v)
+ * to (umax, −v), and any colour that depended on v would tear there.
+ *
+ * The point of the exercise is what this gradient *cannot* show. Walking one
+ * full lap brings the explorer back to pure white — same u, same v, same point
+ * of the strip — yet they now face the other side of the flag planted at the
+ * start. The colouring, like any continuous function on the surface, is blind
+ * to the side; only the journey detects it. That is non-orientability, told by
+ * a golf flag.
+ *
+ * @param u0  the u of the explorer's default start (the white pole of the ramp)
+ */
+export function paintMobius(mesh, u0, umin, umax) {
+  if (!mesh) return;
+  const geom = mesh.geometry;
+  const pos = geom.getAttribute('position');
+  const uv = geom.getAttribute('uv');
+  if (!pos || !uv) return;
+  const n = pos.count;
+
+  let attr = geom.getAttribute('color');
+  if (!attr || attr.count !== n) {
+    attr = new THREE.BufferAttribute(new Float32Array(n * 3), 3);
+    geom.setAttribute('color', attr);
+  }
+
+  const period = (umax - umin) || Math.PI * 2;
+  const W = MOBIUS_WHITE, B = MOBIUS_BLUE;
+  for (let i = 0; i < n; i++) {
+    const t = (1 - Math.cos(((uv.getX(i) - u0) / period) * Math.PI * 2)) / 2;
+    attr.setXYZ(i,
+      W[0] + (B[0] - W[0]) * t,
+      W[1] + (B[1] - W[1]) * t,
+      W[2] + (B[2] - W[2]) * t);
+  }
+  attr.needsUpdate = true;
+}
+
+/** The two poles of the lap gradient — shared with the flag's two pennants. */
+export const MOBIUS_WHITE = [0.97, 0.97, 0.98];
+export const MOBIUS_BLUE = [0.05, 0.13, 0.58];
+
 export function paintMesh(mesh, palette) {
   if (!mesh) return;
   const geom = mesh.geometry;

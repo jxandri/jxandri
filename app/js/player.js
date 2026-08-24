@@ -601,7 +601,10 @@ export class Player {
 
     if (this.mode === MODE_DRONE) {
       this._updateDrone(dt, input);
-    } else if (!this.frozen) {
+    } else {
+      // Never gated on a "frozen" flag: one used to exist for the
+      // directional-derivative mode, and because it outlived the mode that
+      // set it, an explorer could arrive on a new surface unable to move.
       this._updateWalk(dt, input);
     }
 
@@ -735,7 +738,7 @@ export class Player {
 
   _animate(dt) {
     const p = this.character.userData.parts;
-    const moving = (this.walkSpeed || 0) > 0 && this.mode !== MODE_DRONE && !this.frozen;
+    const moving = (this.walkSpeed || 0) > 0 && this.mode !== MODE_DRONE;
     const target = moving ? Math.sin(this.walkPhase) : 0;
     const swing = 0.75 * target;
 

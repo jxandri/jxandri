@@ -170,7 +170,14 @@ export function gridMultiple(unit, span) {
  * segment from one side of a hill to the other would pass through it.
  */
 export function buildGraphGrid(field, opts = {}) {
-  const samples = opts.samples || 220;
+  // Trace on the rendered mesh when the caller hands one over, at the mesh's
+  // own resolution. Tracing exact f between coarser samples is right for a
+  // smooth textbook surface, where the two agree everywhere; on real terrain
+  // (the Saint Elias model) a 180 m chord of f cuts across gullies the mesh
+  // renders, and the grid visibly hangs in the air. Chords that run node to
+  // node over the very triangles on screen cannot part company with them.
+  const mesh = opts.grid || null;
+  const samples = mesh ? mesh.n : (opts.samples || 220);
 
   // The square's side is a length in world metres — two explorer heights —
   // so it becomes a step in x and a step in y through the plot's own scale.
@@ -187,6 +194,13 @@ export function buildGraphGrid(field, opts = {}) {
 
   const polys = [];
   const n = new THREE.Vector3();
+  const heightAt = (x, y) => {
+    if (mesh) {
+      const z = mesh.meshHeight(x, y);
+      if (isFinite(z)) return z;
+    }
+    return field.height(x, y);
+  };
 
   // Walk a line, breaking it wherever f stops being defined so the grid does
   // not draw a chord across a hole in the domain.
@@ -195,7 +209,7 @@ export function buildGraphGrid(field, opts = {}) {
     for (let i = 0; i <= samples; i++) {
       const t = i / samples;
       const [x, y] = along(fixed, t);
-      const z = field.height(x, y);
+      const z = heightAt(x, y);
       if (!isFinite(z)) {
         if (p.length >= 6) polys.push({ p, n: nr });
         p = []; nr = [];
@@ -219,7 +233,11 @@ export function buildGraphGrid(field, opts = {}) {
     trace(y, (yy, t) => [field.xmin + t * (field.xmax - field.xmin), yy]);
   }
 
-  const g = twoSided(polys, field.worldSize * LIFT);
+  // The lift hugs the grid to the surface at the scale the grid itself is
+  // drawn at: a share of one square's side, which is explorer-sized, rather
+  // than a share of the whole world, which on a large domain floats the lines
+  // a visible height over the ground they are supposed to be ruling.
+  const g = twoSided(polys, Math.min(field.worldSize * LIFT, side * 0.03));
   if (g) { g.userData.side = side; g.userData.multiple = mult; }
   return g;
 }
