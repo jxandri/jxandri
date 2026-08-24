@@ -211,6 +211,8 @@ let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
+let stillMemo = null;    // last frame's at-the-feet geometry, kept while the
+                         // explorer and the dials hold still
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
 let decorations = new Decorations();
 let player = null;
@@ -2158,6 +2160,9 @@ function wireUI() {
       $('t-feas').checked = true; state.feasible = true;
       $('t-isolate').checked = false; state.isolate = false;
       $('t-follow').checked = false; state.follow = false;
+      // The surface itself is a smooth Fourier fit; the crags are costume.
+      // The preset insists on the costume, so the smoothing stays invisible.
+      $('t-decor').checked = true; state.decor = true;
     } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the
@@ -3124,21 +3129,36 @@ function animate() {
   // High-resolution rings under the explorer.
   surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), false);
 
-  // Derivative gizmo.
+  // Derivative gizmo — and everything else drawn afresh at the explorer's
+  // feet. Each of these is a pure function of where the explorer stands and
+  // of a handful of settings, so while they stand still with the dials
+  // untouched, recomputing any of it draws the identical picture. That used
+  // to be a harmless habit; on the Fourier terrain, where every scattered
+  // evaluation of f costs a full double sum, it is the frame budget. One key
+  // covers the lot: when it repeats, last frame's geometry stands.
   const wantGizmo = state.disc && isFinite(player.height());
   gizmo.setVisible(wantGizmo);
   let readout = null;
+  const stillKey = `${player.x},${player.y},${player.zoom},${state.radius},` +
+    `${surfaceDetail.topLift},${player.extraLift},${state.geoDisc},${state.showDx},` +
+    `${state.showDy},${state.showGrad},${state.showDir},${state.dirAngle},` +
+    `${state.disc},${state.tangent},${state.curCurve},${state.curTangent},${state.zoom}`;
+  const still = stillMemo && stillMemo.gizmo === gizmo && stillMemo.key === stillKey;
   if (wantGizmo) {
-    readout = gizmo.update(player.x, player.y, {
-      radiusMetres: state.radius * player.zoom,
-      clearance: surfaceDetail.topLift,
-      showDisc: !state.geoDisc,
-      showX: state.showDx,
-      showY: state.showDy,
-      showGrad: state.showGrad,
-      showDir: state.showDir,
-      dirAngle: state.dirAngle,
-    });
+    if (still) {
+      readout = stillMemo.readout;
+    } else {
+      readout = gizmo.update(player.x, player.y, {
+        radiusMetres: state.radius * player.zoom,
+        clearance: surfaceDetail.topLift,
+        showDisc: !state.geoDisc,
+        showX: state.showDx,
+        showY: state.showDy,
+        showGrad: state.showGrad,
+        showDir: state.showDir,
+        dirAngle: state.dirAngle,
+      });
+    }
   }
 
   // The other neighbourhood: the set of points a fixed walk away along the
@@ -3146,17 +3166,21 @@ function animate() {
   // to second order and part company exactly where the surface curves, which is
   // the comparison the toggle exists to make.
   if (wantGizmo && state.geoDisc && graphGeo && graphDisc) {
-    graphGeo.placeAtUV(player.x, player.y);
-    if (!graphDisc.update(graphGeo, state.radius * player.zoom, gizmo.lift)) {
-      graphDisc.setVisible(false);
+    if (!still) {
+      graphGeo.placeAtUV(player.x, player.y);
+      if (!graphDisc.update(graphGeo, state.radius * player.zoom, gizmo.lift)) {
+        graphDisc.setVisible(false);
+      }
     }
   } else if (graphDisc) {
     graphDisc.setVisible(false);
   }
 
   if (state.tangent && isFinite(player.height())) {
-    tangentPlane.update(player.x, player.y, state.radius * player.zoom,
-      Math.max(player.extraLift, surfaceDetail.topLift * 2.6));
+    if (!still) {
+      tangentPlane.update(player.x, player.y, state.radius * player.zoom,
+        Math.max(player.extraLift, surfaceDetail.topLift * 2.6));
+    }
   } else {
     tangentPlane.setVisible(false);
   }
@@ -3165,17 +3189,21 @@ function animate() {
   // afresh from the player's exact height, so they follow continuously.
   const onGround = isFinite(player.height());
   if (state.curCurve && onGround) {
-    heightColor(grid.norm(player.height()), curveRGB);
-    curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
+    if (!still) {
+      heightColor(grid.norm(player.height()), curveRGB);
+      curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
+    }
   } else {
     curveGizmo.setVisible(false);
   }
 
   if (state.curTangent && onGround) {
-    tangentLine.update(player.x, player.y, field.worldSize * 0.22, pathWidth() * 0.9);
+    if (!still) tangentLine.update(player.x, player.y, field.worldSize * 0.22, pathWidth() * 0.9);
   } else {
     tangentLine.setVisible(false);
   }
+
+  stillMemo = { gizmo, key: stillKey, readout };
 
   if (state.showOpt && optimum) optMarker.animate(t, camera.position);
 

@@ -355,6 +355,19 @@ la línea, donde la curva de nivel es tangente a la frontera. Maximización con 
 en una montaña real, con la condición de Lagrange visible como geografía. La superficie viste su
 clima verdadero —hielo y nieve con roca dispersa, vegetación solo cerca del mar— y el relieve es
 real, así que estire el mando del eje z para exagerarlo como haría un atlas.</p>
+<p>Un refinamiento importa matemáticamente. Lo que <code>elias(x, y)</code> evalúa no es la malla
+cruda de elevaciones sino una <strong>aproximación suave de ella</strong>: una serie de Fourier
+(de cosenos) en dos dimensiones ajustada al levantamiento, que se mantiene en promedio a unos
+90 m de los datos. Una suma finita de cosenos es infinitamente diferenciable —toda derivada de
+todo orden existe en todo punto—, así que las flechas del gradiente, el plano tangente, las
+geodésicas y las curvas de nivel operan sobre un objeto suave exacto, no sobre artefactos de
+interpolación. Interpolar cada muestra fabricaría además cientos de máximos relativos del tamaño
+de un píxel; la superficie ajustada conserva solo la docena de hombros reales del macizo, de modo
+que «encuentre los máximos relativos» sigue siendo una pregunta con respuesta honesta. La
+rugosidad aparente —riscos, campos de nieve, roca dispersa y hielo— es decoración apoyada
+<em>sobre</em> la superficie. Matemáticamente, la montaña que se pisa es tan suave como cualquier
+fórmula de la lista de ejemplos, y el máximo restringido sigue exactamente sobre la línea
+fronteriza.</p>
 <p>Si lo que escribe no tiene sentido, aparece debajo un mensaje rojo que nombra el problema y
 el carácter donde falló. <strong>La montaña que ya tenía permanece en pantalla</strong>: un error
 de escritura nunca destruye su trabajo.</p>

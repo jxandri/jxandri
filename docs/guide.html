@@ -348,6 +348,18 @@ curve is tangent to the frontier. Maximisation under a linear constraint, on a r
 the Lagrange condition visible as geography. The surface wears its true climate — ice and snow
 with scattered rock, vegetation only near the sea — and the relief is real, so stretch the z-axis
 dial to exaggerate it the way an atlas would.</p>
+<p>One refinement matters mathematically. What <code>elias(x, y)</code> evaluates is not the raw
+elevation grid but a <strong>smooth approximation of it</strong>: a two-dimensional Fourier
+(cosine) series fitted to the survey, kept within about 90 m of the data on average. A finite sum
+of cosines is infinitely differentiable — every derivative of every order exists at every point —
+so the gradient arrows, the tangent plane, the geodesics and the level curves all operate on an
+exact smooth object, not on interpolation artefacts. Interpolating every sample would also
+manufacture hundreds of relative maxima the size of a pixel; the fitted surface keeps only the
+massif's dozen real shoulders, so "find the relative maxima" remains a question with an honest
+answer. The apparent roughness — crags, snowfields, scattered rock and ice — is decoration
+standing <em>on</em> the surface. Mathematically, the mountain you walk is as smooth as any
+formula in the preset list, and the constrained maximum still sits exactly on the boundary
+line.</p>
 <p>If what you type does not make sense, a red message appears underneath naming the problem and
 the character where it went wrong. <strong>The mountain you already had stays on screen</strong> —
 a typing mistake never destroys your work.</p>

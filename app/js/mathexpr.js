@@ -18,9 +18,10 @@
  * Booleans are carried as 1 / 0 so that they compose with arithmetic.
  *
  * One function in the table is not mathematics but geography: elias(x, y) is
- * a real digital elevation model of Mount Saint Elias, baked into the bundle
- * and sampled bicubically (see elias.js). It is still just a function of two
- * variables — which is the point of including it.
+ * Mount Saint Elias — a smooth cosine series fitted to the real digital
+ * elevation model and baked into the bundle (see elias.js). It is still just
+ * a function of two variables, and an infinitely differentiable one — which
+ * is the point of including it.
  */
 
 import { eliasHeight } from './elias.js';
