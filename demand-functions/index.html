@@ -232,9 +232,13 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       <div class="group">
         <h2 data-t="gScales">Escalas</h2>
         <p class="hint" data-t="scalesHint">Hasta dónde llegan los deslizadores y el eje horizontal del panel de demanda.</p>
-        <div class="slider-row"><span class="k">pₓ ≤</span><input type="range" id="maxPx" min="1" max="40" step="0.5" value="10"><input class="v" id="maxPx-v"></div>
+        <div class="slider-row"><span class="k">pₓ ≥</span><input type="range" id="minPx" min="0.05" max="5" step="0.05" value="1"><input class="v" id="minPx-v"></div>
+        <div class="slider-row"><span class="k">pₓ ≤</span><input type="range" id="maxPx" min="1" max="40" step="0.5" value="6"><input class="v" id="maxPx-v"></div>
+        <div class="slider-row"><span class="k">pᵧ ≥</span><input type="range" id="minPy" min="0.05" max="5" step="0.05" value="1"><input class="v" id="minPy-v"></div>
         <div class="slider-row"><span class="k">pᵧ ≤</span><input type="range" id="maxPy" min="1" max="40" step="0.5" value="4"><input class="v" id="maxPy-v"></div>
-        <div class="slider-row"><span class="k">m ≤</span><input type="range" id="maxI" min="2" max="200" step="1" value="20"><input class="v" id="maxI-v"></div>
+        <div class="slider-row"><span class="k">m ≤</span><input type="range" id="maxI" min="2" max="200" step="1" value="8"><input class="v" id="maxI-v"></div>
+        <label class="check auto"><input type="checkbox" id="fixed-axis" checked><span data-t="fixedAxis">Eje vertical fijo</span></label>
+        <p class="hint" id="axis-bound"></p>
       </div>
 
       <div class="group">
@@ -457,7 +461,13 @@ const st={
   fam:"cd", axis:"px", autoMark:true,
   alpha:0.57, r:0.42, a:0.9, beta:0.889, xlow:0.27, yup:15.2,
   px:1.83, py:1.1, I:5.4,
-  maxPx:10, maxPy:4, maxI:20,
+  /* The ceiling below is m_max/p_min, so how wide the dials are set decides how
+     much empty space sits above the curve. A price floor well under 1 buys a
+     ceiling several times the demand anyone will actually see, and the curve
+     ends up pressed flat along the axis, so the defaults keep the floor at 1
+     and the income ceiling near the income in play. */
+  minPx:1, minPy:1, maxPx:6, maxPy:4, maxI:8,
+  fixedAxis:true,
   overlay:true,
   customU:null, customSrc:"x^0.5*y^0.5",
   pts:{px:[],py:[],I:[]},
@@ -476,6 +486,7 @@ const STR={
   sub:"De la maximización de utilidad a la curva de demanda. Elige una familia de preferencias, mueve una variable y mira cómo responde la canasta óptima — incluyendo el caso en que la demanda sube cuando sube el precio.",
   dark:"Oscuro", light:"Claro",
   gScales:"Escalas", scalesHint:"Hasta dónde llegan los deslizadores y el eje horizontal del panel de demanda.", onePanel:"Un panel", twoPanels:"Dos",
+  fixedAxis:"Eje vertical fijo", boundIs:"Tope: m<sub>máx</sub>/p<sub>mín</sub> →", boundAuto:"El eje se ajusta a la curva; se mueve al cambiar parámetros.",
   gPref:"Preferencias", gParams:"Parámetros", gSweep:"Variable que varía",
   gPrices:"Precios y renta", gDiscover:"Descubrir la demanda", gLayers:"Capas",
   customLabel:"Escribe tu propia U(x, y)",
@@ -508,6 +519,7 @@ const STR={
   sub:"From utility maximisation to the demand curve. Pick a preference family, move one variable and watch the optimal bundle respond — including the case where demand rises when the price rises.",
   dark:"Dark", light:"Light",
   gScales:"Scales", scalesHint:"How far the sliders and the demand panel\u2019s horizontal axis reach.", onePanel:"One panel", twoPanels:"Two",
+  fixedAxis:"Fixed vertical axis", boundIs:"Ceiling: m<sub>max</sub>/p<sub>min</sub> →", boundAuto:"The axis fits the curve, so it moves when a parameter changes.",
   gPref:"Preferences", gParams:"Parameters", gSweep:"Variable being swept",
   gPrices:"Prices and income", gDiscover:"Discover the demand curve", gLayers:"Layers",
   customLabel:"Write your own U(x, y)",
@@ -552,6 +564,14 @@ function niceStep(range,target){const raw=range/target,p=Math.pow(10,Math.floor(
 /* The horizontal extent is the scale the user set, not something derived from
    wherever the slider happens to be. That keeps the axis still while points
    accumulate, and lets a regime that lives at high p_x be brought into view. */
+/* The most of good x anyone can buy is m/p_x, so over the whole range the dials
+   allow, x* never exceeds maxI/minPx — and likewise for y. Framing on that
+   bound gives an axis that does not move when a parameter changes, so two
+   settings can be compared by eye. It is a guaranteed bound, so it is loose:
+   the auto fit is kept for when a tight frame matters more than a stable one. */
+const boundX = () => st.maxI / Math.max(st.minPx, 1e-6);
+const boundY = () => st.maxI / Math.max(st.minPy, 1e-6);
+
 function axisInfo(){
   if(st.axis==="px") return {lab:"pₓ",cur:st.px,max:st.maxPx};
   if(st.axis==="py") return {lab:"pᵧ",cur:st.py,max:st.maxPy};
@@ -617,8 +637,10 @@ function dot(ctx,X,Y,col){
 function drawBundle(){
   const cv=$("cBundle"), {ctx,w,h}=setup(cv);
   const [xs,ys]=dem(st.px,st.py,st.I);
-  const xmax=Math.max(st.I/st.px*1.25,(fin(xs)?xs:0)*1.4,1);
-  const ymax=Math.max(st.I/st.py*1.25,(fin(ys)?ys:0)*1.4,1);
+  /* the collected bundles are drawn here too, so this frame has to hold still
+     for the same reason the demand panel does */
+  const xmax = st.fixedAxis ? boundX() : Math.max(st.I/st.px*1.25,(fin(xs)?xs:0)*1.4,1);
+  const ymax = st.fixedAxis ? boundY() : Math.max(st.I/st.py*1.25,(fin(ys)?ys:0)*1.4,1);
   const {bx,SX,SY}=frame(ctx,{x0:0,y0:0,x1:w,y1:h},xmax,ymax,"x","y");
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
@@ -685,18 +707,24 @@ function drawDemand(){
        pushed the axis to 1e7 and flattened everything else into the baseline.
        Scale on a high percentile instead and let the asymptote run off the top,
        which is what it does. */
-    const vals=[];
-    for(const row of rows) for(const v of row.s) if(fin(v)&&v>=0) vals.push(v);
-    vals.sort((a,b)=>a-b);
-    let ymax = vals.length ? vals[Math.floor(vals.length*0.92)] : 1;
-    if(!(ymax>0)) ymax = vals.length ? (vals[vals.length-1]||1) : 1;
-    /* keep the live bundle on screen, but never let it drag the axis far past
-       the useful range either */
-    for(const row of rows){
-      const v=cur[row.key==="x"?0:1];
-      if(fin(v)&&v>=0) ymax=Math.max(ymax, Math.min(v, ymax*4));
+    let ymax;
+    if(st.fixedAxis){
+      /* every series in this panel gets the bound of whichever good it is;
+         sharing a panel means sharing the larger of the two */
+      ymax=0;
+      for(const row of rows) ymax=Math.max(ymax, row.key==="x"?boundX():boundY());
+    } else {
+      const vals=[];
+      for(const row of rows) for(const v of row.s) if(fin(v)&&v>=0) vals.push(v);
+      vals.sort((a,b)=>a-b);
+      ymax = vals.length ? vals[Math.floor(vals.length*0.92)] : 1;
+      if(!(ymax>0)) ymax = vals.length ? (vals[vals.length-1]||1) : 1;
+      for(const row of rows){
+        const v=cur[row.key==="x"?0:1];
+        if(fin(v)&&v>=0) ymax=Math.max(ymax, Math.min(v, ymax*4));
+      }
+      ymax*=1.25;
     }
-    ymax*=1.25;
     if(!(ymax>0)) ymax=1;
     const ylab = rows.length>1 ? "" : rows[0].lab;
     const rect={x0:0,y0:gi*hh,x1:w,y1:(gi+1)*hh};
@@ -772,6 +800,9 @@ function paint(){
     v.className="verdict"; $("v-title").textContent=t.vNorm; $("v-text").textContent=t.vNormT;
   }
   $("pt-count").textContent=curPts().length;
+  $("axis-bound").innerHTML = st.fixedAxis
+    ? `${t.boundIs} x* ≤ ${fmt(boundX(),1)},  y* ≤ ${fmt(boundY(),1)}`
+    : t.boundAuto;
 }
 function render(){ drawBundle(); drawDemand(); paint(); }
 
@@ -862,18 +893,24 @@ function syncAxisUI(){
 }
 /* Scale controls: they change the view and the slider range, not the economics,
    so they must not discard collected points the way a price change does. */
-function bindScale(id,key,target){
+function bindScale(id,key,target,edge){
   const s=$(id), b=$(id+"-v");
+  const varKey = target==="inc" ? "I" : target;
+  const apply=()=>{
+    const t=$(target);
+    if(edge==="min"){ t.min=st[key]; if(st[varKey]<st[key]){ st[varKey]=st[key]; t.value=st[key]; $(target+"-v").value=st[key]; } }
+    else            { t.max=st[key]; if(st[varKey]>st[key]){ st[varKey]=st[key]; t.value=st[key]; $(target+"-v").value=st[key]; } }
+  };
   const set=v=>{ v=parseFloat(v); if(!fin(v))return;
     v=clamp(v,parseFloat(s.min),parseFloat(s.max));
+    /* a minimum above its maximum would invert the slider, so keep a gap */
+    if(edge==="min") v=Math.min(v, st[key==="minPx"?"maxPx":"maxPy"]-0.05);
+    else if(key!=="maxI") v=Math.max(v, st[key==="maxPx"?"minPx":"minPy"]+0.05);
     st[key]=v; s.value=v; b.value=v;
-    const t=$(target); t.max=v;
-    const varKey = target==="inc" ? "I" : target;
-    if(st[varKey]>v){ st[varKey]=v; t.value=v; $(target+"-v").value=v; }
-    render(); };
+    apply(); render(); };
   s.addEventListener("input",()=>set(s.value));
   b.addEventListener("change",()=>set(b.value));
-  b.value=st[key]; s.value=st[key]; $(target).max=st[key];
+  b.value=st[key]; s.value=st[key]; apply();
 }
 
 function bind(id,key){
@@ -945,7 +982,10 @@ addEventListener("keydown",e=>{
 
 ["alpha","r","a","beta","xlow","yup"].forEach(k=>bind(k,k));
 bind("px","px"); bind("py","py"); bind("inc","I");
-bindScale("maxPx","maxPx","px"); bindScale("maxPy","maxPy","py"); bindScale("maxI","maxI","inc");
+bindScale("minPx","minPx","px","min"); bindScale("maxPx","maxPx","px","max");
+bindScale("minPy","minPy","py","min"); bindScale("maxPy","maxPy","py","max");
+bindScale("maxI","maxI","inc","max");
+$("fixed-axis").addEventListener("change",e=>{ st.fixedAxis=e.target.checked; render(); });
 
 document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventListener("click",()=>{
   st.overlay = btn.dataset.panels==="1";
