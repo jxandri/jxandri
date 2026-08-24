@@ -114,6 +114,11 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .seg.wide button{text-align:center}
 .seg.plain button[aria-pressed="true"]{background:var(--surface); color:var(--ink); font-weight:500}
 
+.bar-right{display:flex; align-items:center; gap:8px}
+.legend{display:flex; gap:9px; font-family:var(--f-mono); font-size:10.5px; color:var(--ink-2)}
+.legend .key{display:flex; align-items:center; gap:4px}
+.legend i{width:9px; height:9px; border-radius:2px; display:inline-block}
+.legend[hidden]{display:none}
 .canvas-wrap{position:relative; width:100%; aspect-ratio:1/1; background:var(--surface)}
 .canvas-wrap canvas{display:block; width:100%; height:100%; touch-action:none}
 .readout{display:grid; grid-template-columns:repeat(auto-fit,minmax(88px,1fr)); gap:1px;
@@ -225,6 +230,14 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       </div>
 
       <div class="group">
+        <h2 data-t="gScales">Escalas</h2>
+        <p class="hint" data-t="scalesHint">Hasta dónde llegan los deslizadores y el eje horizontal del panel de demanda.</p>
+        <div class="slider-row"><span class="k">pₓ ≤</span><input type="range" id="maxPx" min="1" max="40" step="0.5" value="10"><input class="v" id="maxPx-v"></div>
+        <div class="slider-row"><span class="k">pᵧ ≤</span><input type="range" id="maxPy" min="1" max="40" step="0.5" value="4"><input class="v" id="maxPy-v"></div>
+        <div class="slider-row"><span class="k">m ≤</span><input type="range" id="maxI" min="2" max="200" step="1" value="20"><input class="v" id="maxI-v"></div>
+      </div>
+
+      <div class="group">
         <h2 data-t="gDiscover">Descubrir la demanda</h2>
         <p class="hint" data-t="discoverHint">Mueve la variable elegida y observa la nueva canasta óptima. Cada par queda marcado: el rastro que dejas <em>es</em> la curva de demanda.</p>
         <label class="check auto"><input type="checkbox" id="auto-mark" checked><span data-t="autoMark">Marcar al mover</span></label>
@@ -250,7 +263,19 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
           <dl class="readout" id="ro1"></dl>
         </section>
         <section class="viewport">
-          <div class="vp-bar"><span class="vp-title" id="vp2-title">Demanda</span></div>
+          <div class="vp-bar">
+            <span class="vp-title" id="vp2-title">Demanda</span>
+            <div class="bar-right">
+              <span class="legend" id="legend" hidden>
+                <span class="key"><i style="background:#00A8C7"></i>x*</span>
+                <span class="key"><i style="background:#E0631B"></i>y*</span>
+              </span>
+              <div class="seg plain" role="group" id="panel-seg">
+                <button type="button" data-panels="1" aria-pressed="true" data-t="onePanel">Un panel</button>
+                <button type="button" data-panels="2" aria-pressed="false" data-t="twoPanels">Dos</button>
+              </div>
+            </div>
+          </div>
           <div class="canvas-wrap"><canvas id="cDemand"></canvas></div>
           <dl class="readout" id="ro2"></dl>
         </section>
@@ -432,6 +457,8 @@ const st={
   fam:"cd", axis:"px", autoMark:true,
   alpha:0.57, r:0.42, a:0.9, beta:0.889, xlow:0.27, yup:15.2,
   px:1.83, py:1.1, I:5.4,
+  maxPx:10, maxPy:4, maxI:20,
+  overlay:true,
   customU:null, customSrc:"x^0.5*y^0.5",
   pts:{px:[],py:[],I:[]},
   layers:{budget:true,indiff:true,dx:true,dy:true,giffen:true,grid:true,
@@ -448,6 +475,7 @@ const STR={
   title:"Algunas Funciones de Demanda",
   sub:"De la maximización de utilidad a la curva de demanda. Elige una familia de preferencias, mueve una variable y mira cómo responde la canasta óptima — incluyendo el caso en que la demanda sube cuando sube el precio.",
   dark:"Oscuro", light:"Claro",
+  gScales:"Escalas", scalesHint:"Hasta dónde llegan los deslizadores y el eje horizontal del panel de demanda.", onePanel:"Un panel", twoPanels:"Dos",
   gPref:"Preferencias", gParams:"Parámetros", gSweep:"Variable que varía",
   gPrices:"Precios y renta", gDiscover:"Descubrir la demanda", gLayers:"Capas",
   customLabel:"Escribe tu propia U(x, y)",
@@ -479,6 +507,7 @@ const STR={
   title:"Some Demand Functions",
   sub:"From utility maximisation to the demand curve. Pick a preference family, move one variable and watch the optimal bundle respond — including the case where demand rises when the price rises.",
   dark:"Dark", light:"Light",
+  gScales:"Scales", scalesHint:"How far the sliders and the demand panel\u2019s horizontal axis reach.", onePanel:"One panel", twoPanels:"Two",
   gPref:"Preferences", gParams:"Parameters", gSweep:"Variable being swept",
   gPrices:"Prices and income", gDiscover:"Discover the demand curve", gLayers:"Layers",
   customLabel:"Write your own U(x, y)",
@@ -520,10 +549,13 @@ function fmt(v,d=2){ return fin(v)?(Math.abs(v)>=1e4?v.toExponential(1):v.toFixe
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
 function niceStep(range,target){const raw=range/target,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;
   return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
+/* The horizontal extent is the scale the user set, not something derived from
+   wherever the slider happens to be. That keeps the axis still while points
+   accumulate, and lets a regime that lives at high p_x be brought into view. */
 function axisInfo(){
-  if(st.axis==="px") return {lab:"pₓ",cur:st.px,max:Math.max(st.px*2.4,3)};
-  if(st.axis==="py") return {lab:"pᵧ",cur:st.py,max:Math.max(st.py*2.4,3)};
-  return {lab:"m",cur:st.I,max:Math.max(st.I*2.2,4)};
+  if(st.axis==="px") return {lab:"pₓ",cur:st.px,max:st.maxPx};
+  if(st.axis==="py") return {lab:"pᵧ",cur:st.py,max:st.maxPy};
+  return {lab:"m",cur:st.I,max:st.maxI};
 }
 function demandAt(t){
   if(st.axis==="px") return dem(t,st.py,st.I);
@@ -635,50 +667,80 @@ function drawDemand(){
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle=css("--surface"); ctx.fillRect(0,0,w,h);
 
-  const rows=[];
-  if(st.layers.dx) rows.push({s:sx,col:MARK.x,lab:"x*",giffen:true,key:"x"});
-  if(st.layers.dy) rows.push({s:sy,col:MARK.y,lab:"y*",giffen:false,key:"y"});
-  if(!rows.length) return;
-  const hh=h/rows.length, cur=demandAt(A.cur);
+  const series=[];
+  if(st.layers.dx) series.push({s:sx,col:MARK.x,lab:"x*",giffen:true,key:"x"});
+  if(st.layers.dy) series.push({s:sy,col:MARK.y,lab:"y*",giffen:false,key:"y"});
+  if(!series.length) return;
+  const cur=demandAt(A.cur);
+  /* One panel puts both goods on a shared vertical scale, so a substitution
+     reads directly: one rises exactly as the other falls. Two panels give each
+     its own scale, which is what you need when the two differ by an order of
+     magnitude and the smaller one would otherwise flatten into the axis. */
+  const groups = st.overlay ? [series] : series.map(r=>[r]);
+  const hh=h/groups.length;
 
-  rows.forEach((row,ri)=>{
-    let ymax=0;
-    for(const v of row.s) if(fin(v)&&v>=0) ymax=Math.max(ymax,v);
+  groups.forEach((rows,gi)=>{
+    /* Demand is a hyperbola in its own price: as p -> 0 quantity -> infinity,
+       so the largest sample is worthless as a scale — one point near zero
+       pushed the axis to 1e7 and flattened everything else into the baseline.
+       Scale on a high percentile instead and let the asymptote run off the top,
+       which is what it does. */
+    const vals=[];
+    for(const row of rows) for(const v of row.s) if(fin(v)&&v>=0) vals.push(v);
+    vals.sort((a,b)=>a-b);
+    let ymax = vals.length ? vals[Math.floor(vals.length*0.92)] : 1;
+    if(!(ymax>0)) ymax = vals.length ? (vals[vals.length-1]||1) : 1;
+    /* keep the live bundle on screen, but never let it drag the axis far past
+       the useful range either */
+    for(const row of rows){
+      const v=cur[row.key==="x"?0:1];
+      if(fin(v)&&v>=0) ymax=Math.max(ymax, Math.min(v, ymax*4));
+    }
+    ymax*=1.25;
     if(!(ymax>0)) ymax=1;
-    ymax*=1.18;
-    const rect={x0:0,y0:ri*hh,x1:w,y1:(ri+1)*hh};
-    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,ri===rows.length-1?A.lab:"",row.lab,true);
+    const ylab = rows.length>1 ? "" : rows[0].lab;
+    const rect={x0:0,y0:gi*hh,x1:w,y1:(gi+1)*hh};
+    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,gi===groups.length-1?A.lab:"",ylab,true);
     ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
-    if(st.layers.curve){
-      stroke(ctx,row.s.map((v,i)=>fin(v)&&v>=0?[SX(A.max*i/N),SY(v)]:null),row.col,2.4,true);
-    }
-    if(row.giffen&&st.layers.giffen&&st.layers.curve&&st.axis!=="I"){
-      const seg=[];
-      for(let i=1;i<=N;i++){
-        const a=row.s[i-1], b=row.s[i];
-        if(fin(a)&&fin(b)&&(b-a)>1e-9){
-          if(!seg.length) seg.push([SX(A.max*(i-1)/N),SY(a)]);
-          seg.push([SX(A.max*i/N),SY(b)]);
-        } else if(seg.length){ stroke(ctx,seg,MARK.giffen,4.5,true); seg.length=0; }
+    for(const row of rows){
+      if(st.layers.curve)
+        stroke(ctx,row.s.map((v,i)=>fin(v)&&v>=0?[SX(A.max*i/N),SY(v)]:null),row.col,2.4,true);
+
+      if(row.giffen&&st.layers.giffen&&st.layers.curve&&st.axis!=="I"){
+        const seg=[];
+        for(let i=1;i<=N;i++){
+          const a=row.s[i-1], b=row.s[i];
+          if(fin(a)&&fin(b)&&(b-a)>1e-9){
+            if(!seg.length) seg.push([SX(A.max*(i-1)/N),SY(a)]);
+            seg.push([SX(A.max*i/N),SY(b)]);
+          } else if(seg.length){ stroke(ctx,seg,MARK.giffen,4.5,true); seg.length=0; }
+        }
+        if(seg.length) stroke(ctx,seg,MARK.giffen,4.5,true);
       }
-      if(seg.length) stroke(ctx,seg,MARK.giffen,4.5,true);
-    }
-    if(st.layers.pts&&curPts().length){
-      const ps=curPts().filter(q=>fin(q[row.key])&&q[row.key]>=0);
-      if(st.layers.join&&ps.length>1) stroke(ctx,ps.map(q=>[SX(q.t),SY(q[row.key])]),row.col,1.6,true);
-      for(const q of ps){
-        ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.t),SY(q[row.key]),4.6,0,7); ctx.fill();
-        ctx.fillStyle=row.col;     ctx.beginPath(); ctx.arc(SX(q.t),SY(q[row.key]),2.9,0,7); ctx.fill();
+      if(st.layers.pts&&curPts().length){
+        const ps=curPts().filter(q=>fin(q[row.key])&&q[row.key]>=0);
+        if(st.layers.join&&ps.length>1)
+          stroke(ctx,ps.map(q=>[SX(q.t),SY(q[row.key])]),row.col,1.6,true);
+        for(const q of ps){
+          ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.t),SY(q[row.key]),4.6,0,7); ctx.fill();
+          ctx.fillStyle=row.col;     ctx.beginPath(); ctx.arc(SX(q.t),SY(q[row.key]),2.9,0,7); ctx.fill();
+        }
       }
     }
+
     ctx.strokeStyle=css("--rule"); ctx.lineWidth=1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(SX(A.cur),bx.y0); ctx.lineTo(SX(A.cur),bx.y1); ctx.stroke();
     ctx.setLineDash([]);
-    const v=cur[row.key==="x"?0:1];
-    if(fin(v)&&v>=0) dot(ctx,SX(A.cur),SY(v),row.col);
+    for(const row of rows){
+      const v=cur[row.key==="x"?0:1];
+      if(fin(v)&&v>=0) dot(ctx,SX(A.cur),SY(v),row.col);
+    }
     ctx.restore();
   });
+  /* two series sharing one panel are only distinguished by colour, so the key
+     is not optional there */
+  $("legend").hidden = !(st.overlay && series.length>1);
 }
 
 /* =====================================================================
@@ -798,6 +860,22 @@ function syncAxisUI(){
   $("vp2-title").innerHTML = st.axis==="I" ? t.vpEngel
     : `${t.vpDem} ${st.axis==="px"?"pₓ":"pᵧ"}`;
 }
+/* Scale controls: they change the view and the slider range, not the economics,
+   so they must not discard collected points the way a price change does. */
+function bindScale(id,key,target){
+  const s=$(id), b=$(id+"-v");
+  const set=v=>{ v=parseFloat(v); if(!fin(v))return;
+    v=clamp(v,parseFloat(s.min),parseFloat(s.max));
+    st[key]=v; s.value=v; b.value=v;
+    const t=$(target); t.max=v;
+    const varKey = target==="inc" ? "I" : target;
+    if(st[varKey]>v){ st[varKey]=v; t.value=v; $(target+"-v").value=v; }
+    render(); };
+  s.addEventListener("input",()=>set(s.value));
+  b.addEventListener("change",()=>set(b.value));
+  b.value=st[key]; s.value=st[key]; $(target).max=st[key];
+}
+
 function bind(id,key){
   const s=$(id), b=$(id+"-v");
   const set=v=>{ v=parseFloat(v); if(!fin(v))return;
@@ -867,6 +945,14 @@ addEventListener("keydown",e=>{
 
 ["alpha","r","a","beta","xlow","yup"].forEach(k=>bind(k,k));
 bind("px","px"); bind("py","py"); bind("inc","I");
+bindScale("maxPx","maxPx","px"); bindScale("maxPy","maxPy","py"); bindScale("maxI","maxI","inc");
+
+document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventListener("click",()=>{
+  st.overlay = btn.dataset.panels==="1";
+  document.querySelectorAll("#panel-seg [data-panels]").forEach(o=>
+    o.setAttribute("aria-pressed",String(o===btn)));
+  render();
+}));
 new ResizeObserver(()=>render()).observe(document.querySelector(".viewports"));
 
 let lang0="es", theme0="dark";
