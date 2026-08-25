@@ -6,6 +6,7 @@ name: Deploy applets to GitHub Pages
 #   /gradient-peaks/     the calculus applet          (app/)
 #   /gradient-peaks/guide/  its illustrated guide     (docs/)
 #   /consumer-optimum/   the microeconomics applet    (consumer-optimum/)
+#   /demand-functions/   the demand-curve applet      (demand-functions/)
 #
 # ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
 # "GitHub Actions". Until that is done every run fails at configure-pages.
@@ -55,6 +56,9 @@ jobs:
           mkdir -p _site/consumer-optimum
           cp consumer-optimum/index.html _site/consumer-optimum/index.html
 
+          mkdir -p _site/demand-functions
+          cp demand-functions/index.html _site/demand-functions/index.html
+
           # keep the PDF guides reachable if they were committed, in both
           # languages — the Spanish edition is screenshotted in Spanish, so it
           # is a different document, not a translated copy of the English one
@@ -84,7 +88,8 @@ jobs:
             _site/index.html \
             _site/gradient-peaks/index.html \
             _site/gradient-peaks/guide/index.html \
-            _site/consumer-optimum/index.html
+            _site/consumer-optimum/index.html \
+            _site/demand-functions/index.html
           do
             if [ ! -s "$f" ]; then
               echo "::error::missing or empty: $f"
