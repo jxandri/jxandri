@@ -1,0 +1,2907 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Caja de Edgeworth — intercambio, núcleo y equilibrio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%2314181B%22%2F%3E%3Crect%20x%3D%226%22%20y%3D%228%22%20width%3D%2220%22%20height%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22%237C8B93%22%20stroke-width%3D%221.4%22%2F%3E%3Cpath%20d%3D%22M6%2024%20Q16%2016%2026%208%22%20fill%3D%22none%22%20stroke%3D%22%23C15CFF%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M6%2020%20Q12%2010%2022%208%22%20fill%3D%22none%22%20stroke%3D%22%233DBBFF%22%20stroke-width%3D%221.6%22%2F%3E%3Cpath%20d%3D%22M10%2024%20Q20%2022%2026%2012%22%20fill%3D%22none%22%20stroke%3D%22%23FF7A3D%22%20stroke-width%3D%221.6%22%2F%3E%3C%2Fsvg%3E">
+<style>
+/* ============================================================
+   Tokens
+   ============================================================ */
+:root{
+  --paper:#E9ECEE;
+  --surface:#FFFFFF;
+  --panel:#F3F6F7;
+  --sunk:#DFE5E8;
+
+  --ink:#14181B;
+  --ink-2:#48555C;
+  --ink-3:#7C8B93;
+
+  --rule:#CBD4D8;
+  --rule-2:#E1E7EA;
+
+  --accent:#0E6E78;
+  --accent-soft:#D3E7E9;
+  --accent-ink:#0A4F57;
+
+  --optimum:#8E2F9E;
+  --good:#2F7D4F;
+  --warn:#9C6612;
+  --crit:#A93726;
+
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
+
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  --r:3px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
+    --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+    --rule:#2A353B; --rule-2:#212B30;
+    --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+    --optimum:#DD8BEE; --good:#5FBE86; --warn:#D8A548; --crit:#E4705C;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --optimum:#DD8BEE; --good:#5FBE86; --warn:#D8A548; --crit:#E4705C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+}
+:root[data-theme="light"]{
+  --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
+  --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
+  --rule:#CBD4D8; --rule-2:#E1E7EA;
+  --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
+  --optimum:#8E2F9E; --good:#2F7D4F; --warn:#9C6612; --crit:#A93726;
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-ui); font-size:14px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ============================================================
+   Shell
+   ============================================================ */
+.shell{
+  min-height:100%;
+  display:grid;
+  grid-template-rows:auto auto 1fr;
+  max-width:1560px; margin:0 auto;
+  padding:var(--s4);
+  gap:var(--s3);
+}
+
+/* ---- masthead ---- */
+.masthead{
+  display:flex; align-items:flex-end; justify-content:space-between;
+  gap:var(--s4); flex-wrap:wrap;
+  padding-bottom:var(--s3);
+  border-bottom:1px solid var(--rule);
+}
+.masthead h1{
+  margin:0;
+  font-family:var(--f-display);
+  font-size:26px; font-weight:600; letter-spacing:-.01em;
+  text-wrap:balance;
+}
+.masthead p{
+  margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:62ch;
+}
+.masthead-actions{display:flex; gap:var(--s2); align-items:center}
+
+.seg{
+  display:inline-flex; background:var(--sunk);
+  border:1px solid var(--rule); border-radius:var(--r); padding:2px; gap:2px;
+}
+.seg button{
+  appearance:none; border:0; background:transparent; cursor:pointer;
+  padding:5px 11px; border-radius:2px; font-size:12.5px; font-weight:500;
+  color:var(--ink-2); letter-spacing:.01em;
+}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+/* ---- mission strip ---- */
+.mission{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center; gap:var(--s4);
+  background:var(--surface); border:1px solid var(--rule); border-radius:var(--r);
+  padding:var(--s3) var(--s4); box-shadow:var(--shadow);
+}
+.mission[hidden]{display:none}
+.mission-tag{
+  font-family:var(--f-mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--accent-ink); background:var(--accent-soft);
+  border-radius:2px; padding:3px 7px; white-space:nowrap;
+}
+.mission-body strong{display:block; font-size:14.5px; font-weight:600}
+.mission-body span{display:block; color:var(--ink-2); font-size:12.5px; margin-top:1px}
+.mission-score{display:flex; align-items:center; gap:var(--s4)}
+.score-num{
+  font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:24px; font-weight:600; line-height:1;
+}
+.score-label{
+  display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-3); margin-top:3px;
+}
+.stars{font-size:15px; letter-spacing:2px; color:var(--warn)}
+
+.btn{
+  appearance:none; cursor:pointer;
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink);
+  border-radius:var(--r); padding:7px 14px; font-size:13px; font-weight:500;
+  white-space:nowrap;
+}
+.btn:hover{border-color:var(--ink-3)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:#fff}
+:root[data-theme="dark"] .btn-primary,
+.btn-primary{color:#fff}
+@media (prefers-color-scheme:dark){.btn-primary{color:#08171A}}
+:root[data-theme="dark"] .btn-primary{color:#08171A}
+:root[data-theme="light"] .btn-primary{color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.4; cursor:not-allowed}
+
+/* ---- console ---- */
+.console{
+  display:grid;
+  grid-template-columns:298px minmax(0,1fr);
+  gap:var(--s3);
+  align-items:start;
+}
+@media (max-width:1080px){ .console{grid-template-columns:1fr} }
+
+/* ---- rail ---- */
+.rail{
+  display:flex; flex-direction:column; gap:var(--s3);
+  background:var(--surface); border:1px solid var(--rule); border-radius:var(--r);
+  padding:var(--s4); box-shadow:var(--shadow);
+}
+.group{display:flex; flex-direction:column; gap:var(--s2)}
+.group + .group{border-top:1px solid var(--rule-2); padding-top:var(--s3)}
+.group > h2{
+  margin:0; font-size:10.5px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{font-size:12.5px; color:var(--ink-2)}
+.text-in{
+  width:100%; padding:7px 9px; border:1px solid var(--rule); border-radius:var(--r);
+  background:var(--sunk); font-family:var(--f-mono); font-size:13px;
+}
+.text-in:focus{outline:2px solid var(--accent); outline-offset:-1px; background:var(--surface)}
+.text-in[aria-invalid="true"]{border-color:var(--crit); background:color-mix(in srgb,var(--crit) 8%,var(--sunk))}
+.err{color:var(--crit); font-size:11.5px; min-height:0}
+.err:empty{display:none}
+
+.chips{display:flex; flex-wrap:wrap; gap:5px}
+.chip{
+  appearance:none; cursor:pointer; border:1px solid var(--rule);
+  background:var(--panel); color:var(--ink-2);
+  border-radius:20px; padding:3px 10px; font-size:11.5px;
+}
+.chip:hover{border-color:var(--accent); color:var(--accent-ink)}
+.chip:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.chip[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink)}
+
+.slider-row{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:var(--s2)}
+.slider-row .k{
+  font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.4em;
+}
+.slider-row .v{
+  font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:12.5px; text-align:right; width:4.2em;
+  background:transparent; border:0; border-bottom:1px dotted var(--rule); padding:1px 2px;
+}
+.slider-row .v:focus{outline:none; border-bottom-color:var(--accent); background:var(--sunk)}
+
+input[type=range]{
+  appearance:none; -webkit-appearance:none; width:100%; height:20px;
+  background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-moz-range-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid var(--surface); margin-top:-5.5px;
+  box-shadow:0 0 0 1px var(--rule);
+}
+input[type=range]::-moz-range-thumb{
+  width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid var(--surface); box-shadow:0 0 0 1px var(--rule);
+}
+input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:var(--r)}
+
+.checks{display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; align-items:start}
+.check{display:flex; align-items:flex-start; gap:6px; font-size:12.5px; color:var(--ink-2); cursor:pointer; line-height:1.25}
+.check input{margin-top:1px}
+.check input{accent-color:var(--accent); width:14px; height:14px; margin:0; cursor:pointer}
+.check:hover{color:var(--ink)}
+
+.radios{display:flex; flex-direction:column; gap:5px}
+.radio{
+  display:flex; align-items:flex-start; gap:7px; font-size:12.5px; cursor:pointer;
+  padding:6px 8px; border:1px solid var(--rule-2); border-radius:var(--r); background:var(--panel);
+}
+.radio input{accent-color:var(--accent); margin:2px 0 0; cursor:pointer}
+.radio:has(input:checked){border-color:var(--accent); background:var(--accent-soft)}
+.radio b{display:block; font-weight:600; color:var(--ink)}
+.radio span{display:block; color:var(--ink-3); font-size:11.5px; line-height:1.35}
+
+/* ---- stage ---- */
+.stage{display:flex; flex-direction:column; gap:var(--s3); min-width:0}
+.viewports{display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); min-width:0}
+@media (max-width:900px){ .viewports{grid-template-columns:1fr} }
+
+.viewport{
+  display:flex; flex-direction:column; min-width:0;
+  background:var(--surface); border:1px solid var(--rule); border-radius:var(--r);
+  box-shadow:var(--shadow); overflow:hidden;
+}
+.vp-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s2);
+  padding:7px var(--s3); border-bottom:1px solid var(--rule-2); background:var(--panel);
+}
+.vp-title{
+  font-family:var(--f-mono); font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+.vp-tools{display:flex; gap:4px}
+.tool{
+  appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink-2); border-radius:2px; padding:2px 7px;
+  font-family:var(--f-mono); font-size:10.5px; letter-spacing:.04em;
+}
+.tool:hover{border-color:var(--accent); color:var(--accent-ink)}
+.tool:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.tool[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--surface)}
+:root[data-theme="dark"] .tool[aria-pressed="true"]{color:#08171A}
+@media (prefers-color-scheme:dark){.tool[aria-pressed="true"]{color:#08171A}}
+:root[data-theme="light"] .tool[aria-pressed="true"]{color:#fff}
+
+.canvas-wrap{position:relative; width:100%; background:var(--surface)}
+.canvas-wrap canvas{display:block; width:100%; height:100%; touch-action:none}
+.canvas-wrap canvas:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+#wrap2d{aspect-ratio:1/1}
+#wrap3d{aspect-ratio:1/1}
+
+.readout{
+  /* six cells, and a row that wraps one of them onto a line of its own reads
+     as a mistake rather than as a layout */
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(78px,1fr));
+  gap:1px; background:var(--rule-2); border-top:1px solid var(--rule-2);
+}
+.cell{background:var(--surface); padding:6px 10px}
+.cell dt{
+  margin:0; font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3);
+}
+.cell dd{
+  margin:1px 0 0; font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:13.5px; font-weight:500;
+}
+.cell dd.hl{color:var(--accent-ink)}
+.cell dd.opt{color:var(--optimum)}
+
+/* ---- scrubber ---- */
+.scrub{
+  display:grid; grid-template-columns:auto 1fr auto auto; align-items:center; gap:var(--s3);
+  background:var(--surface); border:1px solid var(--rule); border-radius:var(--r);
+  padding:var(--s3) var(--s4); box-shadow:var(--shadow);
+}
+.scrub-label{display:flex; flex-direction:column; gap:1px; min-width:150px}
+.scrub-label b{font-size:12.5px; font-weight:600}
+.scrub-label span{font-size:11.5px; color:var(--ink-3)}
+.scrub-val{
+  font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:16px; min-width:5.5em; text-align:right;
+}
+.swatch{width:14px; height:14px; border-radius:2px; border:1px solid var(--rule); flex:none}
+.scrub-tail{display:flex; align-items:center; gap:var(--s2)}
+
+@media (max-width:620px){
+  .scrub{
+    grid-template-columns:1fr auto auto;
+    grid-template-areas:"lab lab lab" "sl val play";
+    row-gap:var(--s2);
+  }
+  .scrub-label{grid-area:lab; min-width:0}
+  #scrub{grid-area:sl}
+  .scrub-tail{grid-area:val}
+  #btn-play{grid-area:play}
+}
+@media (max-width:760px){
+  .mission{grid-template-columns:1fr}
+  .mission-score{flex-wrap:wrap; justify-content:space-between}
+}
+
+/* ---- verdict ---- */
+.verdict{
+  background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent);
+  border-radius:var(--r); padding:var(--s3) var(--s4); box-shadow:var(--shadow);
+  display:flex; flex-direction:column; gap:5px;
+}
+.verdict[hidden]{display:none}
+.verdict b{font-size:14px}
+.verdict p{margin:0; color:var(--ink-2); font-size:13px; max-width:78ch}
+.verdict .math{font-family:var(--f-mono); font-size:12.5px; color:var(--ink)}
+.verdict.is-good{border-left-color:var(--good)}
+.verdict.is-warn{border-left-color:var(--warn)}
+.verdict.is-crit{border-left-color:var(--crit)}
+
+/* ---- level tray ---- */
+.tray{display:flex; gap:6px; flex-wrap:wrap}
+.tray[hidden]{display:none}
+.lvl{
+  appearance:none; cursor:pointer; text-align:left;
+  border:1px solid var(--rule); background:var(--panel); border-radius:var(--r);
+  padding:6px 9px; min-width:104px;
+}
+.lvl:hover{border-color:var(--accent)}
+.lvl:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.lvl[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft)}
+.lvl b{display:block; font-size:12px; font-weight:600}
+.lvl span{display:block; font-family:var(--f-mono); font-size:10.5px; color:var(--ink-3)}
+.lvl[data-locked="true"]{opacity:.45; cursor:not-allowed}
+
+.legend{display:flex; align-items:center; gap:var(--s2); font-size:11.5px; color:var(--ink-3)}
+.legend canvas{display:block; border:1px solid var(--rule); border-radius:2px}
+
+.foot{
+  color:var(--ink-3); font-size:11.5px; padding-top:var(--s2);
+  border-top:1px solid var(--rule-2);
+}
+.foot code{font-family:var(--f-mono); font-size:11px}
+
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important}
+}
+
+/* ============================================================
+   Edgeworth-specific
+   ------------------------------------------------------------
+   Two agents means every readout, legend and swatch has an A
+   side and a B side, so they get their own tokens rather than
+   borrowing --accent (which the chrome already uses for state).
+   ============================================================ */
+:root{ --agA:#1E6FD9; --agB:#C2410C; --core:#8E2F9E; }
+@media (prefers-color-scheme:dark){ :root{ --agA:#6FB2FF; --agB:#FF9A5C; --core:#DD8BEE; } }
+:root[data-theme="dark"]{ --agA:#6FB2FF; --agB:#FF9A5C; --core:#DD8BEE; }
+:root[data-theme="light"]{ --agA:#1E6FD9; --agB:#C2410C; --core:#8E2F9E; }
+
+/* the box is as wide as the total endowment of x and as tall as that of y,
+   so its aspect ratio is a property of the model, not of the layout — JS
+   writes it onto the wrapper */
+#wrapBox{aspect-ratio:1/1}
+#wrapAux{aspect-ratio:1/1}
+
+.cell dd.a{color:var(--agA)}
+.cell dd.b{color:var(--agB)}
+.cell dd.core{color:var(--core)}
+.cell dd.warn{color:var(--warn)}
+.cell dd.good{color:var(--good)}
+
+/* two-agent legend under a viewport bar */
+.keys{display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap}
+.key{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--ink-3)}
+.dot{width:9px; height:9px; border-radius:50%; flex:none}
+.dot.sq{border-radius:2px}
+
+/* the endowment / allocation pair, shown side by side in the rail */
+.pair{display:grid; grid-template-columns:1fr 1fr; gap:var(--s2)}
+.pair .col{display:flex; flex-direction:column; gap:5px}
+.pair h3{
+  margin:0; font-family:var(--f-mono); font-size:10.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3); display:flex; align-items:center; gap:5px;
+}
+
+/* a compact numeric entry used for the endowment grid */
+.mini{display:grid; grid-template-columns:auto 1fr; align-items:center; gap:6px}
+.mini .k{font-family:var(--f-mono); font-size:12px; color:var(--ink-2)}
+.mini input{
+  width:100%; font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:12.5px; text-align:right;
+  background:var(--sunk); border:1px solid var(--rule); border-radius:var(--r); padding:4px 6px;
+}
+.mini input:focus{outline:2px solid var(--accent); outline-offset:-1px; background:var(--surface)}
+
+/* the price readout that sits beside the auction scrubber */
+.price-tag{
+  font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:12.5px; color:var(--ink-2);
+}
+
+.note{
+  font-size:11.5px; color:var(--ink-3); line-height:1.35; margin:0;
+}
+.note b{color:var(--ink-2); font-weight:600}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <h1 id="t-title">La Caja de Edgeworth</h1>
+      <p id="t-sub">Dos personas, dos bienes, nada que producir: sólo repartir lo que ya hay. La caja mide el total; cada punto es un reparto. El diagrama y el espacio de utilidades son la misma cosa vista de dos maneras.</p>
+    </div>
+    <div class="masthead-actions">
+      <div class="seg" role="group" aria-label="Modo">
+        <button type="button" id="mode-explore" aria-pressed="true">Explorar</button>
+        <button type="button" id="mode-challenge" aria-pressed="false">Retos</button>
+      </div>
+      <div class="seg" role="group" aria-label="Idioma / Language">
+        <button type="button" id="lang-es" aria-pressed="true">ES</button>
+        <button type="button" id="lang-en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="mission" id="mission" hidden>
+    <span class="mission-tag" id="mission-tag">Nivel 1</span>
+    <div class="mission-body">
+      <strong id="mission-title">—</strong>
+      <span id="mission-hint">—</span>
+    </div>
+    <div class="mission-score">
+      <div>
+        <div class="score-num" id="score-num">—</div>
+        <span class="score-label" id="t-score">Puntos</span>
+      </div>
+      <div>
+        <div class="stars" id="stars">☆☆☆</div>
+        <span class="score-label" id="t-best">Mejor</span>
+      </div>
+      <button type="button" class="btn btn-primary" id="btn-check">Comprobar</button>
+      <button type="button" class="btn" id="btn-next">Siguiente</button>
+    </div>
+  </section>
+
+  <div class="console">
+
+    <!-- ============ control rail ============ -->
+    <aside class="rail">
+
+      <div class="group">
+        <h2 id="t-g-pref">Preferencias</h2>
+        <div class="field">
+          <label for="ua-expr" id="t-uaexpr"><span class="dot" style="background:var(--agA);display:inline-block;vertical-align:-1px"></span> Utilidad de A — u<sub>A</sub>(x, y)</label>
+          <input class="text-in" id="ua-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off">
+          <div class="err" id="ua-err"></div>
+        </div>
+        <div class="field">
+          <label for="ub-expr" id="t-ubexpr"><span class="dot" style="background:var(--agB);display:inline-block;vertical-align:-1px"></span> Utilidad de B — u<sub>B</sub>(x, y)</label>
+          <input class="text-in" id="ub-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off">
+          <div class="err" id="ub-err"></div>
+        </div>
+        <p class="note" id="t-pref-note">u<sub>B</sub> se evalúa en la canasta de B, medida desde su propio origen, arriba a la derecha.</p>
+        <div class="chips" id="preset-chips"></div>
+      </div>
+
+      <div class="group">
+        <h2 id="t-g-endow">Dotaciones</h2>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agA)">ω<sub>Ax</sub></span>
+          <input type="range" id="eax" min="0" max="20" step="0.1" value="6" aria-label="Dotación de A en x">
+          <input class="v" id="eax-v" inputmode="decimal" aria-label="Dotación de A en x (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agA)">ω<sub>Ay</sub></span>
+          <input type="range" id="eay" min="0" max="20" step="0.1" value="2" aria-label="Dotación de A en y">
+          <input class="v" id="eay-v" inputmode="decimal" aria-label="Dotación de A en y (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agB)">ω<sub>Bx</sub></span>
+          <input type="range" id="ebx" min="0" max="20" step="0.1" value="2" aria-label="Dotación de B en x">
+          <input class="v" id="ebx-v" inputmode="decimal" aria-label="Dotación de B en x (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agB)">ω<sub>By</sub></span>
+          <input type="range" id="eby" min="0" max="20" step="0.1" value="6" aria-label="Dotación de B en y">
+          <input class="v" id="eby-v" inputmode="decimal" aria-label="Dotación de B en y (valor)">
+        </div>
+        <p class="note" id="t-endow-note">—</p>
+      </div>
+
+      <div class="group">
+        <h2 id="t-g-method">Mecanismo</h2>
+        <div class="radios">
+          <label class="radio">
+            <input type="radio" name="method" value="free" checked>
+            <span><b id="t-m-free">Repartir a mano</b><span id="t-m-free-d">Arrastra el reparto por toda la caja. La lente muestra quién puede todavía ganar.</span></span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="method" value="trade">
+            <span><b id="t-m-trade">Intercambiar desde la dotación</b><span id="t-m-trade-d">Nadie acepta empeorar: el reparto se queda dentro de la lente de ω.</span></span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="method" value="auction">
+            <span><b id="t-m-auction">Subasta walrasiana</b><span id="t-m-auction-d">Anuncia un precio; cada uno pide lo que quiere; busca el que vacía el mercado.</span></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2 id="t-g-price">Precios</h2>
+        <div class="slider-row">
+          <span class="k">p</span>
+          <input type="range" id="pr" min="-2.2" max="2.2" step="0.002" value="0" aria-label="Razón de precios">
+          <input class="v" id="pr-v" inputmode="decimal" aria-label="Razón de precios (valor)">
+        </div>
+        <p class="note" id="t-price-note">p = p<sub>x</sub>/p<sub>y</sub>, con p<sub>y</sub> = 1. La recta de precios pasa siempre por ω.</p>
+        <button type="button" class="btn" id="btn-clear" style="align-self:flex-start">Vaciar el mercado</button>
+      </div>
+
+      <div class="group">
+        <h2 id="t-g-map">Mapa</h2>
+        <div class="chips" id="map-chips"></div>
+        <div class="legend"><canvas id="colorbar" width="150" height="8" aria-hidden="true"></canvas><span id="t-bar">bajo → alto</span></div>
+        <h2 id="t-g-show" style="margin-top:6px">Capas</h2>
+        <div class="checks" id="layer-checks"></div>
+      </div>
+    </aside>
+
+    <!-- ============ stage ============ -->
+    <div class="stage">
+
+      <div class="viewports">
+        <section class="viewport">
+          <div class="vp-bar">
+            <span class="vp-title" id="t-vpbox">Caja de Edgeworth</span>
+            <div class="keys">
+              <span class="key"><span class="dot" style="background:var(--agA)"></span><span id="t-keyA">A</span></span>
+              <span class="key"><span class="dot" style="background:var(--agB)"></span><span id="t-keyB">B</span></span>
+              <span class="key"><span class="dot sq" style="background:var(--core)"></span><span id="t-keyC">Curva de contrato</span></span>
+            </div>
+          </div>
+          <div class="canvas-wrap" id="wrapBox">
+            <canvas id="cbox" tabindex="0" role="application"
+              aria-label="Caja de Edgeworth. Arrastra el reparto; usa las flechas para moverlo."></canvas>
+          </div>
+          <dl class="readout" id="readoutBox"></dl>
+        </section>
+
+        <section class="viewport">
+          <div class="vp-bar">
+            <span class="vp-title" id="t-vpaux">Espacio de utilidades</span>
+            <div class="vp-tools" role="group" aria-label="Panel">
+              <button type="button" class="tool" data-aux="upf" aria-pressed="true">u<sub>A</sub>–u<sub>B</sub></button>
+              <button type="button" class="tool" data-aux="excess" aria-pressed="false">z(p)</button>
+            </div>
+          </div>
+          <div class="canvas-wrap" id="wrapAux">
+            <canvas id="caux" tabindex="0" role="application"
+              aria-label="Frontera de posibilidades de utilidad y exceso de demanda."></canvas>
+          </div>
+          <dl class="readout" id="readoutAux"></dl>
+        </section>
+      </div>
+
+      <div class="scrub">
+        <div class="scrub-label">
+          <b id="scrub-title">Reparto</b>
+          <span id="scrub-sub">a lo largo de la curva de contrato</span>
+        </div>
+        <input type="range" id="scrub" min="0" max="1" step="0.0005" value="0.5" aria-label="Escáner">
+        <div class="scrub-tail">
+          <span class="swatch" id="scrub-swatch"></span>
+          <span class="scrub-val" id="scrub-val">—</span>
+        </div>
+        <button type="button" class="btn" id="btn-play" aria-label="Animar">▶</button>
+      </div>
+
+      <div class="verdict" id="verdict" hidden>
+        <b id="verdict-title">—</b>
+        <p id="verdict-text">—</p>
+        <p class="math" id="verdict-math">—</p>
+      </div>
+
+      <div class="tray" id="tray"></div>
+
+      <p class="foot" id="t-foot">
+        Traducido de una calculadora de Desmos. Sintaxis admitida:
+        <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>,
+        constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.
+      </p>
+    </div>
+  </div>
+</div>
+<script>
+/* ============================================================================
+   La Caja de Edgeworth — traducción de una calculadora de Desmos a una app
+   autónoma. Sin dependencias externas, sin red, sin paso de compilación:
+   parser propio, derivadas simbólicas, marching squares y todo el dibujo en
+   canvas 2D.
+   ========================================================================== */
+"use strict";
+
+/* ==========================================================================
+   1. Expression language
+   --------------------------------------------------------------------------
+   Tokeniser -> Pratt parser -> AST -> closure tree. No eval(), because the
+   artifact CSP may forbid it and a silent failure here kills the whole app.
+   ========================================================================== */
+
+const FUNCS = {
+  sqrt:1, ln:1, log:1, log10:1, exp:1, abs:1, sin:1, cos:1, tan:1,
+  min:2, max:2, pow:2
+};
+const CONSTS = { e:Math.E, pi:Math.PI, "π":Math.PI };
+
+function tokenize(src){
+  const s = src.replace(/−/g,"-").replace(/[×⋅]/g,"*").replace(/÷/g,"/");
+  const out = [];
+  let i = 0;
+  const isDigit = c => c >= "0" && c <= "9";
+  const isAlpha = c => /[A-Za-zα-ω]/.test(c);
+
+  while(i < s.length){
+    const c = s[i];
+    if(c === " " || c === "\t"){ i++; continue; }
+
+    if(isDigit(c) || (c === "." && isDigit(s[i+1]))){
+      let j = i;
+      while(j < s.length && (isDigit(s[j]) || s[j] === ".")) j++;
+      out.push({ k:"num", v:parseFloat(s.slice(i,j)) });
+      i = j; continue;
+    }
+
+    if(isAlpha(c)){
+      // longest known function or constant name, else a single-letter variable
+      let name = null;
+      for(const cand of Object.keys(FUNCS).concat(Object.keys(CONSTS))){
+        if(s.startsWith(cand, i) && (!name || cand.length > name.length)) name = cand;
+      }
+      if(name && FUNCS[name]){ out.push({ k:"fn", v:name, arity:FUNCS[name] }); i += name.length; continue; }
+      if(name && name in CONSTS){ out.push({ k:"num", v:CONSTS[name] }); i += name.length; continue; }
+      if(c === "x" || c === "y"){ out.push({ k:"var", v:c }); i++; continue; }
+      throw new SyntaxError(`unknown:${c}`);
+    }
+
+    if("+-*/^(),".includes(c)){ out.push({ k:c }); i++; continue; }
+    throw new SyntaxError(`char:${c}`);
+  }
+
+  // implicit multiplication: 2x, xy, 2(x+1), (x+1)y, 3sqrt(x)
+  const res = [];
+  for(let n = 0; n < out.length; n++){
+    const a = out[n], b = out[n+1];
+    res.push(a);
+    if(!b) break;
+    const aEnds = a.k === "num" || a.k === "var" || a.k === ")";
+    const bStarts = b.k === "num" || b.k === "var" || b.k === "fn" || b.k === "(";
+    if(aEnds && bStarts) res.push({ k:"*" });
+  }
+  return res;
+}
+
+function parse(src){
+  const ts = tokenize(src);
+  let p = 0;
+  const peek = () => ts[p];
+  const eat = k => {
+    if(!ts[p] || ts[p].k !== k) throw new SyntaxError(`expected:${k}`);
+    return ts[p++];
+  };
+
+  // ^ binds tightest and is right-associative; unary minus sits below it so
+  // -x^2 parses as -(x^2), matching every textbook and GeoGebra itself.
+  function atom(){
+    const t = peek();
+    if(!t) throw new SyntaxError("eof");
+    if(t.k === "num"){ p++; return { t:"num", v:t.v }; }
+    if(t.k === "var"){ p++; return { t:"var", n:t.v }; }
+    if(t.k === "("){ p++; const e = expr(0); eat(")"); return e; }
+    if(t.k === "-"){ p++; return { t:"neg", a:unary() }; }
+    if(t.k === "+"){ p++; return unary(); }
+    if(t.k === "fn"){
+      p++; eat("(");
+      const args = [expr(0)];
+      while(peek() && peek().k === ","){ p++; args.push(expr(0)); }
+      eat(")");
+      if(args.length !== t.arity) throw new SyntaxError(`arity:${t.v}`);
+      return { t:"call", n:t.v, a:args };
+    }
+    throw new SyntaxError(`token:${t.k}`);
+  }
+  function unary(){
+    let base = atom();
+    if(peek() && peek().k === "^"){ p++; base = { t:"pow", a:base, b:unary() }; }
+    return base;
+  }
+  const PREC = { "+":1, "-":1, "*":2, "/":2 };
+  function expr(min){
+    let lhs = unary();
+    while(peek() && PREC[peek().k] !== undefined && PREC[peek().k] > min){
+      const op = ts[p++].k;
+      const rhs = expr(PREC[op]);
+      lhs = { t:"bin", o:op, a:lhs, b:rhs };
+    }
+    return lhs;
+  }
+  const ast = expr(0);
+  if(p !== ts.length) throw new SyntaxError("trailing");
+  return ast;
+}
+
+/* ---- AST -> closure ------------------------------------------------------ */
+function compile(n){
+  switch(n.t){
+    case "num": { const v = n.v; return () => v; }
+    case "var": return n.n === "x" ? (x) => x : (x,y) => y;
+    case "neg": { const a = compile(n.a); return (x,y) => -a(x,y); }
+    case "pow": {
+      const a = compile(n.a), b = compile(n.b);
+      if(n.b.t === "num"){ const k = n.b.v; return (x,y) => Math.pow(a(x,y), k); }
+      return (x,y) => Math.pow(a(x,y), b(x,y));
+    }
+    case "bin": {
+      const a = compile(n.a), b = compile(n.b);
+      switch(n.o){
+        case "+": return (x,y) => a(x,y) + b(x,y);
+        case "-": return (x,y) => a(x,y) - b(x,y);
+        case "*": return (x,y) => a(x,y) * b(x,y);
+        case "/": return (x,y) => a(x,y) / b(x,y);
+      }
+      break;
+    }
+    case "call": {
+      const A = n.a.map(compile), f = A[0], g = A[1];
+      switch(n.n){
+        case "sqrt":  return (x,y) => Math.sqrt(f(x,y));
+        case "ln":    return (x,y) => Math.log(f(x,y));
+        case "log":   return (x,y) => Math.log(f(x,y));
+        case "log10": return (x,y) => Math.log10(f(x,y));
+        case "exp":   return (x,y) => Math.exp(f(x,y));
+        case "abs":   return (x,y) => Math.abs(f(x,y));
+        case "sin":   return (x,y) => Math.sin(f(x,y));
+        case "cos":   return (x,y) => Math.cos(f(x,y));
+        case "tan":   return (x,y) => Math.tan(f(x,y));
+        case "min":   return (x,y) => Math.min(f(x,y), g(x,y));
+        case "max":   return (x,y) => Math.max(f(x,y), g(x,y));
+        case "pow":   return (x,y) => Math.pow(f(x,y), g(x,y));
+      }
+    }
+  }
+  throw new Error("compile");
+}
+
+/* ---- symbolic differentiation -------------------------------------------
+   min / max / abs have kinks, which is exactly the interesting case here
+   (perfect complements). We refuse to fake a symbolic derivative for them and
+   fall back to a central difference, which is what a student sees anyway.    */
+const NUM = v => ({ t:"num", v });
+const isNum = (n,v) => n.t === "num" && n.v === v;
+
+function add(a,b){ if(isNum(a,0)) return b; if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v+b.v); return { t:"bin", o:"+", a, b }; }
+function sub(a,b){ if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v-b.v); return { t:"bin", o:"-", a, b }; }
+function mul(a,b){
+  if(isNum(a,0)||isNum(b,0)) return NUM(0);
+  if(isNum(a,1)) return b; if(isNum(b,1)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v*b.v);
+  return { t:"bin", o:"*", a, b };
+}
+function div(a,b){ if(isNum(a,0)) return NUM(0); if(isNum(b,1)) return a;
+  return { t:"bin", o:"/", a, b }; }
+function powN(a,b){ if(isNum(b,1)) return a; if(isNum(b,0)) return NUM(1);
+  return { t:"pow", a, b }; }
+
+class NonDifferentiable extends Error {}
+
+function diff(n, v){
+  switch(n.t){
+    case "num": return NUM(0);
+    case "var": return NUM(n.n === v ? 1 : 0);
+    case "neg": return { t:"neg", a:diff(n.a, v) };
+    case "bin":
+      if(n.o === "+") return add(diff(n.a,v), diff(n.b,v));
+      if(n.o === "-") return sub(diff(n.a,v), diff(n.b,v));
+      if(n.o === "*") return add(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v)));
+      if(n.o === "/") return div(sub(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v))), powN(n.b, NUM(2)));
+      break;
+    case "pow": {
+      const da = diff(n.a, v);
+      if(n.b.t === "num"){                               // a^k  ->  k a^(k-1) a'
+        return mul(mul(NUM(n.b.v), powN(n.a, NUM(n.b.v - 1))), da);
+      }
+      const db = diff(n.b, v);                           // a^b  ->  a^b (b' ln a + b a'/a)
+      return mul(n, add(mul(db, { t:"call", n:"ln", a:[n.a] }), div(mul(n.b, da), n.a)));
+    }
+    case "call": {
+      const u = n.a[0], du = diff(u, v);
+      switch(n.n){
+        case "ln": case "log":  return div(du, u);
+        case "log10":           return div(du, mul(u, NUM(Math.LN10)));
+        case "exp":             return mul(n, du);
+        case "sqrt":            return div(du, mul(NUM(2), n));
+        case "sin":             return mul({ t:"call", n:"cos", a:[u] }, du);
+        case "cos":             return { t:"neg", a:mul({ t:"call", n:"sin", a:[u] }, du) };
+        case "pow":             return diff({ t:"pow", a:n.a[0], b:n.a[1] }, v);
+        default: throw new NonDifferentiable(n.n);       // min, max, abs, tan
+      }
+    }
+  }
+  throw new Error("diff");
+}
+
+/* Build u, u_x, u_y from source. Falls back to numeric partials at kinks. */
+function buildUtility(src){
+  const ast = parse(src);
+  const u = compile(ast);
+  let ux, uy, exact = true;
+  try{
+    ux = compile(diff(ast, "x"));
+    uy = compile(diff(ast, "y"));
+  }catch(err){
+    if(!(err instanceof NonDifferentiable)) throw err;
+    exact = false;
+    const h = 1e-5;
+    ux = (x,y) => (u(x+h,y) - u(x-h,y)) / (2*h);
+    uy = (x,y) => (u(x,y+h) - u(x,y-h)) / (2*h);
+  }
+  return { src, ast, u, ux, uy, exactPartials:exact };
+}
+
+
+/* ==========================================================================
+   2. Scalar field sampling + marching squares
+   ========================================================================== */
+
+function sampleField(u, xmax, ymax, n){
+  const g = new Float64Array(n * n);
+  const dx = xmax / (n - 1), dy = ymax / (n - 1);
+  let lo = Infinity, hi = -Infinity;
+  const finite = [];
+  for(let j = 0; j < n; j++){
+    const y = j * dy;
+    for(let i = 0; i < n; i++){
+      const v = u(i * dx, y);
+      g[j*n + i] = v;
+      if(Number.isFinite(v)){ finite.push(v); if(v < lo) lo = v; if(v > hi) hi = v; }
+    }
+  }
+  /* Percentile clipping. ln(x) dives to -inf along the axis, and an edge of the
+     Edgeworth box is exactly where one person holds none of a good — so the
+     naive min would eat the whole colour ramp on every logarithmic utility. */
+  const sorted = Float64Array.from(finite);
+  sorted.sort();
+  const q = t => sorted.length
+    ? sorted[Math.min(sorted.length-1, Math.max(0, Math.round(t*(sorted.length-1))))]
+    : 0;
+  let cLo = q(0.02), cHi = q(1.0);
+  if(!(cHi > cLo)) cHi = cLo + 1;
+  return { g, n, dx, dy, xmax, ymax, min:lo, max:hi, cMin:cLo, cMax:cHi, sorted };
+}
+
+/* Percentile rank of a value within a sampled field, in [0,1].
+   A and B may be measured in wholly different units — one in utils of
+   sqrt(xy), the other in utils of x+2y — and nothing in the model makes those
+   numbers comparable. Ranks are comparable, which is what the gains map and
+   the challenge scoring need. */
+function rankOf(field, v){
+  const a = field.sorted;
+  if(!a.length || !Number.isFinite(v)) return NaN;
+  let lo = 0, hi = a.length;
+  while(lo < hi){ const m = (lo + hi) >> 1; if(a[m] < v) lo = m + 1; else hi = m; }
+  return lo / a.length;
+}
+
+/* The rank of every grid cell, computed once per sampling. The gains map is
+   redrawn on every pointer move, and doing 26 000 binary searches per frame to
+   get there was the one thing in this applet that could be felt. */
+function buildRanks(field){
+  const { g } = field, m = g.length;
+  const r = new Float32Array(m);
+  for(let i = 0; i < m; i++) r[i] = rankOf(field, g[i]);
+  field.rank = r;
+  return field;
+}
+
+/* Bilinear read of a sampled field at model coordinates. Used wherever a value
+   is wanted off-grid without paying for another closure call — and, more to
+   the point, so that what is shaded agrees exactly with what is contoured. */
+function fieldAt(field, x, y){
+  const { g, n, dx, dy } = field;
+  const fx = clamp(x / dx, 0, n - 1.0001), fy = clamp(y / dy, 0, n - 1.0001);
+  const i = fx | 0, j = fy | 0, tx = fx - i, ty = fy - j;
+  const v00 = g[j*n+i], v10 = g[j*n+i+1], v01 = g[(j+1)*n+i], v11 = g[(j+1)*n+i+1];
+  return (v00*(1-tx) + v10*tx)*(1-ty) + (v01*(1-tx) + v11*tx)*ty;
+}
+
+/* Returns a flat Float32Array of segments [x0,y0,x1,y1, ...] in model coords. */
+function marchingSquares(field, level){
+  const { g, n, dx, dy } = field;
+  const seg = [];
+  const ip = (va, vb, a, b) => a + (b - a) * ((level - va) / (vb - va));
+  for(let j = 0; j < n-1; j++){
+    for(let i = 0; i < n-1; i++){
+      const v0 = g[j*n+i], v1 = g[j*n+i+1], v2 = g[(j+1)*n+i+1], v3 = g[(j+1)*n+i];
+      if(!Number.isFinite(v0) || !Number.isFinite(v1) || !Number.isFinite(v2) || !Number.isFinite(v3)) continue;
+      let code = 0;
+      if(v0 > level) code |= 1;
+      if(v1 > level) code |= 2;
+      if(v2 > level) code |= 4;
+      if(v3 > level) code |= 8;
+      if(code === 0 || code === 15) continue;
+      const x0 = i*dx, x1 = (i+1)*dx, y0 = j*dy, y1 = (j+1)*dy;
+      const B = () => [ip(v0,v1,x0,x1), y0];   // bottom edge
+      const R = () => [x1, ip(v1,v2,y0,y1)];   // right edge
+      const T = () => [ip(v3,v2,x0,x1), y1];   // top edge
+      const L = () => [x0, ip(v0,v3,y0,y1)];   // left edge
+      const push = (p,q2) => seg.push(p[0],p[1],q2[0],q2[1]);
+      switch(code){
+        case 1: case 14: push(L(), B()); break;
+        case 2: case 13: push(B(), R()); break;
+        case 3: case 12: push(L(), R()); break;
+        case 4: case 11: push(R(), T()); break;
+        case 6: case  9: push(B(), T()); break;
+        case 7: case  8: push(L(), T()); break;
+        case 5: { const c = (v0+v1+v2+v3)/4;                 // saddle
+          if(c > level){ push(L(), T()); push(B(), R()); }
+          else         { push(L(), B()); push(R(), T()); }
+          break; }
+        case 10: { const c = (v0+v1+v2+v3)/4;
+          if(c > level){ push(L(), B()); push(R(), T()); }
+          else         { push(L(), T()); push(B(), R()); }
+          break; }
+      }
+    }
+  }
+  return Float32Array.from(seg);
+}
+
+/* ==========================================================================
+   3. The economics
+   --------------------------------------------------------------------------
+   Two people, two goods, nothing produced. A's bundle is read from the bottom
+   left of the box, B's from the top right, and every point of the box is a
+   complete description of who has what: xB = Wx - xA, yB = Wy - yA.
+
+   Everything below is numerical rather than analytic on purpose. The applet
+   has to survive perfect substitutes, perfect complements and CES — the three
+   cases where a first-order condition either has no solution or has a whole
+   segment of them — so the Pareto set is found by search and the equilibrium
+   by a sign change, not by solving MRS_A = MRS_B symbolically.
+   ========================================================================== */
+
+const NGRID  = 161;   // sampling resolution of both utility fields
+const NLEVEL = 72;    // indifference curves of A swept for the Pareto set
+const NPRICE = 241;   // price ratios swept for the offer curves and z(p)
+
+/* ---- the box ------------------------------------------------------------ */
+
+function totals(st){ st.Wx = st.wAx + st.wBx; st.Wy = st.wAy + st.wBy; }
+
+/* Both utilities as fields over the same box, so that one marching-squares
+   routine, one colour ramp and one picker serve both. */
+function sampleBox(st){
+  totals(st);
+  st.fA = sampleField((x, y) => st.uA(x, y), st.Wx, st.Wy, NGRID);
+  st.fB = sampleField((x, y) => st.uB(st.Wx - x, st.Wy - y), st.Wx, st.Wy, NGRID);
+}
+
+/* ---- marginal rates of substitution ------------------------------------- */
+
+function mrsA(st, x, y){ return st.uAx(x, y) / st.uAy(x, y); }
+function mrsB(st, x, y){
+  const bx = st.Wx - x, by = st.Wy - y;
+  return st.uBx(bx, by) / st.uBy(bx, by);
+}
+
+/* ---- demand ------------------------------------------------------------- */
+
+/* Marshallian demand at price ratio p (with p_y normalised to 1) and income m,
+   over the whole non-negative quadrant and deliberately NOT clipped to the
+   box: demand outside the box is precisely what excess demand measures.
+
+   Dense scan then golden section along the budget line. A first-order
+   condition finds nothing at the kink of min(x,y) and finds the wrong thing at
+   the corner solution of x + 2y; a scan finds both. */
+function demandAt(u, p, m){
+  if(!(p > 0) || !(m > 0) || !Number.isFinite(m)) return [0, 0];
+  const tMax = m / p;
+  const g = t => { const v = u(t, m - p*t); return Number.isFinite(v) ? v : -Infinity; };
+
+  const N = 96;
+  let bt = 0, bv = -Infinity;
+  for(let k = 0; k <= N; k++){
+    const t = tMax * k / N, v = g(t);
+    if(v > bv){ bv = v; bt = t; }
+  }
+  const h = tMax / N;
+  let a = Math.max(0, bt - h), b = Math.min(tMax, bt + h);
+  const phi = (Math.sqrt(5) - 1) / 2;
+  let c = b - phi*(b - a), d = a + phi*(b - a);
+  let gc = g(c), gd = g(d);
+  for(let k = 0; k < 48; k++){
+    if(gc > gd){ b = d; d = c; gd = gc; c = b - phi*(b - a); gc = g(c); }
+    else       { a = c; c = d; gc = gd; d = a + phi*(b - a); gd = g(d); }
+  }
+  const tm = (a + b) / 2;
+  const t = g(tm) > bv ? tm : bt;
+  return [t, m - p*t];
+}
+
+const incomeA = (st, p) => p * st.wAx + st.wAy;
+const incomeB = (st, p) => p * st.wBx + st.wBy;
+
+/* Both demands at one price, plus the excess demand for x. Walras' law makes
+   the excess demand for y redundant — p·z_x + z_y = 0 — so one root finds
+   both markets, and the readout shows z_y only as a check on that. */
+function marketAt(st, p){
+  const A = demandAt(st.uA, p, incomeA(st, p));
+  const B = demandAt(st.uB, p, incomeB(st, p));
+  return { p, A, B, zx:A[0] + B[0] - st.Wx, zy:A[1] + B[1] - st.Wy };
+}
+
+/* The announced price ratio is swept over four orders of magnitude, which is
+   wide enough to bracket every equilibrium these preference families produce
+   and narrow enough that the slider still has useful resolution near p = 1. */
+const LOGP_MIN = -2.2, LOGP_MAX = 2.2;
+
+/* A logarithmic sweep of the price ratio. One pass gives both offer curves and
+   the excess-demand plot, which is why they are computed together and cached
+   together. */
+function priceSweep(st){
+  const p = new Float64Array(NPRICE), z = new Float64Array(NPRICE);
+  const A = [], B = [];
+  for(let k = 0; k < NPRICE; k++){
+    const s  = LOGP_MIN + (LOGP_MAX - LOGP_MIN) * k / (NPRICE - 1);
+    const m  = marketAt(st, Math.pow(10, s));
+    p[k] = m.p; z[k] = m.zx; A.push(m.A); B.push(m.B);
+  }
+  return { p, z, A, B };
+}
+
+/* Walrasian equilibria: every sign change of z_x, refined by bisection in the
+   logarithm of the price. There can be more than one, and with perfect
+   substitutes z_x jumps across zero rather than crossing it — the bisection
+   still converges, onto the price at which the jump happens, which is the
+   equilibrium price with the market cleared by rationing. That case is
+   reported as such rather than silently rounded to "z = 0". */
+function findEquilibria(st, sw){
+  const out = [];
+  for(let k = 0; k + 1 < sw.p.length; k++){
+    const z0 = sw.z[k], z1 = sw.z[k+1];
+    if(!Number.isFinite(z0) || !Number.isFinite(z1)) continue;
+    if(z0 === 0){ out.push(sw.p[k]); continue; }
+    if(z0 * z1 >= 0) continue;
+
+    let lo = sw.p[k], hi = sw.p[k+1], zl = z0;
+    for(let it = 0; it < 64; it++){
+      const mid = Math.sqrt(lo * hi);
+      const zm = marketAt(st, mid).zx;
+      if(!Number.isFinite(zm)) break;
+      if(zl * zm <= 0) hi = mid;
+      else { lo = mid; zl = zm; }
+    }
+    out.push(Math.sqrt(lo * hi));
+  }
+  /* neighbouring sweep cells can each report the same root */
+  const uniq = [];
+  for(const p of out){
+    if(!uniq.length || Math.abs(Math.log10(p / uniq[uniq.length-1])) > 1e-3) uniq.push(p);
+  }
+  return uniq.map(p => {
+    const m = marketAt(st, p);
+    const scale = Math.max(st.Wx, 1e-9);
+    return { p, ...m, jump: Math.abs(m.zx) > 1e-3 * scale };
+  });
+}
+
+/* ---- the Pareto set ------------------------------------------------------
+   Found by asking the question the diagram itself asks: hold A on one
+   indifference curve and find the best B can do. Sweeping A's curve upward
+   traces the contract curve across the box and, read as (u_A, u_B), traces the
+   utility possibility frontier — the two panels are one computation.
+
+   Doing it this way rather than by solving MRS_A = MRS_B is what makes the
+   kinked and linear cases work: nothing here differentiates anything. Levels
+   are spaced by quantile rather than uniformly, so the sweep spends its
+   samples where the box actually is rather than in the tail that one
+   logarithmic utility drags out to minus infinity.                          */
+/* One point of the sweep, lifted off the sampling grid.
+
+   Taking the best vertex marching squares happens to emit puts the contract
+   curve within half a cell of the truth, which on an eight-unit box is a
+   visible wobble — and a curve that wobbles reads as an approximation of
+   something rather than as the thing itself. So each point is refined by
+   projected gradient ascent: step along A's level curve in the direction that
+   raises B, then Newton back onto the level curve, halving the step whenever
+   the step fails to improve. Two closures either side of a kink give no usable
+   gradient, and there the refinement simply stops and the grid point stands. */
+function refineOnLevel(st, x, y, lv){
+  const scale = Math.hypot(st.Wx, st.Wy) || 1;
+  const tol = 1e-7 * (1 + Math.abs(lv));
+  const project = (px, py) => {
+    for(let k = 0; k < 5; k++){
+      const v = st.uA(px, py) - lv;
+      const gx = st.uAx(px, py), gy = st.uAy(px, py), g2 = gx*gx + gy*gy;
+      if(!Number.isFinite(v) || !(g2 > 0)) return null;
+      px = clamp(px - v*gx/g2, 0, st.Wx);
+      py = clamp(py - v*gy/g2, 0, st.Wy);
+    }
+    return Math.abs(st.uA(px, py) - lv) <= tol * 1e4 ? [px, py] : null;
+  };
+
+  let best = [x, y], bv = st.uB(st.Wx - x, st.Wy - y);
+  let step = 0.02 * scale;
+  for(let it = 0; it < 18; it++){
+    const ax = st.uAx(best[0], best[1]), ay = st.uAy(best[0], best[1]);
+    const bx = -st.uBx(st.Wx - best[0], st.Wy - best[1]);
+    const by = -st.uBy(st.Wx - best[0], st.Wy - best[1]);
+    const g2 = ax*ax + ay*ay;
+    if(!(g2 > 0) || !Number.isFinite(bx) || !Number.isFinite(by)) break;
+    const k = (bx*ax + by*ay) / g2;
+    let dx = bx - k*ax, dy = by - k*ay;
+    const dn = Math.hypot(dx, dy);
+    if(!(dn > 0)) break;
+    dx /= dn; dy /= dn;
+    const cand = project(best[0] + step*dx, best[1] + step*dy);
+    if(cand){
+      const v = st.uB(st.Wx - cand[0], st.Wy - cand[1]);
+      if(Number.isFinite(v) && v > bv){ bv = v; best = cand; continue; }
+    }
+    step *= 0.5;
+    if(step < 1e-5 * scale) break;
+  }
+  return { x:best[0], y:best[1], uA:lv, uB:bv };
+}
+
+function paretoSet(st){
+  const fa = st.fA, fb = st.fB, N = fa.sorted.length;
+  const raw = [];
+  if(N){
+    const q = t => fa.sorted[Math.min(N-1, Math.max(0, Math.round(t * (N-1))))];
+    /* min(x,y) is flat over whole cells, and a level that lands exactly on a
+       plateau produces no crossing at all; a nudge of one part in a million
+       of the range costs nothing and keeps the kinked cases traceable */
+    const nudge = 1e-6 * ((fa.cMax - fa.cMin) || 1);
+    for(let k = 0; k < NLEVEL; k++){
+      const lv = q(0.004 + 0.992 * k / (NLEVEL - 1)) + nudge;
+      const seg = marchingSquares(fa, lv);
+      let bx = NaN, by = NaN, bv = -Infinity;
+      for(let i = 0; i < seg.length; i += 2){
+        const v = fieldAt(fb, seg[i], seg[i+1]);
+        if(v > bv){ bv = v; bx = seg[i]; by = seg[i+1]; }
+      }
+      if(Number.isFinite(bx) && Number.isFinite(bv)) raw.push(refineOnLevel(st, bx, by, lv));
+    }
+  }
+  /* the two corners of the box are efficient whenever both prefer more to
+     less, and they are what closes the frontier at either end */
+  const corner = (x, y) => {
+    const a = st.uA(x, y), b = st.uB(st.Wx - x, st.Wy - y);
+    if(Number.isFinite(a) && Number.isFinite(b)) raw.push({ x, y, uA:a, uB:b });
+  };
+  corner(0, 0); corner(st.Wx, st.Wy);
+
+  raw.sort((m, n) => m.uA - n.uA);
+
+  /* Skyline: keep a point only if nothing with more u_A also has more u_B.
+     Under monotone preferences the sweep should already be monotone; this
+     removes the handful of points where a level curve grazes the boundary and
+     the sampled maximum lands a cell early. Ties are kept, because a whole
+     plateau of them is the right answer for perfect substitutes. */
+  const keep = [];
+  let best = -Infinity;
+  for(let i = raw.length - 1; i >= 0; i--){
+    const tol = 1e-9 * (1 + Math.abs(best));
+    if(raw[i].uB >= best - tol){ keep.push(raw[i]); if(raw[i].uB > best) best = raw[i].uB; }
+  }
+  keep.reverse();
+  return keep;
+}
+
+/* Where the endowment sits, and which stretch of the contract curve neither
+   person would refuse: the core. */
+function coreOf(st, curve){
+  const uAe = st.uA(st.wAx, st.wAy);
+  const uBe = st.uB(st.wBx, st.wBy);
+  const rel = v => 1e-9 * (1 + Math.abs(v));
+  const idx = [];
+  for(let i = 0; i < curve.length; i++){
+    if(curve[i].uA >= uAe - rel(uAe) && curve[i].uB >= uBe - rel(uBe)) idx.push(i);
+  }
+  return {
+    uAe, uBe,
+    from: idx.length ? idx[0] : -1,
+    to:   idx.length ? idx[idx.length - 1] : -1,
+    n:    idx.length
+  };
+}
+
+/* Position along a polyline by a parameter in [0,1], for the scrubber. */
+function curveAt(curve, t, from, to){
+  if(!curve.length) return null;
+  const a = from == null || from < 0 ? 0 : from;
+  const b = to == null || to < 0 ? curve.length - 1 : to;
+  if(b <= a) return curve[clamp(a, 0, curve.length - 1)];
+  const f = a + clamp(t, 0, 1) * (b - a);
+  const i = Math.min(b - 1, Math.floor(f)), k = f - i;
+  const p = curve[i], q = curve[i+1];
+  return {
+    x:p.x + (q.x - p.x)*k, y:p.y + (q.y - p.y)*k,
+    uA:p.uA + (q.uA - p.uA)*k, uB:p.uB + (q.uB - p.uB)*k
+  };
+}
+
+/* Nearest point of the contract curve to an allocation, in box units, so the
+   verdict can say "you are on it" or "you are this far off it". */
+function nearestOnCurve(curve, x, y){
+  let bi = -1, bd = Infinity;
+  for(let i = 0; i < curve.length; i++){
+    const dx = curve[i].x - x, dy = curve[i].y - y;
+    const d = dx*dx + dy*dy;
+    if(d < bd){ bd = d; bi = i; }
+  }
+  /* refine against the two adjoining segments rather than trusting the vertex,
+     since the sweep leaves them several box units apart at the flat end */
+  let bx = bi < 0 ? x : curve[bi].x, by = bi < 0 ? y : curve[bi].y;
+  for(const j of [bi - 1, bi]){
+    if(j < 0 || j + 1 >= curve.length) continue;
+    const p = curve[j], q = curve[j+1];
+    const vx = q.x - p.x, vy = q.y - p.y, L = vx*vx + vy*vy;
+    if(L <= 0) continue;
+    const t = clamp(((x - p.x)*vx + (y - p.y)*vy) / L, 0, 1);
+    const cx = p.x + t*vx, cy = p.y + t*vy;
+    const d = (cx - x)**2 + (cy - y)**2;
+    if(d < bd){ bd = d; bx = cx; by = cy; }
+  }
+  return { i:bi, x:bx, y:by, dist:Math.sqrt(bd) };
+}
+
+/* Why this allocation is (or is not) efficient. The three answers a textbook
+   gives — tangency, a kink, a corner — plus the honest fourth one. */
+function classify(st, pa, pb){
+  const [x, y] = pa;
+  const eps = 1e-3 * Math.max(st.Wx, st.Wy);
+  const onEdge = x <= eps || y <= eps || x >= st.Wx - eps || y >= st.Wy - eps;
+  /* A's rate is read at A's allocation and B's at B's. Away from the auction
+     those are the same point; under an announced price they are not, and
+     reporting both at A's point was quietly claiming B had agreed to it. */
+  const mA = mrsA(st, x, y), mB = mrsB(st, pb[0], pb[1]);
+  const smooth = Number.isFinite(mA) && Number.isFinite(mB);
+  const gap = smooth ? Math.abs(mA - mB) / Math.max(1e-9, Math.abs(mA) + Math.abs(mB)) : NaN;
+  let kind = "off";
+  if(smooth && gap < 0.01) kind = "tangency";
+  else if(onEdge) kind = "corner";
+  else if(!st.exactA || !st.exactB) kind = "kink";
+  return { kind, mrsA:mA, mrsB:mB, gap, onEdge };
+}
+
+/* ==========================================================================
+   4. Colour
+   --------------------------------------------------------------------------
+   Three ramps and one set of marks.
+
+   The hypsometric ramp is the sibling applet's, kept deliberately: a student
+   who has walked on the utility surface next door should recognise the map
+   here as the same map. It only ever paints one person's utility at a time.
+
+   The gains ramp is this applet's own, and it is the default view, because the
+   question the Edgeworth box exists to ask is not "how high is utility here"
+   but "who is better off here than there". It paints the lens — the set of
+   allocations both people prefer to the reference one — and tints the two
+   one-sided regions faintly in each person's own hue, so the boundary of the
+   lens is visible as a change of kind rather than only as a curve.
+
+   Marks are fixed bright hues with a dark casing rather than theme tokens,
+   because they are drawn on top of saturated ground in both themes. A is blue
+   and B is orange throughout — chrome, canvas and legend — which is also the
+   one pair of hues that survives the common colour deficiencies.
+   ========================================================================== */
+const TERRAIN = [
+  [0.00,  11,  47, 168],
+  [0.13,  28, 116, 224],
+  [0.26,  18, 166, 160],
+  [0.38,  31, 168,  60],
+  [0.50, 154, 203,  30],
+  [0.60, 244, 208,  27],
+  [0.70, 247, 146,  19],
+  [0.80, 242,  58,  12],
+  [0.87, 238,  13,  20],
+  [0.94, 158,  11,  41],
+  [1.00,  63,  26,  11]
+];
+const LENS = [
+  [0.00,  26, 118,  86],
+  [0.40, 132, 178,  46],
+  [0.72, 242, 190,  44],
+  [1.00, 255, 243, 208]
+];
+
+function rampRGB(table, t){
+  t = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  let i = 0;
+  while(i < table.length - 2 && t > table[i+1][0]) i++;
+  const a = table[i], b = table[i+1];
+  const f = (t - a[0]) / (b[0] - a[0]);
+  return [a[1] + (b[1]-a[1])*f, a[2] + (b[2]-a[2])*f, a[3] + (b[3]-a[3])*f];
+}
+const terrainRGB = t => rampRGB(TERRAIN, t);
+const lensRGB    = t => rampRGB(LENS, t);
+const rgbCSS = c => `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
+
+const MARK = {
+  A:"#3DBBFF",          // A's indifference curves, offer curve and demand
+  B:"#FF7A3D",          // B's, everywhere
+  contract:"#C15CFF",   // the Pareto set
+  core:"#C15CFF",       // the same path, haloed where neither would refuse
+  price:"#FFFFFF",      // the price line through the endowment
+  ink:"#FFFFFF",        // the endowment and the allocation
+  casing:"rgba(6,9,14,.62)",
+  white:"#FFFFFF"
+};
+
+/* ==========================================================================
+   5. Small helpers
+   ========================================================================== */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+function fmt(v, d = 2){
+  if(!Number.isFinite(v)) return "—";
+  const a = Math.abs(v);
+  if(a !== 0 && (a < 1e-3 || a >= 1e5)) return v.toExponential(1);
+  return v.toFixed(d);
+}
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function niceStep(range, target){
+  const raw = range / target;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+
+function setupCanvas(cv){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if(cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h, dpr };
+}
+
+
+/* Canvas takes no CSS custom properties in a font string, so the two stacks
+   the page uses are spelled out once here. */
+const FONT_MONO = "11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+const FONT_UI   = "600 11px ui-sans-serif,system-ui,-apple-system,sans-serif";
+
+/* A curve drawn as one batched path with a dark casing under it. Emitting the
+   whole path first and stroking it twice is not a nicety: stroking segment by
+   segment lets each casing overpaint its neighbour's core, and the line comes
+   out beaded. */
+function cased(ctx, build, colour, width, casing){
+  ctx.save();
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.beginPath(); build();
+  ctx.strokeStyle = casing || MARK.casing; ctx.lineWidth = width + 2.4; ctx.stroke();
+  ctx.strokeStyle = colour; ctx.lineWidth = width; ctx.stroke();
+  ctx.restore();
+}
+
+/* Marching-squares output straight onto a path, in screen coordinates. */
+function segsPath(ctx, segs, SX, SY){
+  for(let i = 0; i < segs.length; i += 4){
+    ctx.moveTo(SX(segs[i]), SY(segs[i+1]));
+    ctx.lineTo(SX(segs[i+2]), SY(segs[i+3]));
+  }
+}
+
+/* Text with a halo, so a label crossing a curve stays readable. */
+function haloText(ctx, text, x, y, colour, halo, font, align, base){
+  ctx.save();
+  ctx.font = font || FONT_UI;
+  ctx.textAlign = align || "left";
+  ctx.textBaseline = base || "middle";
+  ctx.lineWidth = 3.2; ctx.lineJoin = "round";
+  ctx.strokeStyle = halo; ctx.strokeText(text, x, y);
+  ctx.fillStyle = colour; ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function dot(ctx, x, y, r, fill, ring){
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.lineWidth = 1.8; ctx.strokeStyle = ring; ctx.stroke();
+}
+
+function diamond(ctx, x, y, r, fill, ring){
+  ctx.beginPath();
+  ctx.moveTo(x, y-r); ctx.lineTo(x+r, y); ctx.lineTo(x, y+r); ctx.lineTo(x-r, y);
+  ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.lineWidth = 1.8; ctx.strokeStyle = ring; ctx.stroke();
+}
+
+function square(ctx, x, y, r, colour, ring){
+  ctx.beginPath(); ctx.rect(x-r, y-r, 2*r, 2*r);
+  ctx.lineWidth = 3.2; ctx.strokeStyle = ring; ctx.stroke();
+  ctx.lineWidth = 1.8; ctx.strokeStyle = colour; ctx.stroke();
+}
+
+/* Is the page being shown dark right now? Both the explicit toggle and the
+   system preference have to be consulted, in that order. */
+function isDark(){
+  const t = document.documentElement.dataset.theme;
+  if(t === "dark") return true;
+  if(t === "light") return false;
+  return matchMedia("(prefers-color-scheme:dark)").matches;
+}
+
+/* ==========================================================================
+   6. The box
+   --------------------------------------------------------------------------
+   One rectangle, two origins. A is measured from the bottom left with the
+   axes the usual way up; B is measured from the top right with both axes
+   running backwards, which is the whole trick of the diagram and the only
+   part of it students reliably get wrong. Both sets of axes are drawn and
+   ticked, so the reversal is visible rather than assumed.
+   ========================================================================== */
+
+const viewBox = {
+  pad:{ l:46, r:46, t:34, b:36 },
+  rect(w, h, st){
+    const p = this.pad;
+    const aw = Math.max(10, w - p.l - p.r), ah = Math.max(10, h - p.t - p.b);
+    const ar = (st.Wx > 0 && st.Wy > 0) ? st.Wx / st.Wy : 1;
+    let bw = aw, bh = bw / ar;
+    if(bh > ah){ bh = ah; bw = bh * ar; }
+    const x0 = p.l + (aw - bw) / 2, y0 = p.t + (ah - bh) / 2;
+    return { x0, y0, x1:x0 + bw, y1:y0 + bh };
+  },
+  sx(x, st, r){ return r.x0 + (x / st.Wx) * (r.x1 - r.x0); },
+  sy(y, st, r){ return r.y1 - (y / st.Wy) * (r.y1 - r.y0); },
+  mx(px, st, r){ return (px - r.x0) / (r.x1 - r.x0) * st.Wx; },
+  my(py, st, r){ return (r.y1 - py) / (r.y1 - r.y0) * st.Wy; }
+};
+
+/* The map is rasterised at the sampling resolution of the fields and blitted
+   with smoothing, rather than evaluated per screen pixel. Two reasons: the
+   gains map depends on the reference allocation and so is redrawn on every
+   pointer move, and painting from the same grid the contours are traced from
+   means the shading and the curves agree exactly instead of nearly. */
+const mapOff = document.createElement("canvas");
+let mapImg = null;
+
+function renderMap(st){
+  const n = NGRID;
+  if(mapOff.width !== n){ mapOff.width = mapOff.height = n; mapImg = null; }
+  const octx = mapOff.getContext("2d");
+  if(!mapImg) mapImg = octx.createImageData(n, n);
+  const d = mapImg.data;
+
+  const mode = st.map;
+  const fA = st.fA, fB = st.fB;
+
+  if(mode === "ua" || mode === "ub"){
+    const f = mode === "ua" ? fA : fB;
+    const span = (f.cMax - f.cMin) || 1;
+    for(let j = 0; j < n; j++){
+      const row = (n - 1 - j) * n;
+      for(let i = 0; i < n; i++){
+        const v = f.g[row + i], o = (j*n + i) * 4;
+        if(!Number.isFinite(v)){ d[o+3] = 0; continue; }
+        const c = terrainRGB((v - f.cMin) / span);
+        d[o] = c[0]; d[o+1] = c[1]; d[o+2] = c[2]; d[o+3] = 184;
+      }
+    }
+  } else {
+    /* gains, relative to the reference allocation */
+    const [rx, ry] = st.refPoint;
+    const r0A = rankOf(fA, st.uA(rx, ry));
+    const r0B = rankOf(fB, st.uB(st.Wx - rx, st.Wy - ry));
+    const rA = fA.rank, rB = fB.rank;
+
+    /* adaptive contrast: normalise by the largest joint gain actually present,
+       so a lens that is a sliver still shows its own structure */
+    let gmax = 1e-6;
+    for(let k = 0; k < rA.length; k++){
+      const a = rA[k] - r0A, b = rB[k] - r0B;
+      if(a > 0 && b > 0){ const m = a < b ? a : b; if(m > gmax) gmax = m; }
+    }
+    const tintA = [61, 187, 255], tintB = [255, 122, 61];
+    for(let j = 0; j < n; j++){
+      const row = (n - 1 - j) * n;
+      for(let i = 0; i < n; i++){
+        const k = row + i, o = (j*n + i) * 4;
+        const a = rA[k] - r0A, b = rB[k] - r0B;
+        if(!Number.isFinite(a) || !Number.isFinite(b)){ d[o+3] = 0; continue; }
+        if(a >= 0 && b >= 0){
+          const t = Math.min(1, (a < b ? a : b) / gmax);
+          const c = lensRGB(t);
+          d[o] = c[0]; d[o+1] = c[1]; d[o+2] = c[2];
+          d[o+3] = Math.round(255 * (0.30 + 0.45 * t));
+        } else if(a >= 0){
+          d[o] = tintA[0]; d[o+1] = tintA[1]; d[o+2] = tintA[2]; d[o+3] = 26;
+        } else if(b >= 0){
+          d[o] = tintB[0]; d[o+1] = tintB[1]; d[o+2] = tintB[2]; d[o+3] = 26;
+        } else d[o+3] = 0;
+      }
+    }
+  }
+  octx.putImageData(mapImg, 0, 0);
+  return mapOff;
+}
+
+/* Faint background families, one per person, cached against the fields. */
+function contourFamilies(st){
+  if(st.famKey === st.fieldKey && st.famA) return;
+  const build = f => {
+    const out = [], N = f.sorted.length;
+    if(!N) return out;
+    for(let k = 1; k <= 11; k++){
+      const lv = f.sorted[Math.min(N-1, Math.round((k/12) * (N-1)))] + 1e-6 * ((f.cMax - f.cMin) || 1);
+      out.push(marchingSquares(f, lv));
+    }
+    return out;
+  };
+  st.famA = build(st.fA);
+  st.famB = build(st.fB);
+  st.famKey = st.fieldKey;
+}
+
+function drawBox(st){
+  const cv = document.getElementById("cbox");
+  const { ctx, w, h } = setupCanvas(cv);
+  const r = viewBox.rect(w, h, st);
+  const SX = x => viewBox.sx(x, st, r), SY = y => viewBox.sy(y, st, r);
+  const dark = isDark();
+  const ink = css("--ink"), ink2 = css("--ink-2"), ink3 = css("--ink-3");
+  const rule = css("--rule"), surf = css("--surface");
+  const halo = dark ? "rgba(10,16,19,.78)" : "rgba(255,255,255,.85)";
+  const L = st.layers;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = surf; ctx.fillRect(0, 0, w, h);
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.clip();
+
+  /* --- the map --- */
+  if(st.map !== "none" && (st.map !== "gains" || L.lens)){
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(renderMap(st), r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+  }
+
+  /* --- background indifference families --- */
+  if(L.families){
+    contourFamilies(st);
+    const paint = (fam, colour) => {
+      ctx.strokeStyle = colour; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for(const segs of fam) segsPath(ctx, segs, SX, SY);
+      ctx.stroke();
+    };
+    paint(st.famA, dark ? "rgba(61,187,255,.26)" : "rgba(30,111,217,.28)");
+    paint(st.famB, dark ? "rgba(255,122,61,.26)" : "rgba(194,65,12,.28)");
+  }
+
+  /* --- the contract curve, and the core marked on it --- */
+  if(L.contract && st.contract.length > 1){
+    const path = (from, to) => () => {
+      for(let i = from; i <= to; i++){
+        const p = st.contract[i];
+        i === from ? ctx.moveTo(SX(p.x), SY(p.y)) : ctx.lineTo(SX(p.x), SY(p.y));
+      }
+    };
+    if(L.core && st.core.n > 1){
+      ctx.save();
+      ctx.globalAlpha = 0.35; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath(); path(st.core.from, st.core.to)();
+      ctx.strokeStyle = MARK.core; ctx.lineWidth = 9; ctx.stroke();
+      ctx.restore();
+    }
+    cased(ctx, path(0, st.contract.length - 1), MARK.contract, 2, MARK.casing);
+  }
+
+  /* --- offer curves --- */
+  if(L.offer && st.sweep){
+    ctx.setLineDash([5, 4]);
+    const drawOffer = (pts, box, colour) => {
+      ctx.beginPath();
+      let started = false;
+      for(let k = 0; k < pts.length; k++){
+        const x = box ? st.Wx - pts[k][0] : pts[k][0];
+        const y = box ? st.Wy - pts[k][1] : pts[k][1];
+        const sx = SX(x), sy = SY(y);
+        if(!Number.isFinite(sx) || !Number.isFinite(sy)){ started = false; continue; }
+        started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+        started = true;
+      }
+      ctx.strokeStyle = MARK.casing; ctx.lineWidth = 3.4; ctx.stroke();
+      ctx.strokeStyle = colour; ctx.lineWidth = 1.6; ctx.stroke();
+    };
+    drawOffer(st.sweep.A, false, MARK.A);
+    drawOffer(st.sweep.B, true,  MARK.B);
+    ctx.setLineDash([]);
+  }
+
+  /* --- the price line through the endowment ---
+     The one mark that cannot be a fixed bright hue. A white core inside a dark
+     casing reads as a single line on dark ground and as *two* thin dark lines
+     with a gap between them on light ground, which is worse than useless on a
+     diagram whose whole subject is where lines cross. So this one flips. */
+  if(L.price){
+    const p = st.p, mA = incomeA(st, p);
+    cased(ctx, () => { ctx.moveTo(SX(0), SY(mA)); ctx.lineTo(SX(mA / p), SY(0)); },
+          dark ? MARK.price : "#14181B", 1.8, dark ? MARK.casing : "rgba(255,255,255,.75)");
+  }
+
+  /* --- the two indifference curves through the allocation --- */
+  const [px, py] = st.P;
+  if(L.curves){
+    const lvA = st.uA(st.PA[0], st.PA[1]);
+    const lvB = st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]);
+    if(Number.isFinite(lvA)){
+      const segs = marchingSquares(st.fA, lvA);
+      cased(ctx, () => segsPath(ctx, segs, SX, SY), MARK.A, 2.4, MARK.casing);
+    }
+    if(Number.isFinite(lvB)){
+      const segs = marchingSquares(st.fB, lvB);
+      cased(ctx, () => segsPath(ctx, segs, SX, SY), MARK.B, 2.4, MARK.casing);
+    }
+  }
+
+  /* --- the endowment, the two demands, the allocation --- */
+  if(L.demands && st.mkt){
+    const [ax, ay] = st.mkt.A;
+    const bx = st.Wx - st.mkt.B[0], by = st.Wy - st.mkt.B[1];
+    square(ctx, SX(ax), SY(ay), 5, MARK.A, MARK.casing);
+    square(ctx, SX(bx), SY(by), 5, MARK.B, MARK.casing);
+  }
+
+  diamond(ctx, SX(st.wAx), SY(st.wAy), 6, MARK.ink, MARK.casing);
+  if(st.method !== "auction") dot(ctx, SX(px), SY(py), 6, MARK.ink, MARK.casing);
+  ctx.restore();
+
+  /* labels sit outside the clip so they survive at the very edge */
+  haloText(ctx, "\u03c9", SX(st.wAx) + 9, SY(st.wAy) - 9, ink, halo, FONT_UI);
+  if(st.method !== "auction")
+    haloText(ctx, "P", SX(px) + 9, SY(py) + 10, ink, halo, FONT_UI);
+  if(L.optimum && st.eq.length){
+    for(const e of st.eq){
+      const ex = e.A[0], ey = e.A[1];
+      if(ex < -1 || ex > st.Wx + 1) continue;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(SX(ex), SY(ey), 10, 0, Math.PI*2);
+      ctx.strokeStyle = MARK.contract; ctx.lineWidth = 2; ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /* --- both frames of axes --- */
+  drawFrames(st, ctx, r, { ink, ink2, ink3, rule, halo });
+}
+
+/* A's axes along the bottom and the left, B's along the top and the right and
+   counting backwards. */
+function drawFrames(st, ctx, r, C){
+  const SX = x => viewBox.sx(x, st, r), SY = y => viewBox.sy(y, st, r);
+  ctx.save();
+  ctx.strokeStyle = C.rule; ctx.lineWidth = 1;
+  ctx.strokeRect(r.x0 + .5, r.y0 + .5, r.x1 - r.x0 - 1, r.y1 - r.y0 - 1);
+
+  ctx.font = FONT_MONO;
+  const stepX = niceStep(st.Wx, 6), stepY = niceStep(st.Wy, 6);
+
+  ctx.fillStyle = C.ink3;
+  for(let v = 0; v <= st.Wx + 1e-9; v += stepX){
+    const x = SX(v);
+    ctx.beginPath(); ctx.moveTo(x, r.y1); ctx.lineTo(x, r.y1 + 4); ctx.stroke();
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(fmt(v, stepX < 1 ? 1 : 0), x, r.y1 + 6);
+    /* B counts the same axis backwards, from its own origin */
+    const xb = SX(st.Wx - v);
+    ctx.beginPath(); ctx.moveTo(xb, r.y0); ctx.lineTo(xb, r.y0 - 4); ctx.stroke();
+    ctx.textBaseline = "bottom";
+    ctx.fillText(fmt(v, stepX < 1 ? 1 : 0), xb, r.y0 - 6);
+  }
+  for(let v = 0; v <= st.Wy + 1e-9; v += stepY){
+    const y = SY(v);
+    ctx.beginPath(); ctx.moveTo(r.x0, y); ctx.lineTo(r.x0 - 4, y); ctx.stroke();
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText(fmt(v, stepY < 1 ? 1 : 0), r.x0 - 6, y);
+    const yb = SY(st.Wy - v);
+    ctx.beginPath(); ctx.moveTo(r.x1, yb); ctx.lineTo(r.x1 + 4, yb); ctx.stroke();
+    ctx.textAlign = "left";
+    ctx.fillText(fmt(v, stepY < 1 ? 1 : 0), r.x1 + 6, yb);
+  }
+
+  /* both origins, named, because which corner you are measuring from is the
+     one thing the diagram asks you to keep straight */
+  haloText(ctx, "O_A", r.x0 + 16, r.y1 - 12, css("--agA"), C.halo, FONT_UI, "center", "middle");
+  haloText(ctx, "O_B", r.x1 - 16, r.y0 + 12, css("--agB"), C.halo, FONT_UI, "center", "middle");
+  ctx.restore();
+}
+
+/* ==========================================================================
+   7. The second panel
+   --------------------------------------------------------------------------
+   Two views, both of them the same model seen without the box.
+
+   u_A-u_B is the utility possibility frontier. It is not a second computation:
+   the sweep that traces the contract curve across the box records (u_A, u_B)
+   at every step, and plotting those pairs instead of those points IS the
+   frontier. The rectangle of allocations neither person would refuse is drawn
+   on it, and its intersection with the frontier is the core — the same set
+   highlighted on the contract curve next door.
+
+   z(p) is the excess demand for x as the announced price ratio varies. Its
+   zeros are the Walrasian equilibria. Drawing it is the honest way to show
+   that there can be none in range, one, or three.
+   ========================================================================== */
+
+function plotFrame(w, h, pad){
+  return { x0:pad.l, y0:pad.t, x1:w - pad.r, y1:h - pad.b };
+}
+
+function axes(ctx, r, C, xTicks, yTicks, xLabel, yLabel){
+  ctx.save();
+  ctx.strokeStyle = C.rule; ctx.lineWidth = 1;
+  ctx.strokeRect(r.x0 + .5, r.y0 + .5, r.x1 - r.x0 - 1, r.y1 - r.y0 - 1);
+  ctx.font = FONT_MONO; ctx.fillStyle = C.ink3;
+  ctx.strokeStyle = C.rule2 || C.rule;
+  for(const t of xTicks){
+    ctx.beginPath(); ctx.moveTo(t.px, r.y0); ctx.lineTo(t.px, r.y1); ctx.stroke();
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(t.label, t.px, r.y1 + 5);
+  }
+  for(const t of yTicks){
+    ctx.beginPath(); ctx.moveTo(r.x0, t.py); ctx.lineTo(r.x1, t.py); ctx.stroke();
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText(t.label, r.x0 - 5, t.py);
+  }
+  ctx.font = FONT_UI; ctx.fillStyle = C.ink3;
+  if(xLabel){ ctx.textAlign = "right"; ctx.textBaseline = "bottom"; ctx.fillText(xLabel, r.x1, r.y1 - 5); }
+  if(yLabel){ ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(yLabel, r.x0 + 4, r.y0 - 4); }
+  ctx.restore();
+}
+
+/* Tick values only; the caller knows whether they are an x or a y. */
+function ticksFor(lo, hi, n){
+  const step = niceStep(hi - lo, n);
+  const out = [];
+  for(let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step){
+    out.push({ v, label:fmt(v, step < 1 ? 2 : step < 10 ? 1 : 0) });
+  }
+  return out;
+}
+
+function drawAux(st){
+  const cv = document.getElementById("caux");
+  const { ctx, w, h } = setupCanvas(cv);
+  const dark = isDark();
+  const C = {
+    ink:css("--ink"), ink2:css("--ink-2"), ink3:css("--ink-3"),
+    rule:css("--rule"), rule2:css("--rule-2"), surf:css("--surface"),
+    halo: dark ? "rgba(10,16,19,.78)" : "rgba(255,255,255,.85)",
+    dark
+  };
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = C.surf; ctx.fillRect(0, 0, w, h);
+  if(st.aux === "excess") drawExcess(st, ctx, w, h, C);
+  else drawUPF(st, ctx, w, h, C);
+}
+
+/* ---- utility possibility frontier --------------------------------------- */
+function drawUPF(st, ctx, w, h, C){
+  const r = plotFrame(w, h, { l:52, r:18, t:18, b:30 });
+  const pts = st.contract.filter(p => Number.isFinite(p.uA) && Number.isFinite(p.uB));
+  const uAp = st.uP.a, uBp = st.uP.b;
+  const cand = pts.slice();
+  for(const v of [{ uA:st.core.uAe, uB:st.core.uBe }, { uA:uAp, uB:uBp }]){
+    if(Number.isFinite(v.uA) && Number.isFinite(v.uB)) cand.push(v);
+  }
+  if(!cand.length){ haloText(ctx, "—", (r.x0+r.x1)/2, (r.y0+r.y1)/2, C.ink3, C.halo, FONT_UI, "center"); return; }
+
+  let aLo = Infinity, aHi = -Infinity, bLo = Infinity, bHi = -Infinity;
+  for(const p of cand){
+    if(p.uA < aLo) aLo = p.uA; if(p.uA > aHi) aHi = p.uA;
+    if(p.uB < bLo) bLo = p.uB; if(p.uB > bHi) bHi = p.uB;
+  }
+  const padA = (aHi - aLo || 1) * 0.07, padB = (bHi - bLo || 1) * 0.07;
+  aLo -= padA; aHi += padA; bLo -= padB; bHi += padB;
+  const SX = v => r.x0 + (v - aLo) / (aHi - aLo) * (r.x1 - r.x0);
+  const SY = v => r.y1 - (v - bLo) / (bHi - bLo) * (r.y1 - r.y0);
+
+  axes(ctx, r, C,
+    ticksFor(aLo, aHi, 5).map(t => ({ ...t, px:SX(t.v) })),
+    ticksFor(bLo, bHi, 5).map(t => ({ ...t, py:SY(t.v) })),
+    "u_A", "u_B");
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.clip();
+
+  /* the individually rational rectangle: nobody accepts less than ω */
+  const { uAe, uBe } = st.core;
+  if(st.layers.core && Number.isFinite(uAe) && Number.isFinite(uBe)){
+    ctx.fillStyle = C.dark ? "rgba(193,92,255,.12)" : "rgba(142,47,158,.10)";
+    ctx.fillRect(SX(uAe), r.y0, r.x1 - SX(uAe), SY(uBe) - r.y0);
+    ctx.setLineDash([4, 3]); ctx.lineWidth = 1; ctx.strokeStyle = MARK.contract;
+    ctx.beginPath();
+    ctx.moveTo(SX(uAe), r.y0); ctx.lineTo(SX(uAe), r.y1);
+    ctx.moveTo(r.x0, SY(uBe)); ctx.lineTo(r.x1, SY(uBe));
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  /* the frontier, with the core drawn over it */
+  if(pts.length > 1){
+    cased(ctx, () => {
+      pts.forEach((p, i) => i ? ctx.lineTo(SX(p.uA), SY(p.uB)) : ctx.moveTo(SX(p.uA), SY(p.uB)));
+    }, MARK.contract, 2, MARK.casing);
+    if(st.layers.core && st.core.n > 1){
+      const seg = st.contract.slice(st.core.from, st.core.to + 1)
+        .filter(p => Number.isFinite(p.uA) && Number.isFinite(p.uB));
+      if(seg.length > 1){
+        ctx.save();
+        ctx.globalAlpha = 0.4; ctx.lineCap = "round";
+        ctx.beginPath();
+        seg.forEach((p, i) => i ? ctx.lineTo(SX(p.uA), SY(p.uB)) : ctx.moveTo(SX(p.uA), SY(p.uB)));
+        ctx.strokeStyle = MARK.core; ctx.lineWidth = 9; ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  /* equilibria land on the frontier — that is the first welfare theorem, drawn */
+  if(st.layers.optimum){
+    for(const e of st.eq){
+      const a = st.uA(e.A[0], e.A[1]), b = st.uB(e.B[0], e.B[1]);
+      if(Number.isFinite(a) && Number.isFinite(b))
+        square(ctx, SX(a), SY(b), 5, C.dark ? MARK.price : "#14181B",
+               C.dark ? MARK.casing : "rgba(255,255,255,.75)");
+    }
+  }
+
+  if(Number.isFinite(uAe) && Number.isFinite(uBe)) diamond(ctx, SX(uAe), SY(uBe), 6, MARK.ink, MARK.casing);
+  if(Number.isFinite(uAp) && Number.isFinite(uBp)) dot(ctx, SX(uAp), SY(uBp), 6, MARK.ink, MARK.casing);
+  ctx.restore();
+}
+
+/* ---- excess demand ------------------------------------------------------ */
+function drawExcess(st, ctx, w, h, C){
+  const r = plotFrame(w, h, { l:52, r:18, t:18, b:30 });
+  const sw = st.sweep;
+  if(!sw){ return; }
+
+  /* z_x runs to infinity as p goes to zero — A wants an unbounded amount of a
+     free good — so the vertical range is set by the size of the box rather
+     than by the data, and the curve is clipped. Two units of box width shows
+     the crossing at a useful slope in every case tried; scaling to the data
+     instead flattened the interesting part into the axis. */
+  const zHi = 2 * Math.max(st.Wx, 1e-6);
+
+  const SX = s => r.x0 + (s - LOGP_MIN) / (LOGP_MAX - LOGP_MIN) * (r.x1 - r.x0);
+  const SY = z => r.y1 - (z + zHi) / (2 * zHi) * (r.y1 - r.y0);
+
+  const xT = [];
+  for(let s = Math.ceil(LOGP_MIN); s <= LOGP_MAX; s++){
+    xT.push({ px:SX(s), label: s === 0 ? "1" : "1e" + s });
+  }
+  axes(ctx, r, C, xT, ticksFor(-zHi, zHi, 5).map(t => ({ ...t, py:SY(t.v) })),
+    "p = p_x/p_y", "z_x");
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.clip();
+
+  /* the zero line is the whole point of the plot */
+  ctx.strokeStyle = C.ink3; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(r.x0, SY(0)); ctx.lineTo(r.x1, SY(0)); ctx.stroke();
+
+  cased(ctx, () => {
+    let started = false;
+    for(let k = 0; k < sw.p.length; k++){
+      const z = sw.z[k];
+      if(!Number.isFinite(z)){ started = false; continue; }
+      const x = SX(Math.log10(sw.p[k])), y = SY(clamp(z, -zHi*1.4, zHi*1.4));
+      started ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      started = true;
+    }
+  }, MARK.A, 2, MARK.casing);
+
+  for(const e of st.eq){
+    const x = SX(Math.log10(e.p));
+    ctx.setLineDash([3, 3]); ctx.strokeStyle = MARK.contract; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, r.y0); ctx.lineTo(x, r.y1); ctx.stroke();
+    ctx.setLineDash([]);
+    dot(ctx, x, SY(0), 5, MARK.contract, MARK.casing);
+  }
+
+  /* where the announced price currently sits */
+  const xs = SX(Math.log10(st.p));
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = C.dark ? MARK.price : C.ink; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(xs, r.y0); ctx.lineTo(xs, r.y1); ctx.stroke();
+  ctx.setLineDash([]);
+  if(st.mkt) dot(ctx, xs, SY(clamp(st.mkt.zx, -zHi*1.4, zHi*1.4)), 5, MARK.ink, MARK.casing);
+  ctx.restore();
+}
+
+/* ==========================================================================
+   8. Copy, in both languages the applet is likely to be used in
+   ========================================================================== */
+
+/* [key, string key, default on] */
+const LAYER_DEFS = [
+  ["lens",     "lLens",     true ],
+  ["families", "lFamilies", true ],
+  ["curves",   "lCurves",   true ],
+  ["contract", "lContract", true ],
+  ["core",     "lCore",     true ],
+  ["price",    "lPrice",    true ],
+  ["demands",  "lDemands",  true ],
+  ["offer",    "lOffer",    false],
+  ["optimum",  "lOptimum",  false]
+];
+const MAP_DEFS = [["gains","mapGains"], ["ua","mapUA"], ["ub","mapUB"], ["none","mapNone"]];
+
+const STR = {
+  es:{
+    title:"La Caja de Edgeworth",
+    sub:"Dos personas, dos bienes, nada que producir: sólo repartir lo que ya hay. La caja mide el total; cada punto es un reparto. El diagrama y el espacio de utilidades son la misma cosa vista de dos maneras.",
+    explore:"Explorar", challenge:"Retos",
+
+    gPref:"Preferencias", gEndow:"Dotaciones", gMethod:"Mecanismo",
+    gPrice:"Precios", gMap:"Mapa", gShow:"Capas",
+    uaExpr:"Utilidad de A — u", ubExpr:"Utilidad de B — u",
+    prefNote:"u<sub>B</sub> se evalúa en la canasta de B, medida desde su propio origen, arriba a la derecha.",
+    endowNote:(wx, wy) => `Caja: ${wx} × ${wy}. B recibe lo que A no tiene.`,
+    priceNote:"p = p<sub>x</sub>/p<sub>y</sub>, con p<sub>y</sub> = 1. La recta de precios pasa siempre por ω.",
+    clear:"Vaciar el mercado",
+
+    mFree:"Repartir a mano",
+    mFreeD:"Arrastra el reparto por toda la caja. La lente muestra quién puede todavía ganar.",
+    mTrade:"Intercambiar desde la dotación",
+    mTradeD:"Nadie acepta empeorar: el reparto se queda dentro de la lente de ω.",
+    mAuction:"Subasta walrasiana",
+    mAuctionD:"Anuncia un precio; cada uno pide lo que quiere; busca el que vacía el mercado.",
+
+    lLens:"Lente de ganancias", lFamilies:"Familias de indiferencia",
+    lCurves:"Curvas por el reparto", lContract:"Curva de contrato",
+    lCore:"Núcleo", lPrice:"Recta de precios",
+    lDemands:"Demandas", lOffer:"Curvas de oferta", lOptimum:"Equilibrio walrasiano",
+    mapGains:"Ganancias", mapUA:"u de A", mapUB:"u de B", mapNone:"Ninguno",
+    bar:"bajo → alto", lock:"bloqueado",
+
+    vpBox:"Caja de Edgeworth", vpUPF:"Espacio de utilidades", vpZ:"Exceso de demanda",
+    keyA:"A", keyB:"B", keyC:"Curva de contrato",
+
+    rXA:"x de A", rYA:"y de A", rXB:"x de B", rYB:"y de B",
+    rUA:"u de A", rUB:"u de B", rMRSA:"RMS de A", rMRSB:"RMS de B",
+    rGap:"Diferencia", rP:"p", rZX:"Exceso de x", rZY:"Exceso de y",
+    rEq:"p de equilibrio", rState:"Reparto", rCore:"Núcleo",
+    rGainA:"Gana A", rGainB:"Gana B",
+
+    stEfficient:"eficiente", stInefficient:"mejorable", stCore:"en el núcleo",
+    stEdge:"en el borde", stKink:"en un vértice", stOut:"fuera de la lente",
+    yes:"sí", no:"no",
+    tangencyOK:"tangentes", tangencyNear:"casi", tangencyOff:"se cruzan",
+
+    scrubContract:"Reparto", scrubContractSub:"a lo largo de la curva de contrato",
+    scrubCore:"Reparto", scrubCoreSub:"dentro del núcleo",
+    scrubPrice:"Precio anunciado", scrubPriceSub:"p de 10⁻² a 10²",
+
+    vTitleGain:"Todavía hay ganancias por repartir",
+    vTextGain:"Desde este reparto los dos pueden mejorar a la vez: la lente entre las dos curvas de indiferencia no está vacía. Mientras las curvas se crucen, hay un intercambio que ninguno rechazaría.",
+    vTitleEff:"Reparto eficiente en el sentido de Pareto",
+    vTextEff:"Las dos curvas de indiferencia son tangentes: para mejorar a uno hay que empeorar al otro. Éste es un punto de la curva de contrato.",
+    vTitleEffKink:"Eficiente, pero sin tangencia",
+    vTextEffKink:"No hay tangencia porque al menos una de las curvas tiene un vértice aquí. La condición de Pareto se cumple igual: ninguna dirección mejora a los dos.",
+    vTitleEdge:"Eficiente en el borde de la caja",
+    vTextEdge:"Uno de los dos se ha quedado sin uno de los bienes. La eficiencia es de esquina: la desigualdad entre las relaciones marginales no se puede cerrar porque no hay nada más que ceder.",
+    vTitleCore:"En el núcleo",
+    vTextCore:"Eficiente y aceptable para los dos: ninguno está peor que con su dotación. Cualquier punto de este tramo es un resultado posible de una negociación libre.",
+    vTitleOutCore:"Eficiente, pero nadie lo firmaría",
+    vTextOutCore:"El reparto está en la curva de contrato pero fuera del núcleo: uno de los dos está peor que con su dotación y preferiría no intercambiar.",
+    vTitleEq:"El mercado se vacía",
+    vTextEq:"A este precio las dos demandas coinciden: lo que uno quiere de más es exactamente lo que el otro quiere de menos. El reparto resultante es eficiente — el primer teorema del bienestar, dibujado.",
+    vTitleNoEq:"El mercado no se vacía",
+    vTextNoEq:"A este precio la suma de lo que ambos piden no es lo que hay. El signo del exceso dice hacia dónde mover el precio.",
+
+    errParse:"No se entiende la expresión.",
+    errVars:"Sólo se admiten las variables x e y.",
+    errZero:"Cada persona necesita una dotación positiva de algo.",
+
+    score:"Puntos", best:"Mejor", check:"Comprobar", next:"Siguiente",
+    mLevel:"Nivel",
+    goalCore:"Coloca el reparto en el núcleo.",
+    goalPareto:"Coloca el reparto sobre la curva de contrato.",
+    goalPrice:"Ajusta p hasta vaciar el mercado.",
+    hintCore:"Arrastra hasta donde las dos curvas sean tangentes y ninguno esté peor que en ω.",
+    hintPareto:"Busca la tangencia entre la curva azul y la naranja.",
+    hintPrice:"Mueve p hasta que el exceso de demanda de x sea cero.",
+    okCore:"En el núcleo.", okPareto:"Sobre la curva de contrato.", okPrice:"Mercado vaciado.",
+    noCore:"Todavía fuera del núcleo.", noPareto:"Todavía fuera de la curva de contrato.",
+    noPrice:"El mercado no se vacía a ese precio.",
+    locked:"Bloqueado mientras dura el reto.",
+
+    foot:'Traducido de una calculadora de Desmos. Sintaxis admitida: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.'
+  },
+
+  en:{
+    title:"The Edgeworth Box",
+    sub:"Two people, two goods, nothing to produce: only what is already there to divide. The box measures the total; every point is a complete division of it. The diagram and the utility space are one model seen two ways.",
+    explore:"Explore", challenge:"Challenges",
+
+    gPref:"Preferences", gEndow:"Endowments", gMethod:"Mechanism",
+    gPrice:"Prices", gMap:"Map", gShow:"Layers",
+    uaExpr:"A's utility — u", ubExpr:"B's utility — u",
+    prefNote:"u<sub>B</sub> is evaluated at B's own bundle, measured from B's origin at the top right.",
+    endowNote:(wx, wy) => `Box: ${wx} × ${wy}. B holds whatever A does not.`,
+    priceNote:"p = p<sub>x</sub>/p<sub>y</sub>, with p<sub>y</sub> = 1. The price line always passes through ω.",
+    clear:"Clear the market",
+
+    mFree:"Divide by hand",
+    mFreeD:"Drag the allocation anywhere in the box. The lens shows who can still gain.",
+    mTrade:"Trade from the endowment",
+    mTradeD:"Nobody accepts being worse off: the allocation stays inside the lens at ω.",
+    mAuction:"Walrasian auction",
+    mAuctionD:"Announce a price, let each one demand what they like, hunt for the price that clears.",
+
+    lLens:"Lens of gains", lFamilies:"Indifference families",
+    lCurves:"Curves through the allocation", lContract:"Contract curve",
+    lCore:"Core", lPrice:"Price line",
+    lDemands:"Demands", lOffer:"Offer curves", lOptimum:"Walrasian equilibrium",
+    mapGains:"Gains", mapUA:"A's u", mapUB:"B's u", mapNone:"None",
+    bar:"low → high", lock:"locked",
+
+    vpBox:"Edgeworth box", vpUPF:"Utility space", vpZ:"Excess demand",
+    keyA:"A", keyB:"B", keyC:"Contract curve",
+
+    rXA:"A's x", rYA:"A's y", rXB:"B's x", rYB:"B's y",
+    rUA:"A's u", rUB:"B's u", rMRSA:"A's MRS", rMRSB:"B's MRS",
+    rGap:"Gap", rP:"p", rZX:"Excess x", rZY:"Excess y",
+    rEq:"Equilibrium p", rState:"Allocation", rCore:"Core",
+    rGainA:"A gains", rGainB:"B gains",
+
+    stEfficient:"efficient", stInefficient:"improvable", stCore:"in the core",
+    stEdge:"on the edge", stKink:"at a kink", stOut:"outside the lens",
+    yes:"yes", no:"no",
+    tangencyOK:"tangent", tangencyNear:"close", tangencyOff:"crossing",
+
+    scrubContract:"Allocation", scrubContractSub:"along the contract curve",
+    scrubCore:"Allocation", scrubCoreSub:"within the core",
+    scrubPrice:"Announced price", scrubPriceSub:"p from 10⁻² to 10²",
+
+    vTitleGain:"There are gains left on the table",
+    vTextGain:"From here both can be made better off at once: the lens between the two indifference curves is not empty. As long as the curves cross, some trade exists that neither would refuse.",
+    vTitleEff:"Pareto efficient",
+    vTextEff:"The two indifference curves are tangent: making one better off now requires making the other worse off. This is a point of the contract curve.",
+    vTitleEffKink:"Efficient, with no tangency",
+    vTextEffKink:"There is no tangency because at least one curve has a kink here. Efficiency holds all the same: no direction improves both.",
+    vTitleEdge:"Efficient at the edge of the box",
+    vTextEdge:"One of the two has run out of one good. This is corner efficiency: the gap between the marginal rates cannot be closed because there is nothing left to give up.",
+    vTitleCore:"In the core",
+    vTextCore:"Efficient and acceptable to both: neither is worse off than with the endowment. Any point of this stretch is a possible outcome of free bargaining.",
+    vTitleOutCore:"Efficient, but nobody would sign it",
+    vTextOutCore:"The allocation is on the contract curve but outside the core: one of the two is worse off than with the endowment and would rather not trade.",
+    vTitleEq:"The market clears",
+    vTextEq:"At this price the two demands agree: what one wants more of is exactly what the other wants less of. The resulting allocation is efficient — the first welfare theorem, drawn.",
+    vTitleNoEq:"The market does not clear",
+    vTextNoEq:"At this price what the two of them ask for together is not what there is. The sign of the excess says which way to move the price.",
+
+    errParse:"That expression does not parse.",
+    errVars:"Only the variables x and y are allowed.",
+    errZero:"Each person needs a positive endowment of something.",
+
+    score:"Points", best:"Best", check:"Check", next:"Next",
+    mLevel:"Level",
+    goalCore:"Put the allocation in the core.",
+    goalPareto:"Put the allocation on the contract curve.",
+    goalPrice:"Set p so that the market clears.",
+    hintCore:"Drag to where the two curves are tangent and neither is worse off than at ω.",
+    hintPareto:"Hunt for the tangency between the blue curve and the orange one.",
+    hintPrice:"Move p until the excess demand for x is zero.",
+    okCore:"In the core.", okPareto:"On the contract curve.", okPrice:"Market cleared.",
+    noCore:"Still outside the core.", noPareto:"Still off the contract curve.",
+    noPrice:"The market does not clear at that price.",
+    locked:"Locked while the challenge runs.",
+
+    foot:'Translated from a Desmos calculator. Syntax: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.'
+  }
+};
+
+let LANG = "es";
+const T = () => STR[LANG];
+
+/* ==========================================================================
+   9. Preference pairs, and the levels built from them
+   ========================================================================== */
+
+/* [label, u_A, u_B, wAx, wAy, wBx, wBy] */
+const PRESETS = [
+  ["Cobb–Douglas",   "x^0.5*y^0.5",   "x^0.5*y^0.5",   6, 2, 2, 6],
+  ["Asimétrica",     "x^0.7*y^0.3",   "x^0.3*y^0.7",   6, 2, 2, 6],
+  ["Sustitutos",     "x+2y",          "2x+y",          6, 2, 2, 6],
+  ["Complementarios","min(x,y)",      "min(x,2y)",     6, 2, 2, 6],
+  ["Cuasilineal",    "2sqrt(x)+y",    "ln(x)+y",       5, 3, 3, 5],
+  ["CES",            "(x^0.5+y^0.5)^2", "(x^(-1)+y^(-1))^(-1)", 7, 1, 1, 7],
+  ["Todo o nada",    "x^0.5*y^0.5",   "x^0.5*y^0.5",   8, 0, 0, 8]
+];
+const PRESET_EN = ["Cobb–Douglas","Asymmetric","Substitutes","Complements","Quasilinear","CES","All or nothing"];
+
+const LEVELS = [
+  { id:"cd",   es:"Cobb–Douglas", en:"Cobb–Douglas", goal:"pareto",
+    gen:r => ({ srcA:"x^0.5*y^0.5", srcB:"x^0.5*y^0.5",
+                wAx:r(4,9,0.5), wAy:r(1,3,0.5), wBx:r(1,3,0.5), wBy:r(4,9,0.5) }) },
+  { id:"cda",  es:"Asimétrica", en:"Asymmetric", goal:"core",
+    gen:r => ({ srcA:"x^0.7*y^0.3", srcB:"x^0.25*y^0.75",
+                wAx:r(3,8,0.5), wAy:r(1,4,0.5), wBx:r(1,4,0.5), wBy:r(3,8,0.5) }) },
+  { id:"auc",  es:"La subasta", en:"The auction", goal:"price",
+    gen:r => ({ srcA:"x^0.5*y^0.5", srcB:"x^0.35*y^0.65",
+                wAx:r(4,9,0.5), wAy:r(1,3,0.5), wBx:r(1,3,0.5), wBy:r(4,9,0.5) }) },
+  { id:"sub",  es:"Sustitutos perfectos", en:"Perfect substitutes", goal:"pareto",
+    gen:r => ({ srcA:`x+${r(1.5,3,0.5)}y`, srcB:`${r(1.5,3,0.5)}x+y`,
+                wAx:r(3,7,0.5), wAy:r(2,5,0.5), wBx:r(2,5,0.5), wBy:r(3,7,0.5) }) },
+  { id:"com",  es:"Complementarios", en:"Perfect complements", goal:"pareto",
+    gen:r => ({ srcA:"min(x,y)", srcB:`min(x,${r(1.5,3,0.5)}y)`,
+                wAx:r(4,8,0.5), wAy:r(1,4,0.5), wBx:r(1,4,0.5), wBy:r(4,8,0.5) }) },
+  { id:"ql",   es:"Cuasilineal", en:"Quasilinear", goal:"core",
+    gen:r => ({ srcA:`${r(1.5,3,0.5)}sqrt(x)+y`, srcB:"ln(x)+y",
+                wAx:r(3,7,0.5), wAy:r(2,5,0.5), wBx:r(2,5,0.5), wBy:r(3,7,0.5) }) },
+  { id:"ces",  es:"CES", en:"CES", goal:"price",
+    gen:r => ({ srcA:"(x^0.5+y^0.5)^2", srcB:"(x^(-1)+y^(-1))^(-1)",
+                wAx:r(4,9,0.5), wAy:r(1,3,0.5), wBx:r(1,3,0.5), wBy:r(4,9,0.5) }) }
+];
+
+/* ==========================================================================
+   10. State
+   ========================================================================== */
+const st = {
+  srcA:"x^0.5*y^0.5", srcB:"x^0.5*y^0.5",
+  uA:null, uAx:null, uAy:null, exactA:true,
+  uB:null, uBx:null, uBy:null, exactB:true,
+
+  wAx:6, wAy:2, wBx:2, wBy:6, Wx:8, Wy:8,
+
+  fA:null, fB:null, fieldKey:"", famA:null, famB:null, famKey:"",
+  contract:[], core:{ uAe:NaN, uBe:NaN, from:-1, to:-1, n:0 },
+  sweep:null, eq:[], mkt:null,
+
+  P:[4,4], PA:[4,4], PB:[4,4], refPoint:[6,2],
+  uP:{ a:NaN, b:NaN },
+  logp:0, p:1,
+
+  map:"gains", aux:"upf", method:"free", mode:"explore",
+  layers:Object.fromEntries(LAYER_DEFS.map(([k,,d]) => [k, d])),
+
+  levelIdx:0, unlocked:1, score:0, bests:{}, checked:false, playing:false
+};
+
+const $ = id => document.getElementById(id);
+
+/* ==========================================================================
+   11. Recompute + render
+   --------------------------------------------------------------------------
+   Three tiers, because they cost three different amounts. Parsing happens when
+   an expression is typed; the fields, the Pareto sweep and the price sweep
+   when the model changes; everything else on every pointer move.
+   ========================================================================== */
+
+function recomputeUtilities(){
+  const one = (src, inputId, errId) => {
+    try{
+      const b = buildUtility(src);
+      $(inputId).removeAttribute("aria-invalid");
+      $(errId).textContent = "";
+      return b;
+    }catch(err){
+      $(inputId).setAttribute("aria-invalid", "true");
+      $(errId).textContent = /unknown:/.test(err.message) ? T().errVars : T().errParse;
+      return null;
+    }
+  };
+  const A = one(st.srcA, "ua-expr", "ua-err");
+  const B = one(st.srcB, "ub-expr", "ub-err");
+  if(!A || !B) return false;
+  st.uA = A.u; st.uAx = A.ux; st.uAy = A.uy; st.exactA = A.exactPartials;
+  st.uB = B.u; st.uBx = B.ux; st.uBy = B.uy; st.exactB = B.exactPartials;
+  return true;
+}
+
+function recomputeModel(){
+  sampleBox(st);
+  buildRanks(st.fA); buildRanks(st.fB);
+  st.fieldKey = [st.srcA, st.srcB, st.wAx, st.wAy, st.wBx, st.wBy].join("|");
+  st.famA = null; st.famKey = "";
+  st.contract = paretoSet(st);
+  st.core = coreOf(st, st.contract);
+  st.sweep = priceSweep(st);
+  st.eq = findEquilibria(st, st.sweep);
+}
+
+/* Everything that depends on where the allocation and the price are now. */
+function syncState(){
+  totals(st);
+  st.p = Math.pow(10, st.logp);
+  st.mkt = marketAt(st, st.p);
+
+  if(st.method === "auction"){
+    st.PA = st.mkt.A.slice();
+    st.PB = [st.Wx - st.mkt.B[0], st.Wy - st.mkt.B[1]];
+    st.P  = [clamp(st.PA[0], 0, st.Wx), clamp(st.PA[1], 0, st.Wy)];
+    st.refPoint = [st.wAx, st.wAy];
+  }else{
+    st.P[0] = clamp(st.P[0], 0, st.Wx);
+    st.P[1] = clamp(st.P[1], 0, st.Wy);
+    st.PA = st.P.slice(); st.PB = st.P.slice();
+    st.refPoint = st.method === "trade" ? [st.wAx, st.wAy] : st.P.slice();
+  }
+  st.uP = {
+    a: st.uA(st.PA[0], st.PA[1]),
+    b: st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1])
+  };
+}
+
+let rafPending = false;
+function render(){
+  if(rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => {
+    rafPending = false;
+    drawBox(st); drawAux(st); paintReadouts(); paintVerdict(); paintColorbar();
+  });
+}
+
+/* ---- is this allocation in the lens / the core? ------------------------- */
+const relTol = v => 1e-9 * (1 + Math.abs(v));
+function inLens(x, y){
+  const a = st.uA(x, y), b = st.uB(st.Wx - x, st.Wy - y);
+  return Number.isFinite(a) && Number.isFinite(b) &&
+         a >= st.core.uAe - relTol(st.core.uAe) && b >= st.core.uBe - relTol(st.core.uBe);
+}
+/* Drag inside the lens by walking back along the drag itself: from a point
+   known to be inside, bisect toward the pointer and stop at the boundary. It
+   feels like the edge of the lens is a wall, which is exactly the claim the
+   mode is making. */
+function constrainToLens(from, to){
+  if(inLens(to[0], to[1])) return to;
+  if(!inLens(from[0], from[1])) return [st.wAx, st.wAy];
+  let lo = 0, hi = 1;
+  for(let k = 0; k < 26; k++){
+    const m = (lo + hi) / 2;
+    if(inLens(from[0] + (to[0]-from[0])*m, from[1] + (to[1]-from[1])*m)) lo = m; else hi = m;
+  }
+  return [from[0] + (to[0]-from[0])*lo, from[1] + (to[1]-from[1])*lo];
+}
+
+function statusOfPoint(){
+  const scale = Math.hypot(st.Wx, st.Wy) || 1;
+  const near = st.contract.length ? nearestOnCurve(st.contract, st.P[0], st.P[1]) : { dist:Infinity };
+  const onCurve = near.dist < 0.02 * scale;
+  const lens = inLens(st.P[0], st.P[1]);
+  const c = classify(st, st.PA, st.PB);
+  return { near, onCurve, lens, ...c };
+}
+
+function paintReadouts(){
+  const t = T();
+  const xB = st.Wx - st.PB[0], yB = st.Wy - st.PB[1];
+  const s = statusOfPoint();
+  const gapTxt = Number.isFinite(s.gap) ? (s.gap*100).toFixed(1) + "%" : "—";
+  const gapState = !Number.isFinite(s.gap) ? "—"
+    : s.gap < 0.01 ? t.tangencyOK : s.gap < 0.10 ? t.tangencyNear : t.tangencyOff;
+  const zRel = st.mkt ? Math.abs(st.mkt.zx) / Math.max(st.Wx, 1e-9) : NaN;
+
+  const cells = (host, rows) => {
+    host.innerHTML = rows.map(([k, v, cls]) =>
+      `<div class="cell"><dt>${k}</dt><dd class="${cls || ""}">${v}</dd></div>`).join("");
+  };
+
+  cells($("readoutBox"), [
+    [t.rXA, fmt(st.PA[0]), "a"],
+    [t.rYA, fmt(st.PA[1]), "a"],
+    [t.rXB, fmt(xB), "b"],
+    [t.rYB, fmt(yB), "b"],
+    [t.rUA, fmt(st.uP.a, 3), "a"],
+    [t.rUB, fmt(st.uP.b, 3), "b"]
+  ]);
+
+  const rows = [
+    [t.rMRSA, Number.isFinite(s.mrsA) ? fmt(s.mrsA) : "∞", "a"],
+    [t.rMRSB, Number.isFinite(s.mrsB) ? fmt(s.mrsB) : "∞", "b"],
+    [`${t.rGap} · ${gapState}`, gapTxt, s.gap < 0.01 ? "good" : ""]
+  ];
+  if(st.method === "auction" || st.aux === "excess"){
+    rows.push([t.rP, fmt(st.p, 3)]);
+    rows.push([t.rZX, st.mkt ? fmt(st.mkt.zx, 3) : "—", zRel < 0.005 ? "good" : "warn"]);
+    rows.push([t.rEq, st.eq.length ? st.eq.map(e => fmt(e.p, 3)).join(", ") : "—", "core"]);
+  }else{
+    rows.push([t.rState, s.onCurve ? t.stEfficient : t.stInefficient, s.onCurve ? "good" : ""]);
+    rows.push([t.rCore, s.onCurve && s.lens ? t.yes : t.no, s.onCurve && s.lens ? "core" : ""]);
+    rows.push([t.rGainA, Number.isFinite(st.core.uAe) ? fmt(st.uP.a - st.core.uAe, 3) : "—",
+               st.uP.a >= st.core.uAe ? "good" : "warn"]);
+  }
+  cells($("readoutAux"), rows);
+
+  const sw = $("scrub-swatch");
+  if(st.method === "auction"){
+    sw.style.background = css("--ink-2");
+    $("scrub-val").textContent = fmt(st.p, 3);
+  }else{
+    sw.style.background = css("--core");
+    $("scrub-val").textContent = fmt(st.uP.a, 3);
+  }
+}
+
+function paintVerdict(){
+  const t = T(), box = $("verdict");
+  if(st.mode === "challenge" && !st.checked){ box.hidden = true; return; }
+  const s = statusOfPoint();
+  let title, text, cls, math;
+
+  if(st.method === "auction"){
+    const rel = st.mkt ? Math.abs(st.mkt.zx) / Math.max(st.Wx, 1e-9) : NaN;
+    const ok = rel < 0.005;
+    title = t[ok ? "vTitleEq" : "vTitleNoEq"];
+    text  = t[ok ? "vTextEq"  : "vTextNoEq"];
+    cls   = ok ? "is-good" : "is-warn";
+    math  = `p = ${fmt(st.p,3)}   z_x = ${fmt(st.mkt.zx,3)}   z_y = ${fmt(st.mkt.zy,3)}` +
+            (st.eq.length ? `   ·   p* = ${st.eq.map(e => fmt(e.p,3)).join(", ")}` : "");
+  }else if(!s.onCurve){
+    title = t.vTitleGain; text = t.vTextGain; cls = "";
+    math = `RMS_A = ${fmt(s.mrsA)}   RMS_B = ${fmt(s.mrsB)}`;
+  }else{
+    const inCore = s.lens;
+    if(inCore){ title = t.vTitleCore; text = t.vTextCore; cls = "is-good"; }
+    else if(s.kind === "corner"){ title = t.vTitleEdge; text = t.vTextEdge; cls = "is-warn"; }
+    else if(s.kind === "kink"){ title = t.vTitleEffKink; text = t.vTextEffKink; cls = "is-good"; }
+    else if(s.kind === "tangency"){ title = t.vTitleEff; text = t.vTextEff; cls = "is-good"; }
+    else { title = t.vTitleOutCore; text = t.vTextOutCore; cls = "is-warn"; }
+    if(!inCore && s.kind === "tangency" && (st.uP.a < st.core.uAe || st.uP.b < st.core.uBe)){
+      title = t.vTitleOutCore; text = t.vTextOutCore; cls = "is-warn";
+    }
+    math = `RMS_A = ${fmt(s.mrsA)}   RMS_B = ${fmt(s.mrsB)}   ` +
+           `u_A = ${fmt(st.uP.a,3)} (ω: ${fmt(st.core.uAe,3)})   u_B = ${fmt(st.uP.b,3)} (ω: ${fmt(st.core.uBe,3)})`;
+  }
+  box.hidden = false;
+  box.className = "verdict " + cls;
+  $("verdict-title").textContent = title;
+  $("verdict-text").textContent = text;
+  $("verdict-math").textContent = math;
+}
+
+function paintColorbar(){
+  const cv = $("colorbar");
+  if(!cv) return;
+  const ctx = cv.getContext("2d");
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if(st.map === "none"){ return; }
+  const table = st.map === "gains" ? LENS : TERRAIN;
+  const g = ctx.createLinearGradient(0, 0, cv.width, 0);
+  for(let i = 0; i <= 10; i++) g.addColorStop(i/10, rgbCSS(rampRGB(table, i/10)));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height);
+}
+
+/* ==========================================================================
+   12. Wiring
+   ========================================================================== */
+
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = LANG;
+  $("t-title").textContent = t.title;
+  $("t-sub").textContent = t.sub;
+  $("mode-explore").textContent = t.explore;
+  $("mode-challenge").textContent = t.challenge;
+
+  $("t-g-pref").textContent   = t.gPref;
+  $("t-g-endow").textContent  = t.gEndow;
+  $("t-g-method").textContent = t.gMethod;
+  $("t-g-price").textContent  = t.gPrice;
+  $("t-g-map").textContent    = t.gMap;
+  $("t-g-show").textContent   = t.gShow;
+
+  $("t-uaexpr").innerHTML =
+    `<span class="dot" style="background:var(--agA);display:inline-block;vertical-align:-1px"></span> ${t.uaExpr}<sub>A</sub>(x, y)`;
+  $("t-ubexpr").innerHTML =
+    `<span class="dot" style="background:var(--agB);display:inline-block;vertical-align:-1px"></span> ${t.ubExpr}<sub>B</sub>(x, y)`;
+  $("t-pref-note").innerHTML  = t.prefNote;
+  $("t-price-note").innerHTML = t.priceNote;
+  $("btn-clear").textContent  = t.clear;
+  $("t-bar").textContent      = t.bar;
+
+  $("t-m-free").textContent      = t.mFree;
+  $("t-m-free-d").textContent    = t.mFreeD;
+  $("t-m-trade").textContent     = t.mTrade;
+  $("t-m-trade-d").textContent   = t.mTradeD;
+  $("t-m-auction").textContent   = t.mAuction;
+  $("t-m-auction-d").textContent = t.mAuctionD;
+
+  $("t-vpbox").textContent = t.vpBox;
+  $("t-vpaux").textContent = st.aux === "excess" ? t.vpZ : t.vpUPF;
+  $("t-keyA").textContent = t.keyA;
+  $("t-keyB").textContent = t.keyB;
+  $("t-keyC").textContent = t.keyC;
+
+  $("t-score").textContent = t.score;
+  $("t-best").textContent  = t.best;
+  $("btn-check").textContent = t.check;
+  $("btn-next").textContent  = t.next;
+  $("t-foot").innerHTML = t.foot;
+
+  buildChips(); buildLayers(); buildMapChips(); buildTray();
+  updateScrubLabel(); paintEndowNote();
+  if(st.mode === "challenge") paintMission();
+}
+
+function paintEndowNote(){
+  $("t-endow-note").innerHTML = T().endowNote(fmt(st.Wx, 1), fmt(st.Wy, 1));
+}
+
+function buildChips(){
+  const labels = LANG === "en" ? PRESET_EN : PRESETS.map(p => p[0]);
+  $("preset-chips").innerHTML = PRESETS.map((p, i) => {
+    const on = p[1] === st.srcA && p[2] === st.srcB &&
+               p[3] === st.wAx && p[4] === st.wAy && p[5] === st.wBx && p[6] === st.wBy;
+    return `<button type="button" class="chip" data-i="${i}" aria-pressed="${on}">${labels[i]}</button>`;
+  }).join("");
+  $("preset-chips").querySelectorAll(".chip").forEach(c => {
+    c.addEventListener("click", () => {
+      if(challengeLocked()) return;
+      const [, a, b, ax, ay, bx, by] = PRESETS[+c.dataset.i];
+      st.srcA = a; st.srcB = b;
+      st.wAx = ax; st.wAy = ay; st.wBx = bx; st.wBy = by;
+      $("ua-expr").value = a; $("ub-expr").value = b;
+      pushEndowUI();
+      if(recomputeUtilities()){ st.P = [ (ax+bx)/2, (ay+by)/2 ]; onModelChange(); }
+      buildChips();
+    });
+  });
+}
+
+function buildMapChips(){
+  const t = T();
+  $("map-chips").innerHTML = MAP_DEFS.map(([k, lbl]) =>
+    `<button type="button" class="chip" data-map="${k}" aria-pressed="${st.map===k}">${t[lbl]}</button>`).join("");
+  $("map-chips").querySelectorAll(".chip").forEach(c => {
+    c.addEventListener("click", () => { st.map = c.dataset.map; buildMapChips(); render(); });
+  });
+}
+
+function buildLayers(){
+  const t = T();
+  $("layer-checks").innerHTML = LAYER_DEFS.map(([k, lbl]) =>
+    `<label class="check"><input type="checkbox" data-layer="${k}" ${st.layers[k] ? "checked" : ""}>` +
+    `<span>${t[lbl]}</span></label>`).join("");
+  $("layer-checks").querySelectorAll("input[data-layer]").forEach(cb => {
+    cb.addEventListener("change", () => { st.layers[cb.dataset.layer] = cb.checked; render(); });
+  });
+}
+
+/* ---- numbers ------------------------------------------------------------ */
+function bindNum(sliderId, boxId, key, after){
+  const s = $(sliderId), b = $(boxId);
+  const set = v => {
+    v = parseFloat(v);
+    if(!Number.isFinite(v)) return;
+    v = clamp(v, parseFloat(s.min), parseFloat(s.max));
+    st[key] = v; s.value = v; b.value = v;
+    if(after) after();
+  };
+  s.addEventListener("input", () => set(s.value));
+  b.addEventListener("change", () => set(b.value));
+  b.value = st[key]; s.value = st[key];
+  return set;
+}
+function pushEndowUI(){
+  for(const [id, key] of [["eax","wAx"],["eay","wAy"],["ebx","wBx"],["eby","wBy"]]){
+    $(id).value = st[key]; $(id + "-v").value = st[key];
+  }
+}
+
+/* The price slider carries log10(p): a price ratio is a ratio, and the
+   interesting range spans four orders of magnitude, so a linear slider would
+   spend nine tenths of its travel above p = 10. The box beside it shows p. */
+function bindPrice(){
+  const s = $("pr"), b = $("pr-v");
+  const push = () => { s.value = st.logp; b.value = fmt(st.p, 3); };
+  s.addEventListener("input", () => {
+    st.logp = clamp(parseFloat(s.value), LOGP_MIN, LOGP_MAX);
+    st.p = Math.pow(10, st.logp); b.value = fmt(st.p, 3);
+    syncState(); syncScrubFromState(); render();
+  });
+  b.addEventListener("change", () => {
+    const v = parseFloat(b.value);
+    if(!(v > 0)) { push(); return; }
+    st.logp = clamp(Math.log10(v), LOGP_MIN, LOGP_MAX);
+    st.p = Math.pow(10, st.logp); push();
+    syncState(); syncScrubFromState(); render();
+  });
+  push();
+  return push;
+}
+
+/* ---- what changed, and how much has to be redone ------------------------ */
+function onModelChange(){
+  recomputeModel();
+  if(st.method === "trade" && !inLens(st.P[0], st.P[1])) st.P = [st.wAx, st.wAy];
+  syncState(); syncScrubFromState(); paintEndowNote(); render();
+}
+function onPointChange(){ syncState(); syncScrubFromState(); render(); }
+
+/* ---- the scrubber ------------------------------------------------------- */
+function scrubRange(){
+  if(st.method === "trade" && st.core.n > 1) return [st.core.from, st.core.to];
+  return [0, Math.max(0, st.contract.length - 1)];
+}
+function applyScrub(v){
+  if(st.method === "auction"){
+    st.logp = LOGP_MIN + v * (LOGP_MAX - LOGP_MIN);
+    st.p = Math.pow(10, st.logp);
+    pushPrice();
+  }else{
+    const [a, b] = scrubRange();
+    const q = curveAt(st.contract, v, a, b);
+    if(q) st.P = [q.x, q.y];
+  }
+  syncState(); render();
+}
+function syncScrubFromState(){
+  const s = $("scrub");
+  if(st.method === "auction"){
+    s.value = (st.logp - LOGP_MIN) / (LOGP_MAX - LOGP_MIN);
+  }else if(st.contract.length > 1){
+    const [a, b] = scrubRange();
+    const n = nearestOnCurve(st.contract, st.P[0], st.P[1]);
+    s.value = b > a ? clamp((n.i - a) / (b - a), 0, 1) : 0;
+  }
+}
+function updateScrubLabel(){
+  const t = T();
+  const key = st.method === "auction" ? "Price" : st.method === "trade" ? "Core" : "Contract";
+  $("scrub-title").textContent = t["scrub" + key];
+  $("scrub-sub").textContent   = t["scrub" + key + "Sub"];
+}
+
+let playRAF = 0, playDir = 1;
+function togglePlay(){
+  st.playing = !st.playing;
+  $("btn-play").textContent = st.playing ? "❚❚" : "▶";
+  if(!st.playing){ cancelAnimationFrame(playRAF); return; }
+  const step = () => {
+    if(!st.playing) return;
+    const s = $("scrub");
+    let v = parseFloat(s.value) + playDir * 0.004;
+    if(v > 1){ v = 1; playDir = -1; }
+    if(v < 0){ v = 0; playDir = 1; }
+    s.value = v; applyScrub(v);
+    playRAF = requestAnimationFrame(step);
+  };
+  playRAF = requestAnimationFrame(step);
+}
+
+/* ---- pointer and keyboard on the box ------------------------------------ */
+function pointerToModel(ev, cv){
+  const rct = cv.getBoundingClientRect();
+  const r = viewBox.rect(rct.width, rct.height, st);
+  return [
+    clamp(viewBox.mx(ev.clientX - rct.left, st, r), 0, st.Wx),
+    clamp(viewBox.my(ev.clientY - rct.top,  st, r), 0, st.Wy)
+  ];
+}
+function moveAllocation(to){
+  st.P = st.method === "trade" ? constrainToLens(st.P, to) : to;
+  onPointChange();
+}
+function bindBox(){
+  const cv = $("cbox");
+  let dragging = false;
+  const grab = ev => {
+    if(st.method === "auction") return;
+    dragging = true; cv.setPointerCapture(ev.pointerId);
+    moveAllocation(pointerToModel(ev, cv));
+    ev.preventDefault();
+  };
+  cv.addEventListener("pointerdown", grab);
+  cv.addEventListener("pointermove", ev => { if(dragging) moveAllocation(pointerToModel(ev, cv)); });
+  const drop = ev => { dragging = false; try{ cv.releasePointerCapture(ev.pointerId); }catch(e){} };
+  cv.addEventListener("pointerup", drop);
+  cv.addEventListener("pointercancel", drop);
+
+  cv.addEventListener("keydown", ev => {
+    const k = ev.key;
+    if(st.method === "auction"){
+      if(k !== "ArrowLeft" && k !== "ArrowRight") return;
+      st.logp = clamp(st.logp + (k === "ArrowRight" ? 1 : -1) * (ev.shiftKey ? 0.05 : 0.01),
+                      LOGP_MIN, LOGP_MAX);
+      st.p = Math.pow(10, st.logp); pushPrice();
+      syncState(); syncScrubFromState(); render(); ev.preventDefault();
+      return;
+    }
+    const dx = st.Wx * (ev.shiftKey ? 0.05 : 0.01), dy = st.Wy * (ev.shiftKey ? 0.05 : 0.01);
+    const to = st.P.slice();
+    if(k === "ArrowLeft")  to[0] -= dx;
+    else if(k === "ArrowRight") to[0] += dx;
+    else if(k === "ArrowDown")  to[1] -= dy;
+    else if(k === "ArrowUp")    to[1] += dy;
+    else return;
+    to[0] = clamp(to[0], 0, st.Wx); to[1] = clamp(to[1], 0, st.Wy);
+    moveAllocation(to); ev.preventDefault();
+  });
+}
+
+/* ==========================================================================
+   13. Challenge mode
+   --------------------------------------------------------------------------
+   Seven preference pairs, each generating fresh endowments, and three kinds of
+   question: put the allocation on the contract curve, put it in the core, or
+   find the price that clears the market. Preferences and endowments lock while
+   a challenge is live — otherwise the answer is to retype the question.
+   ========================================================================== */
+
+const SAVE_KEY = "edgeworth-box-v1";
+let pushPrice = () => {};
+
+const challengeLocked = () => st.mode === "challenge" && !st.checked;
+
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const o = JSON.parse(raw);
+    if(o && typeof o === "object"){
+      st.bests = o.bests || {};
+      st.unlocked = clamp(o.unlocked | 0, 1, LEVELS.length);
+      st.score = o.score | 0;
+    }
+  }catch(e){ /* a browser with storage switched off is not a broken applet */ }
+}
+function saveProgress(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      bests:st.bests, unlocked:st.unlocked, score:st.score
+    }));
+  }catch(e){}
+}
+
+function lockInputs(on){
+  for(const id of ["ua-expr","ub-expr","eax","eay","ebx","eby","eax-v","eay-v","ebx-v","eby-v"])
+    $(id).disabled = on;
+  $("preset-chips").querySelectorAll(".chip").forEach(c => { c.disabled = on; });
+}
+
+function setMode(m){
+  st.mode = m;
+  st.checked = false;
+  $("mode-explore").setAttribute("aria-pressed", m === "explore");
+  $("mode-challenge").setAttribute("aria-pressed", m === "challenge");
+  $("mission").hidden = m !== "challenge";
+  if(m === "challenge") startLevel(st.levelIdx);
+  else { lockInputs(false); buildTray(); render(); }
+}
+
+function rnd(a, b, step){
+  const n = Math.round((b - a) / step);
+  return a + step * Math.floor(Math.random() * (n + 1));
+}
+
+function startLevel(i){
+  st.levelIdx = clamp(i, 0, LEVELS.length - 1);
+  const L = LEVELS[st.levelIdx];
+  const g = L.gen(rnd);
+  st.srcA = g.srcA; st.srcB = g.srcB;
+  st.wAx = g.wAx; st.wAy = g.wAy; st.wBx = g.wBx; st.wBy = g.wBy;
+  $("ua-expr").value = g.srcA; $("ub-expr").value = g.srcB;
+  pushEndowUI();
+
+  st.checked = false;
+  setMethod(L.goal === "price" ? "auction" : (L.goal === "core" ? "trade" : "free"), true);
+  if(L.goal === "price"){ st.logp = 0; st.p = 1; pushPrice(); }
+
+  if(recomputeUtilities()){
+    recomputeModel();
+    st.P = [st.wAx, st.wAy];
+    syncState(); syncScrubFromState(); paintEndowNote();
+  }
+  lockInputs(true);
+  buildChips(); buildTray(); paintMission(); render();
+}
+
+function paintMission(){
+  const t = T(), L = LEVELS[st.levelIdx];
+  $("mission-tag").textContent = `${t.mLevel} ${st.levelIdx + 1}`;
+  $("mission-title").textContent = `${L[LANG]} · ${t["goal" + L.goal[0].toUpperCase() + L.goal.slice(1)]}`;
+  $("mission-hint").textContent = t["hint" + L.goal[0].toUpperCase() + L.goal.slice(1)];
+  $("score-num").textContent = st.score;
+  const best = st.bests[L.id] || 0;
+  $("stars").textContent = "★".repeat(best) + "☆".repeat(3 - best);
+}
+
+function scoreAttempt(){
+  const L = LEVELS[st.levelIdx], t = T();
+  if(L.goal === "price"){
+    if(!st.eq.length) return { pts:0, stars:0, msg:t.noPrice };
+    const e = Math.min(...st.eq.map(q => Math.abs(Math.log10(st.p / q.p))));
+    const stars = e < 0.01 ? 3 : e < 0.04 ? 2 : e < 0.12 ? 1 : 0;
+    return { pts:Math.round(100 * Math.max(0, 1 - e / 0.12)), stars, msg:stars ? t.okPrice : t.noPrice };
+  }
+  const scale = Math.hypot(st.Wx, st.Wy) || 1;
+  const n = st.contract.length ? nearestOnCurve(st.contract, st.P[0], st.P[1]) : { dist:Infinity };
+  const d = n.dist / scale;
+  const stars = d < 0.008 ? 3 : d < 0.025 ? 2 : d < 0.06 ? 1 : 0;
+  const pts = Math.round(100 * Math.max(0, 1 - d / 0.06));
+  if(L.goal === "core"){
+    if(!inLens(st.P[0], st.P[1])) return { pts:0, stars:0, msg:t.noCore };
+    return { pts, stars, msg:stars ? t.okCore : t.noCore };
+  }
+  return { pts, stars, msg:stars ? t.okPareto : t.noPareto };
+}
+
+function checkAnswer(){
+  if(st.mode !== "challenge" || st.checked) return;
+  const L = LEVELS[st.levelIdx];
+  const res = scoreAttempt();
+  st.checked = true;
+  st.score += res.pts;
+  if(res.stars > (st.bests[L.id] || 0)) st.bests[L.id] = res.stars;
+  if(res.stars > 0 && st.levelIdx + 1 >= st.unlocked) st.unlocked = Math.min(LEVELS.length, st.levelIdx + 2);
+  saveProgress();
+  lockInputs(false);
+  st.layers.contract = true; st.layers.core = true; st.layers.optimum = true;
+  buildLayers(); buildTray(); paintMission(); render();
+  $("verdict-title").textContent = res.msg + "  ·  +" + res.pts;
+}
+
+function buildTray(){
+  const t = T();
+  $("tray").hidden = st.mode !== "challenge";
+  $("tray").innerHTML = LEVELS.map((L, i) => {
+    const locked = i >= st.unlocked;
+    const best = st.bests[L.id];
+    return `<button type="button" class="lvl" data-lvl="${i}" data-locked="${locked}"
+      aria-pressed="${st.mode === "challenge" && i === st.levelIdx}" ${locked ? "disabled" : ""}>
+      <b>${L[LANG]}</b><span>${locked ? "🔒 " + t.lock : (best ? "★".repeat(best) : "—")}</span></button>`;
+  }).join("");
+  $("tray").querySelectorAll(".lvl").forEach(b => {
+    b.addEventListener("click", () => {
+      if(b.dataset.locked === "true") return;
+      st.mode = "challenge";
+      $("mode-explore").setAttribute("aria-pressed", false);
+      $("mode-challenge").setAttribute("aria-pressed", true);
+      $("mission").hidden = false;
+      startLevel(+b.dataset.lvl);
+    });
+  });
+}
+
+function setMethod(m, quiet){
+  st.method = m;
+  document.querySelectorAll('input[name="method"]').forEach(r => { r.checked = r.value === m; });
+  if(m === "trade" && !inLens(st.P[0], st.P[1])) st.P = [st.wAx, st.wAy];
+  updateScrubLabel();
+  if(!quiet){ syncState(); syncScrubFromState(); render(); }
+}
+
+/* ==========================================================================
+   14. Boot
+   ========================================================================== */
+function boot(){
+  loadProgress();
+
+  buildChips(); buildLayers(); buildMapChips();
+  pushPrice = bindPrice();
+
+  for(const [id, key] of [["eax","wAx"],["eay","wAy"],["ebx","wBx"],["eby","wBy"]])
+    bindNum(id, id + "-v", key, onModelChange);
+
+  const readExpr = () => {
+    st.srcA = $("ua-expr").value.trim();
+    st.srcB = $("ub-expr").value.trim();
+    if(recomputeUtilities()){ onModelChange(); buildChips(); }
+  };
+  let typing = 0;
+  for(const id of ["ua-expr","ub-expr"]){
+    $(id).addEventListener("change", readExpr);
+    $(id).addEventListener("input", () => { clearTimeout(typing); typing = setTimeout(readExpr, 320); });
+  }
+
+  document.querySelectorAll('input[name="method"]').forEach(r => {
+    r.addEventListener("change", () => { if(r.checked) setMethod(r.value); });
+  });
+
+  document.querySelectorAll(".tool[data-aux]").forEach(b => {
+    b.addEventListener("click", () => {
+      st.aux = b.dataset.aux;
+      document.querySelectorAll(".tool[data-aux]").forEach(o =>
+        o.setAttribute("aria-pressed", o.dataset.aux === st.aux));
+      $("t-vpaux").textContent = st.aux === "excess" ? T().vpZ : T().vpUPF;
+      render();
+    });
+  });
+
+  $("scrub").addEventListener("input", e => applyScrub(parseFloat(e.target.value)));
+  $("btn-play").addEventListener("click", togglePlay);
+  $("btn-clear").addEventListener("click", () => {
+    if(!st.eq.length) return;
+    let best = st.eq[0].p, bd = Infinity;
+    for(const e of st.eq){
+      const d = Math.abs(Math.log10(e.p / st.p));
+      if(d < bd){ bd = d; best = e.p; }
+    }
+    st.logp = clamp(Math.log10(best), LOGP_MIN, LOGP_MAX);
+    st.p = Math.pow(10, st.logp);
+    pushPrice(); setMethod("auction");
+  });
+
+  $("mode-explore").addEventListener("click", () => setMode("explore"));
+  $("mode-challenge").addEventListener("click", () => setMode("challenge"));
+  $("btn-check").addEventListener("click", checkAnswer);
+  $("btn-next").addEventListener("click", () => startLevel((st.levelIdx + 1) % LEVELS.length));
+
+  for(const [id, code] of [["lang-es","es"], ["lang-en","en"]]){
+    $(id).addEventListener("click", () => {
+      LANG = code;
+      $("lang-es").setAttribute("aria-pressed", code === "es");
+      $("lang-en").setAttribute("aria-pressed", code === "en");
+      applyLang(); render();
+    });
+  }
+
+  bindBox();
+
+  /* the canvases are sized by CSS, so redraw whenever the layout moves them */
+  if(window.ResizeObserver){
+    const ro = new ResizeObserver(() => render());
+    ro.observe($("wrapBox")); ro.observe($("wrapAux"));
+  }else window.addEventListener("resize", render);
+
+  /* the palette is read from the stylesheet on every frame, so a theme change
+     needs nothing but a repaint */
+  matchMedia("(prefers-color-scheme:dark)").addEventListener("change", render);
+
+  /* ?lang=en pins the interface for a class handed a link */
+  const q = new URLSearchParams(location.search);
+  if(q.get("lang") === "en"){
+    LANG = "en";
+    $("lang-es").setAttribute("aria-pressed", false);
+    $("lang-en").setAttribute("aria-pressed", true);
+  }
+
+  st.P = [st.wAx, st.wAy];
+  if(recomputeUtilities()) recomputeModel();
+  st.P = [st.Wx * 0.5, st.Wy * 0.5];
+  syncState(); syncScrubFromState();
+
+  /* one handle for the checks in tools/, and for anyone who wants to drive the
+     model from the console during a lesson */
+  window.__edgeworth = {
+    st, render, syncState, recomputeModel, recomputeUtilities,
+    marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod
+  };
+  applyLang();
+  buildTray();
+  render();
+}
+
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+</script>
+</body>
+</html>
