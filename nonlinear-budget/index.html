@@ -110,8 +110,18 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
 .seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
 
-.viewports{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start}
+/* The plane is the diagram; the substitution panel is a supporting reading of
+   it, so it gets the smaller share and can be dismissed entirely. */
+.viewports{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:12px; align-items:start}
+.viewports.solo{grid-template-columns:minmax(0,1fr)}
 @media (max-width:1000px){.viewports{grid-template-columns:1fr}}
+.range-row{display:grid; grid-template-columns:auto 1fr auto 1fr; align-items:center; gap:8px}
+.range-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2)}
+.range-row .rb{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  width:100%; min-width:0; text-align:right; color:var(--ink);
+  background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:3px 6px}
+.range-row .rb:focus{outline:none; border-color:var(--accent); background:var(--panel)}
+.range-row .rb:disabled{opacity:.45}
 .vp{background:var(--surface); border:1px solid var(--rule); border-radius:3px;
   box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden}
 .vp-head{display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -119,6 +129,8 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .vp-head h2{margin:0; font-family:var(--f-mono); font-size:10.5px; font-weight:600;
   letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
 .vp canvas{display:block; width:100%; height:clamp(320px,46vh,520px); touch-action:none}
+#cPath{height:clamp(230px,32vh,360px)}
+.vp.is-hidden{display:none}
 .legend{display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--ink-2);
   font-family:var(--f-mono)}
 .legend span{display:inline-flex; align-items:center; gap:4px}
@@ -189,6 +201,8 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
         <input class="text-in" id="u-expr" value="x^0.3*y^0.7" spellcheck="false" aria-label="u(x,y)">
         <p class="err" id="u-err"></p>
         <div class="formula" id="fam-formula"></div>
+        <div class="slider-row" data-p="alpha"><span class="k">a</span><input type="range" id="alpha" min="0.02" max="0.98" step="0.01" value="0.3"><input class="v" id="alpha-v"></div>
+        <div class="slider-row" data-p="rho"><span class="k">ρ</span><input type="range" id="rho" min="-6" max="0.95" step="0.01" value="0.5"><input class="v" id="rho-v"></div>
         <div class="slider-row" data-p="xlow"><span class="k">x̲</span><input type="range" id="xlow" min="0" max="3" step="0.01" value="0.4"><input class="v" id="xlow-v"></div>
         <div class="slider-row" data-p="yup"><span class="k">ȳ</span><input type="range" id="yup" min="1" max="30" step="0.1" value="16.2"><input class="v" id="yup-v"></div>
         <div class="slider-row" data-p="beta"><span class="k">β</span><input type="range" id="beta" min="0.05" max="0.98" step="0.005" value="0.815"><input class="v" id="beta-v"></div>
@@ -206,6 +220,19 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
         <div class="slider-row"><span class="k">x_s</span><input type="range" id="xs" min="0" max="10" step="0.01" value="0.92"><input class="v" id="xs-v"></div>
         <div class="slider-row" data-p="s"><span class="k">s</span><input type="range" id="s" min="-1" max="1" step="0.005" value="0.4"><input class="v" id="s-v"></div>
         <p class="hint" id="s-hint"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gView">Vista</h2>
+        <label class="check auto"><input type="checkbox" id="show-map" checked><span data-t="showMap">Degradado de calor</span></label>
+        <p class="hint" data-t="mapHint">Apágalo y el fondo queda liso. Las curvas de indiferencia conservan su color de altura en todo momento.</p>
+        <label class="check auto"><input type="checkbox" id="show-path" checked><span data-t="showPath">Panel de sustitución</span></label>
+        <div class="range-row"><span class="k">x ≤</span>
+          <input type="number" class="rb" id="xmaxFix" min="0.5" max="500" step="any" value="6">
+          <span class="k">y ≤</span>
+          <input type="number" class="rb" id="ymaxFix" min="0.5" max="500" step="any" value="6"></div>
+        <label class="check auto"><input type="checkbox" id="auto-axes"><span data-t="autoAxes">Ajustar los ejes solos</span></label>
+        <p class="hint" id="axis-warn" style="color:var(--crit)"></p>
       </div>
 
       <div class="group">
@@ -853,26 +880,68 @@ const MK = {
   casing:"rgba(6,9,14,.62)", white:"#FFFFFF"
 };
 
-/* Cobb-Douglas is the applet's own default; the second is the Stone-Geary
-   form the original used for its "x is an inferior good" example, which needs
-   x > x_lo and y < y_up to be defined at all. */
+/* The same preference families as the Consumer Optimum applet, so a student
+   moving between the two meets the same menu, plus the Stone-Geary form the
+   original used for its "x is an inferior good" example — which needs
+   x > x_lo and y < y_up to be defined at all.
+
+   One weight `a` runs through every family: the exponent in Cobb-Douglas, the
+   relative value in the linear and Leontief cases, and the share in the CES.
+
+   The generalised CES is
+
+       u = ( 1/(2a) + 1/(2(1-a)) )^(-1) * ( a*x^r + (1-a)*y^r )^(1/r)
+
+   and that leading factor is written here as 2a(1-a), which it equals
+   identically: 1/(2a) + 1/(2(1-a)) collapses to 1/(2a(1-a)). Worth doing
+   rather than transcribing, because the literal form divides by zero at both
+   ends of the slider while 2a(1-a) simply goes to zero there. The factor is a
+   positive constant, so it rescales utility without touching preferences or
+   the optimum; it only keeps the numbers comparable as `a` moves.
+
+   At r = 0 the CES is undefined and the limit is Cobb-Douglas, so a slider
+   sitting on zero emits that limit instead of dividing by it. */
 const FAMS = {
-  cd:  {src:()=>"x^0.3*y^0.7", params:[], formula:"u(x, y) = x^0.3 · y^0.7"},
-  inf: {src:st=>`ln(x-${st.xlow})-(1/(1-${st.beta}))*ln(${st.yup}-y)`,
-        params:["xlow","yup","beta"],
+  cd:  {params:["alpha"],
+        src:st=>`x^${f3(st.alpha)}*y^${f3(1-st.alpha)}`,
+        formula:"u(x, y) = x^a · y^(1−a)"},
+  sub: {params:["alpha"],
+        src:st=>`${f3(st.alpha)}*x+${f3(1-st.alpha)}*y`,
+        formula:"u(x, y) = a·x + (1−a)·y"},
+  com: {params:["alpha"],
+        src:st=>`min(${f3(st.alpha)}*x,${f3(1-st.alpha)}*y)`,
+        formula:"u(x, y) = min(a·x, (1−a)·y)"},
+  ql:  {params:["alpha"],
+        src:st=>`${f3(8*st.alpha)}*ln(x)+y`,
+        formula:"u(x, y) = 8a·ln(x) + y"},
+  ces: {params:["alpha","rho"],
+        src:st=>{
+          const a = st.alpha, k = f3(2*a*(1-a));
+          if(Math.abs(st.rho) < 0.03)            // the r -> 0 limit
+            return `${k}*x^${f3(a)}*y^${f3(1-a)}`;
+          return `${k}*(${f3(a)}*x^${f3(st.rho)}+${f3(1-a)}*y^${f3(st.rho)})^${f3(1/st.rho)}`;
+        },
+        formula:"u(x, y) = [1/(2a) + 1/(2(1−a))]⁻¹ · (a·x^ρ + (1−a)·y^ρ)^(1/ρ)"},
+  inf: {params:["xlow","yup","beta"],
+        src:st=>`ln(x-${f3(st.xlow)})-(1/(1-${f3(st.beta)}))*ln(${f3(st.yup)}-y)`,
         formula:"u(x, y) = ln(x − x̲) − 1/(1−β) · ln(ȳ − y)"},
-  custom:{src:st=>st.customSrc, params:[], formula:null}
+  custom:{params:[], src:st=>st.customSrc, formula:null}
 };
+/* the expression language reads numbers, not JS float noise */
+function f3(v){ return (Math.round(v*1e4)/1e4).toString(); }
 
 const st = {
   scheme:"kind", cmp:"cash", fam:"cd",
   px:3.8, py:2.8, I:8.7, xs:0.92, s:0.4,
+  alpha:0.3, rho:0.5,
   xlow:0.4, yup:16.2, beta:0.815,
   customSrc:"x^0.3*y^0.7", U:null,
-  layers:{map:true, contours:true, feasible:true, indiff:true, opt:true,
+  showMap:true, showPath:true,
+  autoAxes:false, xmaxFix:6, ymaxFix:6,
+  layers:{contours:true, feasible:true, indiff:true, opt:true,
           kinks:true, cmpSet:true, grid:true}
 };
-const LAYER_KEYS = ["map","contours","feasible","indiff","opt","kinks","cmpSet","grid"];
+const LAYER_KEYS = ["contours","feasible","indiff","opt","kinks","cmpSet","grid"];
 
 let LANG = "es";
 const STR = {
@@ -893,8 +962,13 @@ es:{
     cash:"Equivalente en efectivo (total)",
     cashPartial:"Equivalente en efectivo (parcial)"
   },
-  fams:{cd:"Cobb–Douglas", inf:"X inferior", custom:"Personalizada"},
-  layers:{map:"Mapa de utilidad", contours:"Curvas de fondo", feasible:"Conjunto factible",
+  fams:{cd:"Cobb–Douglas", sub:"Sustitutos perfectos", com:"Complementarios perfectos",
+        ql:"Cuasilineal", ces:"CES generalizada", inf:"X inferior", custom:"Personalizada"},
+  gView:"Vista", showMap:"Degradado de calor", showPath:"Panel de sustitución",
+  autoAxes:"Ajustar los ejes solos",
+  mapHint:"Apágalo y el fondo queda liso. Las curvas de indiferencia conservan su color de altura en todo momento.",
+  clipped:"La frontera se sale del marco. Sube x ≤ o y ≤, o marca el ajuste automático.",
+  layers:{contours:"Curvas de fondo", feasible:"Conjunto factible",
           indiff:"Curva por el óptimo", opt:"Óptimo", kinks:"Vértices",
           cmpSet:"Conjunto comparado", grid:"Retícula"},
   vp1:"Plano (x, y)", vp2:"Utilidad sobre la restricción",
@@ -937,8 +1011,13 @@ en:{
     cash:"Cash equivalent (full)",
     cashPartial:"Cash equivalent (partial)"
   },
-  fams:{cd:"Cobb–Douglas", inf:"X inferior", custom:"Custom"},
-  layers:{map:"Utility map", contours:"Background contours", feasible:"Feasible set",
+  fams:{cd:"Cobb–Douglas", sub:"Perfect substitutes", com:"Perfect complements",
+        ql:"Quasilinear", ces:"Generalised CES", inf:"X inferior", custom:"Custom"},
+  gView:"View", showMap:"Heat gradient", showPath:"Substitution panel",
+  autoAxes:"Fit the axes automatically",
+  mapHint:"Turn it off and the background goes plain. Indifference curves keep their height colour at all times.",
+  clipped:"The frontier runs outside the frame. Raise x ≤ or y ≤, or tick auto-fit.",
+  layers:{contours:"Background contours", feasible:"Feasible set",
           indiff:"Curve through the optimum", opt:"Optimum", kinks:"Vertices",
           cmpSet:"Compared set", grid:"Grid"},
   vp1:"Plane (x, y)", vp2:"Utility along the constraint",
@@ -1010,7 +1089,14 @@ function frameOf(){
      141x141 grid and its eleven contour sets a few times instead of on every
      animation frame. */
   const up = v => { const st2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/st2)*st2; };
-  return {xmax: Math.max(up(xmax*1.12), 0.5), ymax: Math.max(up(ymax*1.12), 0.5), B, Bc};
+  /* Fixed by default. An axis that refits itself on every slider move renumbers
+     as you drag, and then two settings cannot be compared by eye — which is the
+     whole reason for putting a scheme and its cash equivalent on one picture.
+     Auto-fit stays available for when a frontier runs off the frame. */
+  if(!st.autoAxes)
+    return {xmax: Math.max(st.xmaxFix, 0.5), ymax: Math.max(st.ymaxFix, 0.5), B, Bc, clipped:
+            xmax > st.xmaxFix + 1e-9 || ymax > st.ymaxFix + 1e-9};
+  return {xmax: Math.max(up(xmax*1.12), 0.5), ymax: Math.max(up(ymax*1.12), 0.5), B, Bc, clipped:false};
 }
 
 function setup(cv){
@@ -1068,6 +1154,18 @@ function drawSegs(ctx, flat, SX, SY, col, wd, cas){
     } };
   if(cas){ path(); ctx.strokeStyle = MK.casing; ctx.lineWidth = wd+3; ctx.stroke(); }
   path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+}
+/* The height colour is the one thing that never switches off. With the map
+   showing it agrees with the ground underneath; with the map off it is the
+   only reading of height left, so a curve still says how high it is. The dark
+   casing is what keeps it legible either way. */
+function levelColour(v){
+  if(!FIELD) return MK.indiff;
+  const t = (v - FIELD.cMin) / ((FIELD.cMax - FIELD.cMin) || 1);
+  return terrainCSS(t);
+}
+function drawIndiff(ctx, v, SX, SY, wd){
+  drawSegs(ctx, marchingSquares(FIELD, v), SX, SY, levelColour(v), wd, true);
 }
 function dot(ctx, X, Y, col, r){
   r = r || 4;
@@ -1131,7 +1229,7 @@ function drawPlane(){
   }
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
-  if(st.layers.map && MAPCV){
+  if(st.showMap && MAPCV){
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(MAPCV, bx.x0, bx.y0, bx.x1-bx.x0, bx.y1-bx.y0);
     ctx.globalAlpha = 0.30; ctx.fillStyle = css("--surface");
@@ -1161,7 +1259,9 @@ function drawPlane(){
   const bestC = (st.cmp && F.Bc) ? solve(u.u, F.Bc) : null;
 
   if(st.layers.indiff && best){
-    drawSegs(ctx, marchingSquares(FIELD, best.v), SX, SY, MK.indiff, 2, true);
+    drawIndiff(ctx, best.v, SX, SY, 2.4);
+  if(st.layers.indiff && bestC && st.cmp)
+    drawIndiff(ctx, bestC.v, SX, SY, 1.6);
   }
   if(st.layers.kinks){
     for(let k=1;k<F.B.pieces.length;k++){
@@ -1256,7 +1356,8 @@ function paint(res){
     gcls = d > 1e-6 ? "is-good" : "";
   }
   const k = F.B.pieces.length > 1 ? 1 : 0;
-  const jump = k ? jumpAt(F.B, k) : 0;
+  let jump = k ? jumpAt(F.B, k) : 0;
+  if(Math.abs(jump) < 1e-9) jump = 0;
   rows($("ro2"), [
     [t.roKind, kindLab, best.kind==="kink"||best.kind==="jump" ? "is-crit" : ""],
     [t.roGain, gain, gcls],
@@ -1277,12 +1378,22 @@ function paint(res){
   }
   v.className = cls; $("v-title").textContent = title; $("v-text").textContent = text;
 
+  /* a fixed frame can be too small for the frontier; say so rather than
+     silently cropping the picture the student is reading */
+  $("axis-warn").textContent = res.F && res.F.clipped ? t.clipped : "";
   const pct = Math.round(Math.abs(st.s)*100) + "%";
   $("s-hint").textContent = st.scheme === "kind" || st.scheme === "excl" || st.scheme === "cash"
     ? t.subFull
     : (st.s < 0 ? t.taxNote : t.subNote).replace("%T%", pct);
 }
-function render(){ const res = drawPlane(); drawPath(res); paint(res); }
+function render(){
+  const vps = document.querySelector(".viewports");
+  vps.classList.toggle("solo", !st.showPath);
+  document.querySelectorAll(".vp")[1].classList.toggle("is-hidden", !st.showPath);
+  const res = drawPlane();
+  if(st.showPath) drawPath(res);
+  paint(res);
+}
 
 /* ==========================================================================
    10. Controls
@@ -1388,8 +1499,12 @@ function applyLang(){
   $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
   $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));
   const leg = (c,l) => `<span><i style="background:${c}"></i>${l}</span>`;
+  /* the indifference curve has no single colour any more — it takes the ramp's
+     colour at its own height — so its key shows the ramp itself */
+  const ramp = TERRAIN.map(t => `rgb(${t[1]},${t[2]},${t[3]}) ${(t[0]*100).toFixed(0)}%`).join(",");
+  const legRamp = l => `<span><i style="background:linear-gradient(90deg,${ramp})"></i>${l}</span>`;
   $("legend1").innerHTML = leg(MK.main,t.legMain) + (st.cmp?leg(MK.cmp,t.legCmp):"")
-                         + leg(MK.opt,t.legOpt) + leg(MK.indiff,t.legIndiff);
+                         + leg(MK.opt,t.legOpt) + legRamp(t.legIndiff);
   $("legend2").innerHTML = leg(MK.main,t.legMain) + (st.cmp?leg(MK.cmp,t.legCmp):"");
   buildScenarios(); buildFams(); buildLayers(); syncParams(); render();
   try{ localStorage.setItem("nlb.lang", LANG); }catch(_){}
@@ -1408,6 +1523,7 @@ bind("py","py");
 bind("inc","I",()=>{clampRanges();});
 bind("xs","xs");
 bind("s","s");
+bind("alpha","alpha",reUtil); bind("rho","rho",reUtil);
 bind("xlow","xlow",reUtil);
 bind("yup","yup",reUtil);
 bind("beta","beta",reUtil);
@@ -1416,6 +1532,23 @@ $("lg-es").addEventListener("click", () => { LANG="es"; applyLang(); });
 $("lg-en").addEventListener("click", () => { LANG="en"; applyLang(); });
 $("th-dark").addEventListener("click", () => setTheme("dark"));
 $("th-light").addEventListener("click", () => setTheme("light"));
+$("show-map").addEventListener("change", e => { st.showMap = e.target.checked; render(); });
+$("show-path").addEventListener("change", e => { st.showPath = e.target.checked; render(); });
+$("auto-axes").addEventListener("change", e => {
+  st.autoAxes = e.target.checked;
+  $("xmaxFix").disabled = st.autoAxes; $("ymaxFix").disabled = st.autoAxes;
+  render();
+});
+for(const [id,key] of [["xmaxFix","xmaxFix"],["ymaxFix","ymaxFix"]]){
+  const el = $(id);
+  el.addEventListener("change", () => {
+    const v = parseFloat(el.value);
+    if(!fin(v)) { el.value = st[key]; return; }
+    st[key] = clamp(v, parseFloat(el.min), parseFloat(el.max));
+    el.value = st[key]; render();
+  });
+  el.value = st[key];
+}
 new ResizeObserver(() => render()).observe(document.querySelector(".viewports"));
 
 let lang0="es", theme0="dark";

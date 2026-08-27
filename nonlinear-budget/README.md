@@ -70,6 +70,49 @@ tangency, a kink, a corner, or the edge of a drop.
   cost of each scheme and the utility difference against the equal-cost cash
   transfer are readouts.
 
+## Preferences
+
+The same families as the Consumer Optimum applet, so a student moving between
+the two meets the same menu:
+
+| Family | Form |
+|---|---|
+| Cobb–Douglas | `x^a · y^(1−a)` |
+| Perfect substitutes | `a·x + (1−a)·y` |
+| Perfect complements | `min(a·x, (1−a)·y)` |
+| Quasilinear | `8a·ln(x) + y` |
+| Generalised CES | `[1/(2a) + 1/(2(1−a))]⁻¹ · (a·x^ρ + (1−a)·y^ρ)^(1/ρ)` |
+| X inferior | `ln(x − x̲) − 1/(1−β)·ln(ȳ − y)` |
+| Custom | whatever you type |
+
+One weight `a` runs through all of them: the exponent in Cobb–Douglas, the
+relative value in the linear and Leontief cases, the share in the CES.
+
+Two notes on the generalised CES. Its leading factor is written internally as
+`2a(1−a)`, which it equals identically — `1/(2a) + 1/(2(1−a))` collapses to
+`1/(2a(1−a))`. Worth doing rather than transcribing, because the literal form
+divides by zero at both ends of the `a` slider while `2a(1−a)` simply goes to
+zero there. Being a positive constant it rescales utility without touching
+preferences or the optimum. And at `ρ = 0` the CES is undefined while its limit
+is Cobb–Douglas, so a slider resting on zero emits that limit rather than
+dividing by it.
+
+## View
+
+- **Heat gradient** — turn the utility map off and the background goes plain.
+  The indifference curves keep their height colour at all times: with the map
+  showing it agrees with the ground underneath, and with the map off it is the
+  only reading of height left.
+- **Substitution panel** — the utility-along-the-constraint reading is a
+  supporting view, so it takes the smaller share of the width and can be
+  dismissed entirely, giving the plane the full frame.
+- **Axes** — fixed by default, set by the `x ≤` and `y ≤` boxes. An axis that
+  refits on every slider move renumbers as you drag, and then two settings
+  cannot be compared by eye, which is the whole point of putting a scheme and
+  its cash equivalent on one picture. Auto-fit stays available, and a warning
+  appears if a frontier runs outside a fixed frame rather than being silently
+  cropped.
+
 ## Utility syntax
 
 `+ − * / ^ ( )`, functions `sqrt ln log log10 exp abs min max sin cos tan`,
