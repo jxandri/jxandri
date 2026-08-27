@@ -56,8 +56,7 @@ header h1{
 }
 header p{margin:6px 0 0; color:var(--ink-2); max-width:64ch}
 
-.cards{display:grid; grid-template-columns:1fr 1fr; gap:20px}
-@media (max-width:760px){ .cards{grid-template-columns:1fr} }
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:20px}
 
 .card{
   display:flex; flex-direction:column; gap:12px;
@@ -126,6 +125,60 @@ footer code{font-family:var(--f-mono); font-size:12px}
       <div class="spacer"></div>
       <div class="actions">
         <a class="btn" href="consumer-optimum/">Abrir</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <span class="eyebrow">Microeconomía</span>
+      <h2>Funciones de Demanda</h2>
+      <p>De dónde salen las curvas de demanda. Mueve un precio o la renta,
+         y cada canasta óptima deja una marca: el rastro que se va formando
+         <em>es</em> la función de demanda.</p>
+      <ul>
+        <li>Cobb–Douglas, CES, sustitutos, bien inferior (Giffen) o la utilidad que escribas</li>
+        <li>Demanda frente a <em>p<sub>x</sub></em>, <em>p<sub>y</sub></em> o la renta, con senda precio-consumo</li>
+        <li>Bienes normales, inferiores y Giffen, señalados sobre la curva</li>
+        <li>Español e inglés</li>
+      </ul>
+      <div class="spacer"></div>
+      <div class="actions">
+        <a class="btn" href="demand-functions/">Abrir</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <span class="eyebrow">Microeconomía</span>
+      <h2>Restricciones No Lineales</h2>
+      <p>Subsidios en especie, subsidios parciales y esquemas excluyentes. Cada uno
+         dobla la recta de presupuesto en un sitio distinto, y el óptimo puede caer
+         justo en el pliegue.</p>
+      <ul>
+        <li>Siete esquemas, del subsidio en especie al equivalente en efectivo</li>
+        <li>Esquemas excluyentes: pasar del cupo hace perder el subsidio entero</li>
+        <li>Compara en especie contra efectivo del mismo coste</li>
+        <li>Español e inglés</li>
+      </ul>
+      <div class="spacer"></div>
+      <div class="actions">
+        <a class="btn" href="nonlinear-budget/">Abrir</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <span class="eyebrow">Microeconomía</span>
+      <h2>Impuesto a la Renta del Trabajo</h2>
+      <p>Un impuesto por tramos dobla la restricción entre consumo y ocio. Con tipos
+         marginales la frontera se quiebra; con tipos medios se rompe, y cruzar un
+         umbral deja al trabajador estrictamente peor.</p>
+      <ul>
+        <li>Tipos marginales frente a tipos medios, con los mismos tramos</li>
+        <li>Por qué la gente se amontona justo debajo de un umbral</li>
+        <li>Renta neta frente a renta bruta, y utilidad sobre la restricción</li>
+        <li>Español e inglés</li>
+      </ul>
+      <div class="spacer"></div>
+      <div class="actions">
+        <a class="btn" href="labor-tax/">Abrir</a>
       </div>
     </article>
 
