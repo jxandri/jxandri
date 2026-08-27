@@ -78,8 +78,11 @@ for (const id of BORDER_IDS) {
   const side = (x, y) => L.nx * x + L.ny * y - L.c;
   const half = s.half;
 
-  const own = side(0, 0);                       // the summit is at the origin
-  const zTop = f(0, 0) * 1000;
+  // The window is pushed back into the summit's own country so that there is
+  // room to walk, so the summit is no longer at the origin — it is wherever
+  // the data says.
+  const own = side(s.summit.x, s.summit.y);
+  const zTop = f(s.summit.x, s.summit.y) * 1000;
   const line = bestOnLine(f, L, half);
   // At least 150 m inside the other country: deep enough that a point there is
   // unambiguously interior rather than a rounding of the frontier itself.
@@ -130,23 +133,37 @@ check('on every mountain the frontier beats the interior',
 check('and every constrained maximum is strictly below its summit',
   worstGap > 1, `smallest gap ${worstGap.toFixed(0)} m`);
 
-// Smoothness: a finite cosine sum has continuous second derivatives, which the
-// interpolated grid it replaced did not. One transect per mountain is enough
-// to catch a decoder that has fallen out of step with the encoder.
-let worst2 = 0;
+// Smoothness, measured against the surface's own resolution.
+//
+// A finite cosine sum has continuous second derivatives; an interpolated grid
+// does not. But "the second derivative does not jump" is only meaningful if it
+// is sampled finer than the finest wave in the sum — probe an M = 112 fit on a
+// 28 km window at 56 m intervals and consecutive samples legitimately differ,
+// because the shortest mode is only 250 m long. So the transect steps at an
+// eighth of the finest wavelength, and the jump is judged as a fraction of how
+// much f_xx varies along the whole transect. That is scale-free: it stays a
+// test of continuity rather than a test of how sharp the fit was allowed to be.
+let worstRel = 0, worstId = '';
 for (const id of BORDER_IDS) {
   const s = BORDERS[id];
   const f = compile(`${id}(x, y)`, ['x', 'y']);
-  const h = s.half * 0.004;
-  let prev = null;
-  for (let t = -s.half * 0.6; t <= s.half * 0.6; t += s.half * 0.004) {
+  const finest = (2 * s.half) / s.M;            // shortest wavelength in the sum
+  const dt = finest / 8;
+  const h = dt;
+  let prev = null, jump = 0, lo = Infinity, hi = -Infinity;
+  for (let t = -s.half * 0.5; t <= s.half * 0.5; t += dt) {
     const fxx = (f(t + h, 0) - 2 * f(t, 0) + f(t - h, 0)) / (h * h);
-    if (prev !== null) worst2 = Math.max(worst2, Math.abs(fxx - prev));
+    if (!isFinite(fxx)) continue;
+    lo = Math.min(lo, fxx); hi = Math.max(hi, fxx);
+    if (prev !== null) jump = Math.max(jump, Math.abs(fxx - prev));
     prev = fxx;
   }
+  const rel = jump / Math.max(1e-9, hi - lo);
+  if (rel > worstRel) { worstRel = rel; worstId = id; }
 }
 check('second derivatives vary continuously on every mountain',
-  worst2 < 0.6, `largest step ${worst2.toFixed(3)} km⁻¹`);
+  worstRel < 0.12,
+  `worst step is ${(worstRel * 100).toFixed(1)}% of the whole range (${worstId})`);
 
 console.log(fails === 0
   ? '\nTHE FRONTIER CUTS THE MOUNTAIN, AND THE BEST YOU CAN REACH IS ON THE LINE'

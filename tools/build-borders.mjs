@@ -184,19 +184,37 @@ async function sampleGrid(entry) {
   return { H, N, step, half, z };
 }
 
-/** Highest sample within `seekKm` of the seed, refined by local search. */
+/**
+ * Highest sample within `seekKm` of a point, refined by local search.
+ *
+ * The point defaults to the window's centre, but once the window is pushed off
+ * the summit it has to be given explicitly — `cxSeek`, `cySeek`.
+ */
 function findSummit(grid) {
   const { H, N, step, half } = grid;
+  const sx = grid.cxSeek || 0, sy = grid.cySeek || 0;
   let bi = 0, bj = 0, bv = -Infinity;
   for (let j = 0; j < N; j++) {
     for (let i = 0; i < N; i++) {
       const x = -half + i * step, y = -half + j * step;
-      if (Math.hypot(x, y) > grid.seekKm) continue;
+      if (Math.hypot(x - sx, y - sy) > grid.seekKm) continue;
       const v = H[j * N + i];
       if (v > bv) { bv = v; bi = i; bj = j; }
     }
   }
   return { x: -half + bi * step, y: -half + bj * step, metres: bv };
+}
+
+/** The floor of the window, for measuring relief. */
+function lowest(f, half, n = 120) {
+  let lo = Infinity;
+  for (let j = 0; j <= n; j++) {
+    for (let i = 0; i <= n; i++) {
+      const v = f(-half + (2 * half * i) / n, -half + (2 * half * j) / n);
+      if (isFinite(v) && v < lo) lo = v;
+    }
+  }
+  return lo;
 }
 
 /**
@@ -475,40 +493,65 @@ for (const entry of list) {
   //   49th parallel that happens quickly: American Border Peak has Canadian
   //   Border Peak less than three kilometres north of it.
   //
-  // So the window is sized to the mountain: the frontier plus a margin, and
-  // never wider than the summit's own dominance. There is no canonical polygon
-  // for "the body of a mountain" — the atlas says so itself — and a
-  // neighbourhood of the summit out to a little past the border is as
-  // defensible a choice as any, with the advantage that everything it claims
-  // is visible on screen and checkable.
   const lat0 = entry.lat + peak.y / KY;
   const lon0 = entry.lon + peak.x / KX;
   const L2 = boundaryLine(entry, lat0, lon0);
   const feasible = (x, y) => sideOf(L2, x, y) <= 0;      // the OTHER country
 
-  // The window is part of the answer, not a setting
-  // ----------------------------------------------
-  // The lesson is a statement about a region: *within this window*, the highest
-  // point of the country that does not own the summit lies on the frontier. It
-  // can fail for an honest geographic reason — reach far enough across the line
-  // and you collect a second summit over there, whose top is nowhere near the
-  // border. American Border Peak has Canadian Border Peak less than three
-  // kilometres north; Mount Richards has the Waterton skyline behind it.
+  // The window: as much country as possible, as little of the other side as
+  // the lesson allows
+  // ------------------------------------------------------------------------
+  // Two pressures pull in opposite directions. The lesson is a statement about
+  // a region — *within this window*, the highest point of the country that does
+  // not own the summit lies on the frontier — and it fails as soon as the
+  // window reaches far enough across the line to swallow a second summit over
+  // there. American Border Peak has Canadian Border Peak less than three
+  // kilometres north. But a window sized to that constraint alone is a couple
+  // of kilometres square, which is a hillside, not a mountain: there is nothing
+  // to explore and the relief is lost against the width.
   //
-  // There is no canonical polygon for "the body of a mountain" — the atlas says
-  // so itself — so the window is searched rather than assumed: from a generous
-  // neighbourhood inward, the widest one in which the claim is *true* wins, and
-  // everything it claims is on screen for the student to check. If even the
-  // tightest window cannot make the claim true, the mountain is not shipped.
+  // Both are satisfied by moving the window rather than shrinking it. The
+  // domain does not have to be centred on the summit: pushed back into the
+  // summit's own country by `shift`, a window of half-width `half` still only
+  // reaches `half − dist − shift` past the frontier. So the feasible strip
+  // stays as shallow as the lesson needs while the walkable area grows with
+  // the square of the half-width — several times the ground, all of it on the
+  // side where the mountain actually is.
+  //
+  // The search runs widest-first and keeps the first window whose claim holds.
   let chosen = null, g = null, rawPeak = null;
-  const margins = [...new Set([Math.min(3.0, Math.max(1.2, 0.75 * dist)), 2.0, 1.4, 1.0, 0.7, 0.5])]
-    .filter((m) => m > 0.4).sort((a, b) => b - a);
+  const plans = [];
+  for (const half of [14, 11, 9, 7.5, 6, 5, 4, 3.2, 2.6, 2.1]) {
+    for (const strip of [2.6, 2.0, 1.5, 1.1, 0.8, 0.6]) {
+      const shift = half - dist - strip;
+      if (shift < 0) continue;                 // window too small to reach the line
+      plans.push({ half, strip, shift });
+    }
+  }
+  // Widest first; among equals, the shallower strip across the border.
+  plans.sort((a, b) => (b.half - a.half) || (a.strip - b.strip));
 
-  for (const margin of margins) {
-    const half = dist + margin;
-    const gg = await sampleGrid({ ...entry, lat: lat0, lon: lon0, halfKm: half });
+  for (const plan of plans) {
+    const { half, shift } = plan;
+    // Centre pushed along the summit's own normal, in local km, then turned
+    // back into a latitude and longitude for the sampler.
+    const cx = L2.nx * shift, cy = L2.ny * shift;
+    const gg = await sampleGrid({
+      ...entry, lat: lat0 + cy / KY, lon: lon0 + cx / kxAt(lat0), halfKm: half,
+    });
+    gg.cx = cx; gg.cy = cy;
+
+    // Everything below works in the WINDOW's frame, whose origin is the
+    // shifted centre rather than the summit. Two things move with it: the
+    // summit, now at −(cx, cy), and the boundary, whose offset drops by the
+    // shift because the centre moved that far along its own normal.
+    const Sx = -cx, Sy = -cy;
+    const Lw = { nx: L2.nx, ny: L2.ny, c: L2.c - shift };
+    const feasibleW = (x, y) => sideOf(Lw, x, y) <= 0;
+
     const cols = analyse(gg);
-    const raw = findSummit({ ...gg, seekKm: Math.max(0.4, gg.step * 3) });
+    const raw = findSummit({ ...gg, seekKm: gg.half * 3, cxSeek: Sx, cySeek: Sy });
+
     // Every level that passes is collected rather than the first one taken.
     // Stopping at the first pass would always choose the heaviest smoothing
     // available, which flattens a sharp summit by a tenth of its height for no
@@ -517,36 +560,46 @@ for (const entry of list) {
     // relative maxima still in single figures.
     const passes = [];
     for (const [M, sigma] of [[16, 5], [20, 6], [24, 7], [28, 8], [32, 9], [40, 11],
-      [48, 13], [56, 15], [64, 18], [72, 20], [80, 22], [96, 26]]) {
+      [48, 13], [56, 15], [64, 18], [72, 20], [80, 22], [96, 26], [112, 30]]) {
       if (M > gg.N - 1) break;
       const c = truncate(cols, M, sigma);
       const f = evaluator(c, M, gg.half);
-      // The mountain's own summit, on the smooth surface, near the origin.
+      // The named mountain's own summit on the smooth surface: near where the
+      // elevation model put it, and on its own side of the line.
       const mine = maximise(f, gg.half, gg.step * 2,
-        (x, y) => Math.hypot(x, y) < Math.max(0.5, margin * 0.5) && sideOf(L2, x, y) > 0);
-      const con = maximise(f, gg.half, gg.step * 2, feasible);
-      const offLine = Math.abs(sideOf(L2, con.x, con.y));
+        (x, y) => Math.hypot(x - Sx, y - Sy) < 1.0 && sideOf(Lw, x, y) > 0);
+      const con = maximise(f, gg.half, gg.step * 2, feasibleW);
+      const offLine = Math.abs(sideOf(Lw, con.x, con.y));
       const onEdge = Math.abs(con.x) > gg.half * 0.97 || Math.abs(con.y) > gg.half * 0.97;
-      const kept = mine.metres / raw.metres;
+      const kept = mine.metres / f(Sx, Sy);
       const onLine = offLine < Math.max(0.08, gg.step * 2);
       const below = con.metres < mine.metres - 5;
+      const summitKept = f(Sx, Sy) / raw.metres;
       const maxima = countMaxima(f, gg.half, 129);
-      const ok = onLine && !onEdge && below && kept > 0.86;
-      if (ok) passes.push({ M, sigma, c, f, top: mine, con, offLine, maxima, kept });
+      const ok = onLine && !onEdge && below && kept > 0.9 && summitKept > 0.84;
+      if (ok) passes.push({ M, sigma, c, f, top: mine, con, offLine, maxima, kept: summitKept });
     }
 
     // Sharpest fit whose relative maxima stay in single figures; failing that,
     // simply the gentlest one that passed at all.
-    const tidy = passes.filter((p) => p.maxima <= 8);
+    // How many relative maxima are "too many" depends on how much ground the
+    // window covers: eighteen kilometres of the North Cascades genuinely
+    // contains a dozen or more summits, and refusing to show them would be
+    // smoothing away the mountains rather than the sampling artefacts.
+    const allowed = 3 + (2 * gg.half) ** 2 / 24;
+    const tidy = passes.filter((p) => p.maxima <= allowed);
     const hit = tidy.length ? tidy[tidy.length - 1] : (passes[0] || null);
 
-    const note = hit
-      ? `M=${hit.M} of ${passes.length} passing, keeps ${(hit.kept * 100).toFixed(0)}% of the summit,`
-        + ` constrained ${hit.con.metres.toFixed(0)} m at`
-        + ` ${(hit.offLine * 1000).toFixed(0)} m off the line, ${hit.maxima} maxima ✓`
-      : 'no fit put the constrained maximum on the frontier';
-    console.log(`  window ±${half.toFixed(2)} km (frontier ${dist.toFixed(2)} + ${margin.toFixed(2)}): ${note}`);
-    if (hit) { chosen = hit; g = gg; rawPeak = raw; break; }
+    if (hit) {
+      console.log(`  window ±${half.toFixed(2)} km, centre pushed ${shift.toFixed(2)} km into`
+        + ` ${entry.countries[0].split(' (')[0]}, ${plan.strip.toFixed(1)} km of the far side:`
+        + ` M=${hit.M} of ${passes.length} passing, keeps ${(hit.kept * 100).toFixed(0)}% of the summit,`
+        + ` constrained ${hit.con.metres.toFixed(0)} m at ${(hit.offLine * 1000).toFixed(0)} m`
+        + ` off the line, ${hit.maxima} maxima ✓`);
+      chosen = hit; g = gg; rawPeak = raw;
+      chosen.Sx = Sx; chosen.Sy = Sy; chosen.Lw = Lw; chosen.shift = shift; chosen.strip = plan.strip;
+      break;
+    }
   }
 
   if (!chosen) { console.log('  !! no window makes the constrained maximum land on the frontier'); failures++; continue; }
@@ -581,10 +634,26 @@ for (const entry of list) {
         `el meridiano ${Math.abs(b.meridian)} ${b.meridian < 0 ? 'oeste' : 'este'}`]
       : [entry.treaty || 'a straight treaty line', entry.treatyEs || 'una línea recta de tratado'];
 
+  // A vertical exaggeration that makes the mountain read as one.
+  //
+  // At true scale a two-kilometre peak in a twenty-kilometre window is a gentle
+  // swelling — honestly so, which is the point Saint Elias makes. But an
+  // example nobody recognises as a mountain teaches nothing, so each of these
+  // opens with the z axis stretched to bring the relief to about a third of the
+  // window's width: the proportion a relief model or a physical globe uses, and
+  // the same trick an atlas plays. It is a display scale only — f, its
+  // gradients and every readout stay in real kilometres — and the dial is right
+  // there to put it back to 1.
+  const relief = (chosen.f(chosen.Sx, chosen.Sy) - lowest(chosen.f, g.half)) / 1000;
+  const want = (2 * g.half) * 0.33;
+  const exaggeration = Math.max(1, Math.min(9, want / Math.max(0.05, relief)));
+
   results.push({
     entry, lat0, lon0, half: g.half, M: chosen.M, sigma: chosen.sigma, data,
-    line: L2, rms, maxima: chosen.maxima, boundaryLabel, boundaryLabelEs,
-    summitMetres: chosen.f(0, 0),
+    line: chosen.Lw, rms, maxima: chosen.maxima, boundaryLabel, boundaryLabelEs,
+    shift: chosen.shift, strip: chosen.strip, exaggeration,
+    summitMetres: chosen.f(chosen.Sx, chosen.Sy),
+    summitAt: { x: chosen.Sx, y: chosen.Sy },
     summit: { x: chosen.top.x, y: chosen.top.y, metres: chosen.top.metres },
     constrained: { x: chosen.con.x, y: chosen.con.y, metres: chosen.con.metres, offLine: chosen.offLine },
     rawPeak: rawPeak.metres,
@@ -610,11 +679,12 @@ const J = (v) => JSON.stringify(v);
 const entries = results.map((r) => `  ${J(r.entry.id)}: {
     M: ${r.M}, half: ${round(r.half, 3)}, lat: ${round(r.lat0, 5)}, lon: ${round(r.lon0, 5)},
     line: { nx: ${round(r.line.nx, 6)}, ny: ${round(r.line.ny, 6)}, c: ${round(r.line.c, 5)} },
-    summit: { x: 0, y: 0, metres: ${round(r.summitMetres, 1)} },
+    summit: { x: ${round(r.summitAt.x, 3)}, y: ${round(r.summitAt.y, 3)}, metres: ${round(r.summitMetres, 1)} },
     localTop: { x: ${round(r.summit.x, 3)}, y: ${round(r.summit.y, 3)}, metres: ${round(r.summit.metres, 1)} },
     constrained: { x: ${round(r.constrained.x, 3)}, y: ${round(r.constrained.y, 3)}, metres: ${round(r.constrained.metres, 1)} },
     rawPeak: ${round(r.rawPeak, 1)}, rms: ${round(r.rms, 1)}, maxima: ${r.maxima},
-    frontierKm: ${round(Math.abs(sideOf(r.line, 0, 0)), 3)},
+    frontierKm: ${round(Math.abs(sideOf(r.line, r.summitAt.x, r.summitAt.y)), 3)},
+    exaggeration: ${round(r.exaggeration, 2)}, shift: ${round(r.shift, 2)}, strip: ${round(r.strip, 2)},
     meta: {
       name: ${J(r.entry.name)}, es: ${J(r.entry.es)},
       countries: ${J(r.entry.countries)}, countriesEs: ${J(r.entry.countriesEs)},

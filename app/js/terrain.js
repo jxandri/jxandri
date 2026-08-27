@@ -160,16 +160,41 @@ const PROFILES = {
   // The cloud band is pushed past the top of the range on purpose — cloud is a
   // fact about absolute altitude, and a summit that would be under the cloud
   // base in life should not be wearing one here.
-  peak: [0.00, 0.05, 0.13, 0.33, 0.52, 0.68, 0.80, 1.40],
+  peak: [0.00, 0.03, 0.13, 0.36, 0.50, 0.62, 0.76, 1.40],
   // Coastal chaparral: Otay and Tecate are a thousand metres of dry scrub in a
   // Mediterranean climate. Nothing above them is ever white.
   chaparral: [0.00, 0.04, 0.12, 0.32, 0.58, 0.82, 1.25, 1.60],
 };
+/**
+ * Colours a climate substitutes for the shared ones.
+ *
+ * The two stony bands are the ones that give a climate away. Utah red-tan and
+ * sulphur yellow are right over a desert and quite wrong on a Cascades ridge,
+ * where the ground between the treeline and the snow is grey scree and grey
+ * granite. Same eight bands, same positions machinery — only the pigment
+ * changes, which is the smallest honest way to say "this is a different kind
+ * of mountain".
+ */
+// Dark on purpose. These are albedos, and they are lit by a bright sky and a
+// bright sun; picked at the value granite *looks* on a screen, they come back
+// out of the lighting almost white, and a mountain whose rock is as bright as
+// its snow has no shape at all — it reads as haze. Real granite reflects about
+// a fifth of the light that falls on it, wet scree less.
+const SCREE_GREY = [0.33, 0.31, 0.29];
+const GRANITE_GREY = [0.38, 0.39, 0.42];
+const BAND_TINTS = {
+  peak: { 4: SCREE_GREY, 5: GRANITE_GREY },
+  alpine: { 4: SCREE_GREY, 5: GRANITE_GREY },
+};
+
 let BAND_AT = PROFILES.temperate;
+let BAND_RGB = BANDS;
 
 /** Choose which climate the bands describe. Takes effect on the next build. */
 export function setBiomeProfile(name) {
   BAND_AT = PROFILES[name] || PROFILES.temperate;
+  const tint = BAND_TINTS[name];
+  BAND_RGB = tint ? BANDS.map((b, i) => tint[i] || b) : BANDS;
 }
 
 /**
@@ -249,7 +274,7 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   let i = 0;
   while (i < BAND_AT.length - 2 && t > BAND_AT[i + 1]) i++;
   const span = BAND_AT[i + 1] - BAND_AT[i] || 1e-6;
-  mixRGB(BANDS[i], BANDS[i + 1], (t - BAND_AT[i]) / span, out);
+  mixRGB(BAND_RGB[i], BAND_RGB[i + 1], (t - BAND_AT[i]) / span, out);
 
   // Anything actually below the waterline is lake bed, whatever the band says.
   if (z < 0) mixRGB(out, BAND_WATER, 0.75, out);
@@ -271,8 +296,24 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   const lichen = smoothstep(0.62, 0.92, meso) * (1 - steep * 0.6) * stony * 0.28;
   if (lichen > 0.001) mixRGB(out, LICHEN, lichen, out);
 
-  // Snow lies in patches, and only where it can settle.
-  const snow = smoothstep(0.80, 1.00, t - steep * 0.12 + (meso - 0.5) * 0.10);
+  // Snow lies in patches, and only where it can settle — starting at the
+  // snowline this climate actually has. That used to be hardcoded at 0.80 of
+  // the relief whatever the profile said, so a climate could place its snow
+  // band two thirds of the way up and still get snow only on the last fifth:
+  // the mountains came out green to the shoulders. A profile that parks its
+  // snow band above the top of the range still gets none, which is what a
+  // thousand metres of Baja chaparral should get.
+  //
+  // Patchy, not a gradient. A wide ramp with a little noise on it produces a
+  // smooth wash of white that reads as haze over the whole upper mountain; a
+  // *narrow* ramp with a lot of noise on it produces what a snowline actually
+  // looks like — fingers of snow reaching down the gullies, bare rock standing
+  // out of it on the ribs, and the two interleaved for hundreds of metres
+  // rather than a line drawn round the peak. Steep ground sheds it.
+  const snowAt = BAND_AT[6];
+  const drift = (meso - 0.5) * 0.30 + (macro - 0.5) * 0.20 + (fine - 0.5) * 0.06;
+  const snow = smoothstep(snowAt - 0.02, snowAt + 0.06,
+    t + drift - steep * 0.16);
   if (snow > 0.001) mixRGB(out, BAND_SNOW, snow, out);
 
   // Brightness variation — subtle on gentle ground, strong on tough.
