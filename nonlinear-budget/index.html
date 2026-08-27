@@ -130,6 +130,9 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
   letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
 .vp canvas{display:block; width:100%; height:clamp(320px,46vh,520px); touch-action:none}
 #cPath{height:clamp(230px,32vh,360px)}
+#c3d{height:clamp(300px,44vh,520px); cursor:grab}
+#c3d:active{cursor:grabbing}
+#vp3[hidden]{display:none}
 .vp.is-hidden{display:none}
 .legend{display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--ink-2);
   font-family:var(--f-mono)}
@@ -227,6 +230,8 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
         <label class="check auto"><input type="checkbox" id="show-map" checked><span data-t="showMap">Degradado de calor</span></label>
         <p class="hint" data-t="mapHint">Apágalo y el fondo queda liso. Las curvas de indiferencia conservan su color de altura en todo momento.</p>
         <label class="check auto"><input type="checkbox" id="show-path" checked><span data-t="showPath">Panel de sustitución</span></label>
+        <label class="check auto"><input type="checkbox" id="show-3d"><span data-t="show3d">Superficie 3D</span></label>
+        <p class="hint" data-t="hint3d">La misma restricción, levantada sobre la superficie de utilidad. El óptimo es la cima del arco.</p>
         <div class="range-row"><span class="k">x ≤</span>
           <input type="number" class="rb" id="xmaxFix" min="0.5" max="500" step="any" value="6">
           <span class="k">y ≤</span>
@@ -267,6 +272,19 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
           <div class="readouts" id="ro2"></div>
         </section>
       </div>
+
+      <section class="vp" id="vp3" hidden>
+        <div class="vp-head">
+          <h2 id="vp3-title">Superficie 3D · z = u(x, y)</h2>
+          <div class="seg" id="v3-seg">
+            <button type="button" data-v3="iso" aria-pressed="true">3D</button>
+            <button type="button" data-v3="xz" aria-pressed="false">X–Z</button>
+            <button type="button" data-v3="xy" aria-pressed="false">X–Y</button>
+            <button type="button" data-v3="yz" aria-pressed="false">Y–Z</button>
+          </div>
+        </div>
+        <canvas id="c3d" aria-label="Superficie de utilidad en 3D"></canvas>
+      </section>
     </div>
   </div>
 
@@ -936,7 +954,7 @@ const st = {
   alpha:0.3, rho:0.5,
   xlow:0.4, yup:16.2, beta:0.815,
   customSrc:"x^0.3*y^0.7", U:null,
-  showMap:true, showPath:true,
+  showMap:true, showPath:true, show3d:false,
   autoAxes:false, xmaxFix:6, ymaxFix:6,
   layers:{contours:true, feasible:true, indiff:true, opt:true,
           kinks:true, cmpSet:true, grid:true}
@@ -965,6 +983,8 @@ es:{
   fams:{cd:"Cobb–Douglas", sub:"Sustitutos perfectos", com:"Complementarios perfectos",
         ql:"Cuasilineal", ces:"CES generalizada", inf:"X inferior", custom:"Personalizada"},
   gView:"Vista", showMap:"Degradado de calor", showPath:"Panel de sustitución",
+  show3d:"Superficie 3D", vp3:"Superficie 3D · z = u(x, y)",
+  hint3d:"La misma restricción, levantada sobre la superficie de utilidad. El óptimo es la cima del arco.",
   autoAxes:"Ajustar los ejes solos",
   mapHint:"Apágalo y el fondo queda liso. Las curvas de indiferencia conservan su color de altura en todo momento.",
   clipped:"La frontera se sale del marco. Sube x ≤ o y ≤, o marca el ajuste automático.",
@@ -1014,6 +1034,8 @@ en:{
   fams:{cd:"Cobb–Douglas", sub:"Perfect substitutes", com:"Perfect complements",
         ql:"Quasilinear", ces:"Generalised CES", inf:"X inferior", custom:"Custom"},
   gView:"View", showMap:"Heat gradient", showPath:"Substitution panel",
+  show3d:"3D surface", vp3:"3D surface · z = u(x, y)",
+  hint3d:"The same constraint, lifted onto the utility surface. The optimum is the top of the arch.",
   autoAxes:"Fit the axes automatically",
   mapHint:"Turn it off and the background goes plain. Indifference curves keep their height colour at all times.",
   clipped:"The frontier runs outside the frame. Raise x ≤ or y ≤, or tick auto-fit.",
@@ -1329,6 +1351,262 @@ function drawPath(res){
 }
 
 /* ==========================================================================
+   8b. The lifted picture
+   --------------------------------------------------------------------------
+   The same construction as the Consumer Optimum applet's right-hand panel: the
+   utility surface drawn by painter's algorithm on a 2D canvas — a height field
+   sorts exactly by centroid depth, so there is no depth buffer to lose and no
+   shader to fail — with the budget frontier lifted onto it.
+
+   Lifting is what earns the panel its place here. The frontier of these
+   schemes is piecewise, and once draped over the surface the optimum stops
+   being "where a curve touches another curve" and becomes the top of an arch.
+   A kink shows as a corner in that arch and an exclusive scheme's notch as a
+   cliff in it, which is the same reading the substitution panel gives but in
+   the place where the budget set actually lives.
+   ========================================================================== */
+const view3d = {
+  az:-0.95, el:0.52, dist:4.0,
+  ortho:false, canonical:"iso",
+  mesh:null, meshKey:"",
+  N_IDLE:84, N_DRAG:40, dragging:false
+};
+
+/* The three orthogonal projections, plus the free perspective view. Each names
+   the plane the surface is projected onto and the pair of axes left in frame. */
+const VIEWS = {
+  xz : { az:-Math.PI/2, el:0,          ortho:true,  plane:"y = 0" },
+  xy : { az:-Math.PI/2, el:Math.PI/2,  ortho:true,  plane:"z = 0" },
+  yz : { az:0,          el:0,          ortho:true,  plane:"x = 0" },
+  iso: { az:-0.95,      el:0.52,       ortho:false, plane:null    }
+};
+
+/* Infeasible bundles keep their terrain hue but are washed toward the panel
+   ground, so the affordable slice reads as the figure without the rest of the
+   surface turning into an unreadable grey slab. */
+let FADED = null, FADED_KEY = "";
+function fadedPalette(dark){
+  const key = dark ? "d" : "l";
+  if(FADED_KEY === key) return FADED;
+  const g = dark ? [15,21,25] : [231,235,237], w = 0.76;
+  FADED = new Array(TSTEPS * SSTEPS);
+  for(let i = 0; i < TSTEPS; i++){
+    const c = terrainRGB(i/(TSTEPS-1));
+    for(let s = 0; s < SSTEPS; s++){
+      const k = 0.58 + 0.42*(s/(SSTEPS-1));
+      const r = c[0]*k + (g[0] - c[0]*k)*w;
+      const gg = c[1]*k + (g[1] - c[1]*k)*w;
+      const bb = c[2]*k + (g[2] - c[2]*k)*w;
+      FADED[i*SSTEPS + s] = `rgb(${r|0},${gg|0},${bb|0})`;
+    }
+  }
+  FADED_KEY = key;
+  return FADED;
+}
+
+function buildMesh(st, n){
+  const key = `${st.src}|${st.xmax}|${st.ymax}|${n}|${st.field.cMin}|${st.field.cMax}`;
+  if(view3d.mesh && view3d.meshKey === key) return view3d.mesh;
+  const span = (st.field.cMax - st.field.cMin) || 1;
+  const px = new Float32Array(n*n), py = new Float32Array(n*n), pz = new Float32Array(n*n);
+  const ok = new Uint8Array(n*n), hh = new Float32Array(n*n);
+  for(let j = 0; j < n; j++){
+    for(let i = 0; i < n; i++){
+      const x = st.xmax * i/(n-1), y = st.ymax * j/(n-1);
+      const v = st.u(x,y);
+      const k = j*n + i;
+      px[k] = i/(n-1)*2 - 1;
+      py[k] = j/(n-1)*2 - 1;
+      const t = clamp((v - st.field.cMin)/span, -0.08, 1.08);
+      pz[k] = t * 1.25;
+      hh[k] = t;
+      ok[k] = Number.isFinite(v) ? 1 : 0;
+    }
+  }
+  view3d.mesh = { n, px, py, pz, hh, ok, xmax:st.xmax, ymax:st.ymax, cMin:st.field.cMin, span };
+  view3d.meshKey = key;
+  return view3d.mesh;
+}
+
+/* One camera for both projections. Perspective is the default exploring view;
+   orthographic is what the three axis buttons switch to, because "project
+   orthogonally onto y = 0" only means anything without a perspective divide —
+   with one, parallel edges still converge and lengths are not comparable. */
+function camera(w, h){
+  const { az, el, dist, ortho } = view3d;
+  const tgt = [0, 0, 0.55];
+  const eye = [
+    tgt[0] + dist*Math.cos(el)*Math.cos(az),
+    tgt[1] + dist*Math.cos(el)*Math.sin(az),
+    tgt[2] + dist*Math.sin(el)
+  ];
+  const sub = (a,b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+  const norm = a => { const l = Math.hypot(a[0],a[1],a[2]) || 1; return [a[0]/l,a[1]/l,a[2]/l]; };
+  const cross = (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+  const f = norm(sub(tgt, eye));
+  /* looking straight down, world-up is parallel to the view direction and the
+     usual cross product collapses — swing the reference to +y so the top-down
+     projection comes out with x to the right and y up */
+  const ref = Math.abs(f[2]) > 0.999 ? [0,1,0] : [0,0,1];
+  const r = norm(cross(f, ref));
+  const up = cross(r, f);
+  const focal = 2.7;
+  const m = Math.min(w, h);
+  const scale = ortho ? m * 0.36 : m * 0.43;
+  return {
+    eye, f, r, up, focal, scale, ortho, w, h,
+    project(x,y,z){
+      const dx = x-eye[0], dy = y-eye[1], dz = z-eye[2];
+      const cz = dx*f[0] + dy*f[1] + dz*f[2];
+      const cx = dx*r[0] + dy*r[1] + dz*r[2];
+      const cy = dx*up[0] + dy*up[1] + dz*up[2];
+      if(ortho) return [w/2 + cx*scale, h/2 - cy*scale, cz];
+      const k = focal / Math.max(cz, 0.05) * scale;
+      return [w/2 + cx*k, h/2 - cy*k, cz];
+    },
+    /* screen point -> a world ray, for picking the surface under the pointer */
+    ray(mx, my){
+      if(ortho){
+        const a = (mx - w/2) / scale, b2 = -(my - h/2) / scale;
+        return {
+          o:[eye[0] + a*r[0] + b2*up[0], eye[1] + a*r[1] + b2*up[1], eye[2] + a*r[2] + b2*up[2]],
+          d:[f[0], f[1], f[2]]
+        };
+      }
+      const a = (mx - w/2) / (focal * scale), b2 = -(my - h/2) / (focal * scale);
+      return {
+        o:[eye[0], eye[1], eye[2]],
+        d:[a*r[0] + b2*up[0] + f[0], a*r[1] + b2*up[1] + f[1], a*r[2] + b2*up[2] + f[2]]
+      };
+    }
+  };
+}
+
+
+/* the frontier draped on the surface, piece by piece so a notch stays a break */
+function liftedFrontier(B, M, u){
+  const out = [];
+  for(const pc of B.pieces){
+    const seg = [];
+    for(let i = 0; i <= 60; i++){
+      const x = pc.x0 + (pc.x1-pc.x0)*i/60, y = Math.max(pc.y(x), 0);
+      const v = u(x,y);
+      if(!fin(v)) { if(seg.length > 1) out.push(seg); seg.length = 0; continue; }
+      seg.push([x, y, v]);
+    }
+    if(seg.length > 1) out.push(seg);
+  }
+  return out;
+}
+
+function draw3d(){
+  const cv = document.getElementById("c3d"), {ctx,w,h} = setup(cv);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = css("--sunk"); ctx.fillRect(0,0,w,h);
+  if(!st.U || !FIELD) return;
+  const F = frameOf(), u = st.U.u;
+  const cam = camera(w,h);
+  const n = view3d.dragging ? view3d.N_DRAG : view3d.N_IDLE;
+  const M = buildMesh({src:st.U.src, xmax:F.xmax, ymax:F.ymax, u,
+                       field:{cMin:FIELD.cMin, cMax:FIELD.cMax}}, n);
+
+  const SX = new Float32Array(n*n), SY = new Float32Array(n*n), SZ = new Float32Array(n*n);
+  for(let k = 0; k < n*n; k++){
+    const p = cam.project(M.px[k], M.py[k], M.pz[k]);
+    SX[k]=p[0]; SY[k]=p[1]; SZ[k]=p[2];
+  }
+  const LIGHT = (() => { const l=[0.4,-0.72,0.85], m=Math.hypot(l[0],l[1],l[2]); return [l[0]/m,l[1]/m,l[2]/m]; })();
+  const nq = (n-1)*(n-1);
+  const qi = new Int32Array(nq), qd = new Float32Array(nq), qc = new Int32Array(nq);
+  let m = 0;
+  for(let j = 0; j < n-1; j++) for(let i = 0; i < n-1; i++){
+    const a = j*n+i, b2 = a+1, c = a+n+1, d = a+n;
+    if(!(M.ok[a] & M.ok[b2] & M.ok[c] & M.ok[d])) continue;
+    const depth = (SZ[a]+SZ[b2]+SZ[c]+SZ[d])*0.25;
+    if(depth <= 0.05) continue;
+    const ux=M.px[b2]-M.px[a], uy=M.py[b2]-M.py[a], uz=M.pz[b2]-M.pz[a];
+    const vx=M.px[d]-M.px[a],  vy=M.py[d]-M.py[a],  vz=M.pz[d]-M.pz[a];
+    let nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+    const nl = Math.hypot(nx,ny,nz)||1; nx/=nl; ny/=nl; nz/=nl;
+    if(nz<0){ nx=-nx; ny=-ny; nz=-nz; }
+    const lit = 0.30 + 0.70*Math.max(0, nx*LIGHT[0]+ny*LIGHT[1]+nz*LIGHT[2]);
+    const hgt = (M.hh[a]+M.hh[b2]+M.hh[c]+M.hh[d])*0.25;
+    qi[m]=a; qd[m]=depth;
+    qc[m] = (Math.max(0,Math.min(TSTEPS-1,(hgt*(TSTEPS-1))|0))*SSTEPS)
+          +  Math.max(0,Math.min(SSTEPS-1,(lit*(SSTEPS-1))|0));
+    m++;
+  }
+  const order = new Array(m);
+  for(let k=0;k<m;k++) order[k]=k;
+  order.sort((p2,q)=>qd[q]-qd[p2]);
+
+  const ov = [];
+  const toNorm = (x,y,v) => [ x/F.xmax*2-1, y/F.ymax*2-1,
+    clamp((v - M.cMin)/M.span, -0.08, 1.08)*1.25 ];
+  /* one batched path per curve, keyed at its nearest point: drawn segment by
+     segment each casing overpaints its neighbour's core and the line beads */
+  const addPath = (pts, colour, width) => {
+    const proj = [];
+    /* keyed at the NEAREST point of the curve — depth counts down toward the
+       camera, so keying on the farthest one draws the whole curve while it is
+       still far away and every quad in front then paints over it */
+    let near = Infinity;
+    for(const p of pts){
+      const q = cam.project(p[0],p[1],p[2]);
+      if(q[2] <= 0.05) continue;
+      proj.push([q[0],q[1]]); near = Math.min(near, q[2]);
+    }
+    if(proj.length < 2 || !fin(near)) return;
+    ov.push({d:near-0.02, k:"p", pts:proj, c:colour, wd:width});
+  };
+  const addDot = (p, colour, r) => {
+    const q = cam.project(p[0],p[1],p[2]);
+    if(q[2] <= 0.05) return;
+    ov.push({d:q[2]-0.3, k:"d", x:q[0], y:q[1], c:colour, r});
+  };
+
+  const best = solve(u, F.B);
+  for(const seg of liftedFrontier(F.B, M, u))
+    addPath(seg.map(([x,y,v]) => toNorm(x,y,v)), MK.main, 3.2);
+  if(st.cmp && F.Bc)
+    for(const seg of liftedFrontier(F.Bc, M, u))
+      addPath(seg.map(([x,y,v]) => toNorm(x,y,v)), MK.cmp, 2.2);
+  if(best) addDot(toNorm(best.x, best.y, best.v), MK.opt, 6);
+
+  ov.sort((p2,q)=>q.d-p2.d);
+  let oi = 0;
+  const drawOv = until => {
+    while(oi < ov.length && ov[oi].d > until){
+      const o = ov[oi++];
+      if(o.k === "p"){
+        ctx.lineJoin="round"; ctx.lineCap="round";
+        const path = () => { ctx.beginPath(); ctx.moveTo(o.pts[0][0],o.pts[0][1]);
+          for(let i2=1;i2<o.pts.length;i2++) ctx.lineTo(o.pts[i2][0],o.pts[i2][1]); };
+        path(); ctx.strokeStyle=MK.casing; ctx.lineWidth=o.wd+3; ctx.stroke();
+        path(); ctx.strokeStyle=o.c; ctx.lineWidth=o.wd; ctx.stroke();
+      } else {
+        ctx.fillStyle=MK.casing; ctx.beginPath(); ctx.arc(o.x,o.y,o.r+4,0,7); ctx.fill();
+        ctx.fillStyle=MK.white;  ctx.beginPath(); ctx.arc(o.x,o.y,o.r+2,0,7); ctx.fill();
+        ctx.fillStyle=o.c;       ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,7); ctx.fill();
+      }
+    }
+  };
+  /* quads far-to-near, overlays interleaved at the same depth key, so a curve
+     on the far slope is hidden by the near slope that stands in front of it */
+  for(let k = 0; k < m; k++){
+    const q = order[k], a = qi[q];
+    drawOv(qd[q]);
+    const b2 = a+1, c = a+n+1, d = a+n;
+    ctx.fillStyle = SHADED[qc[q]];
+    ctx.beginPath();
+    ctx.moveTo(SX[a],SY[a]); ctx.lineTo(SX[b2],SY[b2]);
+    ctx.lineTo(SX[c],SY[c]); ctx.lineTo(SX[d],SY[d]); ctx.closePath();
+    ctx.fill();
+  }
+  drawOv(-Infinity);
+}
+
+/* ==========================================================================
    9. Readouts and the verdict
    ========================================================================== */
 function rows(el, list){
@@ -1390,8 +1668,10 @@ function render(){
   const vps = document.querySelector(".viewports");
   vps.classList.toggle("solo", !st.showPath);
   document.querySelectorAll(".vp")[1].classList.toggle("is-hidden", !st.showPath);
+  document.getElementById("vp3").hidden = !st.show3d;
   const res = drawPlane();
   if(st.showPath) drawPath(res);
+  if(st.show3d) draw3d();
   paint(res);
 }
 
@@ -1495,6 +1775,7 @@ function applyLang(){
   });
   $("vp1-title").textContent = t.vp1;
   $("vp2-title").textContent = t.vp2;
+  $("vp3-title").textContent = t.vp3;
   $("foot").textContent = t.foot;
   $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
   $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));
@@ -1534,6 +1815,43 @@ $("th-dark").addEventListener("click", () => setTheme("dark"));
 $("th-light").addEventListener("click", () => setTheme("light"));
 $("show-map").addEventListener("change", e => { st.showMap = e.target.checked; render(); });
 $("show-path").addEventListener("change", e => { st.showPath = e.target.checked; render(); });
+$("show-3d").addEventListener("change", e => { st.show3d = e.target.checked; render(); });
+document.querySelectorAll("#v3-seg [data-v3]").forEach(b => b.addEventListener("click", () => {
+  const V = VIEWS[b.dataset.v3];
+  view3d.az = V.az; view3d.el = V.el; view3d.ortho = V.ortho; view3d.canonical = b.dataset.v3;
+  document.querySelectorAll("#v3-seg [data-v3]").forEach(o =>
+    o.setAttribute("aria-pressed", String(o === b)));
+  render();
+}));
+/* orbit and zoom. Dragging away from a canonical view releases its button but
+   keeps the projection type, so a nudge off X-Z stays orthographic. */
+(function orbit(){
+  const cv = $("c3d");
+  let down = false, lx = 0, ly = 0;
+  const release = () => {
+    if(!view3d.canonical) return;
+    view3d.canonical = null;
+    document.querySelectorAll("#v3-seg [data-v3]").forEach(o => o.setAttribute("aria-pressed","false"));
+  };
+  cv.addEventListener("pointerdown", e => {
+    down = true; lx = e.clientX; ly = e.clientY;
+    view3d.dragging = true; cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener("pointermove", e => {
+    if(!down) return;
+    view3d.az -= (e.clientX - lx) * 0.008;
+    view3d.el = clamp(view3d.el + (e.clientY - ly) * 0.006, -1.45, 1.45);
+    lx = e.clientX; ly = e.clientY; release(); render();
+  });
+  const stop = () => { if(down){ down = false; view3d.dragging = false; render(); } };
+  cv.addEventListener("pointerup", stop);
+  cv.addEventListener("pointercancel", stop);
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    view3d.dist = clamp(view3d.dist * (e.deltaY > 0 ? 1.08 : 0.926), 1.8, 9);
+    render();
+  }, {passive:false});
+})();
 $("auto-axes").addEventListener("change", e => {
   st.autoAxes = e.target.checked;
   $("xmaxFix").disabled = st.autoAxes; $("ymaxFix").disabled = st.autoAxes;

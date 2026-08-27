@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Efectos Ingreso y Sustitución</title>
+<style>
+/* Dark is the design here, not a variant of it. Light is an explicit opt-out
+   for projectors and printed handouts, chosen from the header. */
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --crit:#E4705C; --good:#6FD3A0;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
+  --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
+  --rule:#CBD4D8; --rule-2:#E1E7EA;
+  --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --crit:#A93726; --good:#1B6E48;
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-ui); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased}
+button,input,select{font:inherit; color:inherit}
+.shell{max-width:1500px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
+.masthead h1{margin:0; font-family:var(--f-display); font-size:26px; font-weight:600; letter-spacing:-.01em}
+.masthead p{margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:70ch}
+.head-actions{display:flex; align-items:center; gap:8px}
+
+.console{display:grid; grid-template-columns:clamp(200px,21vw,300px) minmax(0,1fr);
+  gap:12px; align-items:start}
+@media (max-width:680px){.console{grid-template-columns:1fr}}
+
+.rail{display:flex; flex-direction:column; gap:12px; background:var(--surface);
+  border:1px solid var(--rule); border-radius:3px; padding:16px; box-shadow:var(--shadow)}
+.group{display:flex; flex-direction:column; gap:8px}
+.group[hidden]{display:none}
+.group+.group{border-top:1px solid var(--rule-2); padding-top:12px}
+.group>h2{margin:0; font-size:10.5px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.hint{margin:0; font-size:12px; color:var(--ink-3); line-height:1.4}
+
+.scen{display:flex; flex-direction:column; gap:4px}
+.scen button{appearance:none; cursor:pointer; text-align:left; display:flex; gap:8px;
+  align-items:baseline; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:3px; padding:6px 9px; font-size:12.5px; line-height:1.3}
+.scen button:hover{border-color:var(--accent); color:var(--accent-ink)}
+.scen button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.scen .n{font-family:var(--f-mono); font-size:11px; opacity:.75; flex:none; width:1.1em}
+.scen button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.slider-row{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px}
+.slider-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.4em}
+.slider-row .v{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  text-align:right; width:4em; background:transparent; border:0;
+  border-bottom:1px dotted var(--rule); padding:1px 2px}
+.slider-row .v:focus{outline:none; border-bottom-color:var(--accent); background:var(--sunk)}
+.slider-row[hidden]{display:none}
+input[type=range]{appearance:none; -webkit-appearance:none; width:100%; height:20px;
+  background:transparent; cursor:pointer; margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-moz-range-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px;
+  margin-top:-5.5px; border-radius:50%; background:var(--accent); border:2px solid var(--surface)}
+input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid var(--surface)}
+input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.text-in{width:100%; padding:7px 9px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--sunk); font-family:var(--f-mono); font-size:12.5px; color:var(--ink)}
+.text-in:focus{outline:none; border-color:var(--accent)}
+.text-in[aria-invalid="true"]{border-color:var(--crit)}
+.err{margin:0; font-size:12px; color:var(--crit); min-height:1em}
+.formula{font-family:var(--f-mono); font-size:12px; color:var(--ink-2);
+  background:var(--sunk); border:1px solid var(--rule-2); border-radius:3px;
+  padding:8px 10px; overflow-x:auto; white-space:nowrap}
+
+.chips{display:flex; flex-wrap:wrap; gap:5px}
+.chip{appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:20px; padding:4px 11px; font-size:12px}
+.chip:hover{border-color:var(--accent); color:var(--accent-ink)}
+.chip[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.chip:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.check{display:flex; gap:7px; align-items:flex-start; font-size:12.5px; color:var(--ink-2);
+  cursor:pointer; line-height:1.3}
+.check input{accent-color:var(--accent); margin:1px 0 0; flex:none}
+.checks{display:grid; grid-template-columns:1fr 1fr; gap:5px 9px}
+.checks.auto{grid-template-columns:1fr}
+
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:5px 11px; font-size:12px}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+
+/* The plane is the diagram; the substitution panel is a supporting reading of
+   it, so it gets the smaller share and can be dismissed entirely. */
+.viewports{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:12px; align-items:start}
+.viewports.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:1000px){.viewports{grid-template-columns:1fr}}
+.range-row{display:grid; grid-template-columns:auto 1fr auto 1fr; align-items:center; gap:8px}
+.range-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2)}
+.range-row .rb{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  width:100%; min-width:0; text-align:right; color:var(--ink);
+  background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:3px 6px}
+.range-row .rb:focus{outline:none; border-color:var(--accent); background:var(--panel)}
+.range-row .rb:disabled{opacity:.45}
+.vp{background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden}
+.vp-head{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:9px 12px; border-bottom:1px solid var(--rule-2); flex-wrap:wrap}
+.vp-head h2{margin:0; font-family:var(--f-mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+.vp canvas{display:block; width:100%; height:clamp(320px,46vh,520px); touch-action:none}
+#cPath{height:clamp(230px,32vh,360px)}
+.vp.is-hidden{display:none}
+.legend{display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--ink-2);
+  font-family:var(--f-mono)}
+.legend span{display:inline-flex; align-items:center; gap:4px}
+.legend i{width:9px; height:9px; border-radius:2px; display:inline-block}
+.legend[hidden]{display:none}
+
+.readouts{display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
+  border-top:1px solid var(--rule-2)}
+.ro{padding:8px 12px; border-right:1px solid var(--rule-2)}
+.ro:last-child{border-right:0}
+.ro .lab{font-family:var(--f-mono); font-size:9.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3)}
+.ro .val{font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:15px; color:var(--ink); margin-top:1px}
+.ro .val.is-good{color:var(--good)}
+.ro .val.is-crit{color:var(--crit)}
+
+.verdict{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent);
+  border-radius:3px; padding:11px 14px; box-shadow:var(--shadow)}
+.verdict h3{margin:0 0 3px; font-size:13px; font-weight:700; color:var(--accent-ink)}
+.verdict p{margin:0; font-size:12.5px; color:var(--ink-2); max-width:88ch}
+.verdict.is-kink{border-left-color:#FF9E2C} .verdict.is-kink h3{color:#FF9E2C}
+.verdict.is-jump{border-left-color:var(--crit)} .verdict.is-jump h3{color:var(--crit)}
+
+footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid var(--rule-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+<style>
+.eff{display:grid; grid-template-columns:auto repeat(3,1fr); gap:4px 10px; align-items:center;
+  font-family:var(--f-mono); font-size:12.5px; font-variant-numeric:tabular-nums}
+.eff .hd{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
+.eff .g{color:var(--ink-2)}
+.eff .n{text-align:right}
+.eff .sub{color:#FF9E2C} .eff .inc{color:#4CC6D4} .eff .tot{color:#C15CFF}
+</style>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <h1 id="h-title">Efectos Ingreso y Sustitución</h1>
+      <p id="h-sub">Cambia un precio y la canasta óptima se mueve por dos razones a la vez. La
+         compensación las separa: primero gira la restricción sin cambiar el bienestar, después
+         devuelve la renta.</p>
+    </div>
+    <div class="head-actions">
+      <div class="seg" id="lang-seg">
+        <button type="button" id="lg-es" aria-pressed="true">ES</button>
+        <button type="button" id="lg-en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme-seg">
+        <button type="button" id="th-dark" aria-pressed="true">Oscuro</button>
+        <button type="button" id="th-light" aria-pressed="false">Claro</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="console">
+    <aside class="rail">
+
+      <div class="group">
+        <h2 data-t="gMethod">Compensación</h2>
+        <div class="scen" id="method"></div>
+        <p class="hint" id="method-hint"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gPrefs">Preferencias</h2>
+        <div class="chips" id="fams"></div>
+        <input class="text-in" id="u-expr" value="x^0.42*y^0.58" spellcheck="false" aria-label="u(x,y)">
+        <p class="err" id="u-err"></p>
+        <div class="formula" id="fam-formula"></div>
+        <div class="slider-row" data-p="alpha"><span class="k">a</span><input type="range" id="alpha" min="0.02" max="0.98" step="0.01" value="0.42"><input class="v" id="alpha-v"></div>
+        <div class="slider-row" data-p="rho"><span class="k">ρ</span><input type="range" id="rho" min="-6" max="0.95" step="0.01" value="-0.651"><input class="v" id="rho-v"></div>
+        <div class="slider-row" data-p="xlow"><span class="k">x̲</span><input type="range" id="xlow" min="0" max="3" step="0.005" value="0.045"><input class="v" id="xlow-v"></div>
+        <div class="slider-row" data-p="yup"><span class="k">ȳ</span><input type="range" id="yup" min="1" max="40" step="0.1" value="21.2"><input class="v" id="yup-v"></div>
+        <div class="slider-row" data-p="beta"><span class="k">β</span><input type="range" id="beta" min="0.02" max="0.98" step="0.005" value="0.2305"><input class="v" id="beta-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gStart">Situación inicial</h2>
+        <div class="slider-row"><span class="k">pₓ</span><input type="range" id="px" min="0.2" max="10" step="0.01" value="1"><input class="v" id="px-v"></div>
+        <div class="slider-row"><span class="k">pᵧ</span><input type="range" id="py" min="0.2" max="10" step="0.01" value="1.167"><input class="v" id="py-v"></div>
+        <div class="slider-row"><span class="k">m</span><input type="range" id="inc" min="1" max="40" step="0.1" value="8"><input class="v" id="inc-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gChange">Variación de precios</h2>
+        <div class="slider-row"><span class="k">Δpₓ</span><input type="range" id="dpx" min="-0.8" max="8" step="0.01" value="1.6"><input class="v" id="dpx-v"></div>
+        <div class="slider-row"><span class="k">Δpᵧ</span><input type="range" id="dpy" min="-0.8" max="8" step="0.01" value="0"><input class="v" id="dpy-v"></div>
+        <p class="hint" id="new-prices"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gView">Vista</h2>
+        <label class="check auto"><input type="checkbox" id="show-map" checked><span data-t="showMap">Degradado de calor</span></label>
+        <label class="check auto"><input type="checkbox" id="show-demand" checked><span data-t="showDemand">Panel de demanda</span></label>
+        <div class="range-row"><span class="k">x ≤</span>
+          <input type="number" class="rb" id="xmaxFix" min="0.5" max="500" step="any" value="10">
+          <span class="k">y ≤</span>
+          <input type="number" class="rb" id="ymaxFix" min="0.5" max="500" step="any" value="10"></div>
+        <label class="check auto"><input type="checkbox" id="auto-axes"><span data-t="autoAxes">Ajustar los ejes solos</span></label>
+        <p class="hint" id="axis-warn" style="color:var(--crit)"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gLayers">Capas</h2>
+        <div class="checks" id="layers"></div>
+      </div>
+
+    </aside>
+
+    <div style="display:flex; flex-direction:column; gap:12px; min-width:0">
+      <div class="verdict" id="verdict">
+        <h3 id="v-title">—</h3>
+        <p id="v-text">—</p>
+      </div>
+
+      <div class="viewports">
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp1-title">Plano (x, y)</h2>
+            <div class="legend" id="legend1"></div>
+          </div>
+          <canvas id="cPlane" aria-label="Plano de bienes"></canvas>
+          <div class="readouts" id="ro1"></div>
+        </section>
+
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp2-title">Demanda de x</h2>
+            <div class="legend" id="legend2"></div>
+          </div>
+          <canvas id="cPath" aria-label="Curvas de demanda"></canvas>
+          <div style="padding:10px 12px; border-top:1px solid var(--rule-2)">
+            <div class="eff" id="eff"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+/* ==========================================================================
+   1. Expression language
+   --------------------------------------------------------------------------
+   Tokeniser -> Pratt parser -> AST -> closure tree. No eval(), because the
+   artifact CSP may forbid it and a silent failure here kills the whole app.
+   ========================================================================== */
+
+const FUNCS = {
+  sqrt:1, ln:1, log:1, log10:1, exp:1, abs:1, sin:1, cos:1, tan:1,
+  min:2, max:2, pow:2
+};
+const CONSTS = { e:Math.E, pi:Math.PI, "π":Math.PI };
+
+function tokenize(src){
+  const s = src.replace(/−/g,"-").replace(/[×⋅]/g,"*").replace(/÷/g,"/");
+  const out = [];
+  let i = 0;
+  const isDigit = c => c >= "0" && c <= "9";
+  const isAlpha = c => /[A-Za-zα-ω]/.test(c);
+
+  while(i < s.length){
+    const c = s[i];
+    if(c === " " || c === "\t"){ i++; continue; }
+
+    if(isDigit(c) || (c === "." && isDigit(s[i+1]))){
+      let j = i;
+      while(j < s.length && (isDigit(s[j]) || s[j] === ".")) j++;
+      out.push({ k:"num", v:parseFloat(s.slice(i,j)) });
+      i = j; continue;
+    }
+
+    if(isAlpha(c)){
+      // longest known function or constant name, else a single-letter variable
+      let name = null;
+      for(const cand of Object.keys(FUNCS).concat(Object.keys(CONSTS))){
+        if(s.startsWith(cand, i) && (!name || cand.length > name.length)) name = cand;
+      }
+      if(name && FUNCS[name]){ out.push({ k:"fn", v:name, arity:FUNCS[name] }); i += name.length; continue; }
+      if(name && name in CONSTS){ out.push({ k:"num", v:CONSTS[name] }); i += name.length; continue; }
+      if(c === "x" || c === "y"){ out.push({ k:"var", v:c }); i++; continue; }
+      throw new SyntaxError(`unknown:${c}`);
+    }
+
+    if("+-*/^(),".includes(c)){ out.push({ k:c }); i++; continue; }
+    throw new SyntaxError(`char:${c}`);
+  }
+
+  // implicit multiplication: 2x, xy, 2(x+1), (x+1)y, 3sqrt(x)
+  const res = [];
+  for(let n = 0; n < out.length; n++){
+    const a = out[n], b = out[n+1];
+    res.push(a);
+    if(!b) break;
+    const aEnds = a.k === "num" || a.k === "var" || a.k === ")";
+    const bStarts = b.k === "num" || b.k === "var" || b.k === "fn" || b.k === "(";
+    if(aEnds && bStarts) res.push({ k:"*" });
+  }
+  return res;
+}
+
+function parse(src){
+  const ts = tokenize(src);
+  let p = 0;
+  const peek = () => ts[p];
+  const eat = k => {
+    if(!ts[p] || ts[p].k !== k) throw new SyntaxError(`expected:${k}`);
+    return ts[p++];
+  };
+
+  // ^ binds tightest and is right-associative; unary minus sits below it so
+  // -x^2 parses as -(x^2), matching every textbook and GeoGebra itself.
+  function atom(){
+    const t = peek();
+    if(!t) throw new SyntaxError("eof");
+    if(t.k === "num"){ p++; return { t:"num", v:t.v }; }
+    if(t.k === "var"){ p++; return { t:"var", n:t.v }; }
+    if(t.k === "("){ p++; const e = expr(0); eat(")"); return e; }
+    if(t.k === "-"){ p++; return { t:"neg", a:unary() }; }
+    if(t.k === "+"){ p++; return unary(); }
+    if(t.k === "fn"){
+      p++; eat("(");
+      const args = [expr(0)];
+      while(peek() && peek().k === ","){ p++; args.push(expr(0)); }
+      eat(")");
+      if(args.length !== t.arity) throw new SyntaxError(`arity:${t.v}`);
+      return { t:"call", n:t.v, a:args };
+    }
+    throw new SyntaxError(`token:${t.k}`);
+  }
+  function unary(){
+    let base = atom();
+    if(peek() && peek().k === "^"){ p++; base = { t:"pow", a:base, b:unary() }; }
+    return base;
+  }
+  const PREC = { "+":1, "-":1, "*":2, "/":2 };
+  function expr(min){
+    let lhs = unary();
+    while(peek() && PREC[peek().k] !== undefined && PREC[peek().k] > min){
+      const op = ts[p++].k;
+      const rhs = expr(PREC[op]);
+      lhs = { t:"bin", o:op, a:lhs, b:rhs };
+    }
+    return lhs;
+  }
+  const ast = expr(0);
+  if(p !== ts.length) throw new SyntaxError("trailing");
+  return ast;
+}
+
+/* ---- AST -> closure ------------------------------------------------------ */
+function compile(n){
+  switch(n.t){
+    case "num": { const v = n.v; return () => v; }
+    case "var": return n.n === "x" ? (x) => x : (x,y) => y;
+    case "neg": { const a = compile(n.a); return (x,y) => -a(x,y); }
+    case "pow": {
+      const a = compile(n.a), b = compile(n.b);
+      if(n.b.t === "num"){ const k = n.b.v; return (x,y) => Math.pow(a(x,y), k); }
+      return (x,y) => Math.pow(a(x,y), b(x,y));
+    }
+    case "bin": {
+      const a = compile(n.a), b = compile(n.b);
+      switch(n.o){
+        case "+": return (x,y) => a(x,y) + b(x,y);
+        case "-": return (x,y) => a(x,y) - b(x,y);
+        case "*": return (x,y) => a(x,y) * b(x,y);
+        case "/": return (x,y) => a(x,y) / b(x,y);
+      }
+      break;
+    }
+    case "call": {
+      const A = n.a.map(compile), f = A[0], g = A[1];
+      switch(n.n){
+        case "sqrt":  return (x,y) => Math.sqrt(f(x,y));
+        case "ln":    return (x,y) => Math.log(f(x,y));
+        case "log":   return (x,y) => Math.log(f(x,y));
+        case "log10": return (x,y) => Math.log10(f(x,y));
+        case "exp":   return (x,y) => Math.exp(f(x,y));
+        case "abs":   return (x,y) => Math.abs(f(x,y));
+        case "sin":   return (x,y) => Math.sin(f(x,y));
+        case "cos":   return (x,y) => Math.cos(f(x,y));
+        case "tan":   return (x,y) => Math.tan(f(x,y));
+        case "min":   return (x,y) => Math.min(f(x,y), g(x,y));
+        case "max":   return (x,y) => Math.max(f(x,y), g(x,y));
+        case "pow":   return (x,y) => Math.pow(f(x,y), g(x,y));
+      }
+    }
+  }
+  throw new Error("compile");
+}
+
+/* ---- symbolic differentiation -------------------------------------------
+   min / max / abs have kinks, which is exactly the interesting case here
+   (perfect complements). We refuse to fake a symbolic derivative for them and
+   fall back to a central difference, which is what a student sees anyway.    */
+const NUM = v => ({ t:"num", v });
+const isNum = (n,v) => n.t === "num" && n.v === v;
+
+function add(a,b){ if(isNum(a,0)) return b; if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v+b.v); return { t:"bin", o:"+", a, b }; }
+function sub(a,b){ if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v-b.v); return { t:"bin", o:"-", a, b }; }
+function mul(a,b){
+  if(isNum(a,0)||isNum(b,0)) return NUM(0);
+  if(isNum(a,1)) return b; if(isNum(b,1)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v*b.v);
+  return { t:"bin", o:"*", a, b };
+}
+function div(a,b){ if(isNum(a,0)) return NUM(0); if(isNum(b,1)) return a;
+  return { t:"bin", o:"/", a, b }; }
+function powN(a,b){ if(isNum(b,1)) return a; if(isNum(b,0)) return NUM(1);
+  return { t:"pow", a, b }; }
+
+class NonDifferentiable extends Error {}
+
+function diff(n, v){
+  switch(n.t){
+    case "num": return NUM(0);
+    case "var": return NUM(n.n === v ? 1 : 0);
+    case "neg": return { t:"neg", a:diff(n.a, v) };
+    case "bin":
+      if(n.o === "+") return add(diff(n.a,v), diff(n.b,v));
+      if(n.o === "-") return sub(diff(n.a,v), diff(n.b,v));
+      if(n.o === "*") return add(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v)));
+      if(n.o === "/") return div(sub(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v))), powN(n.b, NUM(2)));
+      break;
+    case "pow": {
+      const da = diff(n.a, v);
+      if(n.b.t === "num"){                               // a^k  ->  k a^(k-1) a'
+        return mul(mul(NUM(n.b.v), powN(n.a, NUM(n.b.v - 1))), da);
+      }
+      const db = diff(n.b, v);                           // a^b  ->  a^b (b' ln a + b a'/a)
+      return mul(n, add(mul(db, { t:"call", n:"ln", a:[n.a] }), div(mul(n.b, da), n.a)));
+    }
+    case "call": {
+      const u = n.a[0], du = diff(u, v);
+      switch(n.n){
+        case "ln": case "log":  return div(du, u);
+        case "log10":           return div(du, mul(u, NUM(Math.LN10)));
+        case "exp":             return mul(n, du);
+        case "sqrt":            return div(du, mul(NUM(2), n));
+        case "sin":             return mul({ t:"call", n:"cos", a:[u] }, du);
+        case "cos":             return { t:"neg", a:mul({ t:"call", n:"sin", a:[u] }, du) };
+        case "pow":             return diff({ t:"pow", a:n.a[0], b:n.a[1] }, v);
+        default: throw new NonDifferentiable(n.n);       // min, max, abs, tan
+      }
+    }
+  }
+  throw new Error("diff");
+}
+
+/* Build u, u_x, u_y from source. Falls back to numeric partials at kinks. */
+function buildUtility(src){
+  const ast = parse(src);
+  const u = compile(ast);
+  let ux, uy, exact = true;
+  try{
+    ux = compile(diff(ast, "x"));
+    uy = compile(diff(ast, "y"));
+  }catch(err){
+    if(!(err instanceof NonDifferentiable)) throw err;
+    exact = false;
+    const h = 1e-5;
+    ux = (x,y) => (u(x+h,y) - u(x-h,y)) / (2*h);
+    uy = (x,y) => (u(x,y+h) - u(x,y-h)) / (2*h);
+  }
+  return { src, ast, u, ux, uy, exactPartials:exact };
+}
+
+/* ==========================================================================
+   2. Scalar field sampling + marching squares
+   ========================================================================== */
+
+function sampleField(u, xmax, ymax, n){
+  const g = new Float64Array(n * n);
+  const dx = xmax / (n - 1), dy = ymax / (n - 1);
+  let lo = Infinity, hi = -Infinity;
+  const finite = [];
+  for(let j = 0; j < n; j++){
+    const y = j * dy;
+    for(let i = 0; i < n; i++){
+      const v = u(i * dx, y);
+      g[j*n + i] = v;
+      if(Number.isFinite(v)){ finite.push(v); if(v < lo) lo = v; if(v > hi) hi = v; }
+    }
+  }
+  // Percentile clipping: ln(x) dives to -inf at the axis and would otherwise
+  // eat the entire colour ramp. The original applet read u at two corners and
+  // broke for exactly this reason.
+  finite.sort((a,b) => a - b);
+  const q = t => finite.length ? finite[Math.min(finite.length-1, Math.max(0, Math.round(t*(finite.length-1))))] : 0;
+  let cLo = q(0.02), cHi = q(1.0);
+  if(!(cHi > cLo)){ cHi = cLo + 1; }
+  return { g, n, dx, dy, min:lo, max:hi, cMin:cLo, cMax:cHi };
+}
+
+/* Returns a flat Float32Array of segments [x0,y0,x1,y1, ...] in model coords. */
+function marchingSquares(field, level){
+  const { g, n, dx, dy } = field;
+  const seg = [];
+  const ip = (va, vb, a, b) => a + (b - a) * ((level - va) / (vb - va));
+  for(let j = 0; j < n-1; j++){
+    for(let i = 0; i < n-1; i++){
+      const v0 = g[j*n+i], v1 = g[j*n+i+1], v2 = g[(j+1)*n+i+1], v3 = g[(j+1)*n+i];
+      if(!Number.isFinite(v0) || !Number.isFinite(v1) || !Number.isFinite(v2) || !Number.isFinite(v3)) continue;
+      let code = 0;
+      if(v0 > level) code |= 1;
+      if(v1 > level) code |= 2;
+      if(v2 > level) code |= 4;
+      if(v3 > level) code |= 8;
+      if(code === 0 || code === 15) continue;
+      const x0 = i*dx, x1 = (i+1)*dx, y0 = j*dy, y1 = (j+1)*dy;
+      const B = () => [ip(v0,v1,x0,x1), y0];   // bottom edge
+      const R = () => [x1, ip(v1,v2,y0,y1)];   // right edge
+      const T = () => [ip(v3,v2,x0,x1), y1];   // top edge
+      const L = () => [x0, ip(v0,v3,y0,y1)];   // left edge
+      const push = (p,q2) => seg.push(p[0],p[1],q2[0],q2[1]);
+      switch(code){
+        case 1: case 14: push(L(), B()); break;
+        case 2: case 13: push(B(), R()); break;
+        case 3: case 12: push(L(), R()); break;
+        case 4: case 11: push(R(), T()); break;
+        case 6: case  9: push(B(), T()); break;
+        case 7: case  8: push(L(), T()); break;
+        case 5: { const c = (v0+v1+v2+v3)/4;                 // saddle
+          if(c > level){ push(L(), T()); push(B(), R()); }
+          else         { push(L(), B()); push(R(), T()); }
+          break; }
+        case 10: { const c = (v0+v1+v2+v3)/4;
+          if(c > level){ push(L(), B()); push(R(), T()); }
+          else         { push(L(), T()); push(B(), R()); }
+          break; }
+      }
+    }
+  }
+  return Float32Array.from(seg);
+}
+
+/* ==========================================================================
+   3. The economics
+   ========================================================================== */
+
+/* Bundle on the budget line parameterised by t = x, t in [0, m/px]. */
+function onLine(st, t){ return [t, (st.I - st.px * t) / st.py]; }
+
+/* Maximise u along the budget line. A dense scan then golden-section refine:
+   robust for kinks (perfect complements) and corners (substitutes), where a
+   first-order condition would find nothing. */
+function solveOptimum(st){
+  const tMax = st.I / st.px;
+  const N = 1500;
+  const g = t => { const [x,y] = onLine(st, t); const v = st.u(x,y); return Number.isFinite(v) ? v : -Infinity; };
+
+  let bt = 0, bv = -Infinity, worst = Infinity;
+  for(let k = 0; k <= N; k++){
+    const t = tMax * k / N, v = g(t);
+    if(v > bv){ bv = v; bt = t; }
+    if(Number.isFinite(v) && v < worst) worst = v;
+  }
+  // refine inside the bracketing cell unless we are pinned at a corner
+  const h = tMax / N;
+  let a = Math.max(0, bt - h), b = Math.min(tMax, bt + h);
+  const phi = (Math.sqrt(5) - 1) / 2;
+  let c = b - phi*(b-a), d = a + phi*(b-a);
+  for(let k = 0; k < 60; k++){
+    if(g(c) > g(d)){ b = d; d = c; c = b - phi*(b-a); }
+    else           { a = c; c = d; d = a + phi*(b-a); }
+  }
+  const tOpt = (g((a+b)/2) > bv) ? (a+b)/2 : bt;
+  const [xO, yO] = onLine(st, tOpt);
+  const vOpt = st.u(xO, yO);
+
+  // classify the solution so the feedback can say something true about it
+  const eps = tMax * 1e-3;
+  let kind = "interior";
+  if(tOpt <= eps) kind = "corner-y";
+  else if(tOpt >= tMax - eps) kind = "corner-x";
+  else {
+    const gx = st.ux(xO,yO), gy = st.uy(xO,yO);
+    if(Number.isFinite(gx) && Number.isFinite(gy) && gy !== 0){
+      const mrs = gx / gy, pr = st.px / st.py;
+      // a kink shows up as MRS jumping across the price ratio over a tiny step
+      const d1 = 0.002 * tMax;
+      const [xa,ya] = onLine(st, tOpt - d1), [xb,yb] = onLine(st, tOpt + d1);
+      const mA = st.ux(xa,ya)/st.uy(xa,ya), mB = st.ux(xb,yb)/st.uy(xb,yb);
+      if(Number.isFinite(mA) && Number.isFinite(mB) && (mA - pr) * (mB - pr) < 0 && Math.abs(mA - mB) > 0.25 * pr) kind = "kink";
+      else if(Math.abs(mrs - pr) > 0.15 * pr) kind = "kink";
+    } else kind = "kink";
+  }
+  return { t:tOpt, x:xO, y:yO, u:vOpt, uWorst:worst, tMax, kind };
+}
+
+/* How many times does the indifference curve u = level meet the budget line?
+   Sign changes of  u(t, (m - px t)/py) - level  over t. Drives the "single
+   point of contact" feedback in the level-curve method. */
+function contactCount(st, level){
+  const tMax = st.I / st.px, N = 900;
+  let prev = NaN, crossings = 0, minGap = Infinity;
+  for(let k = 0; k <= N; k++){
+    const t = tMax * k / N, [x,y] = onLine(st, t);
+    const v = st.u(x,y);
+    if(!Number.isFinite(v)){ prev = NaN; continue; }
+    const d = v - level;
+    if(Math.abs(d) < minGap) minGap = Math.abs(d);
+    if(Number.isFinite(prev) && prev * d < 0) crossings++;
+    prev = d;
+  }
+  return { crossings, minGap };
+}
+
+/* ==========================================================================
+   4. Hypsometric colour ramp
+   --------------------------------------------------------------------------
+   Blue and green at the bottom, yellow and orange through the middle, then
+   bright red into crimson and deep brown at the top. The top end darkens, so
+   height is not recoverable from lightness alone up there — the colour bar and
+   the numeric readout carry that, and every curve drawn on the map gets a
+   white casing so it stays visible against the dark browns.
+   ========================================================================== */
+const TERRAIN = [
+  [0.00,  11,  47, 168],
+  [0.13,  28, 116, 224],
+  [0.26,  18, 166, 160],
+  [0.38,  31, 168,  60],
+  [0.50, 154, 203,  30],
+  [0.60, 244, 208,  27],
+  [0.70, 247, 146,  19],
+  [0.80, 242,  58,  12],
+  [0.87, 238,  13,  20],
+  [0.94, 158,  11,  41],
+  [1.00,  63,  26,  11]
+];
+
+/* Marks drawn on top of the map. These sit on saturated ground in both
+   themes, so they are fixed bright hues plus a casing rather than theme
+   tokens — none of them reuses a hue the ramp passes through. */
+const MARK = {
+  budget:"#00D5F0",     // budget line and the bundle on it
+  bundle:"#00E9FF",
+  tangent:"#FF3DCB",    // slope of the indifference curve at P
+  optimum:"#C15CFF",    // the true optimum, revealed
+  grad:"#FFFFFF",
+  dx:"#3D9BFF",
+  dy:"#FF7AB8",
+  casing:"rgba(6,9,14,.62)",
+  white:"#FFFFFF"
+};
+function terrainRGB(t){
+  t = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  let i = 0;
+  while(i < TERRAIN.length - 2 && t > TERRAIN[i+1][0]) i++;
+  const a = TERRAIN[i], b = TERRAIN[i+1];
+  const f = (t - a[0]) / (b[0] - a[0]);
+  return [a[1] + (b[1]-a[1])*f, a[2] + (b[2]-a[2])*f, a[3] + (b[3]-a[3])*f];
+}
+function terrainCSS(t){ const c = terrainRGB(t); return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`; }
+
+/* Precomputed strings: allocating rgb() text per quad per frame is the single
+   biggest cost in a canvas painter's-algorithm renderer. */
+const TSTEPS = 128, SSTEPS = 12;
+const SHADED = new Array(TSTEPS * SSTEPS);
+for(let i = 0; i < TSTEPS; i++){
+  const c = terrainRGB(i / (TSTEPS - 1));
+  for(let s = 0; s < SSTEPS; s++){
+    /* a higher ambient floor than a plain Lambert term, so the crimson and
+       brown end of the ramp keeps its chroma instead of crushing to black */
+    const k = 0.58 + 0.42 * (s / (SSTEPS - 1));
+    SHADED[i*SSTEPS + s] = `rgb(${Math.round(c[0]*k)},${Math.round(c[1]*k)},${Math.round(c[2]*k)})`;
+  }
+}
+const shadeCSS = (t, lit) => SHADED[
+  Math.max(0, Math.min(TSTEPS-1, (t * (TSTEPS-1)) | 0)) * SSTEPS +
+  Math.max(0, Math.min(SSTEPS-1, (lit * (SSTEPS-1)) | 0))
+];
+
+
+/* ==========================================================================
+   4. Small helpers
+   ========================================================================== */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const fin = Number.isFinite;
+function fmt(v, d = 2){
+  if(!fin(v)) return "—";
+  const a = Math.abs(v);
+  if(a !== 0 && (a < 1e-3 || a >= 1e5)) return v.toExponential(1);
+  return v.toFixed(d);
+}
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function niceStep(range, target){
+  const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+
+/* ==========================================================================
+   5. The decomposition
+   --------------------------------------------------------------------------
+   A price change moves the optimum for two reasons at once, and the applet
+   exists to separate them by inserting a third bundle between start and
+   finish:
+
+     A   old prices, own income          the starting optimum
+     B   NEW prices, COMPENSATED income  the substitution step alone
+     C   new prices, own income          where the consumer actually ends up
+
+   Substitution = B - A, income = C - B, total = C - A.
+
+   What "compensated" means is the choice worth showing:
+
+     Slutsky  enough to buy the OLD BUNDLE at the new prices, m' = p'·A.
+              Observable, and it leaves the consumer slightly better off.
+     Hicks    enough to reach the OLD UTILITY at the new prices, m' = e(p', u0).
+              Not observable, but it holds welfare fixed, which is what the
+              theory asks for.
+
+   The original had closed forms per family. Solving numerically instead costs
+   a little speed and gives every family the same treatment — including the
+   complements and quasilinear cases it could not express, and anything typed
+   into the box.
+   ========================================================================== */
+const PHI = (Math.sqrt(5) - 1) / 2;
+
+/* the optimum on p·z = m, scan then golden section: several families here are
+   kinked, where no first-order condition holds */
+function demand(u, px, py, m){
+  if(!(m > 0) || !(px > 0) || !(py > 0)) return {x:0, y:0, v:-Infinity};
+  const X = m/px;
+  const val = x => { const y = (m - px*x)/py; if(y < -1e-12) return -Infinity;
+                     const v = u(x, Math.max(y,0)); return fin(v) ? v : -Infinity; };
+  const N = 300;
+  let bx = 0, bv = -Infinity;
+  for(let i = 0; i <= N; i++){ const x = X*i/N, v = val(x); if(v > bv){ bv = v; bx = x; } }
+  const h = X/N;
+  let a = Math.max(0, bx-h), b = Math.min(X, bx+h);
+  let c = b - PHI*(b-a), d = a + PHI*(b-a), fc = val(c), fd = val(d);
+  for(let i = 0; i < 45 && b-a > 1e-13; i++){
+    if(fc > fd){ b = d; d = c; fd = fc; c = b - PHI*(b-a); fc = val(c); }
+    else        { a = c; c = d; fc = fd; d = a + PHI*(b-a); fd = val(d); }
+  }
+  const x = (a+b)/2, v = val(x);
+  const bestX = v > bv ? x : bx, bestV = Math.max(v, bv);
+  return {x:bestX, y:Math.max((m - px*bestX)/py, 0), v:bestV};
+}
+
+/* Hicks needs the expenditure function. Rather than inverting the utility this
+   bisects on income: indirect utility rises with income, so the m that lands on
+   u0 is unique and easy to bracket. */
+function hicksIncome(u, px, py, u0, guess){
+  let lo = 1e-6, hi = Math.max(guess*4, 1);
+  for(let k = 0; k < 60 && demand(u, px, py, hi).v < u0; k++) hi *= 1.8;
+  for(let i = 0; i < 60; i++){
+    const mid = (lo+hi)/2;
+    if(demand(u, px, py, mid).v < u0) lo = mid; else hi = mid;
+    if(hi - lo < 1e-9 * Math.max(1, hi)) break;
+  }
+  return (lo+hi)/2;
+}
+
+function decompose(u, st){
+  const pnx = st.px + st.dpx, pny = st.py + st.dpy;
+  if(!(pnx > 0) || !(pny > 0)) return null;
+  const A = demand(u, st.px, st.py, st.I);
+  if(!fin(A.v)) return null;
+  const mComp = st.method === "hicks"
+    ? hicksIncome(u, pnx, pny, A.v, st.I)
+    : pnx*A.x + pny*A.y;                    // Slutsky: the old bundle, repriced
+  const B = demand(u, pnx, pny, mComp);
+  const C = demand(u, pnx, pny, st.I);
+  return { A, B, C, pnx, pny, mComp,
+    sub:{x:B.x-A.x, y:B.y-A.y},
+    inc:{x:C.x-B.x, y:C.y-B.y},
+    tot:{x:C.x-A.x, y:C.y-A.y} };
+}
+
+/* The compensated demand curve needs a bundle at every price on the axis.
+   Bisecting income eighty times over would cost a hundredfold, so the
+   compensating set is built once and the bundle at price p is then just its
+   cheapest point: for Hicks the old indifference curve, for Slutsky the single
+   old bundle. */
+function indiffPoints(u, u0, xmax, n){
+  const pts = [];
+  for(let i = 1; i <= n; i++){
+    const x = xmax*i/n;
+    let lo = 0, hi = xmax*1.6;
+    const vhi = u(x,hi);
+    if(!fin(vhi) || vhi < u0) continue;         // u0 unreachable at this x
+    const vlo = u(x,lo);
+    if(fin(vlo) && vlo >= u0){ pts.push([x,0]); continue; }
+    for(let k = 0; k < 42; k++){
+      const mid = (lo+hi)/2, v = u(x,mid);
+      if(!fin(v) || v < u0) lo = mid; else hi = mid;
+    }
+    pts.push([x,(lo+hi)/2]);
+  }
+  return pts;
+}
+
+/* ==========================================================================
+   6. State and translations
+   ========================================================================== */
+const MK = {
+  b0:"#7A8B95", bComp:"#FF9E2C", b1:"#00D5F0",
+  A:"#FFFFFF", B:"#FF9E2C", C:"#C15CFF",
+  ordinary:"#00D5F0", compensated:"#FF9E2C",
+  casing:"rgba(6,9,14,.62)", white:"#FFFFFF"
+};
+function f3(v){ return (Math.round(v*1e4)/1e4).toString(); }
+const FAMS = {
+  cd:  {params:["alpha"], src:s=>`x^${f3(s.alpha)}*y^${f3(1-s.alpha)}`,
+        formula:"u(x, y) = x^a · y^(1−a)"},
+  ces: {params:["alpha","rho"],
+        src:s=>{ const a=s.alpha, k=f3(2*a*(1-a));
+          if(Math.abs(s.rho) < 0.03) return `${k}*x^${f3(a)}*y^${f3(1-a)}`;
+          return `${k}*(${f3(a)}*x^${f3(s.rho)}+${f3(1-a)}*y^${f3(s.rho)})^${f3(1/s.rho)}`; },
+        formula:"u(x, y) = [1/(2a) + 1/(2(1−a))]⁻¹ · (a·x^ρ + (1−a)·y^ρ)^(1/ρ)"},
+  sub: {params:["alpha"], src:s=>`${f3(s.alpha)}*x+${f3(1-s.alpha)}*y`,
+        formula:"u(x, y) = a·x + (1−a)·y"},
+  com: {params:["alpha"], src:s=>`min(${f3(s.alpha)}*x,${f3(1-s.alpha)}*y)`,
+        formula:"u(x, y) = min(a·x, (1−a)·y)"},
+  ql:  {params:["alpha"], src:s=>`${f3(8*s.alpha)}*ln(x)+y`,
+        formula:"u(x, y) = 8a·ln(x) + y"},
+  inf: {params:["xlow","yup","beta"],
+        src:s=>`ln(x-${f3(s.xlow)})-((1+${f3(s.beta/(1-s.beta))})/${f3(s.beta/(1-s.beta))})*ln(${f3(s.yup)}-y)`,
+        formula:"u(x, y) = ln(x − x̲) − (1+b)/b · ln(ȳ − y),  b = β/(1−β)"},
+  custom:{params:[], src:s=>s.customSrc, formula:null}
+};
+const st = {
+  method:"slutsky", fam:"cd",
+  px:1, py:1.167, I:8, dpx:1.6, dpy:0,
+  alpha:0.42, rho:-0.651, xlow:0.045, yup:21.2, beta:0.2305,
+  customSrc:"x^0.42*y^0.58", U:null,
+  showMap:true, showDemand:true,
+  autoAxes:false, xmaxFix:10, ymaxFix:10,
+  layers:{contours:true, b0:true, bComp:true, b1:true, indiff:true,
+          bundles:true, arrows:true, grid:true}
+};
+const LAYER_KEYS = ["contours","b0","bComp","b1","indiff","bundles","arrows","grid"];
+
+let LANG = "es";
+const STR = {
+es:{
+  docTitle:"Efectos Ingreso y Sustitución",
+  title:"Efectos Ingreso y Sustitución",
+  sub:"Cambia un precio y la canasta óptima se mueve por dos razones a la vez. La compensación las separa: primero gira la restricción sin cambiar el bienestar, después devuelve la renta.",
+  gMethod:"Compensación", gPrefs:"Preferencias", gStart:"Situación inicial",
+  gChange:"Variación de precios", gView:"Vista", gLayers:"Capas",
+  methods:{slutsky:"Slutsky — mantener la canasta", hicks:"Hicks — mantener la utilidad"},
+  methodHint:{
+    slutsky:"Se le da justo lo necesario para poder comprar la canasta original a los precios nuevos. Es observable, y deja al consumidor algo mejor que antes.",
+    hicks:"Se le da justo lo necesario para alcanzar la utilidad original a los precios nuevos. No es observable, pero mantiene el bienestar fijo, que es lo que pide la teoría."
+  },
+  fams:{cd:"Cobb–Douglas", ces:"CES generalizada", sub:"Sustitutos perfectos",
+        com:"Complementarios perfectos", ql:"Cuasilineal", inf:"X inferior", custom:"Personalizada"},
+  layers:{contours:"Curvas de fondo", b0:"Restricción inicial", bComp:"Restricción compensada",
+          b1:"Restricción final", indiff:"Curvas de indiferencia", bundles:"Canastas",
+          arrows:"Flechas de los efectos", grid:"Retícula"},
+  showMap:"Degradado de calor", showDemand:"Panel de demanda", autoAxes:"Ajustar los ejes solos",
+  vp1:"Plano (x, y)", vp2:"Demanda de x",
+  newPrices:"Precios nuevos: pₓ = %A%, pᵧ = %B%. Renta compensada: %C%.",
+  roA:"A · inicial", roB:"B · compensada", roC:"C · final", roComp:"Renta compensada",
+  effSub:"Sustitución", effInc:"Ingreso", effTot:"Total", effGood:"Bien",
+  legOrd:"Demanda ordinaria", legComp:"Demanda compensada",
+  legB0:"Inicial", legBc:"Compensada", legB1:"Final",
+  vNormal:"Bien normal",
+  vNormalT:"Los dos efectos empujan en el mismo sentido: el precio de x sube, la sustitución aleja de x, y la pérdida de poder adquisitivo también reduce x. La demanda cae, como manda la intuición.",
+  vInferior:"Bien inferior",
+  vInferiorT:"Los efectos se oponen. La sustitución aleja de x, pero al empobrecerse el consumidor compra más x, porque x es inferior. El efecto sustitución todavía gana, así que la demanda cae — pero menos de lo que caería si x fuera normal.",
+  vGiffen:"Bien Giffen",
+  vGiffenT:"El efecto ingreso no sólo se opone al de sustitución: lo supera. El precio de x sube y el consumidor termina comprando más x. La curva de demanda tiene pendiente positiva en este tramo.",
+  vNoChange:"Sin variación de precios",
+  vNoChangeT:"Mueve Δpₓ o Δpᵧ para separar los dos efectos. Con los precios quietos las tres canastas coinciden.",
+  errParse:"No se entiende la expresión.", errVars:"Sólo se admiten x e y.",
+  clipped:"Algo se sale del marco. Sube x ≤ o y ≤, o marca el ajuste automático.",
+  foot:"Traducido de un applet de GeoGebra. Sintaxis: + − * / ^ ( ), sqrt ln log exp abs min max sin cos, constantes e y pi."
+},
+en:{
+  docTitle:"Income and Substitution Effects",
+  title:"Income and Substitution Effects",
+  sub:"Change a price and the optimum moves for two reasons at once. Compensation separates them: first pivot the constraint without changing welfare, then hand the income back.",
+  gMethod:"Compensation", gPrefs:"Preferences", gStart:"Starting point",
+  gChange:"Price change", gView:"View", gLayers:"Layers",
+  methods:{slutsky:"Slutsky — hold the bundle", hicks:"Hicks — hold the utility"},
+  methodHint:{
+    slutsky:"Give exactly enough to buy the original bundle at the new prices. Observable, and it leaves the consumer slightly better off than before.",
+    hicks:"Give exactly enough to reach the original utility at the new prices. Not observable, but it holds welfare fixed, which is what the theory asks for."
+  },
+  fams:{cd:"Cobb–Douglas", ces:"Generalised CES", sub:"Perfect substitutes",
+        com:"Perfect complements", ql:"Quasilinear", inf:"X inferior", custom:"Custom"},
+  layers:{contours:"Background contours", b0:"Original constraint", bComp:"Compensated constraint",
+          b1:"Final constraint", indiff:"Indifference curves", bundles:"Bundles",
+          arrows:"Effect arrows", grid:"Grid"},
+  showMap:"Heat gradient", showDemand:"Demand panel", autoAxes:"Fit the axes automatically",
+  vp1:"Plane (x, y)", vp2:"Demand for x",
+  newPrices:"New prices: pₓ = %A%, pᵧ = %B%. Compensated income: %C%.",
+  roA:"A · original", roB:"B · compensated", roC:"C · final", roComp:"Compensated income",
+  effSub:"Substitution", effInc:"Income", effTot:"Total", effGood:"Good",
+  legOrd:"Ordinary demand", legComp:"Compensated demand",
+  legB0:"Original", legBc:"Compensated", legB1:"Final",
+  vNormal:"Normal good",
+  vNormalT:"Both effects push the same way: the price of x rises, substitution moves away from x, and the loss of purchasing power cuts x further. Demand falls, as intuition says it should.",
+  vInferior:"Inferior good",
+  vInferiorT:"The effects oppose each other. Substitution moves away from x, but the poorer consumer buys more x, because x is inferior. Substitution still wins, so demand falls — just by less than it would if x were normal.",
+  vGiffen:"Giffen good",
+  vGiffenT:"The income effect does not merely oppose substitution: it outweighs it. The price of x rises and the consumer ends up buying more x. The demand curve slopes upward over this stretch.",
+  vNoChange:"No price change",
+  vNoChangeT:"Move Δpₓ or Δpᵧ to separate the two effects. With prices still, all three bundles coincide.",
+  errParse:"That expression does not parse.", errVars:"Only x and y are allowed.",
+  clipped:"Something runs outside the frame. Raise x ≤ or y ≤, or tick auto-fit.",
+  foot:"Translated from a GeoGebra applet. Syntax: + − * / ^ ( ), sqrt ln log exp abs min max sin cos, constants e and pi."
+}};
+const T = () => STR[LANG];
+
+/* ==========================================================================
+   7. Drawing
+   ========================================================================== */
+let FIELD = null, FIELD_KEY = "", CONTOURS = null, MAPCV = null;
+
+/* The map is a pure function of the sampled field, so it is painted once into
+   an offscreen bitmap and blitted afterwards. Filling one rect per grid cell —
+   about twenty thousand of them — on every frame was the single biggest cost
+   while a slider was moving. */
+function buildMap(F){
+  const n = F.n;
+  const cv = document.createElement("canvas");
+  cv.width = n; cv.height = n;
+  const c = cv.getContext("2d");
+  const img = c.createImageData(n, n);
+  const d = img.data, span = (F.cMax - F.cMin) || 1;
+  for(let j = 0; j < n; j++){
+    /* image rows run top-down, the field runs bottom-up */
+    const src = (n - 1 - j) * n;
+    for(let i = 0; i < n; i++){
+      const v = F.g[src + i], o = (j*n + i) * 4;
+      if(!fin(v)){ d[o+3] = 0; continue; }
+      const rgb = terrainRGB((v - F.cMin) / span);
+      d[o] = rgb[0]; d[o+1] = rgb[1]; d[o+2] = rgb[2]; d[o+3] = 255;
+    }
+  }
+  c.putImageData(img, 0, 0);
+  return cv;
+}
+
+function setup(cv){
+  const dpr = Math.min(devicePixelRatio||1, 2), r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if(cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function axes(ctx, rect, xmin, xmax, ymin, ymax, xlab, ylab){
+  const P = {l:48, r:20, t:16, b:34};
+  const bx = {x0:rect.x0+P.l, y0:rect.y0+P.t, x1:rect.x1-P.r, y1:rect.y1-P.b};
+  const sx = (xmax-xmin)||1, sy = (ymax-ymin)||1;
+  const SX = x => bx.x0 + ((x-xmin)/sx)*(bx.x1-bx.x0);
+  const SY = y => bx.y1 - ((y-ymin)/sy)*(bx.y1-bx.y0);
+  const gx = niceStep(sx, 7), gy = niceStep(sy, 5);
+  const gx0 = Math.ceil((xmin-1e-9)/gx)*gx, gy0 = Math.ceil((ymin-1e-9)/gy)*gy;
+  if(st.layers.grid){
+    ctx.strokeStyle = css("--rule-2"); ctx.lineWidth = 1; ctx.beginPath();
+    for(let x=gx0; x<xmax-1e-9; x+=gx) if(x>xmin+1e-9){ ctx.moveTo(SX(x),bx.y0); ctx.lineTo(SX(x),bx.y1); }
+    for(let y=gy0; y<ymax-1e-9; y+=gy) if(y>ymin+1e-9){ ctx.moveTo(bx.x0,SY(y)); ctx.lineTo(bx.x1,SY(y)); }
+    ctx.stroke();
+  }
+  ctx.strokeStyle = css("--rule"); ctx.lineWidth = 1; ctx.beginPath();
+  ctx.moveTo(bx.x0,bx.y0); ctx.lineTo(bx.x0,bx.y1); ctx.lineTo(bx.x1,bx.y1); ctx.stroke();
+  ctx.fillStyle = css("--ink-3"); ctx.font = `11px ${css("--f-mono")}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for(let x=gx0; x<=xmax+1e-9; x+=gx) ctx.fillText(fmt(x, gx<1?1:0), SX(x), bx.y1+6);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for(let y=gy0; y<=ymax+1e-9; y+=gy) ctx.fillText(fmt(y, gy<1?1:0), bx.x0-6, SY(y));
+  ctx.fillStyle = css("--ink-2"); ctx.font = `italic 13px ${css("--f-display")}`;
+  ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(xlab, bx.x1+2, bx.y1);
+  ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText(ylab, bx.x0, bx.y0-4);
+  return {bx, SX, SY};
+}
+function poly(ctx, pts, col, wd, cas){
+  if(pts.length < 2) return;
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  const path = () => { ctx.beginPath(); let pen = false;
+    for(const p of pts){ if(!p){ pen = false; continue; }
+      if(!pen){ ctx.moveTo(p[0],p[1]); pen = true; } else ctx.lineTo(p[0],p[1]); } };
+  if(cas){ path(); ctx.strokeStyle = MK.casing; ctx.lineWidth = wd+3; ctx.stroke(); }
+  path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+}
+/* marchingSquares hands back a flat [x0,y0,x1,y1, ...] run of loose segments,
+   not joined polylines, so each pair is stroked on its own. Batching them into
+   one path keeps the casing from overpainting a neighbour's core. */
+function drawSegs(ctx, flat, SX, SY, col, wd, cas){
+  if(!flat || !flat.length) return;
+  ctx.lineCap = "round";
+  const path = () => { ctx.beginPath();
+    for(let i = 0; i < flat.length; i += 4){
+      ctx.moveTo(SX(flat[i]),   SY(flat[i+1]));
+      ctx.lineTo(SX(flat[i+2]), SY(flat[i+3]));
+    } };
+  if(cas){ path(); ctx.strokeStyle = MK.casing; ctx.lineWidth = wd+3; ctx.stroke(); }
+  path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+}
+function dot(ctx, X, Y, col, r){
+  r = r || 4;
+  ctx.fillStyle = MK.casing; ctx.beginPath(); ctx.arc(X,Y,r+5,0,7); ctx.fill();
+  ctx.fillStyle = MK.white;  ctx.beginPath(); ctx.arc(X,Y,r+2.5,0,7); ctx.fill();
+  ctx.fillStyle = col;       ctx.beginPath(); ctx.arc(X,Y,r,0,7); ctx.fill();
+}
+/* Both panels here start at zero, so this just names the common case of the
+   shared primitive. The height colour never switches off: with the map on it
+   agrees with the ground underneath, with the map off it is the only reading
+   of height left. */
+function axesBox(ctx, rect, xmax, ymax, xlab, ylab){
+  return axes(ctx, rect, 0, xmax, 0, ymax, xlab, ylab);
+}
+function levelColour(v){
+  if(!FIELD) return "#fff";
+  const t = (v - FIELD.cMin) / ((FIELD.cMax - FIELD.cMin) || 1);
+  return terrainCSS(t);
+}
+function drawIndiff(ctx, v, SX, SY, wd){
+  drawSegs(ctx, marchingSquares(FIELD, v), SX, SY, levelColour(v), wd, true);
+}
+/* an arrow along the x axis, which is where the three effects are read off */
+function arrow(ctx, x0, x1, yPix, col, label){
+  if(Math.abs(x1-x0) < 0.5) return;
+  const dir = x1 > x0 ? 1 : -1;
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.lineCap = "butt";
+  ctx.beginPath(); ctx.moveTo(x0, yPix); ctx.lineTo(x1 - dir*6, yPix); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1, yPix);
+  ctx.lineTo(x1 - dir*7, yPix - 4); ctx.lineTo(x1 - dir*7, yPix + 4); ctx.closePath(); ctx.fill();
+  if(label){
+    ctx.font = `10px ${css("--f-mono")}`; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText(label, (x0+x1)/2, yPix - 4);
+  }
+}
+function budgetLine(ctx, px, py, m, SX, SY, col, wd, dash){
+  if(!(px>0)||!(py>0)) return;
+  ctx.save(); if(dash) ctx.setLineDash(dash);
+  poly(ctx, [[SX(0),SY(m/py)],[SX(m/px),SY(0)]], col, wd, true);
+  ctx.restore();
+}
+
+function viewFrame(D){
+  let xm = 0, ym = 0;
+  if(D){
+    for(const [px,py,m] of [[st.px,st.py,st.I],[D.pnx,D.pny,D.mComp],[D.pnx,D.pny,st.I]]){
+      xm = Math.max(xm, m/px); ym = Math.max(ym, m/py);
+    }
+  }
+  const up = v => { const s2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/s2)*s2; };
+  if(!st.autoAxes)
+    return {xmax:Math.max(st.xmaxFix,0.5), ymax:Math.max(st.ymaxFix,0.5),
+            clipped: xm > st.xmaxFix+1e-9 || ym > st.ymaxFix+1e-9};
+  return {xmax:Math.max(up(xm*1.08),0.5), ymax:Math.max(up(ym*1.08),0.5), clipped:false};
+}
+
+function drawPlane(D){
+  const cv = $("cPlane"), {ctx,w,h} = setup(cv);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+  if(!st.U || !D) return null;
+  const V = viewFrame(D);
+  const {bx,SX,SY} = axesBox(ctx, {x0:0,y0:0,x1:w,y1:h}, V.xmax, V.ymax, "x", "y");
+
+  const key = [st.U.src, V.xmax, V.ymax].join("|");
+  if(FIELD_KEY !== key){
+    FIELD = sampleField(st.U.u, V.xmax, V.ymax, 141); FIELD_KEY = key;
+    CONTOURS = null; MAPCV = buildMap(FIELD);
+  }
+  ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
+
+  if(st.showMap && MAPCV){
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(MAPCV, bx.x0, bx.y0, bx.x1-bx.x0, bx.y1-bx.y0);
+    ctx.globalAlpha = 0.32; ctx.fillStyle = css("--surface");
+    ctx.fillRect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.globalAlpha = 1;
+  }
+  if(st.layers.contours){
+    if(!CONTOURS){
+      CONTOURS = [];
+      for(let k=1;k<=11;k++)
+        CONTOURS.push(marchingSquares(FIELD, FIELD.cMin+(FIELD.cMax-FIELD.cMin)*k/12));
+    }
+    ctx.globalAlpha = 0.45;
+    for(const segs of CONTOURS) drawSegs(ctx, segs, SX, SY, "rgba(255,255,255,.4)", 1, false);
+    ctx.globalAlpha = 1;
+  }
+  if(st.layers.b0)    budgetLine(ctx, st.px, st.py, st.I, SX, SY, MK.b0, 2, null);
+  if(st.layers.bComp) budgetLine(ctx, D.pnx, D.pny, D.mComp, SX, SY, MK.bComp, 2, [6,4]);
+  if(st.layers.b1)    budgetLine(ctx, D.pnx, D.pny, st.I, SX, SY, MK.b1, 2.4, null);
+
+  if(st.layers.indiff){
+    drawIndiff(ctx, D.A.v, SX, SY, 2.2);
+    if(Math.abs(D.B.v - D.A.v) > 1e-9) drawIndiff(ctx, D.B.v, SX, SY, 1.6);
+    if(Math.abs(D.C.v - D.B.v) > 1e-9) drawIndiff(ctx, D.C.v, SX, SY, 2.2);
+  }
+  /* the effects are horizontal distances, so they are drawn as arrows down on
+     the x axis where they can actually be measured against the numbers */
+  if(st.layers.arrows){
+    const yA = bx.y1 - 14, yB = bx.y1 - 30;
+    arrow(ctx, SX(D.A.x), SX(D.B.x), yA, MK.B, "S");
+    arrow(ctx, SX(D.B.x), SX(D.C.x), yB, MK.b1, "I");
+    ctx.save(); ctx.setLineDash([2,3]);
+    for(const [p,c] of [[D.A.x,MK.A],[D.B.x,MK.B],[D.C.x,MK.C]])
+      poly(ctx, [[SX(p),bx.y0],[SX(p),bx.y1]], c, 1, false);
+    ctx.restore();
+  }
+  if(st.layers.bundles){
+    dot(ctx, SX(D.A.x), SY(D.A.y), MK.A, 4.5);
+    dot(ctx, SX(D.B.x), SY(D.B.y), MK.B, 4.5);
+    dot(ctx, SX(D.C.x), SY(D.C.y), MK.C, 4.5);
+    ctx.fillStyle = MK.white; ctx.font = `bold 11px ${css("--f-mono")}`;
+    ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    for(const [p,l] of [[D.A,"A"],[D.B,"B"],[D.C,"C"]])
+      ctx.fillText(l, SX(p.x)+9, SY(p.y)-7);
+  }
+  ctx.restore();
+  return V;
+}
+
+/* The demand panel: ordinary demand against p_x, and beside it the compensated
+   demand — the one that holds the compensation rule fixed as the price moves.
+   Slutsky compensates to the old bundle, Hicks to the old indifference curve,
+   so the compensated curve is built from whichever set that is. Putting the
+   two together is what makes the Giffen case legible: the compensated curve
+   always slopes down, and only the ordinary one can turn back on itself. */
+function demandCurves(D){
+  const u = st.U.u, n = 80;
+  const lo = Math.max(0.05, Math.min(st.px, D.pnx) * 0.25);
+  const hi = Math.max(st.px, D.pnx) * 1.9;
+  const comp = st.method === "hicks" ? indiffPoints(u, D.A.v, viewFrame(D).xmax*1.5, 260) : null;
+  const ord = [], cmp = [];
+  for(let i = 0; i <= n; i++){
+    const p = lo + (hi-lo)*i/n;
+    ord.push([p, demand(u, p, D.pny, st.I).x]);
+    if(st.method === "hicks"){
+      /* cheapest point of the old indifference curve at this price */
+      let bx = NaN, be = Infinity;
+      for(const [x,y] of comp){ const e = p*x + D.pny*y; if(e < be){ be = e; bx = x; } }
+      cmp.push([p, bx]);
+    } else {
+      /* Slutsky: income that still buys the old bundle at this price */
+      cmp.push([p, demand(u, p, D.pny, p*D.A.x + D.pny*D.A.y).x]);
+    }
+  }
+  return {lo, hi, ord, cmp};
+}
+function drawDemand(D){
+  const cv = $("cPath"), {ctx,w,h} = setup(cv);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+  if(!D || !st.U) return;
+  const C = demandCurves(D);
+  let xm = 0;
+  for(const s of [C.ord, C.cmp]) for(const p of s) if(fin(p[1])) xm = Math.max(xm, p[1]);
+  const up = v => { const s2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/s2)*s2; };
+  const xmax = Math.max(up(xm*1.1), 0.5);
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, xmax, C.lo, C.hi, "x", "pₓ");
+  ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
+  /* price on the vertical axis, quantity on the horizontal — the textbook way
+     round, so SX takes the quantity and SY the price */
+  poly(ctx, C.cmp.map(([p,x]) => fin(x)?[SX(x),SY(p)]:null), MK.compensated, 2, true);
+  poly(ctx, C.ord.map(([p,x]) => fin(x)?[SX(x),SY(p)]:null), MK.ordinary, 2.6, true);
+  ctx.save(); ctx.setLineDash([3,4]);
+  poly(ctx, [[bx.x0,SY(st.px)],[bx.x1,SY(st.px)]], "rgba(255,255,255,.28)", 1, false);
+  if(Math.abs(st.dpx) > 1e-9)
+    poly(ctx, [[bx.x0,SY(D.pnx)],[bx.x1,SY(D.pnx)]], "rgba(255,255,255,.28)", 1, false);
+  ctx.restore();
+  dot(ctx, SX(D.A.x), SY(st.px),  MK.A, 4);
+  dot(ctx, SX(D.B.x), SY(D.pnx), MK.B, 4);
+  dot(ctx, SX(D.C.x), SY(D.pnx), MK.C, 4);
+  ctx.restore();
+}
+
+/* ==========================================================================
+   8. Readouts
+   ========================================================================== */
+function rows(el, list){
+  el.innerHTML = list.map(([lab,val,cls]) =>
+    `<div class="ro"><div class="lab">${lab}</div><div class="val ${cls||""}">${val}</div></div>`).join("");
+}
+function paint(D, V){
+  const t = T();
+  if(!D){ rows($("ro1"),[]); $("eff").innerHTML=""; return; }
+  rows($("ro1"), [
+    [t.roA, `${fmt(D.A.x,2)}, ${fmt(D.A.y,2)}`],
+    [t.roB, `${fmt(D.B.x,2)}, ${fmt(D.B.y,2)}`],
+    [t.roC, `${fmt(D.C.x,2)}, ${fmt(D.C.y,2)}`],
+    [t.roComp, fmt(D.mComp,2)]
+  ]);
+  const sg = v => (v > 1e-9 ? "+" : "") + fmt(v,2);
+  $("eff").innerHTML =
+    `<div class="hd"></div><div class="hd n">${t.effSub}</div><div class="hd n">${t.effInc}</div><div class="hd n">${t.effTot}</div>` +
+    `<div class="g">x</div><div class="n sub">${sg(D.sub.x)}</div><div class="n inc">${sg(D.inc.x)}</div><div class="n tot">${sg(D.tot.x)}</div>` +
+    `<div class="g">y</div><div class="n sub">${sg(D.sub.y)}</div><div class="n inc">${sg(D.inc.y)}</div><div class="n tot">${sg(D.tot.y)}</div>`;
+
+  $("new-prices").textContent = t.newPrices
+    .replace("%A%", fmt(D.pnx,2)).replace("%B%", fmt(D.pny,2)).replace("%C%", fmt(D.mComp,2));
+  $("method-hint").textContent = t.methodHint[st.method];
+  $("axis-warn").textContent = V && V.clipped ? t.clipped : "";
+
+  /* Classify from the two effects on x, which is what the price moved. Signs
+     are read against the direction of the price change so a price cut and a
+     price rise are described the same way. */
+  const v = $("verdict"); let title, text, cls = "verdict";
+  const dp = st.dpx;
+  if(Math.abs(dp) < 1e-9 && Math.abs(st.dpy) < 1e-9){ title = t.vNoChange; text = t.vNoChangeT; }
+  else {
+    const subDir = -Math.sign(dp) * Math.sign(D.sub.x);   // +1 when substitution behaves
+    const incOpp = Math.sign(D.inc.x) === Math.sign(dp) && Math.abs(D.inc.x) > 1e-9;
+    const giffen = Math.sign(D.tot.x) === Math.sign(dp) && Math.abs(D.tot.x) > 1e-9;
+    if(giffen){ title = t.vGiffen; text = t.vGiffenT; cls = "verdict is-jump"; }
+    else if(incOpp){ title = t.vInferior; text = t.vInferiorT; cls = "verdict is-kink"; }
+    else { title = t.vNormal; text = t.vNormalT; }
+    void subDir;
+  }
+  v.className = cls; $("v-title").textContent = title; $("v-text").textContent = text;
+}
+function render(){
+  const vps = document.querySelector(".viewports");
+  vps.classList.toggle("solo", !st.showDemand);
+  document.querySelectorAll(".vp")[1].classList.toggle("is-hidden", !st.showDemand);
+  const D = st.U ? decompose(st.U.u, st) : null;
+  const V = drawPlane(D);
+  if(st.showDemand) drawDemand(D);
+  paint(D, V);
+}
+
+/* ==========================================================================
+   9. Controls
+   ========================================================================== */
+function readUtility(){
+  const t = T();
+  const src = st.fam === "custom" ? $("u-expr").value.trim() : FAMS[st.fam].src(st);
+  try{
+    st.U = buildUtility(src);
+    $("u-expr").setAttribute("aria-invalid","false"); $("u-err").textContent = "";
+  }catch(err){
+    st.U = null;
+    $("u-expr").setAttribute("aria-invalid","true");
+    $("u-err").textContent = /unknown/i.test(err.message) ? t.errVars : t.errParse;
+  }
+  FIELD_KEY = "";
+}
+function buildMethods(){
+  const t = T();
+  $("method").innerHTML = ["slutsky","hicks"].map((k,i) =>
+    `<button type="button" data-m="${k}" aria-pressed="${k===st.method}">
+       <span class="n">${i}</span><span>${t.methods[k]}</span></button>`).join("");
+  $("method").querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => {
+    st.method = b.dataset.m; buildMethods(); render();
+  }));
+}
+function buildFams(){
+  const t = T();
+  $("fams").innerHTML = Object.keys(FAMS).map(k =>
+    `<button type="button" class="chip" data-fam="${k}" aria-pressed="${k===st.fam}">${t.fams[k]}</button>`).join("");
+  $("fams").querySelectorAll("[data-fam]").forEach(b => b.addEventListener("click", () => {
+    st.fam = b.dataset.fam;
+    if(st.fam !== "custom") $("u-expr").value = FAMS[st.fam].src(st);
+    buildFams(); syncParams(); readUtility(); render();
+  }));
+}
+function buildLayers(){
+  const t = T();
+  $("layers").innerHTML = LAYER_KEYS.map(k =>
+    `<label class="check"><input type="checkbox" data-l="${k}" ${st.layers[k]?"checked":""}><span>${t.layers[k]}</span></label>`).join("");
+  $("layers").querySelectorAll("input").forEach(cb => cb.addEventListener("change", () => {
+    st.layers[cb.dataset.l] = cb.checked; render();
+  }));
+}
+function syncParams(){
+  const on = new Set(FAMS[st.fam].params);
+  document.querySelectorAll(".slider-row[data-p]").forEach(r => { r.hidden = !on.has(r.dataset.p); });
+  $("u-expr").hidden = st.fam !== "custom";
+  const f = FAMS[st.fam].formula;
+  $("fam-formula").hidden = !f; if(f) $("fam-formula").textContent = f;
+}
+function bind(id, key, after){
+  const s = $(id), b = $(id+"-v");
+  const set = v => {
+    v = parseFloat(v); if(!fin(v)) return;
+    v = clamp(v, parseFloat(s.min), parseFloat(s.max));
+    st[key] = v; s.value = v; b.value = +v.toFixed(3);
+    if(after) after();
+    render();
+  };
+  s.addEventListener("input", () => set(s.value));
+  b.addEventListener("change", () => set(b.value));
+  b.value = st[key]; s.value = st[key];
+}
+/* a price cannot be driven to zero or below, so the change sliders are bounded
+   by the price they move rather than by a constant */
+function clampDeltas(){
+  for(const [id,key,base] of [["dpx","dpx","px"],["dpy","dpy","py"]]){
+    const el = $(id), lo = -(st[base] - 0.1);
+    el.min = lo.toFixed(2);
+    if(st[key] < lo){ st[key] = lo; el.value = lo; $(id+"-v").value = +lo.toFixed(2); }
+  }
+}
+const reU = () => { if(st.fam!=="custom") $("u-expr").value = FAMS[st.fam].src(st); readUtility(); };
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = LANG;
+  document.title = t.docTitle;
+  $("h-title").textContent = t.title; $("h-sub").textContent = t.sub;
+  document.querySelectorAll("[data-t]").forEach(el => {
+    const v = t[el.dataset.t]; if(v !== undefined) el.textContent = v;
+  });
+  $("vp1-title").textContent = t.vp1; $("vp2-title").textContent = t.vp2;
+  $("foot").textContent = t.foot;
+  $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
+  $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));
+  const leg = (c,l) => `<span><i style="background:${c}"></i>${l}</span>`;
+  $("legend1").innerHTML = leg(MK.b0,t.legB0)+leg(MK.bComp,t.legBc)+leg(MK.b1,t.legB1);
+  $("legend2").innerHTML = leg(MK.ordinary,t.legOrd)+leg(MK.compensated,t.legComp);
+  buildMethods(); buildFams(); buildLayers(); syncParams(); render();
+  try{ localStorage.setItem("isx.lang", LANG); }catch(_){}
+}
+function setTheme(th){
+  document.documentElement.setAttribute("data-theme", th);
+  $("th-dark").setAttribute("aria-pressed", String(th==="dark"));
+  $("th-light").setAttribute("aria-pressed", String(th==="light"));
+  try{ localStorage.setItem("isx.theme", th); }catch(_){}
+  render();
+}
+bind("alpha","alpha",reU); bind("rho","rho",reU);
+bind("xlow","xlow",reU); bind("yup","yup",reU); bind("beta","beta",reU);
+bind("px","px",clampDeltas); bind("py","py",clampDeltas); bind("inc","I");
+bind("dpx","dpx"); bind("dpy","dpy");
+$("u-expr").addEventListener("change", () => { st.customSrc = $("u-expr").value; readUtility(); render(); });
+$("show-map").addEventListener("change", e => { st.showMap = e.target.checked; render(); });
+$("show-demand").addEventListener("change", e => { st.showDemand = e.target.checked; render(); });
+$("auto-axes").addEventListener("change", e => {
+  st.autoAxes = e.target.checked;
+  $("xmaxFix").disabled = st.autoAxes; $("ymaxFix").disabled = st.autoAxes;
+  render();
+});
+for(const id of ["xmaxFix","ymaxFix"]){
+  const el = $(id);
+  el.addEventListener("change", () => {
+    const v = parseFloat(el.value);
+    if(!fin(v)){ el.value = st[id]; return; }
+    st[id] = clamp(v, parseFloat(el.min), parseFloat(el.max));
+    el.value = st[id]; render();
+  });
+  el.value = st[id];
+}
+$("lg-es").addEventListener("click", () => { LANG="es"; applyLang(); });
+$("lg-en").addEventListener("click", () => { LANG="en"; applyLang(); });
+$("th-dark").addEventListener("click", () => setTheme("dark"));
+$("th-light").addEventListener("click", () => setTheme("light"));
+new ResizeObserver(() => render()).observe(document.querySelector(".viewports"));
+
+let lang0="es", theme0="dark";
+try{ lang0 = localStorage.getItem("isx.lang")||"es"; theme0 = localStorage.getItem("isx.theme")||"dark"; }catch(_){}
+LANG = lang0;
+clampDeltas();
+readUtility();
+setTheme(theme0);
+applyLang();
+</script>
+</body>
+</html>
