@@ -161,6 +161,12 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
 </head>
 <body>
 <style>
+.flag{display:flex; align-items:flex-start; gap:9px; background:var(--surface);
+  border:1px solid var(--crit); border-left:3px solid var(--crit); border-radius:3px;
+  padding:10px 14px; box-shadow:var(--shadow); color:var(--crit); font-size:12.5px}
+.flag[hidden]{display:none}
+.flag .dot{width:9px; height:9px; border-radius:50%; background:var(--crit);
+  flex:none; margin-top:4px}
 .eff{display:grid; grid-template-columns:auto repeat(3,1fr); gap:4px 10px; align-items:center;
   font-family:var(--f-mono); font-size:12.5px; font-variant-numeric:tabular-nums}
 .eff .hd{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
@@ -226,6 +232,26 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
       </div>
 
       <div class="group">
+        <h2 data-t="gLimits">Límites de los deslizadores</h2>
+        <p class="hint" data-t="limHint">Hasta dónde llegan los deslizadores y el barrido del panel de demanda.</p>
+        <div class="range-row"><span class="k">pₓ</span>
+          <input type="number" class="rb" id="pxLo" min="0.01" max="900" step="any" value="0.2">
+          <span class="k">–</span>
+          <input type="number" class="rb" id="pxHi" min="0.02" max="1000" step="any" value="10"></div>
+        <div class="range-row"><span class="k">pᵧ</span>
+          <input type="number" class="rb" id="pyLo" min="0.01" max="900" step="any" value="0.2">
+          <span class="k">–</span>
+          <input type="number" class="rb" id="pyHi" min="0.02" max="1000" step="any" value="10"></div>
+        <div class="range-row"><span class="k">m</span>
+          <input type="number" class="rb" id="ILo" min="0.01" max="900" step="any" value="1">
+          <span class="k">–</span>
+          <input type="number" class="rb" id="IHi" min="0.02" max="1000" step="any" value="40"></div>
+        <div class="range-row"><span class="k">|Δp| ≤</span>
+          <input type="number" class="rb" id="dpHi" min="0.1" max="1000" step="any" value="8">
+          <span class="k"></span><span></span></div>
+      </div>
+
+      <div class="group">
         <h2 data-t="gView">Vista</h2>
         <label class="check auto"><input type="checkbox" id="show-map" checked><span data-t="showMap">Degradado de calor</span></label>
         <label class="check auto"><input type="checkbox" id="show-demand" checked><span data-t="showDemand">Panel de demanda</span></label>
@@ -245,6 +271,9 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
     </aside>
 
     <div style="display:flex; flex-direction:column; gap:12px; min-width:0">
+      <div class="flag" id="giffen-flag" hidden>
+        <span class="dot"></span><span id="giffen-text"></span>
+      </div>
       <div class="verdict" id="verdict">
         <h3 id="v-title">—</h3>
         <p id="v-text">—</p>
@@ -262,7 +291,18 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
 
         <section class="vp">
           <div class="vp-head">
-            <h2 id="vp2-title">Demanda de x</h2>
+            <h2 id="vp2-title">Demanda</h2>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+              <div class="seg" id="good-seg">
+                <button type="button" data-good="x" aria-pressed="true">x</button>
+                <button type="button" data-good="y" aria-pressed="false">y</button>
+                <button type="button" data-good="both" aria-pressed="false" data-t="bothGoods">Ambos</button>
+              </div>
+              <div class="seg" id="paxis-seg">
+                <button type="button" data-pax="px" aria-pressed="true">pₓ</button>
+                <button type="button" data-pax="py" aria-pressed="false">pᵧ</button>
+              </div>
+            </div>
             <div class="legend" id="legend2"></div>
           </div>
           <canvas id="cPath" aria-label="Curvas de demanda"></canvas>
@@ -871,6 +911,8 @@ const st = {
   alpha:0.42, rho:-0.651, xlow:0.045, yup:21.2, beta:0.2305,
   customSrc:"x^0.42*y^0.58", U:null,
   showMap:true, showDemand:true,
+  demGood:"x", demAxis:"px",
+  lim:{pxLo:0.2, pxHi:10, pyLo:0.2, pyHi:10, ILo:1, IHi:40, dpHi:8},
   autoAxes:false, xmaxFix:10, ymaxFix:10,
   layers:{contours:true, b0:true, bComp:true, b1:true, indiff:true,
           bundles:true, arrows:true, grid:true}
@@ -896,6 +938,11 @@ es:{
           b1:"Restricción final", indiff:"Curvas de indiferencia", bundles:"Canastas",
           arrows:"Flechas de los efectos", grid:"Retícula"},
   showMap:"Degradado de calor", showDemand:"Panel de demanda", autoAxes:"Ajustar los ejes solos",
+  gLimits:"Límites de los deslizadores", bothGoods:"Ambos",
+  limHint:"Hasta dónde llegan los deslizadores y el barrido del panel de demanda.",
+  vp2both:"Demanda de x e y", vp2one:"Demanda de %G%",
+  giffenOne:"Bandera roja: la demanda ordinaria de %G% sube con su propio precio entre %A% y %B%. En ese tramo %G% es un bien Giffen.",
+  giffenMany:"Bandera roja: la demanda ordinaria de %G% sube con su propio precio en %N% tramos, el primero entre %A% y %B%.",
   vp1:"Plano (x, y)", vp2:"Demanda de x",
   newPrices:"Precios nuevos: pₓ = %A%, pᵧ = %B%. Renta compensada: %C%.",
   roA:"A · inicial", roB:"B · compensada", roC:"C · final", roComp:"Renta compensada",
@@ -931,6 +978,11 @@ en:{
           b1:"Final constraint", indiff:"Indifference curves", bundles:"Bundles",
           arrows:"Effect arrows", grid:"Grid"},
   showMap:"Heat gradient", showDemand:"Demand panel", autoAxes:"Fit the axes automatically",
+  gLimits:"Slider limits", bothGoods:"Both",
+  limHint:"How far the sliders reach, and the sweep of the demand panel.",
+  vp2both:"Demand for x and y", vp2one:"Demand for %G%",
+  giffenOne:"Red flag: ordinary demand for %G% rises with its own price between %A% and %B%. Over that stretch %G% is a Giffen good.",
+  giffenMany:"Red flag: ordinary demand for %G% rises with its own price over %N% stretches, the first between %A% and %B%.",
   vp1:"Plane (x, y)", vp2:"Demand for x",
   newPrices:"New prices: pₓ = %A%, pᵧ = %B%. Compensated income: %C%.",
   roA:"A · original", roB:"B · compensated", roC:"C · final", roComp:"Compensated income",
@@ -1161,51 +1213,125 @@ function drawPlane(D){
    so the compensated curve is built from whichever set that is. Putting the
    two together is what makes the Giffen case legible: the compensated curve
    always slopes down, and only the ordinary one can turn back on itself. */
+/* Demand against the price on the axis, for both goods at once, ordinary and
+   compensated. Which price sweeps is the user's choice; the compensation rule
+   is whatever the decomposition is using, so the two panels always agree.
+
+   The compensating set is built once and reused at every price — the old
+   indifference curve under Hicks, the old bundle under Slutsky — because
+   bisecting income at each of eighty prices would cost a hundredfold. */
 function demandCurves(D){
   const u = st.U.u, n = 80;
-  const lo = Math.max(0.05, Math.min(st.px, D.pnx) * 0.25);
-  const hi = Math.max(st.px, D.pnx) * 1.9;
-  const comp = st.method === "hicks" ? indiffPoints(u, D.A.v, viewFrame(D).xmax*1.5, 260) : null;
-  const ord = [], cmp = [];
-  for(let i = 0; i <= n; i++){
-    const p = lo + (hi-lo)*i/n;
-    ord.push([p, demand(u, p, D.pny, st.I).x]);
+  const axPx = st.demAxis === "px";
+  const p0 = axPx ? st.px : st.py;
+  const p1 = axPx ? D.pnx : D.pny;
+  const other = axPx ? D.pny : D.pnx;          // the other price, held at its new level
+  const lo = Math.max(0.02, Math.min(p0, p1) * 0.25);
+  const hi = Math.max(p0, p1) * 1.9;
+  const comp = st.method === "hicks"
+    ? indiffPoints(u, D.A.v, viewFrame(D).xmax * 1.5, 260) : null;
+
+  const at = (p, m) => axPx ? demand(u, p, other, m) : demand(u, other, p, m);
+  const out = {lo, hi, p0, p1,
+               ord:{x:[], y:[]}, cmp:{x:[], y:[]}};
+  for(let i2 = 0; i2 <= n; i2++){
+    const p = lo + (hi-lo)*i2/n;
+    const o = at(p, st.I);
+    out.ord.x.push([p, o.x]); out.ord.y.push([p, o.y]);
+    let c;
     if(st.method === "hicks"){
-      /* cheapest point of the old indifference curve at this price */
-      let bx = NaN, be = Infinity;
-      for(const [x,y] of comp){ const e = p*x + D.pny*y; if(e < be){ be = e; bx = x; } }
-      cmp.push([p, bx]);
+      /* the cheapest point of the old indifference curve at this price */
+      let bx = NaN, by = NaN, be = Infinity;
+      for(const [x,y] of comp){
+        const e = axPx ? p*x + other*y : other*x + p*y;
+        if(e < be){ be = e; bx = x; by = y; }
+      }
+      c = {x:bx, y:by};
     } else {
-      /* Slutsky: income that still buys the old bundle at this price */
-      cmp.push([p, demand(u, p, D.pny, p*D.A.x + D.pny*D.A.y).x]);
+      const m = axPx ? p*D.A.x + other*D.A.y : other*D.A.x + p*D.A.y;
+      c = at(p, m);
     }
+    out.cmp.x.push([p, c.x]); out.cmp.y.push([p, c.y]);
   }
-  return {lo, hi, ord, cmp};
+  return out;
 }
+
+/* A Giffen stretch is an ORDINARY demand curve that rises in its OWN price.
+   Only own-price counts: a cross-price curve sloping up just means the goods
+   are gross substitutes, which is ordinary and not worth a warning. */
+function giffenScan(C){
+  const out = [];
+  for(const g of ["x","y"]){
+    const own = (g === "x") === (st.demAxis === "px");
+    if(!own) continue;
+    const pts = C.ord[g];
+    let from = null, best = 0, lo = 0, hi = 0;
+    for(let i = 1; i < pts.length; i++){
+      const [pa,qa] = pts[i-1], [pb,qb] = pts[i];
+      if(!fin(qa) || !fin(qb)){ from = null; continue; }
+      const rising = (qb - qa) > 1e-7 * Math.max(1, Math.abs(qa));
+      if(rising){ if(from === null) from = pa; hi = pb; best = Math.max(best, qb-qa); }
+      else if(from !== null){ out.push({good:g, from, to:hi}); from = null; }
+      lo = pa;
+    }
+    if(from !== null) out.push({good:g, from, to:hi});
+    void best; void lo;
+  }
+  /* merge touching stretches so a wobble does not report three warnings */
+  const merged = [];
+  for(const r of out){
+    const last = merged[merged.length-1];
+    if(last && last.good === r.good && r.from <= last.to + 1e-9) last.to = Math.max(last.to, r.to);
+    else merged.push({...r});
+  }
+  return merged;
+}
+
 function drawDemand(D){
   const cv = $("cPath"), {ctx,w,h} = setup(cv);
   ctx.clearRect(0,0,w,h); ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
-  if(!D || !st.U) return;
+  if(!D || !st.U) return null;
   const C = demandCurves(D);
-  let xm = 0;
-  for(const s of [C.ord, C.cmp]) for(const p of s) if(fin(p[1])) xm = Math.max(xm, p[1]);
+  const goods = st.demGood === "both" ? ["x","y"] : [st.demGood];
+  let qm = 0;
+  for(const g of goods) for(const set of [C.ord[g], C.cmp[g]])
+    for(const pt of set) if(fin(pt[1])) qm = Math.max(qm, pt[1]);
   const up = v => { const s2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/s2)*s2; };
-  const xmax = Math.max(up(xm*1.1), 0.5);
-  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, xmax, C.lo, C.hi, "x", "pₓ");
+  const qmax = Math.max(up(qm*1.1), 0.5);
+  const plab = st.demAxis === "px" ? "pₓ" : "pᵧ";
+  /* price on the horizontal axis, quantity on the vertical */
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, C.lo, C.hi, 0, qmax, plab, "q");
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
-  /* price on the vertical axis, quantity on the horizontal — the textbook way
-     round, so SX takes the quantity and SY the price */
-  poly(ctx, C.cmp.map(([p,x]) => fin(x)?[SX(x),SY(p)]:null), MK.compensated, 2, true);
-  poly(ctx, C.ord.map(([p,x]) => fin(x)?[SX(x),SY(p)]:null), MK.ordinary, 2.6, true);
+
+  /* the two prices that bracket the decomposition */
   ctx.save(); ctx.setLineDash([3,4]);
-  poly(ctx, [[bx.x0,SY(st.px)],[bx.x1,SY(st.px)]], "rgba(255,255,255,.28)", 1, false);
-  if(Math.abs(st.dpx) > 1e-9)
-    poly(ctx, [[bx.x0,SY(D.pnx)],[bx.x1,SY(D.pnx)]], "rgba(255,255,255,.28)", 1, false);
+  poly(ctx, [[SX(C.p0),bx.y0],[SX(C.p0),bx.y1]], "rgba(255,255,255,.28)", 1, false);
+  if(Math.abs(C.p1-C.p0) > 1e-9)
+    poly(ctx, [[SX(C.p1),bx.y0],[SX(C.p1),bx.y1]], "rgba(255,255,255,.28)", 1, false);
   ctx.restore();
-  dot(ctx, SX(D.A.x), SY(st.px),  MK.A, 4);
-  dot(ctx, SX(D.B.x), SY(D.pnx), MK.B, 4);
-  dot(ctx, SX(D.C.x), SY(D.pnx), MK.C, 4);
+
+  /* good y is drawn thinner and dashed so the two goods stay apart when the
+     panel shows both and their curves cross */
+  for(const g of goods){
+    const thin = st.demGood === "both" && g === "y";
+    if(thin) ctx.save(), ctx.setLineDash([5,3]);
+    poly(ctx, C.cmp[g].map(([p,q]) => fin(q)?[SX(p),SY(q)]:null), MK.compensated, thin?1.5:2, true);
+    poly(ctx, C.ord[g].map(([p,q]) => fin(q)?[SX(p),SY(q)]:null), MK.ordinary, thin?1.9:2.6, true);
+    if(thin) ctx.restore();
+  }
+  /* a rising stretch of an own-price ordinary curve, marked where it happens */
+  for(const r of giffenScan(C)){
+    if(!goods.includes(r.good)) continue;
+    const seg = C.ord[r.good].filter(([p,q]) => p >= r.from-1e-9 && p <= r.to+1e-9 && fin(q));
+    poly(ctx, seg.map(([p,q]) => [SX(p),SY(q)]), css("--crit"), 4.5, true);
+  }
+  for(const g of goods){
+    dot(ctx, SX(C.p0), SY(D.A[g]), MK.A, 4);
+    dot(ctx, SX(C.p1), SY(D.B[g]), MK.B, 4);
+    dot(ctx, SX(C.p1), SY(D.C[g]), MK.C, 4);
+  }
   ctx.restore();
+  return C;
 }
 
 /* ==========================================================================
@@ -1215,9 +1341,23 @@ function rows(el, list){
   el.innerHTML = list.map(([lab,val,cls]) =>
     `<div class="ro"><div class="lab">${lab}</div><div class="val ${cls||""}">${val}</div></div>`).join("");
 }
-function paint(D, V){
+function paint(D, V, C){
   const t = T();
-  if(!D){ rows($("ro1"),[]); $("eff").innerHTML=""; return; }
+  if(!D){ rows($("ro1"),[]); $("eff").innerHTML=""; $("giffen-flag").hidden = true; return; }
+  const goodLab = st.demGood === "both" ? null : st.demGood;
+  $("vp2-title").textContent = st.demGood === "both"
+    ? t.vp2both : t.vp2one.replace("%G%", goodLab);
+  /* the flag is raised from the curve actually on screen, so it never claims
+     something the reader cannot go and look at */
+  const flags = C ? giffenScan(C) : [];
+  if(flags.length){
+    const f = flags[0];
+    const msg = flags.length === 1 ? t.giffenOne : t.giffenMany;
+    $("giffen-text").textContent = msg
+      .replace(/%G%/g, f.good).replace("%A%", fmt(f.from,2))
+      .replace("%B%", fmt(f.to,2)).replace("%N%", String(flags.length));
+    $("giffen-flag").hidden = false;
+  } else $("giffen-flag").hidden = true;
   rows($("ro1"), [
     [t.roA, `${fmt(D.A.x,2)}, ${fmt(D.A.y,2)}`],
     [t.roB, `${fmt(D.B.x,2)}, ${fmt(D.B.y,2)}`],
@@ -1258,8 +1398,8 @@ function render(){
   document.querySelectorAll(".vp")[1].classList.toggle("is-hidden", !st.showDemand);
   const D = st.U ? decompose(st.U.u, st) : null;
   const V = drawPlane(D);
-  if(st.showDemand) drawDemand(D);
-  paint(D, V);
+  const C = st.showDemand ? drawDemand(D) : null;
+  paint(D, V, C);
 }
 
 /* ==========================================================================
@@ -1327,6 +1467,22 @@ function bind(id, key, after){
 }
 /* a price cannot be driven to zero or below, so the change sliders are bounded
    by the price they move rather than by a constant */
+function applyLimits(){
+  const L = st.lim;
+  const set = (id, key, lo, hi) => {
+    const el = $(id);
+    el.min = lo; el.max = hi;
+    if(st[key] < lo){ st[key] = lo; el.value = lo; $(id+"-v").value = +lo.toFixed(3); }
+    if(st[key] > hi){ st[key] = hi; el.value = hi; $(id+"-v").value = +hi.toFixed(3); }
+  };
+  set("px","px",L.pxLo,L.pxHi); set("py","py",L.pyLo,L.pyHi); set("inc","I",L.ILo,L.IHi);
+  for(const [id,key] of [["dpx","dpx"],["dpy","dpy"]]){
+    const el = $(id);
+    el.max = L.dpHi;
+    if(st[key] > L.dpHi){ st[key] = L.dpHi; el.value = L.dpHi; $(id+"-v").value = +L.dpHi.toFixed(2); }
+  }
+  clampDeltas();
+}
 function clampDeltas(){
   for(const [id,key,base] of [["dpx","dpx","px"],["dpy","dpy","py"]]){
     const el = $(id), lo = -(st[base] - 0.1);
@@ -1382,6 +1538,35 @@ for(const id of ["xmaxFix","ymaxFix"]){
   });
   el.value = st[id];
 }
+document.querySelectorAll("#good-seg [data-good]").forEach(b => b.addEventListener("click", () => {
+  st.demGood = b.dataset.good;
+  document.querySelectorAll("#good-seg [data-good]").forEach(o =>
+    o.setAttribute("aria-pressed", String(o === b)));
+  render();
+}));
+document.querySelectorAll("#paxis-seg [data-pax]").forEach(b => b.addEventListener("click", () => {
+  st.demAxis = b.dataset.pax;
+  document.querySelectorAll("#paxis-seg [data-pax]").forEach(o =>
+    o.setAttribute("aria-pressed", String(o === b)));
+  render();
+}));
+/* Each limit box owns one end of one slider. A low end is held under its high
+   end so a range can never invert, and the slider is re-ranged immediately. */
+for(const id of ["pxLo","pxHi","pyLo","pyHi","ILo","IHi","dpHi"]){
+  const el = $(id);
+  el.addEventListener("change", () => {
+    const v = parseFloat(el.value);
+    if(!fin(v)){ el.value = st.lim[id]; return; }
+    let x = clamp(v, parseFloat(el.min), parseFloat(el.max));
+    const pair = {pxLo:"pxHi", pyLo:"pyHi", ILo:"IHi"};
+    const rev  = {pxHi:"pxLo", pyHi:"pyLo", IHi:"ILo"};
+    if(pair[id])     x = Math.min(x, st.lim[pair[id]] - 0.05);
+    else if(rev[id]) x = Math.max(x, st.lim[rev[id]] + 0.05);
+    st.lim[id] = x; el.value = x;
+    applyLimits(); render();
+  });
+  el.value = st.lim[id];
+}
 $("lg-es").addEventListener("click", () => { LANG="es"; applyLang(); });
 $("lg-en").addEventListener("click", () => { LANG="en"; applyLang(); });
 $("th-dark").addEventListener("click", () => setTheme("dark"));
@@ -1391,7 +1576,7 @@ new ResizeObserver(() => render()).observe(document.querySelector(".viewports"))
 let lang0="es", theme0="dark";
 try{ lang0 = localStorage.getItem("isx.lang")||"es"; theme0 = localStorage.getItem("isx.theme")||"dark"; }catch(_){}
 LANG = lang0;
-clampDeltas();
+applyLimits();
 readUtility();
 setTheme(theme0);
 applyLang();

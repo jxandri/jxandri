@@ -37,9 +37,28 @@ compensated, final), the three bundles, the indifference curves through them,
 and the two effects drawn as arrows on the x axis where they can be measured
 against the numbers. Under Hicks, A and B sit on the same curve by construction.
 
-**Demand for x** — ordinary demand against the compensated demand built from the
-same rule. This is what makes the Giffen case legible: the compensated curve
-always slopes down, and only the ordinary one can turn back on itself.
+**Demand** — price on the horizontal axis, quantity on the vertical, with
+ordinary demand against the compensated demand built from the same rule. Two
+toggles: which good is drawn (x, y, or both, the second dashed so the pair stays
+apart where they cross), and which price sweeps the axis. This is what makes the
+Giffen case legible: the compensated curve always slopes down, and only the
+ordinary one can turn back on itself.
+
+### The red flag
+
+Whenever an **ordinary** demand curve rises in its **own** price anywhere on the
+swept range, the stretch is drawn thick in red and a banner names the interval.
+Only own-price counts. A cross-price curve sloping up just means the goods are
+gross substitutes, which is ordinary and not worth a warning — the flag stays
+down for it.
+
+## Slider limits
+
+Every slider's range is the user's to set: `pₓ`, `pᵧ` and `m` take a low and a
+high end, and `|Δp|` a ceiling. A low end is held under its high end so a range
+cannot invert, and a value that falls outside a new range is pulled in with it.
+The Giffen region of the inferior-good family lives at prices far outside any
+sensible default, so reaching it at all needs this.
 
 ## How it is computed
 
@@ -78,6 +97,20 @@ for Slutsky — and the bundle at price `p` is then just its cheapest point.
   and are displayed nowhere. `X_CD`, `P_X`, `p`, `d`, `dx`, `dp_X`, `oin`, `V`,
   `S`, `Q_X`, `LB`, `giffen` and the `A = Point(Circle[...])` leftover were not
   carried over.
+- **`GiffenX` has its inequality inverted.** The construction declares
+  `GiffenX := If(PxLBgiffen ≤ p_X ≤ PxUB, ...)` with
+  `PxLBgiffen := I/((1+b)·x̲)`. That quantity is where the middle branch of
+  `xINF3v` *ends*, not where it begins, so the range it labels Giffen is exactly
+  the range that is not. Checked against the construction's own `xINF3v` at
+  `p_Y·ȳ = 7.886`, `m = 8`, `x̲ = 0.045` (so `PxLBgiffen = 136.8`):
+
+  | `p_X` | 50 | 90 | 120 | 136 | 140 | 160 | 175 |
+  |---|---|---|---|---|---|---|---|
+  | `x*` | .0578 | .0581 | .0582 | .0582 | .0571 | .0500 | .0457 |
+
+  Demand rises with its own price up to ≈137 and falls above it. This app finds
+  the Giffen stretch by scanning the drawn curve rather than from a formula, so
+  it reports the interval that is actually on screen.
 - **Prices could be zero.** `p_X` and `p_Y` sliders started at 0, and the price
   change sliders are now bounded by the price they move so a price can never be
   driven to zero or below.
