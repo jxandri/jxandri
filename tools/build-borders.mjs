@@ -564,7 +564,8 @@ for (const entry of list) {
   // fractions, taking the most feasible ground the mountain's own geometry
   // will allow. What each one actually achieved is written into the data.
   const BAND = [0.60, 0.63, 0.66, 0.70];
-  const FALLBACK = [0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15];
+  const FALLBACK = [0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15,
+    0.12, 0.10, 0.08, 0.06, 0.05, 0.04, 0.03];
   const HALVES = [14, 11, 9, 7.5, 6, 5, 4, 3.2, 2.6, 2.1, 1.7, 1.4];
   const make = (aims) => {
     const out = [];
@@ -579,12 +580,26 @@ for (const entry of list) {
     }
     return out;
   };
-  const plans = [
-    // in the band: the widest window, and within a width the least far country
-    ...make(BAND).sort((a, b) => (b.half - a.half) || (a.aim - b.aim)),
-    // outside it: as much feasible ground as survives, then the widest window
-    ...make(FALLBACK).sort((a, b) => (b.aim - a.aim) || (b.half - a.half)),
-  ];
+  // Fraction and window size trade against each other exactly: the fraction
+  // times the width IS the distance the window reaches across the line, and
+  // that distance is capped by wherever the nearest rival summit stands. So a
+  // wider mountain to walk on is bought with a thinner strip of the far
+  // country and vice versa, and something has to choose. PREFER says which.
+  //
+  //   'feasible'  as much of the far country in frame as the claim allows,
+  //               and whatever window size is left over. What ships.
+  //   'wide'      as much ground to walk on as the claim allows, and whatever
+  //               strip is left over. Set this instead if a class wants big
+  //               mountains more than it wants a balanced frame.
+  const PREFER = 'feasible';
+  const plans = PREFER === 'wide'
+    ? [...make(BAND), ...make(FALLBACK)].sort((a, b) => (b.half - a.half) || (b.aim - a.aim))
+    : [
+      // in the band: the widest window, and within a width the least far country
+      ...make(BAND).sort((a, b) => (b.half - a.half) || (a.aim - b.aim)),
+      // outside it: as much feasible ground as survives, then the widest window
+      ...make(FALLBACK).sort((a, b) => (b.aim - a.aim) || (b.half - a.half)),
+    ];
 
   for (const plan of plans) {
     const { half, shift } = plan;
@@ -608,6 +623,45 @@ for (const entry of list) {
     // the line, so it has to be the real reach and not a nominal one.
     const strip = Math.max(...[[-1, -1], [-1, 1], [1, -1], [1, 1]]
       .map(([a, b]) => -sideOf(Lw, a * half, b * half)));
+
+    // A cheap veto, before the expensive part — and a check on the fit itself.
+    //
+    // Fitting and testing thirteen smoothings of a window costs seconds; asking
+    // the raw elevation model the same question costs one scan. And the raw
+    // model is the right thing to ask, because the acceptance test further down
+    // is applied to the *smoothed* surface, and heavy smoothing can flatten a
+    // rival summit until the constrained maximum slides back onto the frontier.
+    // That produced windows that passed while claiming something false: a
+    // window reaching thirteen kilometres into Canada, with Canadian Border
+    // Peak standing 2 530 m inside it, and a fit whose highest Canadian point
+    // was 1 958 m on the line. The mountain had been smoothed away.
+    //
+    // So the survey gets a veto. If the highest *measured* point of the far
+    // country beats the best measured point on the frontier itself, there is a
+    // second summit over there, the lesson is false in this window, and no
+    // amount of smoothing may be allowed to hide it.
+    {
+      let bestIn = -Infinity, bestOn = -Infinity;
+      const near = Math.max(gg.step * 2.5, 0.08);
+      for (let j = 0; j < gg.N; j++) {
+        const y = -half + j * gg.step;
+        for (let i = 0; i < gg.N; i++) {
+          const s = sideOf(Lw, -half + i * gg.step, y);
+          if (s > 0) continue;
+          const v = gg.H[j * gg.N + i];
+          if (v > bestIn) bestIn = v;
+          if (-s < near && v > bestOn) bestOn = v;
+        }
+      }
+      // Sixty metres of tolerance, which is a filter and not the acceptance
+      // test. The thing being caught is a rival *summit* — Canadian Border Peak
+      // stands 570 m above the best ground on the 49th parallel beside it — and
+      // a threshold tight enough to also catch a knoll on a ridge would throw
+      // away perfectly good windows because the highest post within a hundred
+      // metres of the line happens to sit a hundred and one metres from it.
+      // The real test is applied to the fitted surface further down.
+      if (!isFinite(bestIn) || !isFinite(bestOn) || bestIn > bestOn + 60) continue;
+    }
 
     const cols = analyse(gg);
     const raw = findSummit({ ...gg, seekKm: gg.half * 3, cxSeek: Sx, cySeek: Sy });

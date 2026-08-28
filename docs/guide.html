@@ -390,14 +390,62 @@ Peak less than three kilometres north of it. There is no canonical polygon for "
 mountain", so the window is chosen to be the widest one in which the statement holds, and
 everything it claims is on screen to be checked.</p>
 
-<p>Two presentation choices are worth naming to a class. The window is pushed back into the
-summit's own country rather than centred on the peak, so there is a proper mountain to walk on
-while only a narrow strip of the other country is in frame — that strip is what keeps the
-constrained maximum on the frontier. And the z axis opens <strong>stretched</strong>, three to nine
+<p>How the frontier is placed in the frame is itself worth a minute in class, because it is a
+constraint on the picture and not a choice of taste. The window is positioned to put as much of the
+<em>feasible</em> country on screen as the claim will bear — ideally about two thirds of it, so a
+student sees mostly the ground they are allowed to walk on with the unreachable summit standing
+over the far third. Four of the twelve manage it — Tecate Peak, Jabal Umm ad Dami and Bikku Bitti
+at 60%, Kinnerly Peak at 55%. The rest cannot, and the reason is geography:
+the moment the window reaches far enough across the line, it collects a second summit over there
+whose top is nowhere near the border, and the statement the example exists to make becomes false.
+American Border Peak is the extreme case: three hundred metres north of the 49th parallel the
+Canadian ground already stands 55 m above the best point on the line, and three kilometres north
+there is a 2 398 m summit. The honest window there shows a few hundred metres of Canada and no
+more. Fraction and window size trade against each other exactly — the fraction times the width is
+the distance the window reaches across the line, and that distance is fixed by where the
+neighbouring peak stands — so a wider mountain to walk on is bought with a thinner strip of the far
+country, and the build chooses the strip. The builder tries the two-thirds band first,
+widest window first, and falls back through smaller fractions only when nothing in the band
+survives; what each mountain actually achieved is recorded with it. If you want more of the far
+country in frame than the example ships with, widen <strong>y min</strong> and <strong>y max</strong>
+yourself — and then watch the optimiser walk off the line, which is the lesson stated backwards and
+just as good.</p>
+<p>One more presentation choice. The z axis opens <strong>stretched</strong>, three to nine
 times depending on the mountain, because at true scale two kilometres of relief across eighteen
 kilometres of ground is a swelling rather than a peak. It is a display scale only: <code>f</code>,
 its gradients, the level curves and every readout stay in real kilometres, and the z-axis dial puts
 it back to 1 whenever you want to show the class how gentle a real mountain is.</p>
+
+
+<h2>A real place: Universidad de los Andes, Santiago</h2>
+<p>The last entry in the examples list is not a landscape but a neighbourhood: the rectangle from
+70&#176;30&#8242;40&#8243;W to 70&#176;29&#8242;15&#8243;W and from 33&#176;24&#8242;S to
+33&#176;25&#8242;S, which is the ground around the Universidad de los Andes in San Carlos de
+Apoquindo, on the Andean foot slope at the eastern edge of Santiago. It is 2.19 km east&#8211;west
+by 1.84 km north&#8211;south, with 505 m of relief across it, and it opens at true vertical scale
+because a hillside that steep needs no help to read as one.</p>
+<p>Three public sources go into it, and they are kept deliberately apart.</p>
+<ul>
+  <li><strong>The ground is the function, and nothing else.</strong> A finite cosine series fitted
+      to the public elevation model, within about 5 m of it, and therefore infinitely
+      differentiable &#8212; the same treatment Mount Saint Elias and the border peaks get, for the
+      same reason.</li>
+  <li><strong>The vegetation is surveyed, not inferred.</strong> Everywhere else in this program
+      what grows on a surface is deduced from height: this fraction of the relief is forest, that
+      fraction is scree. Here ESA WorldCover records at 10 m whether each patch is tree cover,
+      matorral scrub, dry grass, bare ground or built, and both the colour and the planting read
+      that instead. The trees are where the trees are.</li>
+  <li><strong>The buildings are real outlines.</strong> 1 493 of them from Overture Maps, with real
+      heights where the source states one &#8212; it states twelve &#8212; and a height inferred
+      from the plan area where it does not.</li>
+</ul>
+<p>None of the scenery is part of <code>f</code>, and that is the point of the example rather than
+a caveat about it. Walking into a lecture theatre does not change the altitude. A roof is not a
+local maximum. The gradient at a doorway is the slope of the hillside the doorway was cut into. A
+class that has spent a term maximising invented functions over invented budget sets can stand in a
+place they walk through every week and ask the same questions of it: which way is downhill from
+here, how steep is the walk up to the library, what does a level curve of altitude look like when
+it crosses a car park. Switch the level curves on and walk one.</p>
 
 <h2>Walking the frontier</h2>
 <p><strong>Walk only along the frontier</strong> (<kbd>B</kbd>, in the Feasible set section) ropes

@@ -2422,6 +2422,7 @@ function wireUI() {
       // The preset insists on the costume, so the smoothing stays invisible.
       $('t-decor').checked = true; state.decor = true;
       $('in-res').value = 520;                 // same reason as the border peaks
+      $('in-res').dispatchEvent(new Event('input'));
     } else if (/^([a-z]+)\(x, y\)$/.test(e.target.value)
       && BORDERS[e.target.value.replace(/\(.*/, '')]) {
       // A border mountain: the survey window is the domain, and the feasible
@@ -2451,6 +2452,7 @@ function wireUI() {
       // underneath is infinitely differentiable, so there is nothing to lose by
       // asking it for more points.
       $('in-res').value = 520;
+      $('in-res').dispatchEvent(new Event('input'));
       $('in-sz').value = s.exaggeration;
       $('in-sz').dispatchEvent(new Event('input'));
       $('in-feas').value = feasibleFor(id);
@@ -2489,6 +2491,7 @@ function wireUI() {
       // Fine enough that the mesh resolves single buildings rather than the
       // block they stand in: 520 samples across 2.19 km is a node every 4 m.
       $('in-res').value = 520;
+      $('in-res').dispatchEvent(new Event('input'));
     } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the

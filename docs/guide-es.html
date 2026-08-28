@@ -368,6 +368,38 @@ rugosidad aparente —riscos, campos de nieve, roca dispersa y hielo— es decor
 <em>sobre</em> la superficie. Matemáticamente, la montaña que se pisa es tan suave como cualquier
 fórmula de la lista de ejemplos, y el máximo restringido sigue exactamente sobre la línea
 fronteriza.</p>
+
+<h2>Un lugar real: Universidad de los Andes, Santiago</h2>
+<p>La &#250;ltima entrada de la lista de ejemplos no es un paisaje sino un barrio: el rect&#225;ngulo
+de 70&#176;30&#8242;40&#8243;O a 70&#176;29&#8242;15&#8243;O y de 33&#176;24&#8242;S a
+33&#176;25&#8242;S, es decir el terreno en torno a la Universidad de los Andes, en San Carlos de
+Apoquindo, sobre el faldeo andino al oriente de Santiago. Son 2,19 km de este a oeste por 1,84 km
+de norte a sur, con 505 m de desnivel, y se abre a escala vertical verdadera porque un cerro as&#237;
+de empinado no necesita ayuda para parecerlo.</p>
+<p>Entran tres fuentes p&#250;blicas, y se mantienen a prop&#243;sito separadas.</p>
+<ul>
+  <li><strong>El suelo es la funci&#243;n, y nada m&#225;s.</strong> Una serie finita de cosenos
+      ajustada al modelo p&#250;blico de elevaci&#243;n, a unos 5 m de &#233;l, y por tanto
+      infinitamente diferenciable &#8212; el mismo tratamiento que reciben el Monte San El&#237;as y
+      los picos fronterizos, por la misma raz&#243;n.</li>
+  <li><strong>La vegetaci&#243;n est&#225; levantada, no inferida.</strong> En todo el resto del
+      programa lo que crece sobre una superficie se deduce de la altura: esta fracci&#243;n del
+      relieve es bosque, aquella es pedrero. Aqu&#237; ESA WorldCover registra cada 10 m si el trozo
+      de suelo es arbolado, matorral, pasto seco, suelo desnudo o construido, y tanto el color como
+      la plantaci&#243;n leen eso. Los &#225;rboles est&#225;n donde est&#225;n los &#225;rboles.</li>
+  <li><strong>Los edificios son huellas reales.</strong> 1 493 de Overture Maps, con alturas reales
+      donde la fuente las declara &#8212;declara doce&#8212; y una altura inferida del &#225;rea en
+      planta donde no.</li>
+</ul>
+<p>Nada de la escenograf&#237;a forma parte de <code>f</code>, y eso es el sentido del ejemplo y no
+una salvedad sobre &#233;l. Entrar a una sala no cambia la altitud. Un techo no es un m&#225;ximo
+local. El gradiente en una puerta es la pendiente del cerro en que se excav&#243; esa puerta. Un
+curso que lleva un semestre maximizando funciones inventadas sobre conjuntos presupuestarios
+inventados puede pararse en un lugar por el que pasa cada semana y hacerle las mismas preguntas:
+hacia d&#243;nde se baja desde aqu&#237;, qu&#233; tan empinada es la subida a la biblioteca,
+c&#243;mo se ve una curva de nivel de altitud cuando cruza un estacionamiento. Encienda las curvas
+de nivel y camine una.</p>
+
 <h2>Montañas cortadas por una frontera</h2>
 <p>Bajo <strong>Montañas fronterizas</strong>, en el menú de ejemplos, hay doce montañas reales
 que una frontera cruza por debajo de la cima. Proceden de un atlas de esa configuración rara: una
@@ -396,10 +428,27 @@ segunda cumbre al otro lado, cuya cima no está cerca de la frontera. No existe 
 para «el cuerpo de una montaña», así que la ventana se elige como la más amplia en la que el
 enunciado se cumple, y todo lo que afirma está en pantalla para comprobarlo.</p>
 
-<p>Vale la pena nombrar en clase dos decisiones de presentación. La ventana está desplazada hacia
-el país de la cima en lugar de centrada en el pico, de modo que haya una montaña de verdad por la
-que caminar y solo una franja estrecha del otro país en cuadro: esa franja es lo que mantiene el
-máximo restringido sobre la frontera. Y el eje z se abre <strong>estirado</strong>, de tres a nueve
+<p>Cómo queda situada la frontera en el cuadro merece un minuto de clase, porque es una
+restricción sobre la imagen y no una cuestión de gusto. La ventana se coloca para dejar en pantalla
+tanto del país <em>factible</em> como la afirmación tolere —idealmente unos dos tercios, de modo
+que se vea sobre todo el terreno por el que sí se puede caminar, con la cima inalcanzable alzándose
+en el tercio restante—. Cuatro de las doce lo consiguen: el cerro Tecate, el Jabal Umm ad Dami y
+el Bikku Bitti al 60%, y el Kinnerly Peak al 55%. Las demás no pueden, y la razón es
+geográfica: en cuanto la ventana alcanza suficiente terreno al otro lado de la línea, recoge una
+segunda cima cuya cumbre no está en ningún punto cercano a la frontera, y la afirmación que el
+ejemplo existe para hacer se vuelve falsa. El American Border Peak es el caso extremo: a trescientos metros al norte del
+paralelo 49 el terreno canadiense ya está 55 m por encima del mejor punto de la línea, y a tres
+kilómetros al norte hay una cumbre de 2 398 m. La ventana honesta muestra allí unos cientos de
+metros de Canadá y nada más. La fracción y el tamaño de la ventana se intercambian exactamente
+—la fracción por el ancho es la distancia que la ventana penetra al otro lado de la línea, y esa
+distancia la fija dónde está la cumbre vecina—, de modo que una montaña más ancha por la que
+caminar se paga con una franja más delgada del país lejano, y la construcción elige la franja. El constructor prueba primero la banda de dos tercios, de la ventana más ancha
+hacia abajo, y baja a fracciones menores solo cuando nada de la banda sobrevive; lo que cada
+montaña logró de verdad queda registrado con ella. Si quiere más del país lejano en cuadro del que
+trae el ejemplo, ensanche usted mismo <strong>y mín</strong> e <strong>y máx</strong>: y observe
+entonces cómo el optimizador se sale de la línea, que es la misma lección enunciada al revés y
+igual de buena.</p>
+<p>Una decisión de presentación más. El eje z se abre <strong>estirado</strong>, de tres a nueve
 veces según la montaña, porque a escala verdadera dos kilómetros de relieve en dieciocho kilómetros
 de terreno son una loma, no un pico. Es solo una escala de visualización: <code>f</code>, sus
 gradientes, las curvas de nivel y todas las lecturas siguen en kilómetros reales, y el mando del
