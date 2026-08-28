@@ -17,6 +17,37 @@
 }
 #game > section { pointer-events: auto; }
 
+/* Dormant. The game ships in the same page as the sandbox and spends most of
+   its life invisible and inert — no overlay, no captured clicks, nothing. */
+#game[data-screen="off"] { display: none; }
+
+/* The offer is a corner card, not a modal: the mountain has just been built
+   and the student should be looking at it, not at a dialogue box in front of
+   it. It sits clear of the panel on the left and the rail on the right. */
+#game[data-screen="offer"] { align-items: flex-end; justify-content: center; }
+#g-offer {
+  width: min(430px, 92vw);
+  margin-bottom: max(96px, calc(env(safe-area-inset-bottom) + 92px));
+  padding: 16px 18px 14px; border-radius: 16px;
+  background: rgba(11, 16, 23, .90);
+  border: 1px solid rgba(89, 247, 214, .34);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+}
+#g-offer h2 {
+  margin: 0; font-size: 13px; font-weight: 700;
+  letter-spacing: 1.4px; text-transform: uppercase; color: #7ef0d4;
+}
+#g-offer h3 { margin: 2px 0 6px; font-size: 21px; font-weight: 650; }
+#g-offer p { margin: 0; font-size: 14px; color: #b9cddb; }
+#g-offer b { color: #7ef0d4; font-weight: 600; }
+#g-offer .g-btn { margin-top: 12px; padding: 9px 14px; min-height: 40px; font-size: 14px; }
+#g-offer .g-btn b {
+  margin-left: 6px; padding: 1px 6px; border-radius: 5px;
+  background: rgba(255, 255, 255, .12); font: 600 11px/1.4 ui-monospace, Menlo, monospace;
+  color: #dceaf3;
+}
+
 /* The run is a heads-up display, not a dialogue: it must not take the middle
    of the screen or eat the controls underneath it. */
 #game[data-screen="run"] { align-items: stretch; justify-content: stretch; }
@@ -156,20 +187,32 @@
   font-size: 14px; line-height: 1.55; color: #b9cddb;
 }
 
-/* The sandbox chrome, out of the way on the card screens.
+/* The sandbox chrome, out of the way on the full-screen cards only.
  *
- * The readouts, the direction indicator and the dials belong to the sandbox and
- * would only compete with a menu. During the run they come back, because
- * altitude and heading are exactly what the player is reading — the game HUD
- * sits above them rather than replacing them. The panel stays one Tab away for
- * a teacher who wants to show the formula behind the mountain.
+ * With the game folded into the same page as the sandbox, "hide the chrome" is
+ * a statement about three screens and not about a mode: the mission list, the
+ * briefing and the result take the whole window, so the readouts, the dials and
+ * the panel behind them would only compete. Every other state — dormant, the
+ * offer card, and the run itself — leaves the sandbox exactly as it was, because
+ * altitude and heading are precisely what a player is reading and the level
+ * curves are one keystroke away throughout.
  */
-body[data-mode="play"] #panel-show { display: none; }
-body[data-mode="play"]:not([data-screen="run"]) #hud-top,
-body[data-mode="play"]:not([data-screen="run"]) #hud-bottom,
-body[data-mode="play"]:not([data-screen="run"]) #right-rail,
-body[data-mode="play"]:not([data-screen="run"]) #panel { display: none; }
+body[data-screen="menu"] #hud-top,
+body[data-screen="menu"] #hud-bottom,
+body[data-screen="menu"] #right-rail,
+body[data-screen="menu"] #panel,
+body[data-screen="menu"] #panel-show,
+body[data-screen="brief"] #hud-top,
+body[data-screen="brief"] #hud-bottom,
+body[data-screen="brief"] #right-rail,
+body[data-screen="brief"] #panel,
+body[data-screen="brief"] #panel-show,
+body[data-screen="result"] #hud-top,
+body[data-screen="result"] #hud-bottom,
+body[data-screen="result"] #right-rail,
+body[data-screen="result"] #panel,
+body[data-screen="result"] #panel-show { display: none; }
 
 /* The mountain's photograph belongs to the card while choosing and to the
    corner while playing, never to both at once. */
-body[data-mode="play"][data-screen="menu"] #peak-card { display: none; }
+body[data-screen="menu"] #peak-card { display: none; }

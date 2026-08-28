@@ -498,38 +498,93 @@ for (const entry of list) {
   const L2 = boundaryLine(entry, lat0, lon0);
   const feasible = (x, y) => sideOf(L2, x, y) <= 0;      // the OTHER country
 
-  // The window: as much country as possible, as little of the other side as
-  // the lesson allows
+  // The window: about two thirds of the ground on the feasible side
   // ------------------------------------------------------------------------
-  // Two pressures pull in opposite directions. The lesson is a statement about
-  // a region — *within this window*, the highest point of the country that does
-  // not own the summit lies on the frontier — and it fails as soon as the
-  // window reaches far enough across the line to swallow a second summit over
-  // there. American Border Peak has Canadian Border Peak less than three
-  // kilometres north. But a window sized to that constraint alone is a couple
-  // of kilometres square, which is a hillside, not a mountain: there is nothing
-  // to explore and the relief is lost against the width.
+  // Three pressures pull against each other, and all three are conditions on
+  // the window rather than on the mountain.
   //
-  // Both are satisfied by moving the window rather than shrinking it. The
-  // domain does not have to be centred on the summit: pushed back into the
-  // summit's own country by `shift`, a window of half-width `half` still only
-  // reaches `half − dist − shift` past the frontier. So the feasible strip
-  // stays as shallow as the lesson needs while the walkable area grows with
-  // the square of the half-width — several times the ground, all of it on the
-  // side where the mountain actually is.
+  // The lesson is a statement about a region — *within this window*, the
+  // highest point of the country that does not own the summit lies on the
+  // frontier — and it fails the moment the window reaches far enough across
+  // the line to swallow a second summit over there. American Border Peak has
+  // Canadian Border Peak less than three kilometres north.
   //
-  // The search runs widest-first and keeps the first window whose claim holds.
+  // The window must also be worth walking. A domain sized to the first
+  // condition alone is a hillside, not a mountain.
+  //
+  // And the picture has to be honest about which side of the line the student
+  // is standing on. A constrained problem where the feasible set is a thin
+  // ribbon at the edge of the frame reads as a mountain with a fence around
+  // it; the student sees the summit and almost none of the country they are
+  // actually allowed to walk. So the frontier is placed to put FEAS_AIMS of
+  // the *observed* surface inside the feasible set — around two thirds — with
+  // the summit and a third of its own country still in view beyond the line.
+  //
+  // Placement is by area, not by distance: the frontier can cut the square at
+  // any angle, so the shift that produces a given fraction is found by
+  // bisection on the fraction itself. It is monotone — pushing the centre
+  // towards the summit can only take feasible ground away.
+  //
+  // The search runs widest-first and keeps the first window whose claim holds;
+  // the aims are tried least-feasible-first, because every extra kilometre of
+  // the far country is another chance to swallow a rival summit.
   let chosen = null, g = null, rawPeak = null;
-  const plans = [];
-  for (const half of [14, 11, 9, 7.5, 6, 5, 4, 3.2, 2.6, 2.1]) {
-    for (const strip of [2.6, 2.0, 1.5, 1.1, 0.8, 0.6]) {
-      const shift = half - dist - strip;
-      if (shift < 0) continue;                 // window too small to reach the line
-      plans.push({ half, strip, shift });
+
+  /** Fraction of the square window that is feasible, centre pushed `shift`. */
+  const feasFrac = (half, shift, n = 193) => {
+    const c = L2.c - shift;
+    let inside = 0;
+    for (let j = 0; j < n; j++) {
+      const y = -half + (2 * half * j) / (n - 1);
+      for (let i = 0; i < n; i++) {
+        const x = -half + (2 * half * i) / (n - 1);
+        if (L2.nx * x + L2.ny * y - c <= 0) inside++;
+      }
     }
-  }
-  // Widest first; among equals, the shallower strip across the border.
-  plans.sort((a, b) => (b.half - a.half) || (a.strip - b.strip));
+    return inside / (n * n);
+  };
+  /** The shift that makes that fraction `aim`. */
+  const shiftFor = (half, aim) => {
+    let lo = -3 * half, hi = 3 * half;          // frac(lo) ≈ 1, frac(hi) ≈ 0
+    for (let k = 0; k < 44; k++) {
+      const mid = (lo + hi) / 2;
+      if (feasFrac(half, mid) > aim) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  };
+
+  // Two thirds is the target, not a law of geography. Where the summit stands
+  // a good way back from the line — Kinnerly Peak is 4.8 km inside Montana,
+  // Bikku Bitti nearly ten inside Libya — a window that gives the far country
+  // two thirds of the frame has to be wide enough that the summit's own third
+  // still contains the summit, and by then the far side is ten kilometres deep
+  // and holds a rival peak of its own. The lesson would be false. So the band
+  // is tried first, widest window and least far country first, and only if no
+  // window in the band survives does the search fall back through smaller
+  // fractions, taking the most feasible ground the mountain's own geometry
+  // will allow. What each one actually achieved is written into the data.
+  const BAND = [0.60, 0.63, 0.66, 0.70];
+  const FALLBACK = [0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15];
+  const HALVES = [14, 11, 9, 7.5, 6, 5, 4, 3.2, 2.6, 2.1, 1.7, 1.4];
+  const make = (aims) => {
+    const out = [];
+    for (const half of HALVES) {
+      for (const aim of aims) {
+        const shift = shiftFor(half, aim);
+        // The named summit has to stay well inside the window it names.
+        const sx = -L2.nx * shift, sy = -L2.ny * shift;
+        if (Math.max(Math.abs(sx), Math.abs(sy)) > half * 0.82) continue;
+        out.push({ half, aim, shift });
+      }
+    }
+    return out;
+  };
+  const plans = [
+    // in the band: the widest window, and within a width the least far country
+    ...make(BAND).sort((a, b) => (b.half - a.half) || (a.aim - b.aim)),
+    // outside it: as much feasible ground as survives, then the widest window
+    ...make(FALLBACK).sort((a, b) => (b.aim - a.aim) || (b.half - a.half)),
+  ];
 
   for (const plan of plans) {
     const { half, shift } = plan;
@@ -548,6 +603,11 @@ for (const entry of list) {
     const Sx = -cx, Sy = -cy;
     const Lw = { nx: L2.nx, ny: L2.ny, c: L2.c - shift };
     const feasibleW = (x, y) => sideOf(Lw, x, y) <= 0;
+    // How deep into the feasible country the window reaches — the far corner,
+    // whichever it is. The game drops the player a fraction of this back from
+    // the line, so it has to be the real reach and not a nominal one.
+    const strip = Math.max(...[[-1, -1], [-1, 1], [1, -1], [1, 1]]
+      .map(([a, b]) => -sideOf(Lw, a * half, b * half)));
 
     const cols = analyse(gg);
     const raw = findSummit({ ...gg, seekKm: gg.half * 3, cxSeek: Sx, cySeek: Sy });
@@ -591,13 +651,14 @@ for (const entry of list) {
     const hit = tidy.length ? tidy[tidy.length - 1] : (passes[0] || null);
 
     if (hit) {
-      console.log(`  window ±${half.toFixed(2)} km, centre pushed ${shift.toFixed(2)} km into`
-        + ` ${entry.countries[0].split(' (')[0]}, ${plan.strip.toFixed(1)} km of the far side:`
+      console.log(`  window ±${half.toFixed(2)} km, ${(plan.aim * 100).toFixed(0)}% of it inside`
+        + ` ${entry.countries[1].split(' (')[0]} (reaching ${strip.toFixed(1)} km past the line):`
         + ` M=${hit.M} of ${passes.length} passing, keeps ${(hit.kept * 100).toFixed(0)}% of the summit,`
         + ` constrained ${hit.con.metres.toFixed(0)} m at ${(hit.offLine * 1000).toFixed(0)} m`
         + ` off the line, ${hit.maxima} maxima ✓`);
       chosen = hit; g = gg; rawPeak = raw;
-      chosen.Sx = Sx; chosen.Sy = Sy; chosen.Lw = Lw; chosen.shift = shift; chosen.strip = plan.strip;
+      chosen.Sx = Sx; chosen.Sy = Sy; chosen.Lw = Lw; chosen.shift = shift;
+      chosen.strip = strip; chosen.feasFrac = plan.aim;
       break;
     }
   }
@@ -656,7 +717,7 @@ for (const entry of list) {
   results.push({
     entry, lat0, lon0, half: g.half, M: chosen.M, sigma: chosen.sigma, data,
     line: chosen.Lw, rms, maxima: chosen.maxima, boundaryLabel, boundaryLabelEs,
-    shift: chosen.shift, strip: chosen.strip, exaggeration,
+    shift: chosen.shift, strip: chosen.strip, feasFrac: chosen.feasFrac, exaggeration,
     summitMetres: chosen.f(chosen.Sx, chosen.Sy),
     summitAt: { x: chosen.Sx, y: chosen.Sy },
     summit: { x: chosen.top.x, y: chosen.top.y, metres: chosen.top.metres },
@@ -690,6 +751,7 @@ const entries = results.map((r) => `  ${J(r.entry.id)}: {
     rawPeak: ${round(r.rawPeak, 1)}, rms: ${round(r.rms, 1)}, maxima: ${r.maxima},
     frontierKm: ${round(Math.abs(sideOf(r.line, r.summitAt.x, r.summitAt.y)), 3)},
     exaggeration: ${round(r.exaggeration, 2)}, shift: ${round(r.shift, 2)}, strip: ${round(r.strip, 2)},
+    feasFrac: ${round(r.feasFrac, 3)},
     meta: {
       name: ${J(r.entry.name)}, es: ${J(r.entry.es)},
       countries: ${J(r.entry.countries)}, countriesEs: ${J(r.entry.countriesEs)},

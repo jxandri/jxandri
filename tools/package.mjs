@@ -29,7 +29,6 @@ const folder = join(out, 'Gradient-Peaks');
 const ITEMS = [
   ['dist/Gradient-Peaks.html', 'Gradient-Peaks.html'],
   ['dist/Gradient-Peaks-Lab.html', 'Gradient-Peaks-Lab.html'],
-  ['dist/Border-Run.html', 'Border-Run.html'],
   ['dist/Gradient-Peaks-Guide.pdf', 'Gradient-Peaks-Guide.pdf'],
   ['dist/Gradient-Peaks-Guia.pdf', 'Gradient-Peaks-Guia.pdf'],
   ['dist/README.txt', 'README.txt'],

@@ -218,9 +218,9 @@ let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
-let game = null;         // Border Run, on play.html only — declared here rather
-                         // than beside its own setup because the frame loop starts
-                         // before that setup runs and must be able to ask for it
+let game = null;         // Border Run — declared here rather than beside its own
+                         // setup because the frame loop starts before that setup
+                         // runs and must be able to ask for it
 let stillMemo = null;    // last frame's at-the-feet geometry, kept while the
                          // explorer and the dials hold still
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
@@ -2059,6 +2059,25 @@ function currentBorder() {
 }
 
 /**
+ * Wait for the chosen mountain to actually exist, then let the game offer it.
+ *
+ * The preset handler only fills in the boxes; the mesh is built a couple of
+ * frames later by withLoading. Offering a run before there is ground to stand
+ * on would put a card over a blank scene, so this watches for the surface
+ * instead of guessing at a delay, and gives up if the student has moved on to
+ * something else in the meantime.
+ */
+function offerGameFor(id) {
+  if (!game) return;
+  const ready = () => {
+    if (currentBorder() !== id) return;        // they chose something else
+    if (field && grid) game.offer(id);
+    else requestAnimationFrame(ready);
+  };
+  requestAnimationFrame(ready);
+}
+
+/**
  * The photograph and the sentence that says where you are.
  *
  * The card carries what the atlas carries: the two countries, which line the
@@ -2344,6 +2363,7 @@ function wireUI() {
       // The surface itself is a smooth Fourier fit; the crags are costume.
       // The preset insists on the costume, so the smoothing stays invisible.
       $('t-decor').checked = true; state.decor = true;
+      $('in-res').value = 520;                 // same reason as the border peaks
     } else if (/^([a-z]+)\(x, y\)$/.test(e.target.value)
       && BORDERS[e.target.value.replace(/\(.*/, '')]) {
       // A border mountain: the survey window is the domain, and the feasible
@@ -2362,6 +2382,17 @@ function wireUI() {
       // example nobody recognises as a mountain teaches nothing. This is a
       // display scale only: f, its gradients and every readout stay in real
       // kilometres, and the dial is right there to put it back to 1.
+      // A finer mesh, because the z axis is stretched.
+      //
+      // Exaggerating the height multiplies every slope, and a triangle that was
+      // acceptably flat at true scale becomes a visible facet at six times the
+      // relief. These windows are also tens of kilometres across, where the
+      // default 300 samples put a triangle edge 90 m apart. Going to 520 brings
+      // that under 55 m, which at this exaggeration is below what the eye
+      // resolves at any distance the camera actually sits — and the surface
+      // underneath is infinitely differentiable, so there is nothing to lose by
+      // asking it for more points.
+      $('in-res').value = 520;
       $('in-sz').value = s.exaggeration;
       $('in-sz').dispatchEvent(new Event('input'));
       $('in-feas').value = feasibleFor(id);
@@ -2370,6 +2401,10 @@ function wireUI() {
       $('t-isolate').checked = false; state.isolate = false;
       $('t-follow').checked = false; state.follow = false;   // the survey has edges
       $('t-decor').checked = true; state.decor = true;
+      // Every border mountain is also a Border Run mission. Offer it once the
+      // ground exists to stand on — the card names the objective and goes away
+      // on one key, so choosing the mountain to look at it costs nothing.
+      offerGameFor(id);
     } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the
@@ -3479,17 +3514,18 @@ animate();
 /* ------------------------------------------------------- Border Run */
 
 /**
- * The game layer, when the page asks for one.
+ * The game layer.
  *
- * Detected from the markup rather than from a flag, exactly as the Lab is
- * detected from its minimap: play.html carries a #game element, index.html and
- * lab.html do not, and all three run this same file. Everything the game needs
- * is handed to it explicitly, so the game can be read without reading the app
- * and the app has no idea it is being played.
+ * One program: the game is built here on every page that carries the markup for
+ * it, and then does nothing at all until a border mountain is loaded, at which
+ * point it offers the run in a corner card. Until then — and after the student
+ * waves it away — the sandbox is untouched: every control, the flat map panel,
+ * the level curves and the optimiser are exactly where they were.
+ *
+ * Everything the game needs is handed to it explicitly, so the game can be read
+ * without reading the app, and the app has no idea it is being played.
  */
 if ($('game')) {
-  document.body.dataset.mode = 'play';
-  togglePanel(true);                       // the sandbox is still there under Tab
   const missions = BORDER_IDS.map((id) => {
     const b = BORDERS[id];
     return {

@@ -10,6 +10,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/game.css">
 <link rel="stylesheet" href="css/lab.css">
 </head>
 <body>
@@ -502,6 +503,84 @@
   <b data-i18n="cc.click">Click to look around</b>
   <span data-i18n="cc.esc">Esc releases the mouse</span>
 </div></div>
+
+<!-- ======================= Border Run, over the sandbox =================== -->
+<!-- Dormant until a border mountain is chosen; see js/game.js. -->
+<div id="game" data-screen="off">
+
+  <section id="g-offer" hidden>
+    <h2><span data-i18n="game.title">Border Run</span> <span id="g-offer-stars" class="g-stars" hidden></span></h2>
+    <h3 id="g-offer-name"></h3>
+    <p id="g-offer-text"></p>
+    <div class="g-actions">
+      <button id="g-offer-go" class="g-btn"><span data-i18n="game.offergo">Play it</span>  <b>A</b></button>
+      <button id="g-offer-no" class="g-btn ghost"><span data-i18n="game.offerno">Just explore</span>  <b>B</b></button>
+      <button id="g-offer-all" class="g-btn ghost"><span data-i18n="game.offerall">All missions</span>  <b>Y</b></button>
+    </div>
+  </section>
+
+  <section id="g-menu" hidden>
+    <h1 data-i18n="game.title">Border Run</h1>
+    <p class="g-sub" data-i18n="game.tagline">Find the highest ground you are allowed to stand on.</p>
+    <div class="g-cols">
+      <div id="g-list" class="g-list"></div>
+      <div class="g-side">
+        <img id="g-preview" alt="">
+        <p id="g-blurb"></p>
+      </div>
+    </div>
+    <div class="g-keys">
+      <span><b>↑↓</b> <span data-i18n="game.kchoose">choose</span></span>
+      <span><b>A</b> / <b>Enter</b> <span data-i18n="game.kstart">start</span></span>
+      <span><b>B</b> / <b>Esc</b> <span data-i18n="game.kback">back to the sandbox</span></span>
+    </div>
+    <div class="g-actions">
+      <button id="g-start" class="g-btn" data-i18n="game.start">Start</button>
+      <button id="g-close" class="g-btn ghost" data-i18n="game.close">Back to the sandbox</button>
+    </div>
+  </section>
+
+  <section id="g-brief" hidden>
+    <h2 id="g-brief-name"></h2>
+    <p id="g-brief-text"></p>
+    <div class="g-keys">
+      <span><b>Left stick</b> <span data-i18n="game.kwalk">walk</span></span>
+      <span><b>Right stick</b> <span data-i18n="game.klook">look</span></span>
+      <span><b>A</b> <span data-i18n="game.kplant">plant your flag</span></span>
+      <span><b>X</b> <span data-i18n="game.kcurves">level curves</span></span>
+      <span><b>Y</b> <span data-i18n="game.kwalls">frontier</span></span>
+      <span><b>B</b> <span data-i18n="game.kquit">give up</span></span>
+    </div>
+    <button id="g-go" class="g-btn" data-i18n="game.go">Drop me in</button>
+  </section>
+
+  <section id="g-run" hidden>
+    <div class="g-hud">
+      <div class="g-stat"><label data-i18n="game.alt">Altitude</label><b id="g-alt">—</b></div>
+      <div class="g-stat"><label data-i18n="game.best">Best so far</label><b id="g-best">—</b></div>
+      <div class="g-stat"><label data-i18n="game.time">Time</label><b id="g-time">0:00</b></div>
+      <div id="g-side" class="g-stat wide" data-legal="yes"></div>
+    </div>
+    <div id="g-frontier" class="g-flash" hidden data-i18n="game.online">You are on the frontier — now follow it.</div>
+    <div id="g-warn" class="g-warn" hidden></div>
+    <div class="g-actions">
+      <button id="g-plant" class="g-btn" data-i18n="game.plant">Plant the flag  (A)</button>
+      <button id="g-back" class="g-btn ghost" data-i18n="game.quit">Give up  (B)</button>
+    </div>
+  </section>
+
+  <section id="g-result" hidden>
+    <div id="g-medal" class="g-medal"></div>
+    <h2 id="g-verdict"></h2>
+    <p id="g-numbers" class="g-numbers"></p>
+    <p id="g-lesson" class="g-lesson"></p>
+    <div class="g-actions">
+      <button id="g-explore" class="g-btn" data-i18n="game.explore">Explore this mountain  (A)</button>
+      <button id="g-again" class="g-btn ghost" data-i18n="game.again">Try again  (Y)</button>
+      <button id="g-menu" class="g-btn ghost" data-i18n="game.menu">Mountains  (X)</button>
+    </div>
+  </section>
+</div>
 
 <div id="loading"><div class="spin"></div><span id="loading-msg" data-i18n="loading">Building the terrain…</span></div>
 

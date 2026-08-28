@@ -34,6 +34,16 @@
  * Everything here is a layer over the ordinary app: the same surfaces, the same
  * walker, the same optimiser marking the answer at the end. It adds an
  * objective, a controller-first interface, and a reason to care.
+ *
+ * One program, not two
+ * --------------------
+ * The game does not have its own page. It sits dormant over the sandbox —
+ * screen 'off', nothing drawn, every control still the student's — and wakes up
+ * when a border mountain is chosen from the examples list, offering the run as
+ * a card the student can wave away. That is deliberate: the sandbox and the
+ * game are the same mathematics looked at twice, and a student who has just
+ * walked the frontier should be one keystroke away from the level curves, the
+ * gradient arrows and the flat map that explain what they felt.
  */
 
 import { BTN } from './gamepad.js';
@@ -59,7 +69,10 @@ export class BorderRun {
    */
   constructor(ctx) {
     this.ctx = ctx;
-    this.screen = 'menu';          // 'menu' | 'brief' | 'run' | 'result'
+    // 'off' — dormant, the sandbox has the screen to itself
+    // 'offer' — a mountain was chosen; the run is on the table, not imposed
+    // 'menu' | 'brief' | 'run' | 'result' — the game proper
+    this.screen = 'off';
     this.pick = 0;
     this.mission = null;
     this.best = -Infinity;
@@ -67,9 +80,10 @@ export class BorderRun {
     this.started = 0;
     this.planted = null;
     this.warned = 0;
+    this.offered = null;           // mountain id the open offer is about
     this.scores = this._loadScores();
     this._wire();
-    this.show('menu');
+    this.show('off');
   }
 
   /* ------------------------------------------------------------ storage */
@@ -94,7 +108,7 @@ export class BorderRun {
 
   show(screen) {
     this.screen = screen;
-    for (const s of ['menu', 'brief', 'run', 'result']) {
+    for (const s of ['offer', 'menu', 'brief', 'run', 'result']) {
       const el = $(`g-${s}`);
       if (el) el.hidden = s !== screen;
     }
@@ -104,6 +118,47 @@ export class BorderRun {
     // backwards. One attribute at the root can reach everything.
     document.body.dataset.screen = screen;
     if (screen === 'menu') this._paintMenu();
+    if (screen === 'off') this.offered = null;
+  }
+
+  /**
+   * A border mountain has just been loaded in the sandbox. Offer the run.
+   *
+   * This is the whole join between the two halves of the program, and it is an
+   * offer rather than a switch on purpose: choosing "Kinnerly Peak" from the
+   * examples list is something a student does to look at a mountain, and having
+   * it seize the screen and start a timed challenge would be rude. The card
+   * names the mission, says what the objective is, and gets out of the way on
+   * one keypress — after which the sandbox is exactly as it was.
+   */
+  offer(id) {
+    const i = this.ctx.missions.findIndex((m) => m.id === id);
+    if (i < 0) return;
+    // Already playing this mountain, or already asked about it: don't nag.
+    if (this.screen !== 'off' || this.offered === id) return;
+    this.pick = i;
+    this.offered = id;
+    const m = this.ctx.missions[i];
+    const es = getLanguage() === 'es';
+    $('g-offer-name').textContent = es ? m.es : m.name;
+    $('g-offer-text').innerHTML = t('game.offer', {
+      other: `<b>${(es ? m.countriesEs : m.countries)[1].split(' (')[0]}</b>`,
+      line: es ? m.boundaryEs : m.boundary,
+    });
+    const score = this.scores[id];
+    const badge = $('g-offer-stars');
+    if (badge) {
+      badge.textContent = score ? '★'.repeat(score.stars) + '☆'.repeat(3 - score.stars) : '';
+      badge.hidden = !score;
+    }
+    this.show('offer');
+  }
+
+  /** Put the sandbox back exactly as it was. */
+  dismiss() {
+    const id = this.offered;
+    this.show('off');
+    this.offered = id;            // asked once; don't ask again for this load
   }
 
   _paintMenu() {
@@ -263,12 +318,27 @@ export class BorderRun {
   update() {
     const pad = this.ctx.pad;
 
+    // Dormant: the pad belongs entirely to the sandbox's explorer. START is
+    // the way back in, so a student who waved the offer away is never stuck
+    // without a controller route to the game.
+    if (this.screen === 'off') {
+      if (pad.justPressed(BTN.START)) this.show('menu');
+      return;
+    }
+
     // Menu and cards are driven by button edges, so a held stick does not
     // race through a list of twelve mountains in a tenth of a second.
+    if (this.screen === 'offer') {
+      if (pad.justPressed(BTN.A)) this.begin();
+      if (pad.justPressed(BTN.B)) this.dismiss();
+      if (pad.justPressed(BTN.Y)) this.show('menu');
+      return;
+    }
     if (this.screen === 'menu') {
       if (pad.justPressed(BTN.DOWN)) this.move(1);
       if (pad.justPressed(BTN.UP)) this.move(-1);
       if (pad.justPressed(BTN.A) || pad.justPressed(BTN.START)) this.begin();
+      if (pad.justPressed(BTN.B)) this.dismiss();
       return;
     }
     if (this.screen === 'brief') {
@@ -277,8 +347,11 @@ export class BorderRun {
       return;
     }
     if (this.screen === 'result') {
-      if (pad.justPressed(BTN.A) || pad.justPressed(BTN.START)) this.show('menu');
-      if (pad.justPressed(BTN.B)) this.show('menu');
+      // A hands the mountain back to the sandbox with the answer now marked on
+      // it: the natural next move is to switch on the level curves and see why
+      // the point you were looking for was where it was.
+      if (pad.justPressed(BTN.A) || pad.justPressed(BTN.B)) this.dismiss();
+      if (pad.justPressed(BTN.X) || pad.justPressed(BTN.START)) this.show('menu');
       if (pad.justPressed(BTN.Y)) this.begin();                 // run it again
       return;
     }
@@ -330,15 +403,20 @@ export class BorderRun {
     window.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       const k = e.key.toLowerCase();
-      if (this.screen === 'menu') {
+      if (this.screen === 'off') return;         // the sandbox owns the keyboard
+      if (this.screen === 'offer') {
+        if (k === 'enter') { this.begin(); e.preventDefault(); }
+        if (k === 'escape') { this.dismiss(); e.preventDefault(); }
+      } else if (this.screen === 'menu') {
         if (k === 'arrowdown') { this.move(1); e.preventDefault(); }
         if (k === 'arrowup') { this.move(-1); e.preventDefault(); }
-        if (k === 'enter' || k === ' ') { this.begin(); e.preventDefault(); }
+        if (k === 'enter') { this.begin(); e.preventDefault(); }
+        if (k === 'escape') { this.dismiss(); e.preventDefault(); }
       } else if (this.screen === 'brief') {
-        if (k === 'enter' || k === ' ') { this.dropIn(); e.preventDefault(); }
+        if (k === 'enter') { this.dropIn(); e.preventDefault(); }
         if (k === 'escape') this.show('menu');
       } else if (this.screen === 'result') {
-        if (k === 'enter' || k === ' ' || k === 'escape') { this.show('menu'); e.preventDefault(); }
+        if (k === 'enter' || k === 'escape') { this.dismiss(); e.preventDefault(); }
         if (k === 'r') this.begin();
       } else if (this.screen === 'run') {
         if (k === 'enter') { this.plant(); e.preventDefault(); }
@@ -347,11 +425,16 @@ export class BorderRun {
     });
 
     for (const [id, fn] of [
+      ['g-offer-go', () => this.begin()],
+      ['g-offer-no', () => this.dismiss()],
+      ['g-offer-all', () => this.show('menu')],
       ['g-start', () => this.begin()],
+      ['g-close', () => this.dismiss()],
       ['g-go', () => this.dropIn()],
       ['g-plant', () => this.plant()],
       ['g-again', () => this.begin()],
       ['g-back', () => this.show('menu')],
+      ['g-explore', () => this.dismiss()],
       ['g-menu', () => this.show('menu')],
     ]) {
       const el = $(id);

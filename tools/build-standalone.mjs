@@ -22,15 +22,15 @@ const app = join(root, 'app');
 // only the markup and the extra stylesheet differ. The cross-link between them
 // is rewritten to the other *file*, so a teacher who unzips the folder and
 // double-clicks either one can still reach the other.
+//
+// Border Run is not a third file. It lives inside both of these, dormant until
+// a border mountain is chosen — which is the whole point of folding it in, and
+// means a teacher hands out one file rather than choosing between two.
 const PAGES = [
-  { src: 'index.html', out: 'Gradient-Peaks.html', extraCss: null,
+  { src: 'index.html', out: 'Gradient-Peaks.html', extraCss: 'game.css',
     link: ['href="lab.html"', 'href="Gradient-Peaks-Lab.html"'] },
-  { src: 'lab.html', out: 'Gradient-Peaks-Lab.html', extraCss: 'lab.css',
+  { src: 'lab.html', out: 'Gradient-Peaks-Lab.html', extraCss: 'game.css,lab.css',
     link: ['href="index.html"', 'href="Gradient-Peaks.html"'] },
-  // The game. One file a teacher can hand out on a stick, plug a controller
-  // into, and leave running at the back of the room.
-  { src: 'play.html', out: 'Border-Run.html', extraCss: 'game.css',
-    link: ['href="lab.html"', 'href="Gradient-Peaks-Lab.html"'] },
 ];
 
 const result = await build({
@@ -49,8 +49,11 @@ const icon = await readFile(join(app, 'icon.svg'), 'utf8');
 const iconData = `data:image/svg+xml;base64,${Buffer.from(icon).toString('base64')}`;
 
 for (const page of PAGES) {
+  // extraCss is a comma-separated list, in the order the page links them, so a
+  // stylesheet that overrides another keeps overriding it once inlined.
   const extra = page.extraCss
-    ? `\n${await readFile(join(app, 'css', page.extraCss), 'utf8')}`
+    ? (await Promise.all(page.extraCss.split(',')
+      .map((f) => readFile(join(app, 'css', f.trim()), 'utf8')))).map((c) => `\n${c}`).join('')
     : '';
   let html = await readFile(join(app, page.src), 'utf8');
 
