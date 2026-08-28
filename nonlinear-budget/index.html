@@ -231,6 +231,8 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
         <p class="hint" data-t="mapHint">Apágalo y el fondo queda liso. Las curvas de indiferencia conservan su color de altura en todo momento.</p>
         <label class="check auto"><input type="checkbox" id="show-path" checked><span data-t="showPath">Panel de sustitución</span></label>
         <label class="check auto"><input type="checkbox" id="show-3d"><span data-t="show3d">Superficie 3D</span></label>
+        <label class="check auto"><input type="checkbox" id="only-3d"><span data-t="only3d">Sombrear fuera del conjunto factible</span></label>
+        <label class="check auto"><input type="checkbox" id="floor-3d" checked><span data-t="floor3d">Plano XY</span></label>
         <p class="hint" data-t="hint3d">La misma restricción, levantada sobre la superficie de utilidad. El óptimo es la cima del arco.</p>
         <div class="range-row"><span class="k">x ≤</span>
           <input type="number" class="rb" id="xmaxFix" min="0.5" max="500" step="any" value="6">
@@ -954,7 +956,7 @@ const st = {
   alpha:0.3, rho:0.5,
   xlow:0.4, yup:16.2, beta:0.815,
   customSrc:"x^0.3*y^0.7", U:null,
-  showMap:true, showPath:true, show3d:false,
+  showMap:true, showPath:true, show3d:false, only3d:false, floor3d:true,
   autoAxes:false, xmaxFix:6, ymaxFix:6, zoom2:1,
   layers:{contours:true, feasible:true, indiff:true, opt:true,
           kinks:true, cmpSet:true, grid:true}
@@ -984,6 +986,7 @@ es:{
         ql:"Cuasilineal", ces:"CES generalizada", inf:"X inferior", custom:"Personalizada"},
   gView:"Vista", showMap:"Degradado de calor", showPath:"Panel de sustitución",
   show3d:"Superficie 3D", vp3:"Superficie 3D · z = u(x, y)",
+  only3d:"Sombrear fuera del conjunto factible", floor3d:"Plano XY",
   hint3d:"La misma restricción, levantada sobre la superficie de utilidad. El óptimo es la cima del arco.",
   autoAxes:"Ajustar los ejes solos",
   mapHint:"Apágalo y el fondo queda liso. Las curvas de indiferencia conservan su color de altura en todo momento.",
@@ -1035,6 +1038,7 @@ en:{
         ql:"Quasilinear", ces:"Generalised CES", inf:"X inferior", custom:"Custom"},
   gView:"View", showMap:"Heat gradient", showPath:"Substitution panel",
   show3d:"3D surface", vp3:"3D surface · z = u(x, y)",
+  only3d:"Shade outside the feasible set", floor3d:"XY plane",
   hint3d:"The same constraint, lifted onto the utility surface. The optimum is the top of the arch.",
   autoAxes:"Fit the axes automatically",
   mapHint:"Turn it off and the background goes plain. Indifference curves keep their height colour at all times.",
@@ -1391,7 +1395,10 @@ let FADED = null, FADED_KEY = "";
 function fadedPalette(dark){
   const key = dark ? "d" : "l";
   if(FADED_KEY === key) return FADED;
-  const g = dark ? [15,21,25] : [231,235,237], w = 0.76;
+  /* Pushed further toward the ground than the sibling applet uses. Here the
+     feasible slice is often a fifth of the frame and sits in the blue end of
+     the ramp, so a gentle wash leaves it barely distinguishable from the rest. */
+  const g = dark ? [15,21,25] : [231,235,237], w = 0.87;
   FADED = new Array(TSTEPS * SSTEPS);
   for(let i = 0; i < TSTEPS; i++){
     const c = terrainRGB(i/(TSTEPS-1));
@@ -1502,6 +1509,14 @@ function liftedFrontier(B, M, u){
   return out;
 }
 
+/* is (x, y) inside the feasible set of this scheme? the frontier is piecewise,
+   so the test is against whichever piece covers x */
+function inBudget(B, x, y){
+  if(x < -1e-9 || y < -1e-9) return false;
+  for(const pc of B.pieces)
+    if(x >= pc.x0 - 1e-9 && x <= pc.x1 + 1e-9) return y <= pc.y(x) + 1e-9;
+  return false;
+}
 function draw3d(){
   const cv = document.getElementById("c3d"), {ctx,w,h} = setup(cv);
   ctx.clearRect(0,0,w,h);
@@ -1519,8 +1534,12 @@ function draw3d(){
     SX[k]=p[0]; SY[k]=p[1]; SZ[k]=p[2];
   }
   const LIGHT = (() => { const l=[0.4,-0.72,0.85], m=Math.hypot(l[0],l[1],l[2]); return [l[0]/m,l[1]/m,l[2]/m]; })();
+  const dark = document.documentElement.dataset.theme !== "light";
+  const FADEPAL = fadedPalette(dark);
   const nq = (n-1)*(n-1);
   const qi = new Int32Array(nq), qd = new Float32Array(nq), qc = new Int32Array(nq);
+  const qf = new Uint8Array(nq);
+  const B0 = frameOf().B;
   let m = 0;
   for(let j = 0; j < n-1; j++) for(let i = 0; i < n-1; i++){
     const a = j*n+i, b2 = a+1, c = a+n+1, d = a+n;
@@ -1537,6 +1556,11 @@ function draw3d(){
     qi[m]=a; qd[m]=depth;
     qc[m] = (Math.max(0,Math.min(TSTEPS-1,(hgt*(TSTEPS-1))|0))*SSTEPS)
           +  Math.max(0,Math.min(SSTEPS-1,(lit*(SSTEPS-1))|0));
+    if(st.only3d){
+      /* the quad's centre back in model coordinates */
+      const cx = (M.px[a]+M.px[c]+2)/4*F.xmax, cy = (M.py[a]+M.py[c]+2)/4*F.ymax;
+      qf[m] = inBudget(B0, cx, cy) ? 0 : 1;
+    }
     m++;
   }
   const order = new Array(m);
@@ -1562,12 +1586,42 @@ function draw3d(){
     if(proj.length < 2 || !fin(near)) return;
     ov.push({d:near-0.02, k:"p", pts:proj, c:colour, wd:width});
   };
+  /* A floor line runs the whole width of the domain, so it cannot be keyed at
+     one depth: half of it may sit under a ridge and half in front of it. Each
+     short piece carries its own depth and is sorted with the quads. */
+  const addSeg = (p0, p1, colour, width) => {
+    const A = cam.project(p0[0],p0[1],p0[2]), B2 = cam.project(p1[0],p1[1],p1[2]);
+    if(A[2] <= 0.05 || B2[2] <= 0.05) return;
+    ov.push({d:(A[2]+B2[2])*0.5, k:"s", x0:A[0], y0:A[1], x1:B2[0], y1:B2[1],
+             c:colour, wd:width});
+  };
   const addDot = (p, colour, r) => {
     const q = cam.project(p[0],p[1],p[2]);
     if(q[2] <= 0.05) return;
     ov.push({d:q[2]-0.3, k:"d", x:q[0], y:q[1], c:colour, r});
   };
 
+  /* The z = 0 plane, drawn as a grid on round values of x and y so the domain
+     has a readable ground under it, plus the frontier dropped onto that ground
+     — which is exactly the boundary the shading uses, seen from below. */
+  if(st.floor3d){
+    const gx = niceStep(F.xmax, 6), gy = niceStep(F.ymax, 6);
+    const line = css("--rule"), SEGN = 26;
+    const toFloor = (x,y) => [x/F.xmax*2-1, y/F.ymax*2-1, 0];
+    for(let x = 0; x <= F.xmax + 1e-9; x += gx)
+      for(let k = 0; k < SEGN; k++)
+        addSeg(toFloor(x, F.ymax*k/SEGN), toFloor(x, F.ymax*(k+1)/SEGN), line, 1);
+    for(let y = 0; y <= F.ymax + 1e-9; y += gy)
+      for(let k = 0; k < SEGN; k++)
+        addSeg(toFloor(F.xmax*k/SEGN, y), toFloor(F.xmax*(k+1)/SEGN, y), line, 1);
+    for(const pc of F.B.pieces){
+      const N2 = 30;
+      for(let k = 0; k < N2; k++){
+        const xa = pc.x0 + (pc.x1-pc.x0)*k/N2, xb = pc.x0 + (pc.x1-pc.x0)*(k+1)/N2;
+        addSeg(toFloor(xa, Math.max(pc.y(xa),0)), toFloor(xb, Math.max(pc.y(xb),0)), MK.main, 1.6);
+      }
+    }
+  }
   const best = solve(u, F.B);
   for(const seg of liftedFrontier(F.B, M, u))
     addPath(seg.map(([x,y,v]) => toNorm(x,y,v)), MK.main, 3.2);
@@ -1581,7 +1635,10 @@ function draw3d(){
   const drawOv = until => {
     while(oi < ov.length && ov[oi].d > until){
       const o = ov[oi++];
-      if(o.k === "p"){
+      if(o.k === "s"){
+        ctx.strokeStyle = o.c; ctx.lineWidth = o.wd; ctx.lineCap = "butt";
+        ctx.beginPath(); ctx.moveTo(o.x0,o.y0); ctx.lineTo(o.x1,o.y1); ctx.stroke();
+      } else if(o.k === "p"){
         ctx.lineJoin="round"; ctx.lineCap="round";
         const path = () => { ctx.beginPath(); ctx.moveTo(o.pts[0][0],o.pts[0][1]);
           for(let i2=1;i2<o.pts.length;i2++) ctx.lineTo(o.pts[i2][0],o.pts[i2][1]); };
@@ -1600,7 +1657,7 @@ function draw3d(){
     const q = order[k], a = qi[q];
     drawOv(qd[q]);
     const b2 = a+1, c = a+n+1, d = a+n;
-    ctx.fillStyle = SHADED[qc[q]];
+    ctx.fillStyle = qf[q] ? FADEPAL[qc[q]] : SHADED[qc[q]];
     ctx.beginPath();
     ctx.moveTo(SX[a],SY[a]); ctx.lineTo(SX[b2],SY[b2]);
     ctx.lineTo(SX[c],SY[c]); ctx.lineTo(SX[d],SY[d]); ctx.closePath();
@@ -1819,6 +1876,8 @@ $("th-light").addEventListener("click", () => setTheme("light"));
 $("show-map").addEventListener("change", e => { st.showMap = e.target.checked; render(); });
 $("show-path").addEventListener("change", e => { st.showPath = e.target.checked; render(); });
 $("show-3d").addEventListener("change", e => { st.show3d = e.target.checked; render(); });
+$("only-3d").addEventListener("change", e => { st.only3d = e.target.checked; render(); });
+$("floor-3d").addEventListener("change", e => { st.floor3d = e.target.checked; render(); });
 document.querySelectorAll("#v3-seg [data-v3]").forEach(b => b.addEventListener("click", () => {
   const V = VIEWS[b.dataset.v3];
   view3d.az = V.az; view3d.el = V.el; view3d.ortho = V.ortho; view3d.canonical = b.dataset.v3;
