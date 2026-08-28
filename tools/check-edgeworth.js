@@ -65,56 +65,170 @@ const { chromium } = require('playwright-core');
   say('the equal split is inside the core',
       await p.evaluate(() => window.__edgeworth.inLens(4, 4)));
 
-  // --- quasilinear: a vertical contract curve at a computable place --------
-  // u_A = 2sqrt(x)+y, u_B = ln(x)+y  =>  MRS_A = 1/sqrt(x_A), MRS_B = 1/x_B.
-  // Tangency: sqrt(x_A) = 8 - x_A, so x_A = ((sqrt(33)-1)/2)^2 = 5.6277...
-  const ql = await p.evaluate(async () => {
+  // --- families are chosen per agent, and driven by their dials -----------
+  const setPrefs = (A, B, w) => p.evaluate(([A, B, w]) => {
     const E = window.__edgeworth, st = E.st;
-    document.getElementById('ua-expr').value = '2sqrt(x)+y';
-    document.getElementById('ub-expr').value = 'ln(x)+y';
-    document.getElementById('ua-expr').dispatchEvent(new Event('change'));
-    document.getElementById('ub-expr').dispatchEvent(new Event('change'));
-    await new Promise(r => setTimeout(r, 400));
-    const mid = st.contract.filter(q => q.y > 1 && q.y < st.Wy - 1);
-    const xs = mid.map(q => q.x);
-    return { n:mid.length, lo:Math.min(...xs), hi:Math.max(...xs), Wx:st.Wx };
-  });
-  const target = Math.pow((Math.sqrt(33) - 1) / 2, 2);
-  say('quasilinear contract curve is vertical', ql.n > 5 && (ql.hi - ql.lo) < 0.02,
-      `x in [${ql.lo.toFixed(3)}, ${ql.hi.toFixed(3)}]`);
-  say('and stands at the analytic x_A', Math.abs((ql.lo + ql.hi)/2 - target) < 0.01,
-      `${((ql.lo+ql.hi)/2).toFixed(3)} vs ${target.toFixed(3)}`);
+    E.setFamily('a', A[0], A[1]);
+    E.setFamily('b', B[0], B[1]);
+    if(w){ [st.wAx, st.wAy, st.wBx, st.wBy] = w; }
+    E.applyPrefs(); E.recomputeModel(); E.syncState(); E.render();
+    return { srcA:st.srcA, srcB:st.srcB };
+  }, [A, B, w]);
 
-  // --- perfect substitutes: the kinked cases must not fall over ------------
-  const subs = await p.evaluate(async () => {
+  // Cobb-Douglas with a = 0.8 against a = 0.5 on an 8x8 box. Tangency is
+  // (a/(1-a))(y/x) = (y_B/x_B), i.e. 4y(8-x) = x(8-y), so y = 8x/(32-3x) and
+  // the curve passes through (4, 1.6).
+  await setPrefs(['cd',{a:0.8}], ['cd',{a:0.5}], [4,4,4,4]);
+  const cdA = await p.evaluate(() => {
     const st = window.__edgeworth.st;
-    document.getElementById('ua-expr').value = 'x+2y';
-    document.getElementById('ub-expr').value = '2x+y';
-    document.getElementById('ua-expr').dispatchEvent(new Event('change'));
-    document.getElementById('ub-expr').dispatchEvent(new Event('change'));
-    await new Promise(r => setTimeout(r, 400));
-    return { curve:st.contract.length, eq:st.eq.length };
+    const q = window.__edgeworth.nearestOnCurve(st.contract, 4, 8 * 4 / (32 - 3 * 4));
+    return { dist:q.dist, at:st.contract.filter(c => Math.abs(c.x - 4) < 0.06).map(c => c.y) };
   });
-  say('perfect substitutes still produce a Pareto set', subs.curve > 3, `${subs.curve} points`);
-  const comp = await p.evaluate(async () => {
+  say("a Cobb-Douglas weight dial bends the contract curve to its analytic place",
+      cdA.dist < 0.05 && cdA.at.length > 0 && Math.abs(cdA.at[0] - 1.6) < 0.06,
+      `y(4) = ${cdA.at.map(v => v.toFixed(3)).join(",")} vs 1.600`);
+
+  // Quasilinear a*x^b + y with b = 0.5 for both: MRS = a/(2 sqrt(x)), so
+  // tangency needs x_B = (a_B/a_A)^2 x_A, and with a = 2 against 3 on an
+  // 8-wide box that pins the vertical contract curve at 8/3.25.
+  await setPrefs(['ql',{a:2,b:0.5}], ['ql',{a:3,b:0.5}], [4,4,4,4]);
+  const ql = await p.evaluate(() => {
     const st = window.__edgeworth.st;
-    document.getElementById('ua-expr').value = 'min(x,y)';
-    document.getElementById('ub-expr').value = 'min(x,2y)';
-    document.getElementById('ua-expr').dispatchEvent(new Event('change'));
-    document.getElementById('ub-expr').dispatchEvent(new Event('change'));
-    await new Promise(r => setTimeout(r, 400));
-    return { curve:st.contract.length };
+    const mid = st.contract.filter(q => q.y > 1 && q.y < st.Wy - 1).map(q => q.x);
+    return { n:mid.length, lo:Math.min(...mid), hi:Math.max(...mid) };
   });
-  say('perfect complements too, through the kink', comp.curve > 3, `${comp.curve} points`);
+  const qlTarget = 8 / (1 + (3 / 2) ** 2);
+  say("quasilinear contract curve is vertical", ql.n > 5 && (ql.hi - ql.lo) < 0.02,
+      `x in [${ql.lo.toFixed(3)}, ${ql.hi.toFixed(3)}]`);
+  say("and the scale dials put it where they say",
+      Math.abs((ql.lo + ql.hi) / 2 - qlTarget) < 0.02,
+      `${((ql.lo + ql.hi) / 2).toFixed(3)} vs ${qlTarget.toFixed(3)}`);
+
+  // moving one dial has to move it, in the direction the algebra says
+  await setPrefs(['ql',{a:2,b:0.5}], ['ql',{a:5,b:0.5}], [4,4,4,4]);
+  const ql2 = await p.evaluate(() => {
+    const st = window.__edgeworth.st;
+    const mid = st.contract.filter(q => q.y > 1 && q.y < st.Wy - 1).map(q => q.x);
+    return (Math.min(...mid) + Math.max(...mid)) / 2;
+  });
+  const ql2Target = 8 / (1 + (5 / 2) ** 2);
+  say("raising B's scale dial moves it, to the new analytic place",
+      ql2 < qlTarget - 0.3 && Math.abs(ql2 - ql2Target) < 0.02,
+      `${ql2.toFixed(3)} vs ${ql2Target.toFixed(3)}`);
+
+  // --- the two agents can hold different families -------------------------
+  const mixed = await setPrefs(['cd',{a:0.5}], ['com',{a:1,b:1}], [6,2,2,6]);
+  const mix = await p.evaluate(() => {
+    const st = window.__edgeworth.st;
+    return { curve:st.contract.length, srcA:st.srcA, srcB:st.srcB };
+  });
+  say("A and B can hold different families at once",
+      mix.curve > 3 && /\^/.test(mix.srcA) && /^min\(/.test(mix.srcB),
+      `${mix.srcA}  |  ${mix.srcB}`);
+
+  // every family has to produce something the parser accepts, at both ends
+  // of every dial it owns
+  const allFam = await p.evaluate(() => {
+    const E = window.__edgeworth;
+    const bad = [];
+    for(const F of E.FAMILIES){
+      if(!F.expr) continue;
+      const corners = [{}, {}];
+      for(const q of F.params){ corners[0][q.k] = q.min; corners[1][q.k] = q.max; }
+      for(const par of corners){
+        E.setFamily('a', F.id, { ...par });
+        if(!E.applyPrefs()) bad.push(F.id + " " + JSON.stringify(par) + " -> " + E.st.srcA);
+      }
+    }
+    return bad;
+  });
+  say("every family parses at both ends of every dial", allFam.length === 0, allFam.join(" | "));
+
+  // --- the improving set --------------------------------------------------
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+  const lens = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    E.setMethod('free');
+    // ω is off the contract curve, so the lens there is a real oval
+    st.P = [st.wAx, st.wAy]; E.syncState();
+    const off = st.lensArea;
+    // The reported share comes off the sampling grid. Cross-check it against
+    // the utility closures themselves by Monte Carlo, so a bug in the grid
+    // or in the bilinear read cannot agree with itself.
+    const a0 = st.uA(st.PA[0], st.PA[1]);
+    const b0 = st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]);
+    const N = 40000;
+    let hit = 0;
+    for(let i = 0; i < N; i++){
+      const x = Math.random() * st.Wx, y = Math.random() * st.Wy;
+      if(st.uA(x, y) > a0 && st.uB(st.Wx - x, st.Wy - y) > b0) hit++;
+    }
+    const mc = hit / N;
+    // on the contract curve it has to close up
+    const mid = st.contract[Math.floor(st.contract.length / 2)];
+    st.P = [mid.x, mid.y]; E.syncState();
+    const on = st.lensArea;
+    return { off, on, mc };
+  });
+  say("off the contract curve the improving set is a real region",
+      lens.off > 0.02, `${(lens.off * 100).toFixed(1)}% of the box`);
+  say("on the contract curve it closes up",
+      lens.on < 0.002, `${(lens.on * 100).toFixed(3)}% of the box`);
+  say("and its size agrees with the utility functions themselves",
+      Math.abs(lens.off - lens.mc) < 0.006,
+      `grid ${(lens.off * 100).toFixed(2)}% vs Monte Carlo ${(lens.mc * 100).toFixed(2)}%`);
+
+  // it also has to actually reach the canvas
+  const painted = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    st.P = [st.wAx, st.wAy];
+    st.layers.lens = true; st.map = "none";
+    E.syncState(); E.render();
+    await new Promise(r => setTimeout(r, 300));
+    const cv = document.getElementById('cbox');
+    const g = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    // count pixels carrying the lens ramp: green-to-gold, so g clearly over b
+    let n = 0;
+    for(let i = 0; i < g.length; i += 4)
+      if(g[i+1] > g[i+2] + 30 && g[i+1] > 90) n++;
+    return n;
+  });
+  say("the improving set is painted on the box", painted > 3000, `${painted} px`);
+
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+
+  // --- the kinked and linear families must not fall over ------------------
+  for(const [name, A, B] of [
+        ["perfect substitutes", ['sub',{a:1,b:2}], ['sub',{a:2,b:1}]],
+        ["perfect complements", ['com',{a:1,b:1}], ['com',{a:1,b:2}]],
+        ["CES across the sign of r", ['ces',{a:0.5,r:0.7}], ['ces',{a:0.5,r:-3}]]]){
+    await setPrefs(A, B, [6,2,2,6]);
+    const k = await p.evaluate(() => window.__edgeworth.st.contract.length);
+    say(`${name} still produces a Pareto set`, k > 3, `${k} points`);
+  }
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+
+  // --- driving the actual controls, not just the model --------------------
+  const viaUI = await p.evaluate(async () => {
+    const sel = document.getElementById('fam-b');
+    sel.value = 'sub'; sel.dispatchEvent(new Event('change'));
+    await new Promise(r => setTimeout(r, 300));
+    const before = window.__edgeworth.st.srcB;
+    const dial = document.querySelector('#par-b input[type=range][data-p="b"]');
+    dial.value = 4.5; dial.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 300));
+    return { before, after:window.__edgeworth.st.srcB,
+             shown:document.getElementById('ub-out').textContent };
+  });
+  say("the family select and its dial rewrite the function",
+      /^1x\+2y$/.test(viaUI.before) && /^1x\+4.5y$/.test(viaUI.after) &&
+      viaUI.shown.includes(viaUI.after),
+      `${viaUI.before} -> ${viaUI.after}`);
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
 
   // --- the lens really is a wall ------------------------------------------
   const wall = await p.evaluate(async () => {
     const E = window.__edgeworth, st = E.st;
-    document.getElementById('ua-expr').value = 'x^0.5*y^0.5';
-    document.getElementById('ub-expr').value = 'x^0.5*y^0.5';
-    document.getElementById('ua-expr').dispatchEvent(new Event('change'));
-    document.getElementById('ub-expr').dispatchEvent(new Event('change'));
-    await new Promise(r => setTimeout(r, 400));
     document.querySelector('input[name="method"][value="trade"]').checked = true;
     document.querySelector('input[name="method"][value="trade"]')
       .dispatchEvent(new Event('change'));

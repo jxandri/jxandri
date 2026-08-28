@@ -427,6 +427,30 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 }
 .mini input:focus{outline:2px solid var(--accent); outline-offset:-1px; background:var(--surface)}
 
+/* one block per agent inside the preferences group */
+.agent{display:flex; flex-direction:column; gap:6px}
+.agent > h3{
+  margin:0; font-size:12.5px; font-weight:600; color:var(--ink-2);
+  display:flex; align-items:center; gap:6px;
+}
+.sel{
+  width:100%; padding:6px 8px; border:1px solid var(--rule); border-radius:var(--r);
+  background:var(--sunk); font-size:12.5px; color:var(--ink);
+}
+.sel:focus{outline:2px solid var(--accent); outline-offset:-1px; background:var(--surface)}
+.sel:disabled{opacity:.5}
+.pars{display:flex; flex-direction:column; gap:4px}
+.pars:empty{display:none}
+
+/* the expression the sliders are actually building — a parameter is only
+   honest if you can see what it did to the function */
+.expr-out{
+  display:block;
+  font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3);
+  background:var(--panel); border:1px solid var(--rule-2); border-radius:var(--r);
+  padding:4px 7px; overflow-x:auto; white-space:nowrap;
+}
+
 /* the price readout that sits beside the auction scrubber */
 .price-tag{
   font-family:var(--f-mono); font-variant-numeric:tabular-nums;
@@ -486,16 +510,25 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 
       <div class="group">
         <h2 id="t-g-pref">Preferencias</h2>
-        <div class="field">
-          <label for="ua-expr" id="t-uaexpr"><span class="dot" style="background:var(--agA);display:inline-block;vertical-align:-1px"></span> Utilidad de A — u<sub>A</sub>(x, y)</label>
-          <input class="text-in" id="ua-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off">
+
+        <div class="agent">
+          <h3><span class="dot" style="background:var(--agA)"></span><span id="t-agent-a">A — u<sub>A</sub>(x, y)</span></h3>
+          <select class="sel" id="fam-a" aria-label="Familia de utilidad de A"></select>
+          <div class="pars" id="par-a"></div>
+          <input class="text-in" id="ua-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off" hidden aria-label="u de A escrita a mano">
           <div class="err" id="ua-err"></div>
+          <output class="expr-out" id="ua-out"></output>
         </div>
-        <div class="field">
-          <label for="ub-expr" id="t-ubexpr"><span class="dot" style="background:var(--agB);display:inline-block;vertical-align:-1px"></span> Utilidad de B — u<sub>B</sub>(x, y)</label>
-          <input class="text-in" id="ub-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off">
+
+        <div class="agent">
+          <h3><span class="dot" style="background:var(--agB)"></span><span id="t-agent-b">B — u<sub>B</sub>(x, y)</span></h3>
+          <select class="sel" id="fam-b" aria-label="Familia de utilidad de B"></select>
+          <div class="pars" id="par-b"></div>
+          <input class="text-in" id="ub-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off" hidden aria-label="u de B escrita a mano">
           <div class="err" id="ub-err"></div>
+          <output class="expr-out" id="ub-out"></output>
         </div>
+
         <p class="note" id="t-pref-note">u<sub>B</sub> se evalúa en la canasta de B, medida desde su propio origen, arriba a la derecha.</p>
         <div class="chips" id="preset-chips"></div>
       </div>
@@ -1513,11 +1546,17 @@ function renderMap(st){
       }
     }
   } else {
-    /* gains, relative to the reference allocation */
-    const [rx, ry] = st.refPoint;
-    const r0A = rankOf(fA, st.uA(rx, ry));
-    const r0B = rankOf(fB, st.uB(st.Wx - rx, st.Wy - ry));
+    /* Gains, measured against the two curves that are actually drawn — A's
+       through A's allocation, B's through B's. Away from the auction those are
+       the same point; under an announced price they are not, and the lens
+       between the drawn curves is the one a reader can check by eye. */
+    const r0A = rankOf(fA, st.uA(st.PA[0], st.PA[1]));
+    const r0B = rankOf(fB, st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]));
     const rA = fA.rank, rB = fB.rank;
+    /* the both-gain region is the improving set, and when that layer is on it
+       gets painted crisply at display resolution instead of blurred up from
+       this grid — so the two never double-paint the same pixels */
+    const skipLens = st.layers.lens;
 
     /* adaptive contrast: normalise by the largest joint gain actually present,
        so a lens that is a sliver still shows its own structure */
@@ -1534,6 +1573,7 @@ function renderMap(st){
         const a = rA[k] - r0A, b = rB[k] - r0B;
         if(!Number.isFinite(a) || !Number.isFinite(b)){ d[o+3] = 0; continue; }
         if(a >= 0 && b >= 0){
+          if(skipLens){ d[o+3] = 0; continue; }
           const t = Math.min(1, (a < b ? a : b) / gmax);
           const c = lensRGB(t);
           d[o] = c[0]; d[o+1] = c[1]; d[o+2] = c[2];
@@ -1565,6 +1605,81 @@ function contourFamilies(st){
   st.famA = build(st.fA);
   st.famB = build(st.fB);
   st.famKey = st.fieldKey;
+}
+
+
+/* --------------------------------------------------------------------------
+   The improving set: the lens between the two indifference curves that are
+   drawn, {u_A > u_A(P)} and {u_B > u_B(P)}. Where the curves cross rather than
+   touch, this is the set of reallocations that make both people strictly
+   better off — and it is empty exactly when the allocation is Pareto
+   efficient, which is the claim the whole diagram is built to make.
+
+   Rasterised rather than traced. The region's boundary is two arcs meeting at
+   two crossings, and chaining marching-squares output into closed rings to
+   fill it would be a lot of machinery for a shape a mask draws exactly. It is
+   read from the sampled fields by bilinear interpolation — the same linear
+   interpolation the contours use, so the fill lands on the curves — at a
+   resolution set by how big the box is on screen rather than by the sampling
+   grid, so the edge stays crisp under the drawn curves instead of blurring up
+   from 161 cells.                                                           */
+const lensOff = document.createElement("canvas");
+let lensImg = null;
+
+function renderLens(st, px){
+  const n = clamp(Math.round(px), 64, 420);
+  if(lensOff.width !== n){ lensOff.width = lensOff.height = n; lensImg = null; }
+  const octx = lensOff.getContext("2d");
+  if(!lensImg) lensImg = octx.createImageData(n, n);
+  const d = lensImg.data;
+
+  const fA = st.fA, fB = st.fB;
+  const a0 = st.uA(st.PA[0], st.PA[1]);
+  const b0 = st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]);
+  if(!Number.isFinite(a0) || !Number.isFinite(b0)){ d.fill(0); octx.putImageData(lensImg, 0, 0); return null; }
+
+  /* Shade by how far inside the lens a point is, in the smaller of the two
+     percentile gains, so the deepest part of the lens — where the largest
+     joint gain is — reads as the middle of the oval. Two passes: the first
+     finds the deepest point, the second paints against it. */
+  const dx = st.Wx / (n - 1), dy = st.Wy / (n - 1);
+  const rA0 = rankOf(fA, a0), rB0 = rankOf(fB, b0);
+  let gmax = 1e-6, inside = 0;
+  const gain = new Float32Array(n * n);
+  for(let j = 0; j < n; j++){
+    const y = (n - 1 - j) * dy;
+    for(let i = 0; i < n; i++){
+      const k = j*n + i;
+      const va = fieldAt(fA, i * dx, y), vb = fieldAt(fB, i * dx, y);
+      if(!(va > a0) || !(vb > b0)){ gain[k] = -1; continue; }
+      const g = Math.min(rankOf(fA, va) - rA0, rankOf(fB, vb) - rB0);
+      gain[k] = g; inside++;
+      if(g > gmax) gmax = g;
+    }
+  }
+  for(let k = 0; k < gain.length; k++){
+    const o = k * 4, g = gain[k];
+    if(g < 0){ d[o+3] = 0; continue; }
+    const c = lensRGB(Math.min(1, g / gmax));
+    d[o] = c[0]; d[o+1] = c[1]; d[o+2] = c[2];
+    d[o+3] = Math.round(255 * (0.34 + 0.44 * Math.min(1, g / gmax)));
+  }
+  octx.putImageData(lensImg, 0, 0);
+  return inside / (n * n);
+}
+
+/* The same question asked cheaply enough to answer on every frame for the
+   readout, off the sampling grid rather than off the display raster. It goes
+   to zero exactly as the allocation reaches the contract curve, which makes it
+   the one number that says how much is still on the table. */
+function lensShare(st){
+  const a0 = st.uA(st.PA[0], st.PA[1]);
+  const b0 = st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]);
+  if(!Number.isFinite(a0) || !Number.isFinite(b0)) return 0;
+  const ga = st.fA.g, gb = st.fB.g;
+  let inside = 0;
+  for(let k = 0; k < ga.length; k++) if(ga[k] > a0 && gb[k] > b0) inside++;
+  return inside / ga.length;
 }
 
 function drawBox(st){
@@ -1601,6 +1716,15 @@ function drawBox(st){
     };
     paint(st.famA, dark ? "rgba(61,187,255,.26)" : "rgba(30,111,217,.28)");
     paint(st.famB, dark ? "rgba(255,122,61,.26)" : "rgba(194,65,12,.28)");
+  }
+
+  /* --- the improving set --- */
+  if(L.lens){
+    const share = renderLens(st, (r.x1 - r.x0) * (window.devicePixelRatio || 1));
+    if(share !== null){
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(lensOff, r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+    }
   }
 
   /* --- the contract curve, and the core marked on it --- */
@@ -1970,7 +2094,7 @@ const STR = {
     gPref:"Preferencias", gEndow:"Dotaciones", gMethod:"Mecanismo",
     gPrice:"Precios", gMap:"Mapa", gShow:"Capas",
     uaExpr:"Utilidad de A — u", ubExpr:"Utilidad de B — u",
-    prefNote:"u<sub>B</sub> se evalúa en la canasta de B, medida desde su propio origen, arriba a la derecha.",
+    prefNote:"Cada uno elige su propia familia. u<sub>B</sub> se evalúa en la canasta de B, medida desde su propio origen, arriba a la derecha.",
     endowNote:(wx, wy) => `Caja: ${wx} × ${wy}. B recibe lo que A no tiene.`,
     priceNote:"p = p<sub>x</sub>/p<sub>y</sub>, con p<sub>y</sub> = 1. La recta de precios pasa siempre por ω.",
     clear:"Vaciar el mercado",
@@ -1982,7 +2106,7 @@ const STR = {
     mAuction:"Subasta walrasiana",
     mAuctionD:"Anuncia un precio; cada uno pide lo que quiere; busca el que vacía el mercado.",
 
-    lLens:"Lente de ganancias", lFamilies:"Familias de indiferencia",
+    lLens:"Conjunto de mejoras", lFamilies:"Familias de indiferencia",
     lCurves:"Curvas por el reparto", lContract:"Curva de contrato",
     lCore:"Núcleo", lPrice:"Recta de precios",
     lDemands:"Demandas", lOffer:"Curvas de oferta", lOptimum:"Equilibrio walrasiano",
@@ -1996,7 +2120,7 @@ const STR = {
     rUA:"u de A", rUB:"u de B", rMRSA:"RMS de A", rMRSB:"RMS de B",
     rGap:"Diferencia", rP:"p", rZX:"Exceso de x", rZY:"Exceso de y",
     rEq:"p de equilibrio", rState:"Reparto", rCore:"Núcleo",
-    rGainA:"Gana A", rGainB:"Gana B",
+    rGainA:"Gana A", rGainB:"Gana B", rLens:"Sin repartir",
 
     stEfficient:"eficiente", stInefficient:"mejorable", stCore:"en el núcleo",
     stEdge:"en el borde", stKink:"en un vértice", stOut:"fuera de la lente",
@@ -2008,7 +2132,7 @@ const STR = {
     scrubPrice:"Precio anunciado", scrubPriceSub:"p de 10⁻² a 10²",
 
     vTitleGain:"Todavía hay ganancias por repartir",
-    vTextGain:"Desde este reparto los dos pueden mejorar a la vez: la lente entre las dos curvas de indiferencia no está vacía. Mientras las curvas se crucen, hay un intercambio que ninguno rechazaría.",
+    vTextGain:"Desde este reparto los dos pueden mejorar a la vez: el conjunto coloreado entre las dos curvas no está vacío. Mientras las curvas se crucen en vez de tocarse, hay un intercambio que ninguno rechazaría.",
     vTitleEff:"Reparto eficiente en el sentido de Pareto",
     vTextEff:"Las dos curvas de indiferencia son tangentes: para mejorar a uno hay que empeorar al otro. Éste es un punto de la curva de contrato.",
     vTitleEffKink:"Eficiente, pero sin tangencia",
@@ -2041,7 +2165,7 @@ const STR = {
     noPrice:"El mercado no se vacía a ese precio.",
     locked:"Bloqueado mientras dura el reto.",
 
-    foot:'Traducido de una calculadora de Desmos. Sintaxis admitida: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.'
+    foot:'Traducido de una calculadora de Desmos. Con la familia <b>Escrita a mano</b>, la sintaxis admitida es: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.'
   },
 
   en:{
@@ -2052,7 +2176,7 @@ const STR = {
     gPref:"Preferences", gEndow:"Endowments", gMethod:"Mechanism",
     gPrice:"Prices", gMap:"Map", gShow:"Layers",
     uaExpr:"A's utility — u", ubExpr:"B's utility — u",
-    prefNote:"u<sub>B</sub> is evaluated at B's own bundle, measured from B's origin at the top right.",
+    prefNote:"Each picks their own family. u<sub>B</sub> is evaluated at B's own bundle, measured from B's origin at the top right.",
     endowNote:(wx, wy) => `Box: ${wx} × ${wy}. B holds whatever A does not.`,
     priceNote:"p = p<sub>x</sub>/p<sub>y</sub>, with p<sub>y</sub> = 1. The price line always passes through ω.",
     clear:"Clear the market",
@@ -2064,7 +2188,7 @@ const STR = {
     mAuction:"Walrasian auction",
     mAuctionD:"Announce a price, let each one demand what they like, hunt for the price that clears.",
 
-    lLens:"Lens of gains", lFamilies:"Indifference families",
+    lLens:"Improving set", lFamilies:"Indifference families",
     lCurves:"Curves through the allocation", lContract:"Contract curve",
     lCore:"Core", lPrice:"Price line",
     lDemands:"Demands", lOffer:"Offer curves", lOptimum:"Walrasian equilibrium",
@@ -2078,7 +2202,7 @@ const STR = {
     rUA:"A's u", rUB:"B's u", rMRSA:"A's MRS", rMRSB:"B's MRS",
     rGap:"Gap", rP:"p", rZX:"Excess x", rZY:"Excess y",
     rEq:"Equilibrium p", rState:"Allocation", rCore:"Core",
-    rGainA:"A gains", rGainB:"B gains",
+    rGainA:"A gains", rGainB:"B gains", rLens:"Left on table",
 
     stEfficient:"efficient", stInefficient:"improvable", stCore:"in the core",
     stEdge:"on the edge", stKink:"at a kink", stOut:"outside the lens",
@@ -2090,7 +2214,7 @@ const STR = {
     scrubPrice:"Announced price", scrubPriceSub:"p from 10⁻² to 10²",
 
     vTitleGain:"There are gains left on the table",
-    vTextGain:"From here both can be made better off at once: the lens between the two indifference curves is not empty. As long as the curves cross, some trade exists that neither would refuse.",
+    vTextGain:"From here both can be made better off at once: the shaded set between the two curves is not empty. As long as the curves cross rather than touch, some trade exists that neither would refuse.",
     vTitleEff:"Pareto efficient",
     vTextEff:"The two indifference curves are tangent: making one better off now requires making the other worse off. This is a point of the contract curve.",
     vTitleEffKink:"Efficient, with no tangency",
@@ -2123,7 +2247,7 @@ const STR = {
     noPrice:"The market does not clear at that price.",
     locked:"Locked while the challenge runs.",
 
-    foot:'Translated from a Desmos calculator. Syntax: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.'
+    foot:'Translated from a Desmos calculator. With the <b>Typed by hand</b> family, the syntax is: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.'
   }
 };
 
@@ -2131,50 +2255,129 @@ let LANG = "es";
 const T = () => STR[LANG];
 
 /* ==========================================================================
-   9. Preference pairs, and the levels built from them
+   9a. Preference families
+   --------------------------------------------------------------------------
+   Each family is a shape with dials. The dials write an expression, the
+   expression goes through the same parser as anything typed by hand, and the
+   expression is shown back under the sliders — a parameter you cannot see the
+   effect of on the function is a parameter you have to take on trust.
+
+   A and B pick their family independently. That is the point of most of the
+   interesting cases: Cobb-Douglas against perfect complements has a contract
+   curve that is neither family's textbook picture.
+
+   Exponents are always parenthesised, because `x^-0.25` is legal in the parser
+   but `x^(-0.25)` is legal in every reading of it.                          */
+
+const num = v => String(+(+v).toFixed(4));
+
+/* CES collapses at r = 0 — the formula is 0/0 there and the limit is
+   Cobb-Douglas — so the dial steps over a narrow band around it rather than
+   handing the parser an infinite exponent. */
+const cesR = r => Math.abs(r) < 0.06 ? (r < 0 ? -0.06 : 0.06) : r;
+
+const FAMILIES = [
+  { id:"cd",  es:"Cobb–Douglas",             en:"Cobb–Douglas",
+    form:"x^a · y^(1−a)",
+    params:[{ k:"a", min:0.05, max:0.95, step:0.01, def:0.5, es:"peso de x", en:"weight on x" }],
+    expr:p => `x^(${num(p.a)})*y^(${num(1 - p.a)})` },
+
+  { id:"sub", es:"Sustitutos",     en:"Substitutes",
+    form:"a·x + b·y",
+    params:[{ k:"a", min:0.1, max:5, step:0.1, def:1, es:"valor de x", en:"value of x" },
+            { k:"b", min:0.1, max:5, step:0.1, def:2, es:"valor de y", en:"value of y" }],
+    expr:p => `${num(p.a)}x+${num(p.b)}y` },
+
+  { id:"com", es:"Complementarios", en:"Complements",
+    form:"min(x/a, y/b)",
+    params:[{ k:"a", min:0.2, max:5, step:0.1, def:1, es:"x por unidad", en:"x per unit" },
+            { k:"b", min:0.2, max:5, step:0.1, def:1, es:"y por unidad", en:"y per unit" }],
+    expr:p => `min(x/(${num(p.a)}),y/(${num(p.b)}))` },
+
+  { id:"ql",  es:"Cuasilineal",              en:"Quasilinear",
+    form:"a·x^b + y",
+    params:[{ k:"a", min:0.5, max:6, step:0.1, def:2, es:"escala", en:"scale" },
+            { k:"b", min:0.1, max:0.9, step:0.01, def:0.5, es:"curvatura", en:"curvature" }],
+    expr:p => `${num(p.a)}x^(${num(p.b)})+y` },
+
+  { id:"ces", es:"CES",                      en:"CES",
+    form:"(a·x^r + (1−a)·y^r)^(1/r)",
+    params:[{ k:"a", min:0.05, max:0.95, step:0.01, def:0.5, es:"peso de x", en:"weight on x" },
+            { k:"r", min:-4, max:0.9, step:0.05, def:0.5, es:"sustitución r", en:"substitution r" }],
+    expr:p => { const r = cesR(p.r);
+                return `(${num(p.a)}x^(${num(r)})+${num(1 - p.a)}y^(${num(r)}))^(${num(1/r)})`; } },
+
+  { id:"free", es:"Escrita a mano",          en:"Typed by hand",
+    form:null, params:[], expr:null }
+];
+
+const famOf = id => FAMILIES.find(f => f.id === id) || FAMILIES[0];
+const defaultsFor = id => Object.fromEntries(famOf(id).params.map(q => [q.k, q.def]));
+
+/* The expression a family and its dials produce — or, for the hand-written
+   family, whatever is in the box. */
+function exprOf(id, par, raw){
+  const F = famOf(id);
+  return F.expr ? F.expr(par) : raw;
+}
+
+/* ==========================================================================
+   9b. Preference pairs, and the levels built from them
    ========================================================================== */
 
-/* [label, u_A, u_B, wAx, wAy, wBx, wBy] */
+/* A preference pair and the endowments that make it worth looking at. */
 const PRESETS = [
-  ["Cobb–Douglas",   "x^0.5*y^0.5",   "x^0.5*y^0.5",   6, 2, 2, 6],
-  ["Asimétrica",     "x^0.7*y^0.3",   "x^0.3*y^0.7",   6, 2, 2, 6],
-  ["Sustitutos",     "x+2y",          "2x+y",          6, 2, 2, 6],
-  ["Complementarios","min(x,y)",      "min(x,2y)",     6, 2, 2, 6],
-  ["Cuasilineal",    "2sqrt(x)+y",    "ln(x)+y",       5, 3, 3, 5],
-  ["CES",            "(x^0.5+y^0.5)^2", "(x^(-1)+y^(-1))^(-1)", 7, 1, 1, 7],
-  ["Todo o nada",    "x^0.5*y^0.5",   "x^0.5*y^0.5",   8, 0, 0, 8]
+  { es:"Cobb–Douglas",    en:"Cobb–Douglas",
+    a:["cd",{a:0.5}],          b:["cd",{a:0.5}],          w:[6,2,2,6] },
+  { es:"Gustos opuestos",  en:"Opposite tastes",
+    a:["cd",{a:0.75}],         b:["cd",{a:0.25}],         w:[6,2,2,6] },
+  { es:"Sustitutos",       en:"Substitutes",
+    a:["sub",{a:1,b:2}],       b:["sub",{a:2,b:1}],       w:[6,2,2,6] },
+  { es:"Complementarios",  en:"Complements",
+    a:["com",{a:1,b:1}],       b:["com",{a:1,b:2}],       w:[6,2,2,6] },
+  { es:"Cuasilineal",      en:"Quasilinear",
+    a:["ql",{a:2,b:0.5}],      b:["ql",{a:3,b:0.5}],      w:[5,3,3,5] },
+  { es:"CES",              en:"CES",
+    a:["ces",{a:0.5,r:0.5}],   b:["ces",{a:0.5,r:-2}],    w:[7,1,1,7] },
+  { es:"Familias mixtas",  en:"Mixed families",
+    a:["cd",{a:0.5}],          b:["com",{a:1,b:1}],       w:[6,2,2,6] },
+  { es:"Todo o nada",      en:"All or nothing",
+    a:["cd",{a:0.5}],          b:["cd",{a:0.5}],          w:[8,0,0,8] }
 ];
-const PRESET_EN = ["Cobb–Douglas","Asymmetric","Substitutes","Complements","Quasilinear","CES","All or nothing"];
 
 const LEVELS = [
-  { id:"cd",   es:"Cobb–Douglas", en:"Cobb–Douglas", goal:"pareto",
-    gen:r => ({ srcA:"x^0.5*y^0.5", srcB:"x^0.5*y^0.5",
-                wAx:r(4,9,0.5), wAy:r(1,3,0.5), wBx:r(1,3,0.5), wBy:r(4,9,0.5) }) },
-  { id:"cda",  es:"Asimétrica", en:"Asymmetric", goal:"core",
-    gen:r => ({ srcA:"x^0.7*y^0.3", srcB:"x^0.25*y^0.75",
-                wAx:r(3,8,0.5), wAy:r(1,4,0.5), wBx:r(1,4,0.5), wBy:r(3,8,0.5) }) },
-  { id:"auc",  es:"La subasta", en:"The auction", goal:"price",
-    gen:r => ({ srcA:"x^0.5*y^0.5", srcB:"x^0.35*y^0.65",
-                wAx:r(4,9,0.5), wAy:r(1,3,0.5), wBx:r(1,3,0.5), wBy:r(4,9,0.5) }) },
-  { id:"sub",  es:"Sustitutos perfectos", en:"Perfect substitutes", goal:"pareto",
-    gen:r => ({ srcA:`x+${r(1.5,3,0.5)}y`, srcB:`${r(1.5,3,0.5)}x+y`,
-                wAx:r(3,7,0.5), wAy:r(2,5,0.5), wBx:r(2,5,0.5), wBy:r(3,7,0.5) }) },
-  { id:"com",  es:"Complementarios", en:"Perfect complements", goal:"pareto",
-    gen:r => ({ srcA:"min(x,y)", srcB:`min(x,${r(1.5,3,0.5)}y)`,
-                wAx:r(4,8,0.5), wAy:r(1,4,0.5), wBx:r(1,4,0.5), wBy:r(4,8,0.5) }) },
-  { id:"ql",   es:"Cuasilineal", en:"Quasilinear", goal:"core",
-    gen:r => ({ srcA:`${r(1.5,3,0.5)}sqrt(x)+y`, srcB:"ln(x)+y",
-                wAx:r(3,7,0.5), wAy:r(2,5,0.5), wBx:r(2,5,0.5), wBy:r(3,7,0.5) }) },
-  { id:"ces",  es:"CES", en:"CES", goal:"price",
-    gen:r => ({ srcA:"(x^0.5+y^0.5)^2", srcB:"(x^(-1)+y^(-1))^(-1)",
-                wAx:r(4,9,0.5), wAy:r(1,3,0.5), wBx:r(1,3,0.5), wBy:r(4,9,0.5) }) }
+  { id:"cd",  es:"Cobb–Douglas", en:"Cobb–Douglas", goal:"pareto",
+    gen:r => ({ a:["cd",{a:0.5}], b:["cd",{a:0.5}],
+                w:[r(4,9,0.5), r(1,3,0.5), r(1,3,0.5), r(4,9,0.5)] }) },
+  { id:"cda", es:"Gustos opuestos", en:"Opposite tastes", goal:"core",
+    gen:r => ({ a:["cd",{a:r(0.6,0.8,0.05)}], b:["cd",{a:r(0.2,0.4,0.05)}],
+                w:[r(3,8,0.5), r(1,4,0.5), r(1,4,0.5), r(3,8,0.5)] }) },
+  { id:"auc", es:"La subasta", en:"The auction", goal:"price",
+    gen:r => ({ a:["cd",{a:0.5}], b:["cd",{a:r(0.25,0.45,0.05)}],
+                w:[r(4,9,0.5), r(1,3,0.5), r(1,3,0.5), r(4,9,0.5)] }) },
+  { id:"sub", es:"Sustitutos perfectos", en:"Perfect substitutes", goal:"pareto",
+    gen:r => ({ a:["sub",{a:1,b:r(1.5,3,0.5)}], b:["sub",{a:r(1.5,3,0.5),b:1}],
+                w:[r(3,7,0.5), r(2,5,0.5), r(2,5,0.5), r(3,7,0.5)] }) },
+  { id:"com", es:"Complementarios", en:"Perfect complements", goal:"pareto",
+    gen:r => ({ a:["com",{a:1,b:1}], b:["com",{a:1,b:r(1.5,3,0.5)}],
+                w:[r(4,8,0.5), r(1,4,0.5), r(1,4,0.5), r(4,8,0.5)] }) },
+  { id:"ql",  es:"Cuasilineal", en:"Quasilinear", goal:"core",
+    gen:r => ({ a:["ql",{a:r(1.5,3,0.5),b:0.5}], b:["ql",{a:r(2,4,0.5),b:0.4}],
+                w:[r(3,7,0.5), r(2,5,0.5), r(2,5,0.5), r(3,7,0.5)] }) },
+  { id:"ces", es:"CES", en:"CES", goal:"price",
+    gen:r => ({ a:["ces",{a:0.5,r:r(0.3,0.8,0.1)}], b:["ces",{a:0.5,r:r(-3,-1,0.5)}],
+                w:[r(4,9,0.5), r(1,3,0.5), r(1,3,0.5), r(4,9,0.5)] }) },
+  { id:"mix", es:"Familias mixtas", en:"Mixed families", goal:"core",
+    gen:r => ({ a:["cd",{a:r(0.4,0.7,0.05)}], b:["com",{a:1,b:r(1,2.5,0.5)}],
+                w:[r(4,8,0.5), r(1,4,0.5), r(1,4,0.5), r(4,8,0.5)] }) }
 ];
 
 /* ==========================================================================
    10. State
    ========================================================================== */
 const st = {
-  srcA:"x^0.5*y^0.5", srcB:"x^0.5*y^0.5",
+  kindA:"cd", parA:{ a:0.5 }, rawA:"x^0.5*y^0.5", srcA:"x^(0.5)*y^(0.5)",
+  kindB:"cd", parB:{ a:0.5 }, rawB:"x^0.5*y^0.5", srcB:"x^(0.5)*y^(0.5)",
   uA:null, uAx:null, uAy:null, exactA:true,
   uB:null, uBx:null, uBy:null, exactB:true,
 
@@ -2184,7 +2387,7 @@ const st = {
   contract:[], core:{ uAe:NaN, uBe:NaN, from:-1, to:-1, n:0 },
   sweep:null, eq:[], mkt:null,
 
-  P:[4,4], PA:[4,4], PB:[4,4], refPoint:[6,2],
+  P:[4,4], PA:[4,4], PB:[4,4], lensArea:0,
   uP:{ a:NaN, b:NaN },
   logp:0, p:1,
 
@@ -2246,17 +2449,16 @@ function syncState(){
     st.PA = st.mkt.A.slice();
     st.PB = [st.Wx - st.mkt.B[0], st.Wy - st.mkt.B[1]];
     st.P  = [clamp(st.PA[0], 0, st.Wx), clamp(st.PA[1], 0, st.Wy)];
-    st.refPoint = [st.wAx, st.wAy];
   }else{
     st.P[0] = clamp(st.P[0], 0, st.Wx);
     st.P[1] = clamp(st.P[1], 0, st.Wy);
     st.PA = st.P.slice(); st.PB = st.P.slice();
-    st.refPoint = st.method === "trade" ? [st.wAx, st.wAy] : st.P.slice();
   }
   st.uP = {
     a: st.uA(st.PA[0], st.PA[1]),
     b: st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1])
   };
+  st.lensArea = st.fA ? lensShare(st) : 0;
 }
 
 let rafPending = false;
@@ -2335,8 +2537,8 @@ function paintReadouts(){
   }else{
     rows.push([t.rState, s.onCurve ? t.stEfficient : t.stInefficient, s.onCurve ? "good" : ""]);
     rows.push([t.rCore, s.onCurve && s.lens ? t.yes : t.no, s.onCurve && s.lens ? "core" : ""]);
-    rows.push([t.rGainA, Number.isFinite(st.core.uAe) ? fmt(st.uP.a - st.core.uAe, 3) : "—",
-               st.uP.a >= st.core.uAe ? "good" : "warn"]);
+    rows.push([t.rLens, (st.lensArea * 100).toFixed(1) + "%",
+               st.lensArea < 1e-9 ? "good" : "warn"]);
   }
   cells($("readoutAux"), rows);
 
@@ -2418,10 +2620,6 @@ function applyLang(){
   $("t-g-map").textContent    = t.gMap;
   $("t-g-show").textContent   = t.gShow;
 
-  $("t-uaexpr").innerHTML =
-    `<span class="dot" style="background:var(--agA);display:inline-block;vertical-align:-1px"></span> ${t.uaExpr}<sub>A</sub>(x, y)`;
-  $("t-ubexpr").innerHTML =
-    `<span class="dot" style="background:var(--agB);display:inline-block;vertical-align:-1px"></span> ${t.ubExpr}<sub>B</sub>(x, y)`;
   $("t-pref-note").innerHTML  = t.prefNote;
   $("t-price-note").innerHTML = t.priceNote;
   $("btn-clear").textContent  = t.clear;
@@ -2446,7 +2644,16 @@ function applyLang(){
   $("btn-next").textContent  = t.next;
   $("t-foot").innerHTML = t.foot;
 
-  buildChips(); buildLayers(); buildMapChips(); buildTray();
+  buildFamilies(); buildParams("a"); buildParams("b");
+  buildChips(); buildLayers(); buildMapChips();
+
+  for(const ag of ["a", "b"]){
+    $("fam-" + ag).addEventListener("change", e => {
+      setFamily(ag, e.target.value);
+      if(applyPrefs()) onModelChange();
+      buildChips();
+    });
+  } buildTray();
   updateScrubLabel(); paintEndowNote();
   if(st.mode === "challenge") paintMission();
 }
@@ -2455,24 +2662,84 @@ function paintEndowNote(){
   $("t-endow-note").innerHTML = T().endowNote(fmt(st.Wx, 1), fmt(st.Wy, 1));
 }
 
+/* The expression the dials are building, shown under them. */
+function syncSources(){
+  st.srcA = exprOf(st.kindA, st.parA, st.rawA);
+  st.srcB = exprOf(st.kindB, st.parB, st.rawB);
+  $("ua-out").textContent = "u_A = " + st.srcA;
+  $("ub-out").textContent = "u_B = " + st.srcB;
+}
+
+function buildFamilies(){
+  for(const ag of ["a", "b"]){
+    const kind = ag === "a" ? st.kindA : st.kindB;
+    const sel = $("fam-" + ag);
+    sel.innerHTML = FAMILIES.map(F =>
+      `<option value="${F.id}"${F.id === kind ? " selected" : ""}>` +
+      `${F[LANG]}${F.form ? " · " + F.form : ""}</option>`).join("");
+  }
+}
+
+function buildParams(ag){
+  const kind = ag === "a" ? st.kindA : st.kindB;
+  const par  = ag === "a" ? st.parA  : st.parB;
+  const F = famOf(kind);
+  $("par-" + ag).innerHTML = F.params.map(q =>
+    `<div class="slider-row">
+       <span class="k">${q.k}</span>
+       <input type="range" data-ag="${ag}" data-p="${q.k}"
+              min="${q.min}" max="${q.max}" step="${q.step}" value="${par[q.k]}"
+              aria-label="${q[LANG]}">
+       <input class="v" data-agv="${ag}" data-p="${q.k}" inputmode="decimal"
+              value="${par[q.k]}" aria-label="${q[LANG]}">
+     </div>`).join("");
+
+  const set = (key, v) => {
+    const q = F.params.find(o => o.k === key);
+    v = clamp(parseFloat(v), q.min, q.max);
+    if(!Number.isFinite(v)) return;
+    par[key] = v;
+    $("par-" + ag).querySelector(`[data-ag="${ag}"][data-p="${key}"]`).value = v;
+    $("par-" + ag).querySelector(`[data-agv="${ag}"][data-p="${key}"]`).value = v;
+    scheduleModel();
+  };
+  $("par-" + ag).querySelectorAll("input[type=range]").forEach(el =>
+    el.addEventListener("input", () => set(el.dataset.p, el.value)));
+  $("par-" + ag).querySelectorAll("input.v").forEach(el =>
+    el.addEventListener("change", () => set(el.dataset.p, el.value)));
+
+  /* the hand-written box appears only for the family that needs it */
+  $(ag === "a" ? "ua-expr" : "ub-expr").hidden = kind !== "free";
+}
+
+function setFamily(ag, id, par){
+  if(ag === "a"){ st.kindA = id; st.parA = par || defaultsFor(id); }
+  else          { st.kindB = id; st.parB = par || defaultsFor(id); }
+  buildParams(ag);
+}
+
+/* Preferences and endowments together, since a preference pair is only
+   interesting against endowments that put the two people somewhere. */
+function applyPreset(P){
+  setFamily("a", P.a[0], { ...P.a[1] });
+  setFamily("b", P.b[0], { ...P.b[1] });
+  [st.wAx, st.wAy, st.wBx, st.wBy] = P.w;
+  pushEndowUI(); buildFamilies();
+  if(applyPrefs()){ st.P = [(P.w[0] + P.w[2]) / 2, (P.w[1] + P.w[3]) / 2]; onModelChange(); }
+  buildChips();
+}
+
+const sameParams = (p, q) => Object.keys(q).every(k => Math.abs(p[k] - q[k]) < 1e-9);
+
 function buildChips(){
-  const labels = LANG === "en" ? PRESET_EN : PRESETS.map(p => p[0]);
-  $("preset-chips").innerHTML = PRESETS.map((p, i) => {
-    const on = p[1] === st.srcA && p[2] === st.srcB &&
-               p[3] === st.wAx && p[4] === st.wAy && p[5] === st.wBx && p[6] === st.wBy;
-    return `<button type="button" class="chip" data-i="${i}" aria-pressed="${on}">${labels[i]}</button>`;
+  $("preset-chips").innerHTML = PRESETS.map((P, i) => {
+    const on = P.a[0] === st.kindA && P.b[0] === st.kindB &&
+               sameParams(st.parA, P.a[1]) && sameParams(st.parB, P.b[1]) &&
+               P.w[0] === st.wAx && P.w[1] === st.wAy && P.w[2] === st.wBx && P.w[3] === st.wBy;
+    return `<button type="button" class="chip" data-i="${i}" aria-pressed="${on}">${P[LANG]}</button>`;
   }).join("");
   $("preset-chips").querySelectorAll(".chip").forEach(c => {
-    c.addEventListener("click", () => {
-      if(challengeLocked()) return;
-      const [, a, b, ax, ay, bx, by] = PRESETS[+c.dataset.i];
-      st.srcA = a; st.srcB = b;
-      st.wAx = ax; st.wAy = ay; st.wBx = bx; st.wBy = by;
-      $("ua-expr").value = a; $("ub-expr").value = b;
-      pushEndowUI();
-      if(recomputeUtilities()){ st.P = [ (ax+bx)/2, (ay+by)/2 ]; onModelChange(); }
-      buildChips();
-    });
+    c.addEventListener("click", () => { if(!challengeLocked()) applyPreset(PRESETS[+c.dataset.i]); });
   });
 }
 
@@ -2539,6 +2806,25 @@ function bindPrice(){
 }
 
 /* ---- what changed, and how much has to be redone ------------------------ */
+
+/* Rebuild the expressions from the dials, then reparse. */
+function applyPrefs(){ syncSources(); return recomputeUtilities(); }
+
+/* A parameter slider changes the utility function, and a changed utility
+   function means resampling both fields, re-sweeping the Pareto set and
+   re-solving the price sweep — around 45 ms. Coalescing to one recompute per
+   animation frame keeps a drag responsive without ever showing a curve that
+   belongs to a parameter value the slider has already left. */
+let modelPending = false;
+function scheduleModel(){
+  if(modelPending) return;
+  modelPending = true;
+  requestAnimationFrame(() => {
+    modelPending = false;
+    if(applyPrefs()) onModelChange();
+  });
+}
+
 function onModelChange(){
   recomputeModel();
   if(st.method === "trade" && !inLens(st.P[0], st.P[1])) st.P = [st.wAx, st.wAy];
@@ -2682,8 +2968,11 @@ function saveProgress(){
 }
 
 function lockInputs(on){
-  for(const id of ["ua-expr","ub-expr","eax","eay","ebx","eby","eax-v","eay-v","ebx-v","eby-v"])
+  for(const id of ["ua-expr","ub-expr","fam-a","fam-b",
+                   "eax","eay","ebx","eby","eax-v","eay-v","ebx-v","eby-v"])
     $(id).disabled = on;
+  for(const ag of ["a","b"])
+    $("par-" + ag).querySelectorAll("input").forEach(el => { el.disabled = on; });
   $("preset-chips").querySelectorAll(".chip").forEach(c => { c.disabled = on; });
 }
 
@@ -2699,23 +2988,25 @@ function setMode(m){
 
 function rnd(a, b, step){
   const n = Math.round((b - a) / step);
-  return a + step * Math.floor(Math.random() * (n + 1));
+  /* the dials carry values like 0.65 and -2.5, and a + step*k accumulates
+     binary error that the preset-chip comparison then reads as a difference */
+  return +(a + step * Math.floor(Math.random() * (n + 1))).toFixed(4);
 }
 
 function startLevel(i){
   st.levelIdx = clamp(i, 0, LEVELS.length - 1);
   const L = LEVELS[st.levelIdx];
   const g = L.gen(rnd);
-  st.srcA = g.srcA; st.srcB = g.srcB;
-  st.wAx = g.wAx; st.wAy = g.wAy; st.wBx = g.wBx; st.wBy = g.wBy;
-  $("ua-expr").value = g.srcA; $("ub-expr").value = g.srcB;
-  pushEndowUI();
+  setFamily("a", g.a[0], { ...g.a[1] });
+  setFamily("b", g.b[0], { ...g.b[1] });
+  [st.wAx, st.wAy, st.wBx, st.wBy] = g.w;
+  buildFamilies(); pushEndowUI();
 
   st.checked = false;
   setMethod(L.goal === "price" ? "auction" : (L.goal === "core" ? "trade" : "free"), true);
   if(L.goal === "price"){ st.logp = 0; st.p = 1; pushPrice(); }
 
-  if(recomputeUtilities()){
+  if(applyPrefs()){
     recomputeModel();
     st.P = [st.wAx, st.wAy];
     syncState(); syncScrubFromState(); paintEndowNote();
@@ -2805,16 +3096,25 @@ function setMethod(m, quiet){
 function boot(){
   loadProgress();
 
+  buildFamilies(); buildParams("a"); buildParams("b");
   buildChips(); buildLayers(); buildMapChips();
+
+  for(const ag of ["a", "b"]){
+    $("fam-" + ag).addEventListener("change", e => {
+      setFamily(ag, e.target.value);
+      if(applyPrefs()) onModelChange();
+      buildChips();
+    });
+  }
   pushPrice = bindPrice();
 
   for(const [id, key] of [["eax","wAx"],["eay","wAy"],["ebx","wBx"],["eby","wBy"]])
     bindNum(id, id + "-v", key, onModelChange);
 
   const readExpr = () => {
-    st.srcA = $("ua-expr").value.trim();
-    st.srcB = $("ub-expr").value.trim();
-    if(recomputeUtilities()){ onModelChange(); buildChips(); }
+    st.rawA = $("ua-expr").value.trim();
+    st.rawB = $("ub-expr").value.trim();
+    if(applyPrefs()){ onModelChange(); buildChips(); }
   };
   let typing = 0;
   for(const id of ["ua-expr","ub-expr"]){
@@ -2885,7 +3185,7 @@ function boot(){
   }
 
   st.P = [st.wAx, st.wAy];
-  if(recomputeUtilities()) recomputeModel();
+  if(applyPrefs()) recomputeModel();
   st.P = [st.Wx * 0.5, st.Wy * 0.5];
   syncState(); syncScrubFromState();
 
@@ -2893,7 +3193,8 @@ function boot(){
      model from the console during a lesson */
   window.__edgeworth = {
     st, render, syncState, recomputeModel, recomputeUtilities,
-    marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod
+    marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod,
+    setFamily, applyPrefs, applyPreset, exprOf, lensShare, FAMILIES, PRESETS
   };
   applyLang();
   buildTray();

@@ -25,6 +25,61 @@ is a reconciliation against the original's own choices — its utility
 functions, its slider ranges, its labelling. Paste the graph's expression list
 and those can be matched.
 
+## Preferences
+
+Each person picks their own family, independently, from a menu that also shows
+the algebraic form; the dials under it write the function, and the expression
+the dials produce is shown back underneath. Nothing is hidden behind a
+parameter you cannot see the effect of.
+
+| Family | Form | Dials |
+|---|---|---|
+| Cobb–Douglas | `x^a · y^(1−a)` | the weight on *x* |
+| Substitutes | `a·x + b·y` | what each good is worth |
+| Complements | `min(x/a, y/b)` | how much of each goes into a unit |
+| Quasilinear | `a·x^b + y` | scale and curvature |
+| CES | `(a·x^r + (1−a)·y^r)^(1/r)` | the weight on *x*, and *r* |
+| Typed by hand | anything the parser takes | — |
+
+Choosing independently is the point of the interesting cases: Cobb–Douglas
+against perfect complements has a contract curve that is neither family's
+textbook picture, and you cannot get there from a menu of matched pairs.
+
+CES collapses at `r = 0` — the formula is 0/0 there and the limit is
+Cobb–Douglas — so that dial steps over a narrow band around zero rather than
+handing the parser an infinite exponent.
+
+Changing a dial changes the utility function, which means resampling both
+fields, re-sweeping the Pareto set and re-solving the price sweep, around 45 ms.
+That work is coalesced to one recompute per animation frame, so a drag stays
+responsive and never shows a curve belonging to a parameter value the slider
+has already left.
+
+## The improving set
+
+Where the two indifference curves through the allocation **cross** rather than
+touch, the region between them is filled: the set of reallocations that make
+both people strictly better off. It is empty exactly when the allocation is
+Pareto efficient, which is the claim the whole diagram is built to make, and
+watching it close as you drag onto the contract curve is the fastest way to see
+why that claim is true.
+
+A readout beside it reports the region's size as a share of the box — how much
+is still on the table — and it goes to zero as the allocation reaches the
+contract curve.
+
+The region is rasterised rather than traced. Its boundary is two arcs meeting
+at two crossings, and chaining marching-squares output into closed rings to
+fill it would be a lot of machinery for a shape a mask draws exactly. It is
+read from the sampled fields by the same linear interpolation the contours use,
+so the fill lands on the curves, at a resolution set by how big the box is on
+screen rather than by the sampling grid — otherwise the edge blurs up from 161
+cells and sits visibly off the curves that bound it.
+
+Under an announced price the two curves are drawn at two different
+allocations — A's through A's demand, B's through B's — and the shaded set is
+still the one between the curves you can see.
+
 ## What the student can do
 
 - **Divide by hand** — drag the allocation anywhere in the box. The lens drawn
@@ -73,14 +128,18 @@ comparable with utils of `x + 2y`.
 
 ## Challenge mode
 
-Seven preference pairs, each generating fresh endowments: Cobb–Douglas,
-asymmetric Cobb–Douglas, the auction, perfect substitutes, perfect
-complements, quasilinear, and CES. Three kinds of question — put the allocation
+Eight preference pairs, each generating fresh endowments and fresh dial
+settings: Cobb–Douglas, opposite tastes, the auction, perfect substitutes,
+perfect complements, quasilinear, CES, and one that pits two different families
+against each other. Three kinds of question — put the allocation
 on the contract curve, put it in the core, or find the price that clears the
 market — scored on how close the answer is, with preferences and endowments
 locked while a challenge is live. Progress is kept in `localStorage`.
 
 ## Utility syntax
+
+Only the **Typed by hand** family needs this; every other family writes its own
+expression from its dials.
 
 `+ − * / ^ ( )`, functions `sqrt ln log log10 exp abs min max sin cos tan`,
 constants `e pi`. Implicit multiplication works: `2xy` is `2*x*y`,
@@ -106,6 +165,7 @@ Everything is hand-rolled so the page stays self-contained:
 | Demand | Dense scan then golden-section refinement along the budget line. A first-order condition finds nothing at the kink of `min(x,y)` and the wrong thing at the corner solution of `x + 2y`; a scan finds both. |
 | Equilibrium | Every sign change of excess demand over a logarithmic price sweep, refined by bisection in log price. There can be more than one, and with perfect substitutes excess demand jumps across zero rather than crossing it — that case is reported as a jump rather than rounded to `z = 0`. |
 | The map | Rasterised at the sampling resolution of the fields and blitted with smoothing, not evaluated per screen pixel: the gains map is redrawn on every pointer move, and painting from the same grid the contours are traced from makes the shading and the curves agree exactly rather than nearly. |
+| The improving set | A mask read from both fields by bilinear interpolation at display resolution, shaded by the smaller of the two percentile gains so the deepest part of the region reads as its middle. Its size is counted off the sampling grid instead, cheaply enough to report on every frame. |
 | Ranks | The percentile rank of every grid cell is computed once per sampling. Doing 26 000 binary searches per frame to shade the lens was the one thing in this applet that could be felt. |
 | Cased curves | A curve is emitted as one batched path and stroked twice. Stroking segment by segment lets each casing overpaint its neighbour's core, and the line comes out beaded. |
 
@@ -145,8 +205,17 @@ Cobb–Douglas consumers have the diagonal for a contract curve, that their
 equilibrium price ratio is exactly 1 and clears both markets, that the
 quasilinear pair `2√x + y` and `ln x + y` gives a vertical contract curve at
 `x_A = ((√33 − 1)/2)² = 5.628`, that both people set their MRS equal to an
-announced price, that the kinked and linear cases still produce a Pareto set,
-and that the lens really does hold the allocation in.
+announced price, and that the kinked and linear cases still produce a Pareto
+set.
+
+The dials are checked against algebra too: a Cobb–Douglas weight of 0.8 against
+0.5 on an 8×8 box puts the contract curve through `(4, 1.6)`, and two
+quasilinear people with scale dials at 2 and 3 pin their vertical contract
+curve at `8/(1 + (3/2)²) = 2.462` — moving one dial to 5 moves it to 1.103,
+which the checks also verify. Every family is parsed at both ends of every dial
+it owns. The improving set is cross-checked against the utility closures
+themselves by Monte Carlo, so a bug in the grid or in the bilinear read cannot
+agree with itself.
 
 ```sh
 cd edgeworth-box && python3 -m http.server 8130 &
