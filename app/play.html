@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" data-title-key="meta.labtitle" data-desc-key="meta.labdesc">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d1117">
-<title>Gradient Peaks Lab — the surface and its map, side by side</title>
+<title>Border Run — Gradient Peaks for a controller</title>
 <meta name="description" content="A light 3D sandbox for exploring surface plots, level curves, partial derivatives, gradients and constrained maxima of functions of two variables.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/lab.css">
+<link rel="stylesheet" href="css/game.css">
 </head>
 <body>
 
@@ -39,13 +39,72 @@
   <span id="r-msg" class="pill pill-warn" hidden></span>
 </div>
 
-
-<div id="proj-wrap" hidden>
-  <canvas id="minimap"></canvas>
-  <div id="proj-label" data-i18n="lab.projlabel">the (x, y) plane</div>
-</div>
-
 <div id="crosshair" hidden></div>
+
+
+<!-- ===================== Border Run: the game layer ===================== -->
+<!-- A layer over the ordinary app, not a separate program: the same surfaces,
+     the same walker, the same optimiser marking the answer at the end. What it
+     adds is an objective and a controller-first way in. -->
+<div id="game" data-screen="menu">
+
+  <section id="g-menu">
+    <h1>Border Run</h1>
+    <p class="g-sub" data-i18n="game.tagline">Find the highest ground you are allowed to stand on.</p>
+    <div class="g-cols">
+      <div id="g-list" class="g-list"></div>
+      <div class="g-side">
+        <img id="g-preview" alt="">
+        <p id="g-blurb"></p>
+      </div>
+    </div>
+    <div class="g-keys">
+      <span><b>↑↓</b> <span data-i18n="game.kchoose">choose</span></span>
+      <span><b>A</b> / <b>Enter</b> <span data-i18n="game.kstart">start</span></span>
+    </div>
+    <button id="g-start" class="g-btn" data-i18n="game.start">Start</button>
+  </section>
+
+  <section id="g-brief" hidden>
+    <h2 id="g-brief-name"></h2>
+    <p id="g-brief-text"></p>
+    <div class="g-keys">
+      <span><b>Left stick</b> <span data-i18n="game.kwalk">walk</span></span>
+      <span><b>Right stick</b> <span data-i18n="game.klook">look</span></span>
+      <span><b>A</b> <span data-i18n="game.kplant">plant your flag</span></span>
+      <span><b>X</b> <span data-i18n="game.kcurves">level curves</span></span>
+      <span><b>Y</b> <span data-i18n="game.kwalls">frontier</span></span>
+      <span><b>B</b> <span data-i18n="game.kquit">give up</span></span>
+    </div>
+    <button id="g-go" class="g-btn" data-i18n="game.go">Drop me in</button>
+  </section>
+
+  <section id="g-run" hidden>
+    <div class="g-hud">
+      <div class="g-stat"><label data-i18n="game.alt">Altitude</label><b id="g-alt">—</b></div>
+      <div class="g-stat"><label data-i18n="game.best">Best so far</label><b id="g-best">—</b></div>
+      <div class="g-stat"><label data-i18n="game.time">Time</label><b id="g-time">0:00</b></div>
+      <div id="g-side" class="g-stat wide" data-legal="yes"></div>
+    </div>
+    <div id="g-frontier" class="g-flash" hidden data-i18n="game.online">You are on the frontier — now follow it.</div>
+    <div id="g-warn" class="g-warn" hidden></div>
+    <div class="g-actions">
+      <button id="g-plant" class="g-btn" data-i18n="game.plant">Plant the flag  (A)</button>
+      <button id="g-back" class="g-btn ghost" data-i18n="game.quit">Give up  (B)</button>
+    </div>
+  </section>
+
+  <section id="g-result" hidden>
+    <div id="g-medal" class="g-medal"></div>
+    <h2 id="g-verdict"></h2>
+    <p id="g-numbers" class="g-numbers"></p>
+    <p id="g-lesson" class="g-lesson"></p>
+    <div class="g-actions">
+      <button id="g-again" class="g-btn" data-i18n="game.again">Try again  (Y)</button>
+      <button id="g-menu" class="g-btn ghost" data-i18n="game.menu">Mountains  (A)</button>
+    </div>
+  </section>
+</div>
 
 <!-- ========================= the right-hand rail ======================== -->
 <!-- The direction indicator, and everything the wheel does for a screen that
@@ -97,10 +156,9 @@
 <!-- ================================ panel ============================== -->
 <aside id="panel">
   <header id="panel-head">
-    <h1>Gradient&nbsp;Peaks <em>Lab</em></h1>
+    <h1>Gradient&nbsp;Peaks</h1>
     <div class="head-tools">
       <button id="lang-toggle" type="button" aria-label="Language / Idioma"><span id="lang-flag">EN</span></button>
-      <button id="btn-full" type="button" data-i18n-title="lab.full" title="Full screen (F11 or this button)" aria-label="Full screen">⛶</button>
       <button id="panel-toggle" data-i18n-title="panel.hide" title="Hide panel (Tab)" aria-label="Hide panel">‹</button>
     </div>
   </header>
@@ -334,8 +392,6 @@
         <span><span data-i18n="map.decorsize">Size of the trees</span> <b id="lbl-decsize">1.0×</b></span>
         <input id="in-decsize" type="range" min="-1" max="0.7" step="0.05" value="0">
       </label>
-      <label class="check"><input id="t-decormatch" type="checkbox" checked><span data-i18n="map.decormatch">Vegetation scales with the explorer</span></label>
-      <p class="note" data-i18n="map.decormatchnote">On by default: shrink or grow the explorer with the scale dial and every tree, rock and blade of grass shrinks or grows by exactly the same factor, so the picture you see keeps the same proportions at any scale. The dial above still multiplies on top of that. Turn this off to hold the vegetation at a fixed size while the explorer's own scale changes underneath it.</p>
       <p class="note" data-i18n="map.decorsizenote">At 1× a tree is about four times the explorer’s height, which is what a tree is. On a small sphere that makes for a very tall forest, so this is here to be turned down.</p>
       <label class="check"><input id="t-shadow" type="checkbox"><span><span data-i18n="map.shadows">Shadows (costs performance)</span></span></label>
     </section>
@@ -397,28 +453,6 @@
       <label class="check"><input id="t-opt" type="checkbox"><span><span data-i18n="opt.show">Show optimum</span> <kbd>O</kbd></span></label>
       <div id="opt-report" class="report" data-i18n="opt.idle">Maximise f over the feasible set.</div>
       <button id="btn-goto" class="ghost" disabled data-i18n="opt.goto">Teleport to the optimum</button>
-    </section>
-
-
-    <section id="sec-proj">
-      <h2 data-i18n="lab.sec">Flat map panel</h2>
-      <label class="field"><span data-i18n="lab.mode">What the panel shows</span>
-        <select id="sel-proj" class="preset">
-          <option value="ramp" data-i18n="lab.ramp">Heat map on the level-curve ramp</option>
-          <option value="heat" data-i18n="lab.heat">Classical heat map</option>
-          <option value="down" data-i18n="lab.down">Looking straight down at the surface</option>
-          <option value="off" data-i18n="lab.off">Nothing — hide the panel</option>
-        </select>
-      </label>
-      <label class="range">
-        <span><span data-i18n="lab.opacity">Panel opacity</span> <b id="lbl-projop">0.88</b></span>
-        <input id="in-projop" type="range" min="0.15" max="1" step="0.01" value="0.88">
-      </label>
-      <label class="range">
-        <span><span data-i18n="lab.size">Panel size</span> <b id="lbl-projsize">1.00×</b></span>
-        <input id="in-projsize" type="range" min="0.5" max="2.2" step="0.05" value="1">
-      </label>
-      <p class="note" data-i18n="lab.note">The panel is the picture your textbook draws: the domain seen from above, with the same level curves in the same colours, the same tangent line, and the explorer as a dot. Everything on it is the same state as the scene behind — walk in the 3D view and the dot walks on the map.</p>
     </section>
 
     <section>
@@ -490,7 +524,7 @@
         <b data-i18n="help.release">Release the mouse</b> Esc · <b data-i18n="help.hide">hide this panel</b> Tab</p>
         <p class="note" data-i18n-html="help.modnote"></p>
         <p class="note" data-i18n-html="help.syntax"></p>
-        <p class="note"><a id="other-app" href="index.html" style="color:var(--accent)" data-i18n="lab.linkback">Back to the classic layout</a></p>
+        <p class="note"><a id="other-app" href="lab.html" style="color:var(--accent)" data-i18n="lab.link">Open the Lab — the same program with a flat map panel beside the scene</a></p>
       </div>
     </section>
   </div>

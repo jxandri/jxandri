@@ -11,7 +11,7 @@ import {
 } from './terrain.js';
 import { ELIAS_INFO } from './elias.js';
 import { BORDERS } from './borders-data.js';
-import { feasibleFor, boundaryOf } from './borders.js';
+import { feasibleFor, boundaryOf, BORDER_IDS } from './borders.js';
 import { photoFor } from './borders-photos.js';
 import { Decorations } from './decor.js';
 import {
@@ -35,6 +35,7 @@ import {
 } from './gridlines.js';
 import { Compass, angles } from './compass.js';
 import { Pad, BTN } from './gamepad.js';
+import { BorderRun } from './game.js';
 import { Projection } from './projection.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
@@ -217,6 +218,9 @@ let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
+let game = null;         // Border Run, on play.html only — declared here rather
+                         // than beside its own setup because the frame loop starts
+                         // before that setup runs and must be able to ask for it
 let stillMemo = null;    // last frame's at-the-feet geometry, kept while the
                          // explorer and the dials hold still
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
@@ -1037,7 +1041,12 @@ function rebuild() {
   water = buildWater(field, grid);
   if (water) { world.add(water); water.visible = state.water; }
 
-  walls = buildFeasibleWalls(field, grid, predicate);
+  // In the game the player stands a few hundred metres from the frontier and
+  // looks straight at it, so the wall is built waist-high rather than at the
+  // sandbox's survey-marker height: tall enough to read as a fence across the
+  // mountain, short enough not to become a white sheet filling the screen.
+  walls = buildFeasibleWalls(field, grid, predicate,
+    game ? field.worldSize * 0.010 : undefined);
   if (walls) { world.add(walls); walls.visible = state.feasible; }
 
   surfaceDetail = new SurfaceDetail(field, { rings: 2, segments: 96, growth: 3.4 });
@@ -1073,7 +1082,12 @@ function rebuild() {
   disposeTree(sky);
   sky = buildSky(field.worldSize * 8);
   scene.add(sky);
-  scene.fog = new THREE.Fog(0xa9c3d8, field.worldSize * 1.1, field.worldSize * 6);
+  // Fog starts beyond the establishing shot, not inside it. The camera frames
+  // the whole domain from about 1.8 world-sizes out, so a fog that began at
+  // 1.1 put the far half of every surface into haze before the student had
+  // looked at it — which on the border mountains, whose relief is the thing
+  // being shown, read as a washed-out sky-blue film over the peaks.
+  scene.fog = new THREE.Fog(0xa9c3d8, field.worldSize * 2.1, field.worldSize * 9);
 
   const sunDist = field.worldSize * 2;
   sun.position.set(sunDist * 0.6, sunDist * 0.9, sunDist * 0.45);
@@ -1166,7 +1180,9 @@ function configureShadows() {
 /** Rope the explorer to the frontier, or let them off it. */
 function applyRail() {
   if (!player) return;
-  const g = state.rail && state.feasible ? railFor(state.feasSrc) : null;
+  // Same reasoning as the contour clipping: the rope follows the constraint
+  // itself, not the visibility of the walls drawn on it.
+  const g = state.rail && hasConstraint() ? railFor(state.feasSrc) : null;
   player.onRail = g;
   // Stepping onto the rope should not leave you standing off it.
   if (g && isFinite(player.x)) {
@@ -1174,6 +1190,11 @@ function applyRail() {
     player.snapToRail && player.snapToRail();
     if (!isFinite(player.height())) { player.x = saved.x; player.y = saved.y; }
   }
+}
+
+/** Is there a constraint at all — as opposed to a constraint being *drawn*? */
+function hasConstraint() {
+  return typeof state.feasSrc === 'string' && state.feasSrc.trim() !== '';
 }
 
 function paletteMode() { return state.heightColors ? 'height' : 'biome'; }
@@ -1198,7 +1219,19 @@ function applyPalette() {
   // In height-colour mode, flatten the lighting. The ramp only means anything
   // if the colour on screen is the colour in the legend, so trade some of the
   // directional shading for fidelity to the palette.
+  // Exposure follows the palette AND the climate.
+  //
+  // The bright setting exists for the pastel surfaces the app opens with, whose
+  // albedos are high and whose shapes are simple. Point it at a real mountain —
+  // dark granite, dark timber, snow — and the sum of a 3.1 sky and a 3.4 sun
+  // drives everything above about a fifth albedo straight to white: the rock
+  // and the snow come out the same colour, the relief disappears, and the whole
+  // massif reads as a pale blue haze. Turning the lights down does not darken
+  // the picture so much as give it back its range, because what was being lost
+  // was the top end.
+  const rocky = /\belias\s*\(/.test(state.fnSrc || '') || !!currentBorder();
   if (state.heightColors) { hemi.intensity = 4.2; sun.intensity = 1.1; }
+  else if (rocky) { hemi.intensity = 1.55; sun.intensity = 2.25; }
   else { hemi.intensity = 3.1; sun.intensity = 3.4; }
   if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
@@ -1265,7 +1298,11 @@ function refreshContours() {
     width: pathWidth(),
     refine,
     // Indifference-curve view: stop the curves at the constraint.
-    only: state.curvesInside && state.feasible && predicate ? predicate : null,
+    // Deliberately NOT gated on state.feasible: that flag is the "show
+    // frontier walls" checkbox, and a student who ticks "only inside the
+    // feasible set" has said what they want regardless of whether the walls
+    // happen to be drawn. Tying the two together made this toggle look broken.
+    only: state.curvesInside && hasConstraint() ? predicate : null,
   });
   if (contourLines) world.add(contourLines);
   updateContourNote();
@@ -1609,7 +1646,7 @@ const touch = { move: null, look: null, mx: 0, my: 0 };
 
 /**
  * An Xbox-layout controller, if there is one. Polled once a frame at the top
- * of animate(); everything downstream reads the snapshot rather than the
+ * of the frame loop, so everything downstream reads the snapshot rather than the
  * hardware, so the sticks behave like a third set of held keys.
  *
  *   left stick    walk and strafe          right stick   look / turn
@@ -2319,6 +2356,14 @@ function wireUI() {
       const h = s.half.toFixed(3);
       $('in-xmin').value = -h; $('in-xmax').value = h;
       $('in-ymin').value = -h; $('in-ymax').value = h;
+      // Open with the z axis stretched, the way a relief model or an atlas
+      // does. At true scale two kilometres of mountain across an eighteen
+      // kilometre window is a swelling, not a peak — honestly so, but an
+      // example nobody recognises as a mountain teaches nothing. This is a
+      // display scale only: f, its gradients and every readout stay in real
+      // kilometres, and the dial is right there to put it back to 1.
+      $('in-sz').value = s.exaggeration;
+      $('in-sz').dispatchEvent(new Event('input'));
       $('in-feas').value = feasibleFor(id);
       state.feasSrc = $('in-feas').value;
       $('t-feas').checked = true; state.feasible = true;
@@ -3175,6 +3220,7 @@ function animate() {
   pad.poll();
   applyPadButtons();
   updatePadStatus();
+  if (game) game.update();
 
   if (state.surfaceKind !== 'graph') {
     const inp = readInput();
@@ -3406,6 +3452,7 @@ window.__peaks = {
   get optimum() { return optimum; },
   get field() { return field; },
   get grid() { return grid; },
+  get game() { return game; },
 };
 
 state.holdKey = readHoldKey();
@@ -3428,6 +3475,64 @@ withLoading(() => {
   }
 });
 animate();
+
+/* ------------------------------------------------------- Border Run */
+
+/**
+ * The game layer, when the page asks for one.
+ *
+ * Detected from the markup rather than from a flag, exactly as the Lab is
+ * detected from its minimap: play.html carries a #game element, index.html and
+ * lab.html do not, and all three run this same file. Everything the game needs
+ * is handed to it explicitly, so the game can be read without reading the app
+ * and the app has no idea it is being played.
+ */
+if ($('game')) {
+  document.body.dataset.mode = 'play';
+  togglePanel(true);                       // the sandbox is still there under Tab
+  const missions = BORDER_IDS.map((id) => {
+    const b = BORDERS[id];
+    return {
+      id,
+      half: b.half, line: b.line, summit: b.summit, constrained: b.constrained,
+      strip: b.strip,
+      summitMetres: b.summit.metres,
+      photo: photoFor(id),
+      ...b.meta,
+    };
+  });
+  game = new BorderRun({
+    missions,
+    pad,
+    // A getter, not the value: `player` is rebuilt whenever the surface is, so
+    // a reference captured once would go stale the moment a mission loads.
+    get player() { return player; },
+    state,
+    MODE_THIRD,
+    MODE_DRONE,
+    setMode,
+    toggle: toggleCheckbox,
+    /** Load a mountain exactly as choosing it from the examples menu would. */
+    load: (id) => new Promise((resolve) => {
+      const sel = $('preset-fn');
+      sel.value = `${id}(x, y)`;
+      sel.dispatchEvent(new Event('change'));
+      // The rebuild is deferred a couple of frames by withLoading, so wait for
+      // the surface rather than guessing at a delay.
+      const ready = () => {
+        if (field && grid && currentBorder() === id) resolve();
+        else requestAnimationFrame(ready);
+      };
+      requestAnimationFrame(ready);
+    }),
+    /** Mark the true answer — only ever after a flag has been planted. */
+    revealOptimum: () => {
+      const t = $('t-opt');
+      if (t && !t.checked) toggleCheckbox('t-opt');
+      else refreshOptimum();
+    },
+  });
+}
 
 // Offline caching, where the browser allows it. Opened straight off the disk as
 // a file:// page there is no origin to register against and this simply does not

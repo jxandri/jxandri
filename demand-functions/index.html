@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funciones de Demanda</title>
+<style>
+/* Dark is the design here, not a variant of it. Light is kept as an explicit
+   opt-out for projectors and printed handouts, chosen from the header. */
+:root{
+  /* Native chrome — range thumbs, checkboxes, scrollbars — takes its cue from
+     here, not from the custom properties, and a host page may have declared
+     the opposite before this sheet is reached. */
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --crit:#E4705C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
+  --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
+  --rule:#CBD4D8; --rule-2:#E1E7EA;
+  --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --crit:#A93726;
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-ui); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased}
+button,input,select{font:inherit; color:inherit}
+.shell{max-width:1500px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
+.masthead h1{margin:0; font-family:var(--f-display); font-size:26px; font-weight:600; letter-spacing:-.01em}
+.masthead p{margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:66ch}
+.head-actions{display:flex; align-items:center; gap:8px}
+
+.console{display:grid; grid-template-columns:clamp(186px, 19vw, 286px) minmax(0,1fr);
+  gap:12px; align-items:start}
+@media (max-width:620px){.console{grid-template-columns:1fr}}
+
+.rail{display:flex; flex-direction:column; gap:12px; background:var(--surface);
+  border:1px solid var(--rule); border-radius:3px; padding:16px; box-shadow:var(--shadow)}
+.group{display:flex; flex-direction:column; gap:8px}
+.group[hidden]{display:none}
+.group+.group{border-top:1px solid var(--rule-2); padding-top:12px}
+.group>h2{margin:0; font-size:10.5px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+
+.chips{display:flex; flex-wrap:wrap; gap:5px}
+.chip{appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:20px; padding:4px 11px; font-size:12px}
+.chip:hover{border-color:var(--accent); color:var(--accent-ink)}
+.chip[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.chip:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.formula{font-family:var(--f-mono); font-size:12px; color:var(--ink-2);
+  background:var(--sunk); border:1px solid var(--rule-2); border-radius:3px; padding:8px 10px;
+  overflow-x:auto}
+.text-in{width:100%; padding:7px 9px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--sunk); font-family:var(--f-mono); font-size:12.5px}
+.text-in:focus{outline:2px solid var(--accent); outline-offset:-1px; background:var(--surface)}
+.text-in[aria-invalid="true"]{border-color:var(--crit)}
+.err{color:var(--crit); font-size:11.5px}
+.err:empty{display:none}
+.custom-only[hidden]{display:none}
+
+.slider-row{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px}
+.slider-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.6em}
+.slider-row .v{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  text-align:right; width:4em; background:transparent; border:0;
+  border-bottom:1px dotted var(--rule); padding:1px 2px}
+.slider-row .v:focus{outline:none; border-bottom-color:var(--accent); background:var(--sunk)}
+.slider-row[hidden]{display:none}
+.slider-row.is-swept .k{color:var(--accent-ink); font-weight:700}
+/* A range is two numbers, and a pair of sliders says that badly: the reader
+   has to compare two thumb positions to recover an interval. Type it. */
+.range-row{display:grid; grid-template-columns:auto 1fr auto 1fr; align-items:center; gap:8px}
+.range-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.6em}
+.range-row .dash{color:var(--ink-3); font-size:12.5px; text-align:center}
+.range-row .rb{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  width:100%; min-width:0; text-align:right; color:var(--ink);
+  background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:3px 6px}
+.range-row .rb:focus{outline:none; border-color:var(--accent); background:var(--panel)}
+.range-row .rb:invalid{border-color:var(--crit)}
+.range-row.is-swept .k{color:var(--accent-ink); font-weight:700}
+input[type=range]{appearance:none; -webkit-appearance:none; width:100%; height:20px;
+  background:transparent; cursor:pointer; margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-moz-range-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px;
+  border-radius:50%; background:var(--accent); border:2px solid var(--surface);
+  margin-top:-5.5px; box-shadow:0 0 0 1px var(--rule)}
+input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid var(--surface); box-shadow:0 0 0 1px var(--rule)}
+input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:3px}
+
+.checks{display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; align-items:start}
+.check{display:flex; align-items:flex-start; gap:6px; font-size:12.5px; color:var(--ink-2);
+  cursor:pointer; line-height:1.25}
+.check input{accent-color:var(--accent); width:14px; height:14px; margin:1px 0 0; cursor:pointer}
+.check.auto{font-size:12.5px}
+
+.stage{display:flex; flex-direction:column; gap:12px; min-width:0}
+.viewports{display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0; align-items:start}
+@media (max-width:520px){.viewports{grid-template-columns:1fr}}
+.viewport{display:flex; flex-direction:column; min-width:0; background:var(--surface);
+  border:1px solid var(--rule); border-radius:3px; box-shadow:var(--shadow); overflow:hidden}
+.vp-bar{display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:7px 12px; border-bottom:1px solid var(--rule-2); background:var(--panel)}
+.vp-title{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+
+.seg{display:inline-flex; background:var(--sunk); border:1px solid var(--rule);
+  border-radius:3px; padding:2px; gap:2px}
+.seg button{appearance:none; border:0; background:transparent; cursor:pointer; padding:4px 10px;
+  border-radius:2px; font-family:var(--f-mono); font-size:11.5px; color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:700}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.seg.wide{display:grid; grid-template-columns:1fr 1fr 1fr; width:100%}
+.seg.wide button{text-align:center}
+.seg.plain button[aria-pressed="true"]{background:var(--surface); color:var(--ink); font-weight:500}
+
+.bar-right{display:flex; align-items:center; gap:8px}
+.legend{display:flex; gap:9px; font-family:var(--f-mono); font-size:10.5px; color:var(--ink-2)}
+.legend .key{display:flex; align-items:center; gap:4px}
+.legend i{width:9px; height:9px; border-radius:2px; display:inline-block}
+.legend[hidden]{display:none}
+.canvas-wrap{position:relative; width:100%; aspect-ratio:1/1; background:var(--surface)}
+.canvas-wrap canvas{display:block; width:100%; height:100%; touch-action:none}
+.readout{display:grid; grid-template-columns:repeat(auto-fit,minmax(88px,1fr)); gap:1px;
+  background:var(--rule-2); border-top:1px solid var(--rule-2)}
+.cell{background:var(--surface); padding:6px 10px}
+.cell dt{margin:0; font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3)}
+.cell dd{margin:1px 0 0; font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:13.5px; font-weight:500}
+
+.verdict{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent);
+  border-radius:3px; padding:12px 16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:4px}
+.verdict b{font-size:13.5px}
+.verdict p{margin:0; color:var(--ink-2); font-size:13px; max-width:82ch}
+.verdict.is-giffen{border-left-color:#B14BE0}
+.verdict.is-inferior{border-left-color:#C9761B}
+
+.hint{margin:0; font-size:12px; color:var(--ink-3); line-height:1.4}
+.btnrow{display:flex; gap:6px; flex-wrap:wrap}
+.btn{appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); border-radius:3px; padding:6px 12px; font-size:12.5px; font-weight:500}
+.btn:hover{border-color:var(--ink-3)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:var(--btn-ink)}
+.btn-primary:hover{filter:brightness(1.08)}
+.count{font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3)}
+.count span{color:var(--ink); font-weight:600}
+.foot{color:var(--ink-3); font-size:11.5px; padding-top:8px; border-top:1px solid var(--rule-2)}
+.foot code{font-family:var(--f-mono); font-size:11px}
+
+/* Narrow embeds, last so nothing later in the sheet cancels them. Chrome gives
+   way before the plots do; the three-across arrangement itself does not move. */
+@media (max-width:1100px){
+  .shell{padding:10px; gap:10px}
+  .rail{padding:12px; gap:10px}
+  .checks{grid-template-columns:1fr}
+  .masthead p{display:none}
+  .masthead h1{font-size:22px}
+}
+@media (max-width:820px){
+  .vp-bar{padding:6px 8px}
+  .vp-title{font-size:9.5px; letter-spacing:.06em}
+  .cell{padding:5px 8px}
+  .cell dd{font-size:12.5px}
+  .chip{padding:3px 9px; font-size:11.5px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important; transition-duration:.001ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <h1 data-t="title">Algunas Funciones de Demanda</h1>
+      <p data-t="sub">De la maximización de utilidad a la curva de demanda.</p>
+    </div>
+    <div class="head-actions">
+      <div class="seg plain" role="group" aria-label="Idioma / Language">
+        <button type="button" id="lg-es" aria-pressed="true">ES</button>
+        <button type="button" id="lg-en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg plain" role="group" aria-label="Tema / Theme">
+        <button type="button" id="th-dark" aria-pressed="true" data-t="dark">Oscuro</button>
+        <button type="button" id="th-light" aria-pressed="false" data-t="light">Claro</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="console">
+    <aside class="rail">
+
+      <div class="group">
+        <h2 data-t="gPref">Preferencias</h2>
+        <div class="chips" id="fam-chips"></div>
+        <div class="formula" id="fam-formula">—</div>
+        <div class="custom-only" id="custom-box" hidden>
+          <label class="hint" for="u-expr" data-t="customLabel">Escribe tu propia U(x, y)</label>
+          <input class="text-in" id="u-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off">
+          <div class="err" id="u-err"></div>
+        </div>
+      </div>
+
+      <div class="group" id="grp-params">
+        <h2 data-t="gParams">Parámetros</h2>
+        <div class="slider-row" data-p="alpha"><span class="k">α</span><input type="range" id="alpha" min="0.05" max="0.95" step="0.01" value="0.57"><input class="v" id="alpha-v"></div>
+        <div class="slider-row" data-p="r"><span class="k">r</span><input type="range" id="r" min="-6" max="0.95" step="0.01" value="0.42"><input class="v" id="r-v"></div>
+        <div class="slider-row" data-p="a"><span class="k">a</span><input type="range" id="a" min="0.05" max="5" step="0.05" value="0.9"><input class="v" id="a-v"></div>
+        <div class="slider-row" data-p="beta"><span class="k">β</span><input type="range" id="beta" min="0.05" max="0.99" step="0.005" value="0.889"><input class="v" id="beta-v"></div>
+        <div class="slider-row" data-p="xlow"><span class="k">x̲</span><input type="range" id="xlow" min="0" max="3" step="0.01" value="0.27"><input class="v" id="xlow-v"></div>
+        <div class="slider-row" data-p="yup"><span class="k">ȳ</span><input type="range" id="yup" min="1" max="40" step="0.1" value="15.2"><input class="v" id="yup-v"></div>
+        <p class="hint" id="no-params" hidden data-t="noParams">Esta familia no tiene parámetros.</p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gSweep">Variable que varía</h2>
+        <p class="hint" data-t="sweepHint">Elige cuál mueves. Las demás quedan fijas, y los puntos que registres pertenecen sólo a esta.</p>
+        <div class="seg wide" role="group" id="axis-seg">
+          <button type="button" data-axis="px" aria-pressed="true">pₓ</button>
+          <button type="button" data-axis="py" aria-pressed="false">pᵧ</button>
+          <button type="button" data-axis="I"  aria-pressed="false">m</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gPrices">Precios y renta</h2>
+        <div class="slider-row" data-var="px"><span class="k">pₓ</span><input type="range" id="px" min="0.05" max="10" step="0.01" value="1.83"><input class="v" id="px-v"></div>
+        <div class="slider-row" data-var="py"><span class="k">pᵧ</span><input type="range" id="py" min="0.05" max="4" step="0.01" value="1.1"><input class="v" id="py-v"></div>
+        <div class="slider-row" data-var="I"><span class="k">m</span><input type="range" id="inc" min="0.5" max="20" step="0.05" value="5.4"><input class="v" id="inc-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gScales">Intervalos</h2>
+        <p class="hint" data-t="scalesHint">El intervalo que se considera para cada variable. Es el recorrido del deslizador y también el tramo que dibuja el eje horizontal.</p>
+        <div class="range-row" data-var="px"><span class="k">pₓ</span>
+          <input type="number" class="rb" id="minPx" min="0.01" max="1000" step="any" value="1">
+          <span class="dash">–</span>
+          <input type="number" class="rb" id="maxPx" min="0.02" max="1000" step="any" value="6"></div>
+        <div class="range-row" data-var="py"><span class="k">pᵧ</span>
+          <input type="number" class="rb" id="minPy" min="0.01" max="1000" step="any" value="1">
+          <span class="dash">–</span>
+          <input type="number" class="rb" id="maxPy" min="0.02" max="1000" step="any" value="4"></div>
+        <div class="range-row" data-var="I"><span class="k">m</span>
+          <input type="number" class="rb" id="minI" min="0" max="1000" step="any" value="0">
+          <span class="dash">–</span>
+          <input type="number" class="rb" id="maxI" min="0.02" max="1000" step="any" value="8"></div>
+        <label class="check auto"><input type="checkbox" id="fixed-axis" checked><span data-t="fixedAxis">Eje vertical fijo</span></label>
+        <p class="hint" id="axis-bound"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gDiscover">Descubrir la demanda</h2>
+        <p class="hint" data-t="discoverHint">Mueve la variable elegida y observa la nueva canasta óptima. Cada par queda marcado: el rastro que dejas <em>es</em> la curva de demanda.</p>
+        <label class="check auto"><input type="checkbox" id="auto-mark" checked><span data-t="autoMark">Marcar al mover</span></label>
+        <div class="btnrow">
+          <button type="button" class="btn btn-primary" id="btn-rec" data-t="rec">Registrar punto</button>
+          <button type="button" class="btn" id="btn-sweep" data-t="sweep">Barrido</button>
+          <button type="button" class="btn" id="btn-clear" data-t="clear">Limpiar</button>
+        </div>
+        <div class="count"><span id="pt-count">0</span> <span data-t="ptsRecorded">puntos registrados</span></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gLayers">Capas</h2>
+        <div class="checks" id="layers"></div>
+      </div>
+    </aside>
+
+    <div class="stage">
+      <div class="viewports">
+        <section class="viewport">
+          <div class="vp-bar"><span class="vp-title" id="vp1-title">Elección · plano (x, y)</span></div>
+          <div class="canvas-wrap"><canvas id="cBundle"></canvas></div>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+        <section class="viewport">
+          <div class="vp-bar">
+            <span class="vp-title" id="vp2-title">Demanda</span>
+            <div class="bar-right">
+              <span class="legend" id="legend" hidden>
+                <span class="key"><i style="background:#00A8C7"></i>x*</span>
+                <span class="key"><i style="background:#E0631B"></i>y*</span>
+              </span>
+              <div class="seg plain" role="group" id="panel-seg">
+                <button type="button" data-panels="1" aria-pressed="true" data-t="onePanel">Un panel</button>
+                <button type="button" data-panels="2" aria-pressed="false" data-t="twoPanels">Dos</button>
+              </div>
+            </div>
+          </div>
+          <div class="canvas-wrap"><canvas id="cDemand"></canvas></div>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <b id="v-title">—</b>
+        <p id="v-text">—</p>
+      </div>
+
+      <p class="foot" id="foot"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const fin=v=>Number.isFinite(v);
+const $=id=>document.getElementById(id);
+
+/* =====================================================================
+   1. Expression language — for the "write your own U(x,y)" family.
+   Tokeniser -> Pratt parser -> closure tree. No eval / new Function, so a
+   strict CSP cannot break it.
+   ===================================================================== */
+const FUNCS={sqrt:1,ln:1,log:1,exp:1,abs:1,sin:1,cos:1,min:2,max:2,pow:2};
+const CONSTS={e:Math.E,pi:Math.PI};
+
+function tokenize(src){
+  const s=src.replace(/−/g,"-").replace(/[×⋅]/g,"*").replace(/÷/g,"/");
+  const out=[]; let i=0;
+  const dig=c=>c>="0"&&c<="9";
+  while(i<s.length){
+    const c=s[i];
+    if(c===" "||c==="\t"){i++;continue;}
+    if(dig(c)||(c==="."&&dig(s[i+1]))){
+      let j=i; while(j<s.length&&(dig(s[j])||s[j]===".")) j++;
+      out.push({k:"num",v:parseFloat(s.slice(i,j))}); i=j; continue;
+    }
+    if(/[A-Za-z]/.test(c)){
+      let name=null;
+      for(const cand of Object.keys(FUNCS).concat(Object.keys(CONSTS)))
+        if(s.startsWith(cand,i)&&(!name||cand.length>name.length)) name=cand;
+      if(name&&FUNCS[name]){out.push({k:"fn",v:name,arity:FUNCS[name]}); i+=name.length; continue;}
+      if(name&&name in CONSTS){out.push({k:"num",v:CONSTS[name]}); i+=name.length; continue;}
+      if(c==="x"||c==="y"){out.push({k:"var",v:c}); i++; continue;}
+      throw new SyntaxError("unknown:"+c);
+    }
+    if("+-*/^(),".includes(c)){out.push({k:c}); i++; continue;}
+    throw new SyntaxError("char:"+c);
+  }
+  const res=[];
+  for(let n=0;n<out.length;n++){
+    const a=out[n], b=out[n+1]; res.push(a);
+    if(!b) break;
+    const aEnd=a.k==="num"||a.k==="var"||a.k===")";
+    const bStart=b.k==="num"||b.k==="var"||b.k==="fn"||b.k==="(";
+    if(aEnd&&bStart) res.push({k:"*"});
+  }
+  return res;
+}
+function parseExpr(src){
+  const ts=tokenize(src); let p=0;
+  const peek=()=>ts[p];
+  const eat=k=>{ if(!ts[p]||ts[p].k!==k) throw new SyntaxError("expected:"+k); return ts[p++]; };
+  function atom(){
+    const t=peek(); if(!t) throw new SyntaxError("eof");
+    if(t.k==="num"){p++; return {t:"num",v:t.v};}
+    if(t.k==="var"){p++; return {t:"var",n:t.v};}
+    if(t.k==="("){p++; const e=expr(0); eat(")"); return e;}
+    if(t.k==="-"){p++; return {t:"neg",a:unary()};}
+    if(t.k==="+"){p++; return unary();}
+    if(t.k==="fn"){
+      p++; eat("(");
+      const args=[expr(0)];
+      while(peek()&&peek().k===","){p++; args.push(expr(0));}
+      eat(")");
+      if(args.length!==t.arity) throw new SyntaxError("arity:"+t.v);
+      return {t:"call",n:t.v,a:args};
+    }
+    throw new SyntaxError("token:"+t.k);
+  }
+  function unary(){ let b=atom(); if(peek()&&peek().k==="^"){p++; b={t:"pow",a:b,b:unary()};} return b; }
+  const PREC={"+":1,"-":1,"*":2,"/":2};
+  function expr(min){
+    let l=unary();
+    while(peek()&&PREC[peek().k]!==undefined&&PREC[peek().k]>min){
+      const op=ts[p++].k; l={t:"bin",o:op,a:l,b:expr(PREC[op])};
+    }
+    return l;
+  }
+  const ast=expr(0);
+  if(p!==ts.length) throw new SyntaxError("trailing");
+  return ast;
+}
+function compile(n){
+  switch(n.t){
+    case "num":{const v=n.v; return ()=>v;}
+    case "var": return n.n==="x"?(x)=>x:(x,y)=>y;
+    case "neg":{const a=compile(n.a); return (x,y)=>-a(x,y);}
+    case "pow":{const a=compile(n.a),b=compile(n.b);
+      if(n.b.t==="num"){const k=n.b.v; return (x,y)=>Math.pow(a(x,y),k);}
+      return (x,y)=>Math.pow(a(x,y),b(x,y));}
+    case "bin":{const a=compile(n.a),b=compile(n.b);
+      switch(n.o){
+        case "+": return (x,y)=>a(x,y)+b(x,y);
+        case "-": return (x,y)=>a(x,y)-b(x,y);
+        case "*": return (x,y)=>a(x,y)*b(x,y);
+        case "/": return (x,y)=>a(x,y)/b(x,y);
+      } break;}
+    case "call":{const A=n.a.map(compile),f=A[0],g=A[1];
+      switch(n.n){
+        case "sqrt": return (x,y)=>Math.sqrt(f(x,y));
+        case "ln": case "log": return (x,y)=>Math.log(f(x,y));
+        case "exp": return (x,y)=>Math.exp(f(x,y));
+        case "abs": return (x,y)=>Math.abs(f(x,y));
+        case "sin": return (x,y)=>Math.sin(f(x,y));
+        case "cos": return (x,y)=>Math.cos(f(x,y));
+        case "min": return (x,y)=>Math.min(f(x,y),g(x,y));
+        case "max": return (x,y)=>Math.max(f(x,y),g(x,y));
+        case "pow": return (x,y)=>Math.pow(f(x,y),g(x,y));
+      }}
+  }
+  throw new Error("compile");
+}
+
+/* A typed utility has no closed-form demand, so maximise along the budget
+   line numerically: a dense scan for the bracket, golden section to refine.
+   Robust where a first-order condition finds nothing — kinks and corners. */
+function numericDemand(u,px,py,I){
+  const tMax=I/px;
+  const g=t=>{ const y=(I-px*t)/py; if(y<0) return -Infinity;
+               const v=u(t,y); return fin(v)?v:-Infinity; };
+  const K=320;
+  let bt=0,bv=-Infinity;
+  for(let k=0;k<=K;k++){ const t=tMax*k/K, v=g(t); if(v>bv){bv=v; bt=t;} }
+  const h=tMax/K, phi=(Math.sqrt(5)-1)/2;
+  let a=Math.max(0,bt-h), b=Math.min(tMax,bt+h);
+  let c=b-phi*(b-a), d=a+phi*(b-a);
+  for(let k=0;k<36;k++){ if(g(c)>g(d)){b=d; d=c; c=b-phi*(b-a);} else {a=c; c=d; d=a+phi*(b-a);} }
+  const mid=(a+b)/2, t=g(mid)>bv?mid:bt;
+  return [t,(I-px*t)/py];
+}
+
+/* =====================================================================
+   2. Preference families — closed forms taken from the construction
+   ===================================================================== */
+const FAMS={
+  cd:{ key:"cd", params:["alpha"], formula:"U(x, y) = x^α · y^(1−α)",
+    U:(s,x,y)=>Math.pow(x,s.alpha)*Math.pow(y,1-s.alpha),
+    demand:(s,px,py,I)=>[s.alpha*I/px,(1-s.alpha)*I/py] },
+  ces:{ key:"ces", params:["r"], formula:"U(x, y) = (x^r + y^r)^(1/r)",
+    U:(s,x,y)=>Math.pow(Math.pow(x,s.r)+Math.pow(y,s.r),1/s.r),
+    demand:(s,px,py,I)=>{ const e=s.r/(s.r-1), A=Math.pow(px,e), B=Math.pow(py,e);
+      if(!fin(A)||!fin(B)||A+B===0) return [NaN,NaN];
+      return [A/(A+B)*I/px, B/(A+B)*I/py]; } },
+  lin:{ key:"lin", params:["a"], formula:"U(x, y) = a·x + y",
+    U:(s,x,y)=>s.a*x+y,
+    demand:(s,px,py,I)=> s.a>px/py?[I/px,0] : s.a<px/py?[0,I/py] : [I/px/2,I/py/2] },
+  inf:{ key:"inf", params:["beta","xlow","yup"],
+    formula:"U(x, y) = ln(x − x̲) − ((1+b)/b)·ln(ȳ − y),  b = (1−β)/β",
+    U:(s,x,y)=>{ const b=(1-s.beta)/s.beta;
+      if(x<=s.xlow||y>=s.yup) return NaN;
+      return Math.log(x-s.xlow)-(1+b)/b*Math.log(s.yup-y); },
+    demand:(s,px,py,I)=>{ const b=(1-s.beta)/s.beta, X=s.xlow, Y=s.yup;
+      const t1=(I-py*Y)/X, t2=t1+(py*Y)/((1+b)*X);
+      let x; if(px<t1) x=X; else if(px<t2) x=b*(py*Y-I)/px+(1+b)*X; else x=I/px;
+      return [x,(I-px*x)/py]; } },
+  custom:{ key:"custom", params:[], numeric:true, formula:"",
+    U:(s,x,y)=> s.customU ? s.customU(x,y) : NaN,
+    demand:(s,px,py,I)=> s.customU ? numericDemand(s.customU,px,py,I) : [NaN,NaN] }
+};
+
+const MARK={x:"#00A8C7",y:"#E0631B",giffen:"#B14BE0",bundle:"#00C2DB",pcc:"#7A5AF8",
+            casing:"rgba(6,9,14,.55)",white:"#fff"};
+
+const st={
+  fam:"cd", axis:"px", autoMark:true,
+  alpha:0.57, r:0.42, a:0.9, beta:0.889, xlow:0.27, yup:15.2,
+  px:1.83, py:1.1, I:5.4,
+  /* The ceiling below is m_max/p_min, so how wide the dials are set decides how
+     much empty space sits above the curve. A price floor well under 1 buys a
+     ceiling several times the demand anyone will actually see, and the curve
+     ends up pressed flat along the axis, so the defaults keep the floor at 1
+     and the income ceiling near the income in play. */
+  minPx:1, minPy:1, maxPx:6, maxPy:4, minI:0, maxI:8,
+  fixedAxis:true,
+  overlay:true,
+  customU:null, customSrc:"x^0.5*y^0.5",
+  pts:{px:[],py:[],I:[]},
+  layers:{budget:true,indiff:true,dx:true,dy:true,giffen:true,grid:true,
+          curve:false,pts:true,join:true,pcc:true}
+};
+const LAYER_KEYS=["pts","join","curve","pcc","budget","indiff","dx","dy","giffen","grid"];
+
+/* =====================================================================
+   3. Copy
+   ===================================================================== */
+const STR={
+ es:{
+  docTitle:"Funciones de Demanda",
+  title:"Algunas Funciones de Demanda",
+  sub:"De la maximización de utilidad a la curva de demanda. Elige una familia de preferencias, mueve una variable y mira cómo responde la canasta óptima — incluyendo el caso en que la demanda sube cuando sube el precio.",
+  dark:"Oscuro", light:"Claro",
+  gScales:"Intervalos", scalesHint:"El intervalo que se considera para cada variable. Es el recorrido del deslizador y también el tramo que dibuja el eje horizontal.", onePanel:"Un panel", twoPanels:"Dos",
+  fixedAxis:"Eje vertical fijo", boundIs:"Tope: m<sub>máx</sub>/p<sub>mín</sub> →", boundAuto:"El eje se ajusta a la curva; se mueve al cambiar parámetros.",
+  gPref:"Preferencias", gParams:"Parámetros", gSweep:"Variable que varía",
+  gPrices:"Precios y renta", gDiscover:"Descubrir la demanda", gLayers:"Capas",
+  customLabel:"Escribe tu propia U(x, y)",
+  noParams:"Esta familia no tiene parámetros.",
+  sweepHint:"Elige cuál mueves. Las demás quedan fijas, y los puntos que registres pertenecen sólo a esta.",
+  discoverHint:"Mueve la variable elegida y observa la nueva canasta óptima. Cada par queda marcado: el rastro que dejas <em>es</em> la curva de demanda.",
+  autoMark:"Marcar al mover", rec:"Registrar punto", sweep:"Barrido", stop:"Parar",
+  clear:"Limpiar", ptsRecorded:"puntos registrados",
+  fams:{cd:"Cobb–Douglas", ces:"CES", lin:"Lineal (sustitutos)", inf:"X inferior (Giffen)", custom:"Personalizada"},
+  vp1:"Elección · plano (x, y)",
+  vpDem:"Demanda · función de", vpEngel:"Curva de Engel · función de m",
+  layers:{pts:"Puntos registrados", join:"Unir los puntos", curve:"Revelar la curva",
+    pcc:"Senda precio-consumo", budget:"Recta presupuestaria", indiff:"Curva de indiferencia",
+    dx:"Demanda de x", dy:"Demanda de y", giffen:"Resaltar tramo Giffen", grid:"Retícula"},
+  roX:"x*", roY:"y*", roSpend:"Gasto", roType:"Tipo",
+  normal:"normal", inferior:"inferior",
+  vGiffen:"x es un bien Giffen aquí",
+  vGiffenT:"La demanda de x sube cuando sube su propio precio: ∂x*/∂pₓ > 0. El efecto renta domina al efecto sustitución, algo que sólo puede pasar si x es inferior. El tramo con pendiente positiva está resaltado en la curva.",
+  vInf:"x es un bien inferior aquí",
+  vInfT:"Al subir la renta la demanda de x baja: ∂x*/∂m < 0. Ser inferior es necesario para ser Giffen, pero no basta — baja pᵧ o mueve la renta para buscar el tramo Giffen.",
+  vNorm:"x es un bien normal aquí",
+  vNormT:"La demanda de x baja cuando sube su precio y sube con la renta. Prueba la familia «X inferior» y baja pᵧ para encontrar el caso Giffen.",
+  errParse:"No entiendo esa expresión. Revisa paréntesis y operadores.",
+  errVars:"Usa sólo las variables x e y.",
+  foot:'Traducido de un applet de GeoGebra. Sintaxis admitida: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.'
+ },
+ en:{
+  docTitle:"Demand Functions",
+  title:"Some Demand Functions",
+  sub:"From utility maximisation to the demand curve. Pick a preference family, move one variable and watch the optimal bundle respond — including the case where demand rises when the price rises.",
+  dark:"Dark", light:"Light",
+  gScales:"Ranges", scalesHint:"The interval considered for each variable. It is the travel of the slider and also the stretch the horizontal axis draws.", onePanel:"One panel", twoPanels:"Two",
+  fixedAxis:"Fixed vertical axis", boundIs:"Ceiling: m<sub>max</sub>/p<sub>min</sub> →", boundAuto:"The axis fits the curve, so it moves when a parameter changes.",
+  gPref:"Preferences", gParams:"Parameters", gSweep:"Variable being swept",
+  gPrices:"Prices and income", gDiscover:"Discover the demand curve", gLayers:"Layers",
+  customLabel:"Write your own U(x, y)",
+  noParams:"This family has no parameters.",
+  sweepHint:"Choose which one you move. The others are held fixed, and recorded points belong to this one only.",
+  discoverHint:"Move the chosen variable and watch the new optimal bundle. Every pair is marked: the trail you leave <em>is</em> the demand curve.",
+  autoMark:"Mark while moving", rec:"Record point", sweep:"Sweep", stop:"Stop",
+  clear:"Clear", ptsRecorded:"points recorded",
+  fams:{cd:"Cobb–Douglas", ces:"CES", lin:"Linear (substitutes)", inf:"X inferior (Giffen)", custom:"Custom"},
+  vp1:"Choice · (x, y) plane",
+  vpDem:"Demand · as a function of", vpEngel:"Engel curve · as a function of m",
+  layers:{pts:"Recorded points", join:"Join the points", curve:"Reveal the curve",
+    pcc:"Price-consumption path", budget:"Budget line", indiff:"Indifference curve",
+    dx:"Demand for x", dy:"Demand for y", giffen:"Highlight Giffen stretch", grid:"Grid"},
+  roX:"x*", roY:"y*", roSpend:"Spend", roType:"Type",
+  normal:"normal", inferior:"inferior",
+  vGiffen:"x is a Giffen good here",
+  vGiffenT:"Demand for x rises when its own price rises: ∂x*/∂pₓ > 0. The income effect dominates the substitution effect, which can only happen if x is inferior. The upward-sloping stretch is highlighted on the curve.",
+  vInf:"x is an inferior good here",
+  vInfT:"Demand for x falls as income rises: ∂x*/∂m < 0. Being inferior is necessary for Giffen but not sufficient — lower pᵧ or move income to hunt for the Giffen stretch.",
+  vNorm:"x is a normal good here",
+  vNormT:"Demand for x falls when its price rises and rises with income. Try the “X inferior” family and lower pᵧ to find the Giffen case.",
+  errParse:"I can't read that expression. Check the brackets and operators.",
+  errVars:"Use only the variables x and y.",
+  foot:'Translated from a GeoGebra applet. Supported syntax: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.'
+ }
+};
+let LANG="es";
+const T=()=>STR[LANG];
+
+/* =====================================================================
+   4. Model helpers
+   ===================================================================== */
+const F=()=>FAMS[st.fam];
+const dem=(px,py,I)=>F().demand(st,px,py,I);
+const curPts=()=>st.pts[st.axis];
+const axisKey=()=> st.axis==="I"?"I":st.axis;
+function fmt(v,d=2){ return fin(v)?(Math.abs(v)>=1e4?v.toExponential(1):v.toFixed(d)):"—"; }
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function niceStep(range,target){const raw=range/target,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;
+  return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
+/* The horizontal extent is the scale the user set, not something derived from
+   wherever the slider happens to be. That keeps the axis still while points
+   accumulate, and lets a regime that lives at high p_x be brought into view. */
+/* The most of good x anyone can buy is m/p_x, so over the whole range the dials
+   allow, x* never exceeds maxI/minPx — and likewise for y. Framing on that
+   bound gives an axis that does not move when a parameter changes, so two
+   settings can be compared by eye. It is a guaranteed bound, so it is loose:
+   the auto fit is kept for when a tight frame matters more than a stable one. */
+const boundX = () => st.maxI / Math.max(st.minPx, 1e-6);
+const boundY = () => st.maxI / Math.max(st.minPy, 1e-6);
+
+/* The swept axis spans exactly the interval the boxes name. Starting it at
+   zero instead — as it used to — spends the left of the panel on the part of
+   a demand curve that is a near-vertical asymptote and tells the reader
+   nothing, and squeezes the interesting stretch into what is left. */
+function axisInfo(){
+  if(st.axis==="px") return {lab:"pₓ",cur:st.px,min:st.minPx,max:st.maxPx};
+  if(st.axis==="py") return {lab:"pᵧ",cur:st.py,min:st.minPy,max:st.maxPy};
+  return {lab:"m",cur:st.I,min:st.minI,max:st.maxI};
+}
+function demandAt(t){
+  if(st.axis==="px") return dem(t,st.py,st.I);
+  if(st.axis==="py") return dem(st.px,t,st.I);
+  return dem(st.px,st.py,t);
+}
+
+/* =====================================================================
+   5. Drawing
+   ===================================================================== */
+function setup(cv){
+  const dpr=Math.min(devicePixelRatio||1,2), r=cv.getBoundingClientRect();
+  const w=Math.max(1,Math.round(r.width)), h=Math.max(1,Math.round(r.height));
+  if(cv.width!==w*dpr||cv.height!==h*dpr){cv.width=w*dpr; cv.height=h*dpr;}
+  const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function frame(ctx,rect,xmax,ymax,xlab,ylab,noClear,xmin){
+  xmin = xmin||0;
+  const span = (xmax-xmin)||1;
+  const P={l:46,r:18,t:18,b:34};
+  const bx={x0:rect.x0+P.l,y0:rect.y0+P.t,x1:rect.x1-P.r,y1:rect.y1-P.b};
+  const SX=x=>bx.x0+((x-xmin)/span)*(bx.x1-bx.x0);
+  const SY=y=>bx.y1-(y/ymax)*(bx.y1-bx.y0);
+  if(!noClear){ ctx.clearRect(rect.x0,rect.y0,rect.x1-rect.x0,rect.y1-rect.y0);
+    ctx.fillStyle=css("--surface"); ctx.fillRect(rect.x0,rect.y0,rect.x1-rect.x0,rect.y1-rect.y0); }
+  const gx=niceStep(span,7), gy=niceStep(ymax,5);
+  /* the first gridline at or after the left edge, so ticks stay on round
+     numbers whether the axis starts at 0 or at 0.85 */
+  const x0g=Math.ceil((xmin-1e-9)/gx)*gx;
+  if(st.layers.grid){
+    ctx.strokeStyle=css("--rule-2"); ctx.lineWidth=1; ctx.beginPath();
+    for(let x=x0g;x<xmax-1e-9;x+=gx){ if(x>xmin+1e-9){ctx.moveTo(SX(x),bx.y0);ctx.lineTo(SX(x),bx.y1);} }
+    for(let y=gy;y<ymax;y+=gy){ctx.moveTo(bx.x0,SY(y));ctx.lineTo(bx.x1,SY(y));}
+    ctx.stroke();
+  }
+  ctx.strokeStyle=css("--rule"); ctx.lineWidth=1; ctx.beginPath();
+  ctx.moveTo(bx.x0,bx.y0); ctx.lineTo(bx.x0,bx.y1); ctx.lineTo(bx.x1,bx.y1); ctx.stroke();
+  ctx.fillStyle=css("--ink-3"); ctx.font=`11px ${css("--f-mono")}`;
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  const xdec = gx<1?(gx<0.1?2:1):0;
+  /* a left edge off a round number gets its own label, else the axis claims to
+     start somewhere it does not */
+  if(x0g>xmin+gx*0.35) ctx.fillText(fmt(xmin,xdec),SX(xmin),bx.y1+6);
+  for(let x=x0g;x<=xmax+1e-9;x+=gx) ctx.fillText(fmt(x,xdec),SX(x),bx.y1+6);
+  ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let y=0;y<=ymax+1e-9;y+=gy) ctx.fillText(fmt(y,gy<1?1:0),bx.x0-6,SY(y));
+  ctx.fillStyle=css("--ink-2"); ctx.font=`italic 13px ${css("--f-display")}`;
+  ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(xlab,bx.x1+2,bx.y1);
+  ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillText(ylab,bx.x0,bx.y0-4);
+  return {bx,SX,SY};
+}
+function stroke(ctx,pts,col,wd,cas){
+  if(pts.length<2) return;
+  ctx.lineJoin="round"; ctx.lineCap="round";
+  const path=()=>{ctx.beginPath(); let pen=false;
+    for(const p of pts){ if(!p){pen=false;continue;}
+      if(!pen){ctx.moveTo(p[0],p[1]);pen=true;} else ctx.lineTo(p[0],p[1]); }};
+  if(cas){ path(); ctx.strokeStyle=MARK.casing; ctx.lineWidth=wd+3; ctx.stroke(); }
+  path(); ctx.strokeStyle=col; ctx.lineWidth=wd; ctx.stroke();
+}
+function dot(ctx,X,Y,col){
+  ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(X,Y,9,0,7); ctx.fill();
+  ctx.fillStyle=MARK.white;  ctx.beginPath(); ctx.arc(X,Y,6.5,0,7); ctx.fill();
+  ctx.fillStyle=col;         ctx.beginPath(); ctx.arc(X,Y,4,0,7); ctx.fill();
+}
+
+function drawBundle(){
+  const cv=$("cBundle"), {ctx,w,h}=setup(cv);
+  const [xs,ys]=dem(st.px,st.py,st.I);
+  /* the collected bundles are drawn here too, so this frame has to hold still
+     for the same reason the demand panel does */
+  const xmax = st.fixedAxis ? boundX() : Math.max(st.I/st.px*1.25,(fin(xs)?xs:0)*1.4,1);
+  const ymax = st.fixedAxis ? boundY() : Math.max(st.I/st.py*1.25,(fin(ys)?ys:0)*1.4,1);
+  const {bx,SX,SY}=frame(ctx,{x0:0,y0:0,x1:w,y1:h},xmax,ymax,"x","y");
+  ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
+
+  if(st.layers.indiff&&fin(xs)&&fin(ys)){
+    const U=F().U, target=U(st,xs,ys);
+    if(fin(target)){
+      const pts=[];
+      for(let i=0;i<=220;i++){
+        const x=xmax*i/220;
+        let lo=1e-6, hi=ymax*4, ok=false;
+        for(let k=0;k<44;k++){
+          const mid=(lo+hi)/2, v=U(st,x,mid);
+          if(!fin(v)){hi=mid; continue;}
+          if(v<target) lo=mid; else hi=mid;
+          ok=true;
+        }
+        const y=(lo+hi)/2;
+        pts.push(ok&&y<ymax*3.5&&y>0?[SX(x),SY(y)]:null);
+      }
+      stroke(ctx,pts,css("--ink"),1.8,true);
+    }
+  }
+  if(st.layers.budget) stroke(ctx,[[SX(0),SY(st.I/st.py)],[SX(st.I/st.px),SY(0)]],MARK.x,2.4,true);
+
+  if(st.layers.pcc&&curPts().length){
+    const ps=curPts().filter(q=>fin(q.x)&&fin(q.y));
+    if(st.layers.join&&ps.length>1) stroke(ctx,ps.map(q=>[SX(q.x),SY(q.y)]),MARK.pcc,1.8,true);
+    for(const q of ps){
+      ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.x),SY(q.y),4.6,0,7); ctx.fill();
+      ctx.fillStyle=MARK.pcc;    ctx.beginPath(); ctx.arc(SX(q.x),SY(q.y),3,0,7); ctx.fill();
+    }
+  }
+  if(fin(xs)&&fin(ys)) dot(ctx,SX(xs),SY(ys),MARK.bundle);
+  ctx.restore();
+}
+
+function drawDemand(){
+  const cv=$("cDemand"), {ctx,w,h}=setup(cv);
+  const A=axisInfo();
+  /* a typed utility costs a full numeric optimisation per sample, so it gets a
+     coarser grid than the closed-form families */
+  const N=F().numeric?150:420;
+  const AT=i=>A.min+(A.max-A.min)*i/N;      // sample i of the swept interval
+  const sx=[],sy=[];
+  for(let i=0;i<=N;i++){ const t=AT(i)||1e-6; const d=demandAt(t); sx.push(d[0]); sy.push(d[1]); }
+
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=css("--surface"); ctx.fillRect(0,0,w,h);
+
+  const series=[];
+  if(st.layers.dx) series.push({s:sx,col:MARK.x,lab:"x*",giffen:true,key:"x"});
+  if(st.layers.dy) series.push({s:sy,col:MARK.y,lab:"y*",giffen:false,key:"y"});
+  if(!series.length) return;
+  const cur=demandAt(A.cur);
+  /* One panel puts both goods on a shared vertical scale, so a substitution
+     reads directly: one rises exactly as the other falls. Two panels give each
+     its own scale, which is what you need when the two differ by an order of
+     magnitude and the smaller one would otherwise flatten into the axis. */
+  const groups = st.overlay ? [series] : series.map(r=>[r]);
+  const hh=h/groups.length;
+
+  groups.forEach((rows,gi)=>{
+    /* Demand is a hyperbola in its own price: as p -> 0 quantity -> infinity,
+       so the largest sample is worthless as a scale — one point near zero
+       pushed the axis to 1e7 and flattened everything else into the baseline.
+       Scale on a high percentile instead and let the asymptote run off the top,
+       which is what it does. */
+    let ymax;
+    if(st.fixedAxis){
+      /* every series in this panel gets the bound of whichever good it is;
+         sharing a panel means sharing the larger of the two */
+      ymax=0;
+      for(const row of rows) ymax=Math.max(ymax, row.key==="x"?boundX():boundY());
+    } else {
+      const vals=[];
+      for(const row of rows) for(const v of row.s) if(fin(v)&&v>=0) vals.push(v);
+      vals.sort((a,b)=>a-b);
+      ymax = vals.length ? vals[Math.floor(vals.length*0.92)] : 1;
+      if(!(ymax>0)) ymax = vals.length ? (vals[vals.length-1]||1) : 1;
+      for(const row of rows){
+        const v=cur[row.key==="x"?0:1];
+        if(fin(v)&&v>=0) ymax=Math.max(ymax, Math.min(v, ymax*4));
+      }
+      ymax*=1.25;
+    }
+    if(!(ymax>0)) ymax=1;
+    const ylab = rows.length>1 ? "" : rows[0].lab;
+    const rect={x0:0,y0:gi*hh,x1:w,y1:(gi+1)*hh};
+    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,gi===groups.length-1?A.lab:"",ylab,true,A.min);
+    ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
+
+    for(const row of rows){
+      if(st.layers.curve)
+        stroke(ctx,row.s.map((v,i)=>fin(v)&&v>=0?[SX(AT(i)),SY(v)]:null),row.col,2.4,true);
+
+      if(row.giffen&&st.layers.giffen&&st.layers.curve&&st.axis!=="I"){
+        const seg=[];
+        for(let i=1;i<=N;i++){
+          const a=row.s[i-1], b=row.s[i];
+          if(fin(a)&&fin(b)&&(b-a)>1e-9){
+            if(!seg.length) seg.push([SX(AT(i-1)),SY(a)]);
+            seg.push([SX(AT(i)),SY(b)]);
+          } else if(seg.length){ stroke(ctx,seg,MARK.giffen,4.5,true); seg.length=0; }
+        }
+        if(seg.length) stroke(ctx,seg,MARK.giffen,4.5,true);
+      }
+      if(st.layers.pts&&curPts().length){
+        const ps=curPts().filter(q=>fin(q[row.key])&&q[row.key]>=0);
+        if(st.layers.join&&ps.length>1)
+          stroke(ctx,ps.map(q=>[SX(q.t),SY(q[row.key])]),row.col,1.6,true);
+        for(const q of ps){
+          ctx.fillStyle=MARK.casing; ctx.beginPath(); ctx.arc(SX(q.t),SY(q[row.key]),4.6,0,7); ctx.fill();
+          ctx.fillStyle=row.col;     ctx.beginPath(); ctx.arc(SX(q.t),SY(q[row.key]),2.9,0,7); ctx.fill();
+        }
+      }
+    }
+
+    ctx.strokeStyle=css("--rule"); ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(SX(A.cur),bx.y0); ctx.lineTo(SX(A.cur),bx.y1); ctx.stroke();
+    ctx.setLineDash([]);
+    for(const row of rows){
+      const v=cur[row.key==="x"?0:1];
+      if(fin(v)&&v>=0) dot(ctx,SX(A.cur),SY(v),row.col);
+    }
+    ctx.restore();
+  });
+  /* two series sharing one panel are only distinguished by colour, so the key
+     is not optional there */
+  $("legend").hidden = !(st.overlay && series.length>1);
+}
+
+/* =====================================================================
+   6. Readouts and verdict
+   ===================================================================== */
+function paint(){
+  const t=T(), [xs,ys]=dem(st.px,st.py,st.I);
+  const cells=(host,rows)=>{host.innerHTML=rows.map(([k,v])=>
+    `<div class="cell"><dt>${k}</dt><dd>${v}</dd></div>`).join("");};
+  cells($("ro1"),[[t.roX,fmt(xs)],[t.roY,fmt(ys)],
+    [t.roSpend,`${fmt(st.px*xs+st.py*ys,1)} / ${fmt(st.I,1)}`]]);
+
+  const h=1e-3;
+  const dxdpx=(dem(st.px+h,st.py,st.I)[0]-dem(st.px-h,st.py,st.I)[0])/(2*h);
+  const dxdI =(dem(st.px,st.py,st.I+h)[0]-dem(st.px,st.py,st.I-h)[0])/(2*h);
+  const fmtD=v=>!fin(v)?"—":Math.abs(v)<0.01&&v!==0?v.toExponential(1):v.toFixed(3);
+  cells($("ro2"),[["∂x*/∂pₓ",fmtD(dxdpx)],["∂x*/∂m",fmtD(dxdI)],
+    [t.roType,!fin(dxdI)?"—":dxdI<-1e-6?t.inferior:t.normal]]);
+
+  /* a numeric optimum wobbles at the last decimal, so a typed utility needs a
+     slacker threshold than a closed form before it is called Giffen */
+  const eps=F().numeric?2e-3:1e-6;
+  const v=$("verdict");
+  if(fin(dxdpx)&&dxdpx>eps){
+    v.className="verdict is-giffen"; $("v-title").textContent=t.vGiffen; $("v-text").textContent=t.vGiffenT;
+  } else if(fin(dxdI)&&dxdI<-eps){
+    v.className="verdict is-inferior"; $("v-title").textContent=t.vInf; $("v-text").textContent=t.vInfT;
+  } else {
+    v.className="verdict"; $("v-title").textContent=t.vNorm; $("v-text").textContent=t.vNormT;
+  }
+  $("pt-count").textContent=curPts().length;
+  $("axis-bound").innerHTML = st.fixedAxis
+    ? `${t.boundIs} x* ≤ ${fmt(boundX(),1)},  y* ≤ ${fmt(boundY(),1)}`
+    : t.boundAuto;
+}
+function render(){ drawBundle(); drawDemand(); paint(); }
+
+/* =====================================================================
+   7. Collecting points
+   ===================================================================== */
+function record(){
+  const A=axisInfo(), d=demandAt(A.cur);
+  if(!fin(d[0])&&!fin(d[1])) return;
+  const arr=curPts(), eps=(A.max-A.min)*2e-3;
+  const hit=arr.findIndex(q=>Math.abs(q.t-A.cur)<eps);
+  const rec={t:A.cur,x:d[0],y:d[1]};
+  if(hit>=0) arr[hit]=rec; else arr.push(rec);
+  arr.sort((a,b)=>a.t-b.t);
+  render();
+}
+function clearPts(){ st.pts[st.axis]=[]; render(); }
+function autoRecord(){
+  if(!st.autoMark) return;
+  /* spacing is in screen terms, so it follows the width of the interval on
+     display, not the size of the number at its right-hand end */
+  const A=axisInfo(), arr=curPts(), gap=(A.max-A.min)/80;
+  if(arr.some(q=>Math.abs(q.t-A.cur)<gap)) return;
+  const d=demandAt(A.cur);
+  if(!fin(d[0])&&!fin(d[1])) return;
+  arr.push({t:A.cur,x:d[0],y:d[1]});
+  arr.sort((a,b)=>a.t-b.t);
+}
+/* Points are only comparable ceteris paribus, so changing anything except the
+   swept variable throws the collection away. */
+function invalidate(changed){ if(changed!==axisKey()) st.pts[st.axis]=[]; }
+
+let sweeping=null;
+function sweep(){
+  if(sweeping){ cancelAnimationFrame(sweeping); sweeping=null; $("btn-sweep").textContent=T().sweep; return; }
+  const A=axisInfo(), n=14, key=axisKey(), sliderId=key==="I"?"inc":key, slider=$(sliderId);
+  st.pts[st.axis]=[]; let i=1;
+  $("btn-sweep").textContent=T().stop;
+  const step=()=>{
+    if(i>n){ sweeping=null; $("btn-sweep").textContent=T().sweep; return; }
+    const t=clamp(A.min+(A.max-A.min)*i/(n+1),parseFloat(slider.min),parseFloat(slider.max));
+    st[key]=t; slider.value=t; $(sliderId+"-v").value=+t.toFixed(2);
+    record(); i++;
+    sweeping=requestAnimationFrame(()=>setTimeout(step,110));
+  };
+  step();
+}
+
+/* =====================================================================
+   8. Wiring
+   ===================================================================== */
+function buildChips(){
+  const t=T();
+  $("fam-chips").innerHTML=Object.keys(FAMS).map(k=>
+    `<button type="button" class="chip" data-fam="${k}" aria-pressed="${k===st.fam}">${t.fams[k]}</button>`).join("");
+  $("fam-chips").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+    st.fam=c.dataset.fam; st.pts={px:[],py:[],I:[]};
+    buildChips(); syncParams(); render();
+    if(st.fam==="custom") $("u-expr").focus();
+  }));
+  $("fam-formula").textContent = F().formula;
+}
+function syncParams(){
+  const on=new Set(F().params);
+  document.querySelectorAll(".slider-row[data-p]").forEach(r=>{ r.hidden=!on.has(r.dataset.p); });
+  $("custom-box").hidden = st.fam!=="custom";
+  /* an empty group is just a heading over nothing: hide the whole block when
+     the family has no parameters, rather than leaving a stub behind */
+  $("grp-params").hidden = on.size===0;
+  $("no-params").hidden = true;
+  /* the formula panel would only repeat what the input box already shows */
+  $("fam-formula").hidden = st.fam==="custom";
+}
+function buildLayers(){
+  const t=T();
+  $("layers").innerHTML=LAYER_KEYS.map(k=>
+    `<label class="check"><input type="checkbox" data-l="${k}" ${st.layers[k]?"checked":""}><span>${t.layers[k]}</span></label>`).join("");
+  $("layers").querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{
+    st.layers[cb.dataset.l]=cb.checked; render();
+  }));
+}
+function syncAxisUI(){
+  const t=T();
+  document.querySelectorAll("#axis-seg [data-axis]").forEach(b=>
+    b.setAttribute("aria-pressed",String(b.dataset.axis===st.axis)));
+  document.querySelectorAll("[data-var]").forEach(r=>
+    r.classList.toggle("is-swept", r.dataset.var===st.axis));
+  $("vp2-title").innerHTML = st.axis==="I" ? t.vpEngel
+    : `${t.vpDem} ${st.axis==="px"?"pₓ":"pᵧ"}`;
+}
+/* Scale controls: they change the view and the slider range, not the economics,
+   so they must not discard collected points the way a price change does.
+   `lo` and `hi` are the two boxes of one range; each keeps the slider it
+   governs inside the interval, and drags the live value along if the interval
+   has moved out from under it. */
+const GAP=0.02;   // a range narrower than this has no interior to plot
+function bindRange(loKey,hiKey,target){
+  const lo=$(loKey), hi=$(hiKey), varKey = target==="inc" ? "I" : target;
+  const apply=()=>{
+    const t=$(target), box=$(target+"-v");
+    t.min=st[loKey]; t.max=st[hiKey];
+    const v=clamp(st[varKey],st[loKey],st[hiKey]);
+    if(v!==st[varKey]){ st[varKey]=v; t.value=v; box.value=fmt(v,2); }
+  };
+  const set=(el,key,other,isLo)=>{
+    let v=parseFloat(el.value);
+    /* an empty or half-typed box should not blank the plot — leave the state
+       alone and let the box hold whatever is being typed until it parses */
+    if(!fin(v)){ return; }
+    v=clamp(v,parseFloat(el.min),parseFloat(el.max));
+    v = isLo ? Math.min(v, st[other]-GAP) : Math.max(v, st[other]+GAP);
+    st[key]=v; el.value=+v.toFixed(4);
+    apply(); render();
+  };
+  lo.addEventListener("change",()=>set(lo,loKey,hiKey,true));
+  hi.addEventListener("change",()=>set(hi,hiKey,loKey,false));
+  lo.value=st[loKey]; hi.value=st[hiKey]; apply();
+}
+
+function bind(id,key){
+  const s=$(id), b=$(id+"-v");
+  const set=v=>{ v=parseFloat(v); if(!fin(v))return;
+    v=clamp(v,parseFloat(s.min),parseFloat(s.max));
+    if(!sweeping) invalidate(key);
+    st[key]=v; s.value=v; b.value=v;
+    if(!sweeping&&key===axisKey()) autoRecord();
+    render(); };
+  s.addEventListener("input",()=>set(s.value));
+  b.addEventListener("change",()=>set(b.value));
+  b.value=st[key]; s.value=st[key];
+}
+function readCustom(){
+  const src=$("u-expr").value.trim();
+  try{
+    st.customU=compile(parseExpr(src));
+    st.customSrc=src;
+    $("u-expr").setAttribute("aria-invalid","false"); $("u-err").textContent="";
+  }catch(err){
+    st.customU=null;
+    $("u-expr").setAttribute("aria-invalid","true");
+    $("u-err").textContent = /unknown:/.test(err.message)?T().errVars:T().errParse;
+  }
+  st.pts={px:[],py:[],I:[]};
+  buildChips(); render();
+}
+function applyLang(){
+  const t=T();
+  document.documentElement.lang=LANG;
+  document.title=t.docTitle;
+  document.querySelectorAll("[data-t]").forEach(el=>{
+    const v=t[el.dataset.t];
+    if(v!==undefined) el.innerHTML=v;
+  });
+  $("foot").innerHTML=t.foot;
+  $("lg-es").setAttribute("aria-pressed",String(LANG==="es"));
+  $("lg-en").setAttribute("aria-pressed",String(LANG==="en"));
+  $("vp1-title").textContent=t.vp1;
+  if(!sweeping) $("btn-sweep").textContent=t.sweep;
+  buildChips(); syncParams(); buildLayers(); syncAxisUI(); render();
+  try{ localStorage.setItem("demanda.lang",LANG); }catch(_){}
+}
+function setTheme(th){
+  document.documentElement.dataset.theme=th;
+  $("th-dark").setAttribute("aria-pressed",String(th==="dark"));
+  $("th-light").setAttribute("aria-pressed",String(th==="light"));
+  try{ localStorage.setItem("demanda.theme",th); }catch(_){}
+  render();
+}
+
+document.querySelectorAll("#axis-seg [data-axis]").forEach(btn=>btn.addEventListener("click",()=>{
+  st.axis=btn.dataset.axis; syncAxisUI(); render();
+}));
+$("auto-mark").addEventListener("change",e=>{ st.autoMark=e.target.checked; });
+$("btn-rec").addEventListener("click",record);
+$("btn-clear").addEventListener("click",clearPts);
+$("btn-sweep").addEventListener("click",sweep);
+$("u-expr").addEventListener("change",readCustom);
+$("lg-es").addEventListener("click",()=>{LANG="es"; applyLang();});
+$("lg-en").addEventListener("click",()=>{LANG="en"; applyLang();});
+$("th-dark").addEventListener("click",()=>setTheme("dark"));
+$("th-light").addEventListener("click",()=>setTheme("light"));
+addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT") return;
+  if(e.key==="r"||e.key==="R"){ e.preventDefault(); record(); }
+});
+
+["alpha","r","a","beta","xlow","yup"].forEach(k=>bind(k,k));
+bind("px","px"); bind("py","py"); bind("inc","I");
+bindRange("minPx","maxPx","px");
+bindRange("minPy","maxPy","py");
+bindRange("minI","maxI","inc");
+$("fixed-axis").addEventListener("change",e=>{ st.fixedAxis=e.target.checked; render(); });
+
+document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventListener("click",()=>{
+  st.overlay = btn.dataset.panels==="1";
+  document.querySelectorAll("#panel-seg [data-panels]").forEach(o=>
+    o.setAttribute("aria-pressed",String(o===btn)));
+  render();
+}));
+new ResizeObserver(()=>render()).observe(document.querySelector(".viewports"));
+
+let lang0="es", theme0="dark";
+try{ lang0=localStorage.getItem("demanda.lang")||"es"; theme0=localStorage.getItem("demanda.theme")||"dark"; }catch(_){}
+LANG=lang0;
+readCustom();
+syncParams();
+setTheme(theme0);
+applyLang();
+</script>
+</body>
+</html>

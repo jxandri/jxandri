@@ -396,6 +396,15 @@ segunda cumbre al otro lado, cuya cima no está cerca de la frontera. No existe 
 para «el cuerpo de una montaña», así que la ventana se elige como la más amplia en la que el
 enunciado se cumple, y todo lo que afirma está en pantalla para comprobarlo.</p>
 
+<p>Vale la pena nombrar en clase dos decisiones de presentación. La ventana está desplazada hacia
+el país de la cima en lugar de centrada en el pico, de modo que haya una montaña de verdad por la
+que caminar y solo una franja estrecha del otro país en cuadro: esa franja es lo que mantiene el
+máximo restringido sobre la frontera. Y el eje z se abre <strong>estirado</strong>, de tres a nueve
+veces según la montaña, porque a escala verdadera dos kilómetros de relieve en dieciocho kilómetros
+de terreno son una loma, no un pico. Es solo una escala de visualización: <code>f</code>, sus
+gradientes, las curvas de nivel y todas las lecturas siguen en kilómetros reales, y el mando del
+eje z lo devuelve a 1 cuando quiera mostrar a la clase lo suave que es una montaña real.</p>
+
 <h2>Caminar por la frontera</h2>
 <p><strong>Caminar solo por la frontera</strong> (<kbd>B</kbd>, en la sección Conjunto factible)
 ata al explorador a la curva de restricción. Cada paso se proyecta de vuelta sobre ella, así que
@@ -753,6 +762,42 @@ profundidad en ángulo sin escorzarlo, y es lo que impide que «adelante» se de
 marco.</p>
 
 <!-- =========================================================== PARTE 5 -->
+<h2>Border Run — el juego</h2>
+<p><strong>play.html</strong> es el mismo programa con un objetivo. Está pensado para mando: conecte
+un gamepad de tipo Xbox a un portátil, o empareje uno con un móvil o tableta, y se juega sin tocar
+el teclado. Todo funciona también con teclado, porque un mando para cuatro estudiantes es lo
+normal.</p>
+<p>Cada misión tiene la misma forma, porque es la forma de la matemática. Le dejan en el país que
+<em>no</em> posee la cima. El pico está a la vista al otro lado de la frontera y no es suyo. En
+algún punto de la línea hay un lugar más alto donde sí puede estar —eso es <code>argmax f</code>
+sujeto a <code>g ≤ 0</code>— y la tarea es caminar hasta pisarlo y plantar la bandera. La
+puntuación son los metros que dejó sin aprovechar: menos de 10 m son tres estrellas, 30 m dos,
+80 m una.</p>
+<p><strong>Cruzar la frontera está permitido, y es a propósito.</strong> Un muro que detuviera
+físicamente al jugador convertiría en silencio una maximización con restricciones en una sin
+restricciones sobre un dominio menor. Así que un estudiante puede subir hasta la cima, pisarla,
+pulsar A — y ver cómo el juego rechaza la bandera y nombra el país donde está invadiendo. Ese
+rechazo <em>es</em> la restricción, y sentirlo vale más que leerlo.</p>
+<p>El momento didáctico es el que nadie planea: un estudiante sube, choca con la frontera y
+descubre que la única forma de seguir ganando altura es deslizarse <em>a lo largo</em> de ella, y
+que sigue ganando hasta que el terreno deja de subir en la dirección de la línea. Esa es la
+condición de tangencia sucediéndole. La tarjeta de resultado lo dice después, con los números de
+esa montaña.</p>
+<table class="compact">
+  <tr><th style="width:44mm">Control</th><th>Hace</th></tr>
+  <tr><td>Palanca izquierda / <kbd>WASD</kbd></td><td>caminar</td></tr>
+  <tr><td>Palanca derecha / ratón</td><td>mirar</td></tr>
+  <tr><td><b>A</b> / <kbd>Enter</kbd></td><td>elegir, confirmar, plantar la bandera</td></tr>
+  <tr><td><b>B</b> / <kbd>Esc</kbd></td><td>volver a las montañas</td></tr>
+  <tr><td><b>X</b></td><td>curvas de nivel</td></tr>
+  <tr><td><b>Y</b></td><td>mostrar la frontera</td></tr>
+  <tr><td><b>Start</b></td><td>recortar las curvas a su propio país</td></tr>
+  <tr><td>Cruceta / <kbd>↑</kbd><kbd>↓</kbd></td><td>elegir montaña</td></tr>
+</table>
+<p>Las medallas se recuerdan en el navegador, así que una clase puede volver a una serie a medias.
+El laboratorio sigue debajo: pulse <kbd>Tab</kbd> durante una partida para abrir el panel y mostrar
+la fórmula de la que está hecha la montaña, o la restricción en su caja.</p>
+
 <h1 class="part"><span class="num">5</span>Cómo escribir sus propias funciones</h1>
 
 <p>Escriba en la caja <code>f(x, y) =</code> y presione <kbd>Enter</kbd>. La notación es la

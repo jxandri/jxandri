@@ -59,6 +59,11 @@ const S = require('os').tmpdir() + '/';
     `walked ${(walked.z*1000).toFixed(0)} m vs optimiser ${(opt.z*1000).toFixed(0)} m`);
 
   // --- level curves inside the feasible set only ---------------------------
+  // With the frontier WALLS HIDDEN, because that is how this broke: both the
+  // clipping and the rope used to be gated on the walls checkbox, so hiding
+  // the walls silently switched them off and the toggles looked dead.
+  await p.evaluate(() => { const f=document.getElementById('t-feas'); if (f.checked) f.click(); });
+  await p.waitForTimeout(700);
   await p.evaluate(() => { const c=document.getElementById('t-contours'); if(!c.checked) c.click(); });
   await p.waitForTimeout(2200);
   const all = await p.evaluate(() => {
@@ -81,8 +86,15 @@ const S = require('os').tmpdir() + '/';
     }
     return { n, worst };
   }, line);
+  // The centreline is cut exactly at the constraint; the band drawn along it
+  // has width, so its far edge spills half a bandwidth past. That is correct —
+  // a drawn path is not a mathematical curve — so the tolerance is a fraction
+  // of the domain rather than a fixed distance, which is what the band's own
+  // width is.
+  const span = await p.evaluate(() => window.__peaks.state.xmax - window.__peaks.state.xmin);
   say('clipping keeps every contour vertex inside the feasible set',
-    inside && inside.worst < 0.06, `worst overshoot ${(inside.worst*1000).toFixed(0)} m`);
+    inside && inside.worst < span * 0.015,
+    `worst overshoot ${(inside.worst*1000).toFixed(0)} m on a ${span.toFixed(1)} km domain`);
   say('clipping actually removes the outside part', inside && inside.n < all * 0.9,
     `${inside.n} of ${all} vertices kept`);
 

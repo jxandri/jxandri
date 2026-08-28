@@ -6,6 +6,9 @@ name: Deploy applets to GitHub Pages
 #   /gradient-peaks/     the calculus applet          (app/)
 #   /gradient-peaks/guide/  its illustrated guide     (docs/)
 #   /consumer-optimum/   the consumer-choice applet   (consumer-optimum/)
+#   /demand-functions/   the demand-curve applet      (demand-functions/)
+#   /nonlinear-budget/   the kinked-constraint applet (nonlinear-budget/)
+#   /labor-tax/          the income-tax applet        (labor-tax/)
 #   /edgeworth-box/      the exchange applet          (edgeworth-box/)
 #
 # ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
@@ -56,6 +59,15 @@ jobs:
           mkdir -p _site/consumer-optimum
           cp consumer-optimum/index.html _site/consumer-optimum/index.html
 
+          mkdir -p _site/demand-functions
+          cp demand-functions/index.html _site/demand-functions/index.html
+
+          mkdir -p _site/nonlinear-budget
+          cp nonlinear-budget/index.html _site/nonlinear-budget/index.html
+
+          mkdir -p _site/labor-tax
+          cp labor-tax/index.html _site/labor-tax/index.html
+
           mkdir -p _site/edgeworth-box
           cp edgeworth-box/index.html _site/edgeworth-box/index.html
 
@@ -76,6 +88,9 @@ jobs:
           if [ -f dist/Gradient-Peaks.html ]; then
             cp dist/Gradient-Peaks.html _site/gradient-peaks/Gradient-Peaks-offline.html
           fi
+          if [ -f dist/Border-Run.html ]; then
+            cp dist/Border-Run.html _site/gradient-peaks/Border-Run-offline.html
+          fi
 
           # stop Jekyll from swallowing files whose names begin with _
           touch _site/.nojekyll
@@ -87,8 +102,12 @@ jobs:
           for f in \
             _site/index.html \
             _site/gradient-peaks/index.html \
+            _site/gradient-peaks/play.html \
             _site/gradient-peaks/guide/index.html \
             _site/consumer-optimum/index.html \
+            _site/demand-functions/index.html \
+            _site/nonlinear-budget/index.html \
+            _site/labor-tax/index.html \
             _site/edgeworth-box/index.html
           do
             if [ ! -s "$f" ]; then

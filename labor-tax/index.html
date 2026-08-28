@@ -1,0 +1,1345 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impuesto a la Renta del Trabajo</title>
+<style>
+/* Dark is the design here, not a variant of it. Light is an explicit opt-out
+   for projectors and printed handouts, chosen from the header. */
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --crit:#E4705C; --good:#6FD3A0;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
+  --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
+  --rule:#CBD4D8; --rule-2:#E1E7EA;
+  --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --crit:#A93726; --good:#1B6E48;
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-ui); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased}
+button,input,select{font:inherit; color:inherit}
+.shell{max-width:1500px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
+.masthead h1{margin:0; font-family:var(--f-display); font-size:26px; font-weight:600; letter-spacing:-.01em}
+.masthead p{margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:70ch}
+.head-actions{display:flex; align-items:center; gap:8px}
+
+.console{display:grid; grid-template-columns:clamp(200px,21vw,300px) minmax(0,1fr);
+  gap:12px; align-items:start}
+@media (max-width:680px){.console{grid-template-columns:1fr}}
+
+.rail{display:flex; flex-direction:column; gap:12px; background:var(--surface);
+  border:1px solid var(--rule); border-radius:3px; padding:16px; box-shadow:var(--shadow)}
+.group{display:flex; flex-direction:column; gap:8px}
+.group[hidden]{display:none}
+.group+.group{border-top:1px solid var(--rule-2); padding-top:12px}
+.group>h2{margin:0; font-size:10.5px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.hint{margin:0; font-size:12px; color:var(--ink-3); line-height:1.4}
+
+.scen{display:flex; flex-direction:column; gap:4px}
+.scen button{appearance:none; cursor:pointer; text-align:left; display:flex; gap:8px;
+  align-items:baseline; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:3px; padding:6px 9px; font-size:12.5px; line-height:1.3}
+.scen button:hover{border-color:var(--accent); color:var(--accent-ink)}
+.scen button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.scen .n{font-family:var(--f-mono); font-size:11px; opacity:.75; flex:none; width:1.1em}
+.scen button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.slider-row{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px}
+.slider-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.4em}
+.slider-row .v{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  text-align:right; width:4em; background:transparent; border:0;
+  border-bottom:1px dotted var(--rule); padding:1px 2px}
+.slider-row .v:focus{outline:none; border-bottom-color:var(--accent); background:var(--sunk)}
+.slider-row[hidden]{display:none}
+input[type=range]{appearance:none; -webkit-appearance:none; width:100%; height:20px;
+  background:transparent; cursor:pointer; margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-moz-range-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px;
+  margin-top:-5.5px; border-radius:50%; background:var(--accent); border:2px solid var(--surface)}
+input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid var(--surface)}
+input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.text-in{width:100%; padding:7px 9px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--sunk); font-family:var(--f-mono); font-size:12.5px; color:var(--ink)}
+.text-in:focus{outline:none; border-color:var(--accent)}
+.text-in[aria-invalid="true"]{border-color:var(--crit)}
+.err{margin:0; font-size:12px; color:var(--crit); min-height:1em}
+.formula{font-family:var(--f-mono); font-size:12px; color:var(--ink-2);
+  background:var(--sunk); border:1px solid var(--rule-2); border-radius:3px;
+  padding:8px 10px; overflow-x:auto; white-space:nowrap}
+
+.chips{display:flex; flex-wrap:wrap; gap:5px}
+.chip{appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:20px; padding:4px 11px; font-size:12px}
+.chip:hover{border-color:var(--accent); color:var(--accent-ink)}
+.chip[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.chip:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.check{display:flex; gap:7px; align-items:flex-start; font-size:12.5px; color:var(--ink-2);
+  cursor:pointer; line-height:1.3}
+.check input{accent-color:var(--accent); margin:1px 0 0; flex:none}
+.checks{display:grid; grid-template-columns:1fr 1fr; gap:5px 9px}
+.checks.auto{grid-template-columns:1fr}
+
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:5px 11px; font-size:12px}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+
+.viewports{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start}
+@media (max-width:1000px){.viewports{grid-template-columns:1fr}}
+.vp{background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden}
+.vp-head{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:9px 12px; border-bottom:1px solid var(--rule-2); flex-wrap:wrap}
+.vp-head h2{margin:0; font-family:var(--f-mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+.vp canvas{display:block; width:100%; height:clamp(320px,46vh,520px); touch-action:none}
+.legend{display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--ink-2);
+  font-family:var(--f-mono)}
+.legend span{display:inline-flex; align-items:center; gap:4px}
+.legend i{width:9px; height:9px; border-radius:2px; display:inline-block}
+.legend[hidden]{display:none}
+
+.readouts{display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
+  border-top:1px solid var(--rule-2)}
+.ro{padding:8px 12px; border-right:1px solid var(--rule-2)}
+.ro:last-child{border-right:0}
+.ro .lab{font-family:var(--f-mono); font-size:9.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3)}
+.ro .val{font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:15px; color:var(--ink); margin-top:1px}
+.ro .val.is-good{color:var(--good)}
+.ro .val.is-crit{color:var(--crit)}
+
+.verdict{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent);
+  border-radius:3px; padding:11px 14px; box-shadow:var(--shadow)}
+.verdict h3{margin:0 0 3px; font-size:13px; font-weight:700; color:var(--accent-ink)}
+.verdict p{margin:0; font-size:12.5px; color:var(--ink-2); max-width:88ch}
+.verdict.is-kink{border-left-color:#FF9E2C} .verdict.is-kink h3{color:#FF9E2C}
+.verdict.is-jump{border-left-color:var(--crit)} .verdict.is-jump h3{color:var(--crit)}
+
+footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid var(--rule-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <h1 id="h-title">Impuesto a la Renta del Trabajo</h1>
+      <p id="h-sub">Un impuesto por tramos dobla la restricción entre consumo y ocio. Con tipos
+         marginales la frontera se quiebra; con tipos medios se rompe, y cruzar un umbral deja
+         al trabajador estrictamente peor.</p>
+    </div>
+    <div class="head-actions">
+      <div class="seg" id="lang-seg">
+        <button type="button" id="lg-es" aria-pressed="true">ES</button>
+        <button type="button" id="lg-en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme-seg">
+        <button type="button" id="th-dark" aria-pressed="true">Oscuro</button>
+        <button type="button" id="th-light" aria-pressed="false">Claro</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="console">
+    <aside class="rail">
+
+      <div class="group">
+        <h2 data-t="gMode">Cómo se aplica</h2>
+        <div class="scen" id="mode"></div>
+        <p class="hint" id="mode-hint"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gBrackets">Tramos</h2>
+        <p class="hint" data-t="brHint">Umbrales sobre la renta del trabajo w·L y el tipo de cada tramo.</p>
+        <div class="slider-row"><span class="k">t₀</span><input type="range" id="t0" min="0" max="0.95" step="0.005" value="0"><input class="v" id="t0-v"></div>
+        <div class="slider-row"><span class="k">s₀</span><input type="range" id="s0" min="0" max="200" step="1" value="20"><input class="v" id="s0-v"></div>
+        <div class="slider-row"><span class="k">t₁</span><input type="range" id="t1" min="0" max="0.95" step="0.005" value="0.4"><input class="v" id="t1-v"></div>
+        <div class="slider-row"><span class="k">s₁</span><input type="range" id="s1" min="0" max="200" step="1" value="30"><input class="v" id="s1-v"></div>
+        <div class="slider-row"><span class="k">t₂</span><input type="range" id="t2" min="0" max="0.95" step="0.005" value="0.8"><input class="v" id="t2-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gWage">Salario y renta</h2>
+        <div class="slider-row"><span class="k">w</span><input type="range" id="w" min="1" max="200" step="1" value="50"><input class="v" id="w-v"></div>
+        <div class="slider-row"><span class="k">m₀</span><input type="range" id="I0" min="0" max="60" step="0.5" value="10"><input class="v" id="I0-v"></div>
+        <div class="slider-row"><span class="k">pₓ</span><input type="range" id="px" min="0.2" max="10" step="0.05" value="1"><input class="v" id="px-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gPrefs">Preferencias</h2>
+        <div class="chips" id="fams"></div>
+        <input class="text-in" id="u-expr" value="x^0.5*y^0.5" spellcheck="false" aria-label="u(c, ocio)">
+        <p class="err" id="u-err"></p>
+        <div class="formula" id="fam-formula"></div>
+        <div class="slider-row" data-p="alpha"><span class="k">α</span><input type="range" id="alpha" min="0.05" max="0.95" step="0.01" value="0.5"><input class="v" id="alpha-v"></div>
+        <div class="slider-row" data-p="rho"><span class="k">ρ</span><input type="range" id="rho" min="-6" max="0.9" step="0.01" value="0.5"><input class="v" id="rho-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gAxis">Eje vertical</h2>
+        <div class="seg" id="axis-seg">
+          <button type="button" data-axis="leisure" aria-pressed="true" data-t="axLeisure">Ocio</button>
+          <button type="button" data-axis="labor" aria-pressed="false" data-t="axLabor">Trabajo</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gLayers">Capas</h2>
+        <div class="checks" id="layers"></div>
+      </div>
+
+    </aside>
+
+    <div style="display:flex; flex-direction:column; gap:12px; min-width:0">
+      <div class="verdict" id="verdict">
+        <h3 id="v-title">—</h3>
+        <p id="v-text">—</p>
+      </div>
+
+      <div class="viewports">
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp1-title">Consumo y ocio</h2>
+            <div class="legend" id="legend1"></div>
+          </div>
+          <canvas id="cPlane" aria-label="Plano consumo-ocio"></canvas>
+          <div class="readouts" id="ro1"></div>
+        </section>
+
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp2-title">Renta neta</h2>
+            <div class="seg" id="p2-seg">
+              <button type="button" data-p2="tax" aria-pressed="true" data-t="p2Tax">Impuesto</button>
+              <button type="button" data-p2="util" aria-pressed="false" data-t="p2Util">Utilidad</button>
+            </div>
+          </div>
+          <canvas id="cPanel2" aria-label="Panel secundario"></canvas>
+          <div class="readouts" id="ro2"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+/* ==========================================================================
+   1. Expression language
+   --------------------------------------------------------------------------
+   Tokeniser -> Pratt parser -> AST -> closure tree. No eval(), because the
+   artifact CSP may forbid it and a silent failure here kills the whole app.
+   ========================================================================== */
+
+const FUNCS = {
+  sqrt:1, ln:1, log:1, log10:1, exp:1, abs:1, sin:1, cos:1, tan:1,
+  min:2, max:2, pow:2
+};
+const CONSTS = { e:Math.E, pi:Math.PI, "π":Math.PI };
+
+function tokenize(src){
+  const s = src.replace(/−/g,"-").replace(/[×⋅]/g,"*").replace(/÷/g,"/");
+  const out = [];
+  let i = 0;
+  const isDigit = c => c >= "0" && c <= "9";
+  const isAlpha = c => /[A-Za-zα-ω]/.test(c);
+
+  while(i < s.length){
+    const c = s[i];
+    if(c === " " || c === "\t"){ i++; continue; }
+
+    if(isDigit(c) || (c === "." && isDigit(s[i+1]))){
+      let j = i;
+      while(j < s.length && (isDigit(s[j]) || s[j] === ".")) j++;
+      out.push({ k:"num", v:parseFloat(s.slice(i,j)) });
+      i = j; continue;
+    }
+
+    if(isAlpha(c)){
+      // longest known function or constant name, else a single-letter variable
+      let name = null;
+      for(const cand of Object.keys(FUNCS).concat(Object.keys(CONSTS))){
+        if(s.startsWith(cand, i) && (!name || cand.length > name.length)) name = cand;
+      }
+      if(name && FUNCS[name]){ out.push({ k:"fn", v:name, arity:FUNCS[name] }); i += name.length; continue; }
+      if(name && name in CONSTS){ out.push({ k:"num", v:CONSTS[name] }); i += name.length; continue; }
+      if(c === "x" || c === "y"){ out.push({ k:"var", v:c }); i++; continue; }
+      throw new SyntaxError(`unknown:${c}`);
+    }
+
+    if("+-*/^(),".includes(c)){ out.push({ k:c }); i++; continue; }
+    throw new SyntaxError(`char:${c}`);
+  }
+
+  // implicit multiplication: 2x, xy, 2(x+1), (x+1)y, 3sqrt(x)
+  const res = [];
+  for(let n = 0; n < out.length; n++){
+    const a = out[n], b = out[n+1];
+    res.push(a);
+    if(!b) break;
+    const aEnds = a.k === "num" || a.k === "var" || a.k === ")";
+    const bStarts = b.k === "num" || b.k === "var" || b.k === "fn" || b.k === "(";
+    if(aEnds && bStarts) res.push({ k:"*" });
+  }
+  return res;
+}
+
+function parse(src){
+  const ts = tokenize(src);
+  let p = 0;
+  const peek = () => ts[p];
+  const eat = k => {
+    if(!ts[p] || ts[p].k !== k) throw new SyntaxError(`expected:${k}`);
+    return ts[p++];
+  };
+
+  // ^ binds tightest and is right-associative; unary minus sits below it so
+  // -x^2 parses as -(x^2), matching every textbook and GeoGebra itself.
+  function atom(){
+    const t = peek();
+    if(!t) throw new SyntaxError("eof");
+    if(t.k === "num"){ p++; return { t:"num", v:t.v }; }
+    if(t.k === "var"){ p++; return { t:"var", n:t.v }; }
+    if(t.k === "("){ p++; const e = expr(0); eat(")"); return e; }
+    if(t.k === "-"){ p++; return { t:"neg", a:unary() }; }
+    if(t.k === "+"){ p++; return unary(); }
+    if(t.k === "fn"){
+      p++; eat("(");
+      const args = [expr(0)];
+      while(peek() && peek().k === ","){ p++; args.push(expr(0)); }
+      eat(")");
+      if(args.length !== t.arity) throw new SyntaxError(`arity:${t.v}`);
+      return { t:"call", n:t.v, a:args };
+    }
+    throw new SyntaxError(`token:${t.k}`);
+  }
+  function unary(){
+    let base = atom();
+    if(peek() && peek().k === "^"){ p++; base = { t:"pow", a:base, b:unary() }; }
+    return base;
+  }
+  const PREC = { "+":1, "-":1, "*":2, "/":2 };
+  function expr(min){
+    let lhs = unary();
+    while(peek() && PREC[peek().k] !== undefined && PREC[peek().k] > min){
+      const op = ts[p++].k;
+      const rhs = expr(PREC[op]);
+      lhs = { t:"bin", o:op, a:lhs, b:rhs };
+    }
+    return lhs;
+  }
+  const ast = expr(0);
+  if(p !== ts.length) throw new SyntaxError("trailing");
+  return ast;
+}
+
+/* ---- AST -> closure ------------------------------------------------------ */
+function compile(n){
+  switch(n.t){
+    case "num": { const v = n.v; return () => v; }
+    case "var": return n.n === "x" ? (x) => x : (x,y) => y;
+    case "neg": { const a = compile(n.a); return (x,y) => -a(x,y); }
+    case "pow": {
+      const a = compile(n.a), b = compile(n.b);
+      if(n.b.t === "num"){ const k = n.b.v; return (x,y) => Math.pow(a(x,y), k); }
+      return (x,y) => Math.pow(a(x,y), b(x,y));
+    }
+    case "bin": {
+      const a = compile(n.a), b = compile(n.b);
+      switch(n.o){
+        case "+": return (x,y) => a(x,y) + b(x,y);
+        case "-": return (x,y) => a(x,y) - b(x,y);
+        case "*": return (x,y) => a(x,y) * b(x,y);
+        case "/": return (x,y) => a(x,y) / b(x,y);
+      }
+      break;
+    }
+    case "call": {
+      const A = n.a.map(compile), f = A[0], g = A[1];
+      switch(n.n){
+        case "sqrt":  return (x,y) => Math.sqrt(f(x,y));
+        case "ln":    return (x,y) => Math.log(f(x,y));
+        case "log":   return (x,y) => Math.log(f(x,y));
+        case "log10": return (x,y) => Math.log10(f(x,y));
+        case "exp":   return (x,y) => Math.exp(f(x,y));
+        case "abs":   return (x,y) => Math.abs(f(x,y));
+        case "sin":   return (x,y) => Math.sin(f(x,y));
+        case "cos":   return (x,y) => Math.cos(f(x,y));
+        case "tan":   return (x,y) => Math.tan(f(x,y));
+        case "min":   return (x,y) => Math.min(f(x,y), g(x,y));
+        case "max":   return (x,y) => Math.max(f(x,y), g(x,y));
+        case "pow":   return (x,y) => Math.pow(f(x,y), g(x,y));
+      }
+    }
+  }
+  throw new Error("compile");
+}
+
+/* ---- symbolic differentiation -------------------------------------------
+   min / max / abs have kinks, which is exactly the interesting case here
+   (perfect complements). We refuse to fake a symbolic derivative for them and
+   fall back to a central difference, which is what a student sees anyway.    */
+const NUM = v => ({ t:"num", v });
+const isNum = (n,v) => n.t === "num" && n.v === v;
+
+function add(a,b){ if(isNum(a,0)) return b; if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v+b.v); return { t:"bin", o:"+", a, b }; }
+function sub(a,b){ if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v-b.v); return { t:"bin", o:"-", a, b }; }
+function mul(a,b){
+  if(isNum(a,0)||isNum(b,0)) return NUM(0);
+  if(isNum(a,1)) return b; if(isNum(b,1)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v*b.v);
+  return { t:"bin", o:"*", a, b };
+}
+function div(a,b){ if(isNum(a,0)) return NUM(0); if(isNum(b,1)) return a;
+  return { t:"bin", o:"/", a, b }; }
+function powN(a,b){ if(isNum(b,1)) return a; if(isNum(b,0)) return NUM(1);
+  return { t:"pow", a, b }; }
+
+class NonDifferentiable extends Error {}
+
+function diff(n, v){
+  switch(n.t){
+    case "num": return NUM(0);
+    case "var": return NUM(n.n === v ? 1 : 0);
+    case "neg": return { t:"neg", a:diff(n.a, v) };
+    case "bin":
+      if(n.o === "+") return add(diff(n.a,v), diff(n.b,v));
+      if(n.o === "-") return sub(diff(n.a,v), diff(n.b,v));
+      if(n.o === "*") return add(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v)));
+      if(n.o === "/") return div(sub(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v))), powN(n.b, NUM(2)));
+      break;
+    case "pow": {
+      const da = diff(n.a, v);
+      if(n.b.t === "num"){                               // a^k  ->  k a^(k-1) a'
+        return mul(mul(NUM(n.b.v), powN(n.a, NUM(n.b.v - 1))), da);
+      }
+      const db = diff(n.b, v);                           // a^b  ->  a^b (b' ln a + b a'/a)
+      return mul(n, add(mul(db, { t:"call", n:"ln", a:[n.a] }), div(mul(n.b, da), n.a)));
+    }
+    case "call": {
+      const u = n.a[0], du = diff(u, v);
+      switch(n.n){
+        case "ln": case "log":  return div(du, u);
+        case "log10":           return div(du, mul(u, NUM(Math.LN10)));
+        case "exp":             return mul(n, du);
+        case "sqrt":            return div(du, mul(NUM(2), n));
+        case "sin":             return mul({ t:"call", n:"cos", a:[u] }, du);
+        case "cos":             return { t:"neg", a:mul({ t:"call", n:"sin", a:[u] }, du) };
+        case "pow":             return diff({ t:"pow", a:n.a[0], b:n.a[1] }, v);
+        default: throw new NonDifferentiable(n.n);       // min, max, abs, tan
+      }
+    }
+  }
+  throw new Error("diff");
+}
+
+/* Build u, u_x, u_y from source. Falls back to numeric partials at kinks. */
+function buildUtility(src){
+  const ast = parse(src);
+  const u = compile(ast);
+  let ux, uy, exact = true;
+  try{
+    ux = compile(diff(ast, "x"));
+    uy = compile(diff(ast, "y"));
+  }catch(err){
+    if(!(err instanceof NonDifferentiable)) throw err;
+    exact = false;
+    const h = 1e-5;
+    ux = (x,y) => (u(x+h,y) - u(x-h,y)) / (2*h);
+    uy = (x,y) => (u(x,y+h) - u(x,y-h)) / (2*h);
+  }
+  return { src, ast, u, ux, uy, exactPartials:exact };
+}
+
+/* ==========================================================================
+   2. Scalar field sampling + marching squares
+   ========================================================================== */
+
+function sampleField(u, xmax, ymax, n){
+  const g = new Float64Array(n * n);
+  const dx = xmax / (n - 1), dy = ymax / (n - 1);
+  let lo = Infinity, hi = -Infinity;
+  const finite = [];
+  for(let j = 0; j < n; j++){
+    const y = j * dy;
+    for(let i = 0; i < n; i++){
+      const v = u(i * dx, y);
+      g[j*n + i] = v;
+      if(Number.isFinite(v)){ finite.push(v); if(v < lo) lo = v; if(v > hi) hi = v; }
+    }
+  }
+  // Percentile clipping: ln(x) dives to -inf at the axis and would otherwise
+  // eat the entire colour ramp. The original applet read u at two corners and
+  // broke for exactly this reason.
+  finite.sort((a,b) => a - b);
+  const q = t => finite.length ? finite[Math.min(finite.length-1, Math.max(0, Math.round(t*(finite.length-1))))] : 0;
+  let cLo = q(0.02), cHi = q(1.0);
+  if(!(cHi > cLo)){ cHi = cLo + 1; }
+  return { g, n, dx, dy, min:lo, max:hi, cMin:cLo, cMax:cHi };
+}
+
+/* Returns a flat Float32Array of segments [x0,y0,x1,y1, ...] in model coords. */
+function marchingSquares(field, level){
+  const { g, n, dx, dy } = field;
+  const seg = [];
+  const ip = (va, vb, a, b) => a + (b - a) * ((level - va) / (vb - va));
+  for(let j = 0; j < n-1; j++){
+    for(let i = 0; i < n-1; i++){
+      const v0 = g[j*n+i], v1 = g[j*n+i+1], v2 = g[(j+1)*n+i+1], v3 = g[(j+1)*n+i];
+      if(!Number.isFinite(v0) || !Number.isFinite(v1) || !Number.isFinite(v2) || !Number.isFinite(v3)) continue;
+      let code = 0;
+      if(v0 > level) code |= 1;
+      if(v1 > level) code |= 2;
+      if(v2 > level) code |= 4;
+      if(v3 > level) code |= 8;
+      if(code === 0 || code === 15) continue;
+      const x0 = i*dx, x1 = (i+1)*dx, y0 = j*dy, y1 = (j+1)*dy;
+      const B = () => [ip(v0,v1,x0,x1), y0];   // bottom edge
+      const R = () => [x1, ip(v1,v2,y0,y1)];   // right edge
+      const T = () => [ip(v3,v2,x0,x1), y1];   // top edge
+      const L = () => [x0, ip(v0,v3,y0,y1)];   // left edge
+      const push = (p,q2) => seg.push(p[0],p[1],q2[0],q2[1]);
+      switch(code){
+        case 1: case 14: push(L(), B()); break;
+        case 2: case 13: push(B(), R()); break;
+        case 3: case 12: push(L(), R()); break;
+        case 4: case 11: push(R(), T()); break;
+        case 6: case  9: push(B(), T()); break;
+        case 7: case  8: push(L(), T()); break;
+        case 5: { const c = (v0+v1+v2+v3)/4;                 // saddle
+          if(c > level){ push(L(), T()); push(B(), R()); }
+          else         { push(L(), B()); push(R(), T()); }
+          break; }
+        case 10: { const c = (v0+v1+v2+v3)/4;
+          if(c > level){ push(L(), B()); push(R(), T()); }
+          else         { push(L(), T()); push(B(), R()); }
+          break; }
+      }
+    }
+  }
+  return Float32Array.from(seg);
+}
+
+/* ==========================================================================
+   3. Hypsometric colour ramp
+   --------------------------------------------------------------------------
+   Blue and green at the bottom, yellow and orange through the middle, then
+   bright red into crimson and deep brown at the top. The top end darkens, so
+   height is not recoverable from lightness alone up there — the colour bar and
+   the numeric readout carry that, and every curve drawn on the map gets a
+   white casing so it stays visible against the dark browns.
+   ========================================================================== */
+const TERRAIN = [
+  [0.00,  11,  47, 168],
+  [0.13,  28, 116, 224],
+  [0.26,  18, 166, 160],
+  [0.38,  31, 168,  60],
+  [0.50, 154, 203,  30],
+  [0.60, 244, 208,  27],
+  [0.70, 247, 146,  19],
+  [0.80, 242,  58,  12],
+  [0.87, 238,  13,  20],
+  [0.94, 158,  11,  41],
+  [1.00,  63,  26,  11]
+];
+
+/* Marks drawn on top of the map. These sit on saturated ground in both
+   themes, so they are fixed bright hues plus a casing rather than theme
+   tokens — none of them reuses a hue the ramp passes through. */
+const MARK = {
+  budget:"#00D5F0",     // budget line and the bundle on it
+  bundle:"#00E9FF",
+  tangent:"#FF3DCB",    // slope of the indifference curve at P
+  optimum:"#C15CFF",    // the true optimum, revealed
+  grad:"#FFFFFF",
+  dx:"#3D9BFF",
+  dy:"#FF7AB8",
+  casing:"rgba(6,9,14,.62)",
+  white:"#FFFFFF"
+};
+function terrainRGB(t){
+  t = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  let i = 0;
+  while(i < TERRAIN.length - 2 && t > TERRAIN[i+1][0]) i++;
+  const a = TERRAIN[i], b = TERRAIN[i+1];
+  const f = (t - a[0]) / (b[0] - a[0]);
+  return [a[1] + (b[1]-a[1])*f, a[2] + (b[2]-a[2])*f, a[3] + (b[3]-a[3])*f];
+}
+function terrainCSS(t){ const c = terrainRGB(t); return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`; }
+
+/* Precomputed strings: allocating rgb() text per quad per frame is the single
+   biggest cost in a canvas painter's-algorithm renderer. */
+const TSTEPS = 128, SSTEPS = 12;
+const SHADED = new Array(TSTEPS * SSTEPS);
+for(let i = 0; i < TSTEPS; i++){
+  const c = terrainRGB(i / (TSTEPS - 1));
+  for(let s = 0; s < SSTEPS; s++){
+    /* a higher ambient floor than a plain Lambert term, so the crimson and
+       brown end of the ramp keeps its chroma instead of crushing to black */
+    const k = 0.58 + 0.42 * (s / (SSTEPS - 1));
+    SHADED[i*SSTEPS + s] = `rgb(${Math.round(c[0]*k)},${Math.round(c[1]*k)},${Math.round(c[2]*k)})`;
+  }
+}
+const shadeCSS = (t, lit) => SHADED[
+  Math.max(0, Math.min(TSTEPS-1, (t * (TSTEPS-1)) | 0)) * SSTEPS +
+  Math.max(0, Math.min(SSTEPS-1, (lit * (SSTEPS-1)) | 0))
+];
+
+
+/* ==========================================================================
+   4. Small helpers
+   ========================================================================== */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const fin = Number.isFinite;
+function fmt(v, d = 2){
+  if(!fin(v)) return "—";
+  const a = Math.abs(v);
+  if(a !== 0 && (a < 1e-3 || a >= 1e5)) return v.toExponential(1);
+  return v.toFixed(d);
+}
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function niceStep(range, target){
+  const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+
+
+/* ==========================================================================
+   5. The tax
+   --------------------------------------------------------------------------
+   Three rates and two thresholds, both on LABOUR income Y = w*L. The two
+   modes are the whole point of the applet:
+
+     marginal  each rate applies only to the income inside its own bracket.
+               Net income is continuous and concave; the frontier KINKS.
+
+     average   the bracket you land in sets the rate on ALL your income.
+               Net income JUMPS DOWN at each threshold, so earning one peso
+               more can leave you strictly poorer. That is a notch, not a
+               kink, and it is what makes the two modes worth showing side
+               by side.
+
+   The original applet taxed w*L in the marginal branch but (w*L + m0) in the
+   average one, which makes the two incomparable at exactly the moment you
+   want to compare them. Both tax labour income here.
+   ========================================================================== */
+const bracketOf = (Y, st) => Y < st.s0 ? 0 : Y < st.s1 ? 1 : 2;
+const rateOf = (i, st) => [st.t0, st.t1, st.t2][i];
+
+function taxOn(Y, st){
+  if(Y <= 0) return 0;
+  if(st.mode === "average") return Y * rateOf(bracketOf(Y, st), st);
+  const s0 = Math.max(st.s0, 0), s1 = Math.max(st.s1, s0);
+  return st.t0 * Math.min(Y, s0)
+       + st.t1 * Math.max(0, Math.min(Y, s1) - s0)
+       + st.t2 * Math.max(0, Y - s1);
+}
+/* Consumption affordable when a fraction L of the time endowment is worked.
+   At a threshold this is two-valued under average rates, so the bracket has to
+   be named rather than looked up: consumeAt picks the right-hand one, and each
+   piece of the frontier carries its own index so that its endpoints come from
+   its own formula. Letting the lookup decide put the left limit out of reach —
+   the frontier's highest point sat outside the computed view and was clipped. */
+function taxIn(Y, i, st){
+  return st.mode === "average" ? Y * rateOf(i, st) : taxOn(Y, st);
+}
+const consumeIn = (L, i, st) => (st.I0 + st.w*L - taxIn(st.w*L, i, st)) / st.px;
+const consumeAt = (L, st) => consumeIn(L, bracketOf(st.w*L, st), st);
+
+/* The frontier as straight pieces in L. The thresholds land at L = s/w, and
+   between them the schedule is affine, so three pieces describe it exactly —
+   in average mode with a step down between them. */
+function frontier(st){
+  const edges = [0];
+  for(const s of [st.s0, st.s1]){
+    const L = s / st.w;
+    if(L > 1e-9 && L < 1 - 1e-9) edges.push(L);
+  }
+  edges.push(1);
+  edges.sort((a,b) => a-b);
+  const pieces = [];
+  for(let k = 0; k < edges.length-1; k++){
+    const L0 = edges[k], L1 = edges[k+1];
+    if(L1 - L0 < 1e-9) continue;
+    const i = bracketOf(st.w*(L0+L1)/2, st);          // the bracket this piece lives in
+    pieces.push({L0, L1, i, c: L => consumeIn(L, i, st)});
+  }
+  return {pieces, edges};
+}
+/* The drop where two pieces meet, and the change of slope there — both worked
+   out from the schedule rather than by differencing consumeAt across the edge.
+   A finite difference cannot tell a jump from the frontier's ordinary slope:
+   with every rate set to zero it still reported a step of w*2e/px and called a
+   plain straight line a notch. */
+function edgeBrackets(F, k, st){
+  const L = F.pieces[k].L0;
+  return {L, Y: st.w*L, iL: F.pieces[k-1].i, iR: F.pieces[k].i};
+}
+function notchAt(F, k, st){
+  if(k < 1 || k >= F.pieces.length) return 0;
+  if(st.mode === "marginal") return 0;          // continuous by construction
+  const L = F.pieces[k].L0;
+  return F.pieces[k].c(L) - F.pieces[k-1].c(L);
+}
+/* how much the frontier's slope changes across the edge; zero when the two
+   brackets carry the same rate, in which case there is no kink to speak of */
+function slopeBreak(F, k, st){
+  if(k < 1 || k >= F.pieces.length) return 0;
+  const {iL, iR} = edgeBrackets(F, k, st);
+  return st.w * (rateOf(iL, st) - rateOf(iR, st)) / st.px;
+}
+
+/* ==========================================================================
+   6. The optimum
+   --------------------------------------------------------------------------
+   Preferences are over consumption and LEISURE, so more leisure is good and
+   the wage is the price of it. Maximising along the frontier is a
+   one-dimensional problem in L, but not a smooth one: the best point is often
+   the kink at a threshold — that is why real tax data shows people bunching
+   right below a bracket edge — and under average rates it can be pinned just
+   under a notch. Same discipline as anywhere else in this family: scan, refine,
+   then test every vertex from both sides.
+   ========================================================================== */
+const PHI = (Math.sqrt(5) - 1) / 2;
+
+function solve(u, F, st){
+  const cand = [];
+  F.pieces.forEach((pc, k) => {
+    /* evaluated on this piece's own formula, so the point just under a notch
+       is scored with the income it actually keeps there */
+    const val = L => {
+      const c = pc.c(L);
+      if(!(c >= 0)) return -Infinity;
+      const v = u(c, 1 - L);
+      return fin(v) ? v : -Infinity;
+    };
+    const N = 240;
+    let bL = pc.L0, bv = -Infinity;
+    for(let i = 0; i <= N; i++){
+      const L = pc.L0 + (pc.L1-pc.L0)*i/N, v = val(L);
+      if(v > bv){ bv = v; bL = L; }
+    }
+    const h = (pc.L1-pc.L0)/N;
+    let a = Math.max(pc.L0, bL-h), b = Math.min(pc.L1, bL+h);
+    let c1 = b - PHI*(b-a), d = a + PHI*(b-a), fc = val(c1), fd = val(d);
+    for(let i = 0; i < 40 && b-a > 1e-13; i++){
+      if(fc > fd){ b = d; d = c1; fd = fc; c1 = b - PHI*(b-a); fc = val(c1); }
+      else        { a = c1; c1 = d; fc = fd; d = a + PHI*(b-a); fd = val(d); }
+    }
+    const L = (a+b)/2;
+    const pick = val(L) > bv ? L : bL;
+    cand.push({L:pick, v:val(pick), c:pc.c(pick), piece:k, at:"interior"});
+    /* both sides of every join, and both ends of the day */
+    for(const [LL,tag] of [[pc.L0,"start"],[pc.L1,"end"]])
+      cand.push({L:LL, v:val(LL), c:pc.c(LL), piece:k, at:tag});
+  });
+  let best = cand[0];
+  for(const c of cand) if(c.v > best.v) best = c;
+  if(!fin(best.v)) return null;
+
+  const inner = F.edges.slice(1, -1);
+  const onEdge = inner.some(e => Math.abs(best.L - e) < 1e-4);
+  let kind = "tangency";
+  if(best.L <= 1e-6) kind = "noWork";
+  else if(best.L >= 1 - 1e-6) kind = "allWork";
+  else if(onEdge){
+    const k = F.pieces.findIndex(pc => Math.abs(pc.L0 - best.L) < 1e-4);
+    if(Math.abs(notchAt(F, k, st)) > 1e-9)      kind = "notch";
+    else if(Math.abs(slopeBreak(F, k, st)) > 1e-9) kind = "kink";
+    /* rates equal on both sides: the "edge" is a point on a straight line */
+  }
+  return {L:best.L, c:best.c, piece:best.piece, leisure:1-best.L, v:best.v, kind};
+}
+
+/* ==========================================================================
+   7. State and translations
+   ========================================================================== */
+const MK = {
+  main:"#00D5F0", gross:"#7A8B95", net:"#00D5F0", opt:"#C15CFF",
+  edge:"#FF3DCB", indiff:"#FFFFFF", ref:"#FF9E2C",
+  casing:"rgba(6,9,14,.62)", white:"#FFFFFF"
+};
+const FAMS = {
+  cd:  {params:["alpha"], src:st=>`x^${st.alpha}*y^${1-st.alpha}`,
+        formula:"u(c, ℓ) = c^α · ℓ^(1−α)"},
+  ces: {params:["alpha","rho"], src:st=>`(${st.alpha}*x^${st.rho}+${1-st.alpha}*y^${st.rho})^(1/${st.rho})`,
+        formula:"u(c, ℓ) = (α·c^ρ + (1−α)·ℓ^ρ)^(1/ρ)"},
+  ql:  {params:["alpha"], src:st=>`x+${st.alpha*4}*ln(y)`,
+        formula:"u(c, ℓ) = c + a·ln(ℓ)"},
+  custom:{params:[], src:st=>st.customSrc, formula:null}
+};
+const st = {
+  mode:"marginal", fam:"cd", axis:"leisure", panel2:"tax",
+  w:50, I0:10, px:1,
+  t0:0, t1:0.4, t2:0.8, s0:20, s1:30,
+  alpha:0.5, rho:0.5, customSrc:"x^0.5*y^0.5", U:null,
+  layers:{map:true, contours:true, feasible:true, indiff:true, opt:true,
+          edges:true, grid:true}
+};
+const LAYER_KEYS = ["map","contours","feasible","indiff","opt","edges","grid"];
+
+let LANG = "es";
+const STR = {
+es:{
+  docTitle:"Impuesto a la Renta del Trabajo",
+  title:"Impuesto a la Renta del Trabajo",
+  sub:"Un impuesto por tramos dobla la restricción entre consumo y ocio. Con tipos marginales la frontera se quiebra; con tipos medios se rompe, y cruzar un umbral deja al trabajador estrictamente peor.",
+  gMode:"Cómo se aplica", gBrackets:"Tramos", gWage:"Salario y renta",
+  gPrefs:"Preferencias", gAxis:"Eje vertical", gLayers:"Capas",
+  brHint:"Umbrales sobre la renta del trabajo w·L y el tipo de cada tramo.",
+  modes:{marginal:"Tipos marginales", average:"Tipos medios (sobre toda la renta)"},
+  modeHint:{
+    marginal:"Cada tipo se aplica sólo a la renta que cae dentro de su tramo. La renta neta es continua: la frontera se quiebra, pero no se rompe.",
+    average:"El tramo en el que caes fija el tipo sobre toda tu renta. En cada umbral la renta neta da un salto hacia abajo: ganar un peso más puede dejarte con menos."
+  },
+  fams:{cd:"Cobb–Douglas", ces:"CES", ql:"Cuasilineal", custom:"Personalizada"},
+  layers:{map:"Mapa de utilidad", contours:"Curvas de fondo", feasible:"Conjunto factible",
+          indiff:"Curva por el óptimo", opt:"Óptimo", edges:"Umbrales", grid:"Retícula"},
+  axLeisure:"Ocio", axLabor:"Trabajo",
+  p2Tax:"Impuesto", p2Util:"Utilidad",
+  vp1:"Consumo y ocio", vp1b:"Consumo y trabajo",
+  vp2tax:"Renta neta", vp2util:"Utilidad sobre la restricción",
+  roC:"Consumo", roL:"Trabajo L*", roLei:"Ocio", roU:"u(c*, ℓ*)",
+  roGross:"Renta bruta", roTax:"Impuesto", roAvg:"Tipo medio", roMarg:"Tipo marginal",
+  roKind:"Tipo de óptimo", roNotch:"Mayor salto",
+  kTangency:"Tangencia", kKink:"Quiebre", kNotch:"Borde del salto",
+  kNoWork:"No trabaja", kAllWork:"Trabaja todo",
+  vTangency:"Óptimo interior",
+  vTangencyT:"La curva de indiferencia es tangente a la frontera: la relación marginal de sustitución entre consumo y ocio iguala al salario neto del tramo. El trabajador está dentro de un tramo, no sobre un umbral.",
+  vKink:"Óptimo en el quiebre",
+  vKinkT:"El óptimo cae justo sobre un umbral, donde la pendiente no está definida. A la izquierda el salario neto todavía compensa trabajar más; a la derecha el tipo del tramo siguiente ya no. Por eso los datos fiscales muestran gente amontonada justo debajo de un umbral: no es evasión, es el óptimo.",
+  vNotch:"Óptimo pegado al salto",
+  vNotchT:"Con tipos medios la frontera cae en vertical en el umbral. El trabajador se queda justo debajo: la hora siguiente le haría cruzar y recaudar el tipo más alto sobre toda su renta, dejándole con menos consumo del que ya tenía.",
+  vNoWork:"No trabajar es lo mejor",
+  vNoWorkT:"Al salario neto vigente no compensa ninguna hora: el óptimo está en la dotación, viviendo de la renta no laboral.",
+  vAllWork:"Trabajar toda la dotación",
+  vAllWorkT:"El ocio vale tan poco frente al consumo que el óptimo agota la dotación de tiempo.",
+  errParse:"No se entiende la expresión.", errVars:"Sólo se admiten x (consumo) e y (ocio).",
+  foot:"Traducido de un applet de GeoGebra. En la expresión de utilidad, x es el consumo e y el ocio. Sintaxis: + − * / ^ ( ), sqrt ln log exp abs min max, constantes e y pi.",
+  legNet:"Renta neta", legGross:"Renta bruta", legOpt:"Óptimo", legIndiff:"Indiferencia", legFront:"Frontera"
+},
+en:{
+  docTitle:"Labour Income Tax",
+  title:"Labour Income Tax",
+  sub:"A bracketed tax bends the constraint between consumption and leisure. Marginal rates kink the frontier; average rates break it, and crossing a threshold leaves the worker strictly worse off.",
+  gMode:"How it applies", gBrackets:"Brackets", gWage:"Wage and income",
+  gPrefs:"Preferences", gAxis:"Vertical axis", gLayers:"Layers",
+  brHint:"Thresholds on labour income w·L, and the rate for each bracket.",
+  modes:{marginal:"Marginal rates", average:"Average rates (on all income)"},
+  modeHint:{
+    marginal:"Each rate applies only to the income falling inside its own bracket. Net income stays continuous: the frontier kinks, but it does not break.",
+    average:"The bracket you land in sets the rate on all of your income. At each threshold net income drops: earning one more unit can leave you with less."
+  },
+  fams:{cd:"Cobb–Douglas", ces:"CES", ql:"Quasilinear", custom:"Custom"},
+  layers:{map:"Utility map", contours:"Background contours", feasible:"Feasible set",
+          indiff:"Curve through the optimum", opt:"Optimum", edges:"Thresholds", grid:"Grid"},
+  axLeisure:"Leisure", axLabor:"Labour",
+  p2Tax:"Tax", p2Util:"Utility",
+  vp1:"Consumption and leisure", vp1b:"Consumption and labour",
+  vp2tax:"Net income", vp2util:"Utility along the constraint",
+  roC:"Consumption", roL:"Labour L*", roLei:"Leisure", roU:"u(c*, ℓ*)",
+  roGross:"Gross income", roTax:"Tax", roAvg:"Average rate", roMarg:"Marginal rate",
+  roKind:"Kind of optimum", roNotch:"Largest drop",
+  kTangency:"Tangency", kKink:"Kink", kNotch:"Edge of the drop",
+  kNoWork:"No work", kAllWork:"All work",
+  vTangency:"Interior optimum",
+  vTangencyT:"The indifference curve is tangent to the frontier: the marginal rate of substitution between consumption and leisure equals the bracket's net wage. The worker is inside a bracket, not on a threshold.",
+  vKink:"Optimum at the kink",
+  vKinkT:"The optimum sits exactly on a threshold, where the slope is undefined. To the left the net wage still repays another hour; to the right the next bracket's rate does not. This is why tax data shows people bunched just below a threshold: it is not evasion, it is the optimum.",
+  vNotch:"Optimum pinned below the drop",
+  vNotchT:"Under average rates the frontier falls vertically at the threshold. The worker stops just below it: the next hour would cross over and levy the higher rate on all their income, leaving them with less consumption than they already had.",
+  vNoWork:"Not working is best",
+  vNoWorkT:"At the ruling net wage no hour is worth it: the optimum is the endowment, living on non-labour income.",
+  vAllWork:"Working the whole endowment",
+  vAllWorkT:"Leisure is worth so little against consumption that the optimum exhausts the time endowment.",
+  errParse:"That expression does not parse.", errVars:"Only x (consumption) and y (leisure) are allowed.",
+  foot:"Translated from a GeoGebra applet. In the utility expression x is consumption and y is leisure. Syntax: + − * / ^ ( ), sqrt ln log exp abs min max, constants e and pi.",
+  legNet:"Net income", legGross:"Gross income", legOpt:"Optimum", legIndiff:"Indifference", legFront:"Frontier"
+}};
+const T = () => STR[LANG];
+/* utility is always over (consumption, leisure); the axis toggle only changes
+   what the vertical coordinate is called on screen */
+const leisureOf = yAxis => st.axis === "leisure" ? yAxis : 1 - yAxis;
+const yAxisOf   = L     => st.axis === "leisure" ? 1 - L : L;
+
+/* ==========================================================================
+   8. Drawing
+   ========================================================================== */
+let FIELD = null, FIELD_KEY = "", CONTOURS = null, MAPCV = null;
+
+/* The map is a pure function of the sampled field, so it is painted once into
+   an offscreen bitmap and blitted afterwards. Filling one rect per grid cell —
+   about twenty thousand of them — on every frame was the single biggest cost
+   while a slider was moving. */
+function buildMap(F){
+  const n = F.n;
+  const cv = document.createElement("canvas");
+  cv.width = n; cv.height = n;
+  const c = cv.getContext("2d");
+  const img = c.createImageData(n, n);
+  const d = img.data, span = (F.cMax - F.cMin) || 1;
+  for(let j = 0; j < n; j++){
+    /* image rows run top-down, the field runs bottom-up */
+    const src = (n - 1 - j) * n;
+    for(let i = 0; i < n; i++){
+      const v = F.g[src + i], o = (j*n + i) * 4;
+      if(!fin(v)){ d[o+3] = 0; continue; }
+      const rgb = terrainRGB((v - F.cMin) / span);
+      d[o] = rgb[0]; d[o+1] = rgb[1]; d[o+2] = rgb[2]; d[o+3] = 255;
+    }
+  }
+  c.putImageData(img, 0, 0);
+  return cv;
+}
+
+function frameOf(){
+  const B = budget(st), Bc = st.cmp ? budget({...st, scheme:st.cmp}) : null;
+  let xmax = 0, ymax = 0;
+  for(const src of [B, Bc]) if(src) for(const pc of src.pieces){
+    xmax = Math.max(xmax, pc.x1);
+    ymax = Math.max(ymax, pc.y(pc.x0), pc.y(pc.x1));
+  }
+  /* Rounded up to a round number rather than fitted exactly. Two reasons: the
+     axes then stop swimming while a slider is dragged, so two settings can be
+     compared by eye; and the sampled utility field is keyed on this domain, so
+     a frame that only changes at round steps is a frame that re-samples the
+     141x141 grid and its eleven contour sets a few times instead of on every
+     animation frame. */
+  const up = v => { const st2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/st2)*st2; };
+  return {xmax: Math.max(up(xmax*1.12), 0.5), ymax: Math.max(up(ymax*1.12), 0.5), B, Bc};
+}
+
+function setup(cv){
+  const dpr = Math.min(devicePixelRatio||1, 2), r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if(cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function axes(ctx, rect, xmin, xmax, ymin, ymax, xlab, ylab){
+  const P = {l:48, r:20, t:16, b:34};
+  const bx = {x0:rect.x0+P.l, y0:rect.y0+P.t, x1:rect.x1-P.r, y1:rect.y1-P.b};
+  const sx = (xmax-xmin)||1, sy = (ymax-ymin)||1;
+  const SX = x => bx.x0 + ((x-xmin)/sx)*(bx.x1-bx.x0);
+  const SY = y => bx.y1 - ((y-ymin)/sy)*(bx.y1-bx.y0);
+  const gx = niceStep(sx, 7), gy = niceStep(sy, 5);
+  const gx0 = Math.ceil((xmin-1e-9)/gx)*gx, gy0 = Math.ceil((ymin-1e-9)/gy)*gy;
+  if(st.layers.grid){
+    ctx.strokeStyle = css("--rule-2"); ctx.lineWidth = 1; ctx.beginPath();
+    for(let x=gx0; x<xmax-1e-9; x+=gx) if(x>xmin+1e-9){ ctx.moveTo(SX(x),bx.y0); ctx.lineTo(SX(x),bx.y1); }
+    for(let y=gy0; y<ymax-1e-9; y+=gy) if(y>ymin+1e-9){ ctx.moveTo(bx.x0,SY(y)); ctx.lineTo(bx.x1,SY(y)); }
+    ctx.stroke();
+  }
+  ctx.strokeStyle = css("--rule"); ctx.lineWidth = 1; ctx.beginPath();
+  ctx.moveTo(bx.x0,bx.y0); ctx.lineTo(bx.x0,bx.y1); ctx.lineTo(bx.x1,bx.y1); ctx.stroke();
+  ctx.fillStyle = css("--ink-3"); ctx.font = `11px ${css("--f-mono")}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for(let x=gx0; x<=xmax+1e-9; x+=gx) ctx.fillText(fmt(x, gx<1?1:0), SX(x), bx.y1+6);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for(let y=gy0; y<=ymax+1e-9; y+=gy) ctx.fillText(fmt(y, gy<1?1:0), bx.x0-6, SY(y));
+  ctx.fillStyle = css("--ink-2"); ctx.font = `italic 13px ${css("--f-display")}`;
+  ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(xlab, bx.x1+2, bx.y1);
+  ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText(ylab, bx.x0, bx.y0-4);
+  return {bx, SX, SY};
+}
+function poly(ctx, pts, col, wd, cas){
+  if(pts.length < 2) return;
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  const path = () => { ctx.beginPath(); let pen = false;
+    for(const p of pts){ if(!p){ pen = false; continue; }
+      if(!pen){ ctx.moveTo(p[0],p[1]); pen = true; } else ctx.lineTo(p[0],p[1]); } };
+  if(cas){ path(); ctx.strokeStyle = MK.casing; ctx.lineWidth = wd+3; ctx.stroke(); }
+  path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+}
+/* marchingSquares hands back a flat [x0,y0,x1,y1, ...] run of loose segments,
+   not joined polylines, so each pair is stroked on its own. Batching them into
+   one path keeps the casing from overpainting a neighbour's core. */
+function drawSegs(ctx, flat, SX, SY, col, wd, cas){
+  if(!flat || !flat.length) return;
+  ctx.lineCap = "round";
+  const path = () => { ctx.beginPath();
+    for(let i = 0; i < flat.length; i += 4){
+      ctx.moveTo(SX(flat[i]),   SY(flat[i+1]));
+      ctx.lineTo(SX(flat[i+2]), SY(flat[i+3]));
+    } };
+  if(cas){ path(); ctx.strokeStyle = MK.casing; ctx.lineWidth = wd+3; ctx.stroke(); }
+  path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+}
+function dot(ctx, X, Y, col, r){
+  r = r || 4;
+  ctx.fillStyle = MK.casing; ctx.beginPath(); ctx.arc(X,Y,r+5,0,7); ctx.fill();
+  ctx.fillStyle = MK.white;  ctx.beginPath(); ctx.arc(X,Y,r+2.5,0,7); ctx.fill();
+  ctx.fillStyle = col;       ctx.beginPath(); ctx.arc(X,Y,r,0,7); ctx.fill();
+}
+
+function viewFrame(){
+  const F = frontier(st);
+  let cmax = 0;
+  for(const pc of F.pieces) cmax = Math.max(cmax, pc.c(pc.L0), pc.c(pc.L1));
+  const up = v => { const s2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/s2)*s2; };
+  return {F, xmax: Math.max(up(cmax*1.1), 0.5), ymax: 1};
+}
+/* the frontier drawn in whichever vertical coordinate the axis is showing */
+function frontierPts(F){
+  return F.pieces.map(pc => ({
+    a:[pc.c(pc.L0), yAxisOf(pc.L0)],
+    b:[pc.c(pc.L1), yAxisOf(pc.L1)],
+    L0:pc.L0
+  }));
+}
+function drawPlane(){
+  const cv = $("cPlane"), {ctx,w,h} = setup(cv);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+  if(!st.U) return null;
+  const V = viewFrame(), F = V.F;
+  const t = T();
+  const ylab = st.axis === "leisure" ? "ℓ" : "L";
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, V.xmax, 0, 1, "c", ylab);
+
+  const key = [st.U.src, V.xmax, st.axis].join("|");
+  if(FIELD_KEY !== key){
+    /* the field is sampled in axis coordinates, with the utility evaluated on
+       leisure, so flipping the axis genuinely re-reads the preferences rather
+       than mirroring a picture */
+    const uf = (x, yA) => st.U.u(x, leisureOf(yA));
+    FIELD = sampleField(uf, V.xmax, 1, 141); FIELD_KEY = key;
+    CONTOURS = null; MAPCV = buildMap(FIELD);
+  }
+  ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
+
+  if(st.layers.map && MAPCV){
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(MAPCV, bx.x0, bx.y0, bx.x1-bx.x0, bx.y1-bx.y0);
+    ctx.globalAlpha = 0.30; ctx.fillStyle = css("--surface");
+    ctx.fillRect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.globalAlpha = 1;
+  }
+  if(st.layers.contours){
+    if(!CONTOURS){
+      CONTOURS = [];
+      for(let k=1;k<=11;k++)
+        CONTOURS.push(marchingSquares(FIELD, FIELD.cMin + (FIELD.cMax-FIELD.cMin)*k/12));
+    }
+    ctx.globalAlpha = 0.5;
+    for(const segs of CONTOURS) drawSegs(ctx, segs, SX, SY, "rgba(255,255,255,.42)", 1, false);
+    ctx.globalAlpha = 1;
+  }
+
+  const segs = frontierPts(F);
+  if(st.layers.feasible){
+    /* everything to the right of the frontier is unaffordable; veil it */
+    ctx.save(); ctx.beginPath();
+    ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0);
+    ctx.moveTo(SX(0), SY(yAxisOf(0)));
+    for(const s of segs){ ctx.lineTo(SX(s.a[0]), SY(s.a[1])); ctx.lineTo(SX(s.b[0]), SY(s.b[1])); }
+    ctx.lineTo(SX(0), SY(yAxisOf(1)));
+    ctx.closePath();
+    ctx.fillStyle = "rgba(6,9,14,.55)"; ctx.fill("evenodd"); ctx.restore();
+  }
+  for(let k=0;k<segs.length;k++){
+    const s = segs[k];
+    poly(ctx, [[SX(s.a[0]),SY(s.a[1])],[SX(s.b[0]),SY(s.b[1])]], MK.main, 2.6, true);
+    const n = notchAt(F, k, st);
+    if(Math.abs(n) > 1e-7){
+      const prev = segs[k-1];
+      ctx.save(); ctx.setLineDash([4,4]);
+      poly(ctx, [[SX(prev.b[0]),SY(prev.b[1])],[SX(s.a[0]),SY(s.a[1])]], MK.main, 1.4, false);
+      ctx.restore();
+    }
+  }
+  if(st.layers.edges){
+    ctx.save(); ctx.setLineDash([3,4]);
+    for(const e of F.edges.slice(1,-1))
+      poly(ctx, [[bx.x0,SY(yAxisOf(e))],[bx.x1,SY(yAxisOf(e))]], "rgba(255,61,203,.45)", 1, false);
+    ctx.restore();
+    for(let k=1;k<segs.length;k++) dot(ctx, SX(segs[k].a[0]), SY(segs[k].a[1]), MK.edge, 2.6);
+  }
+
+  const best = solve(st.U.u, F, st);
+  if(st.layers.indiff && best) drawSegs(ctx, marchingSquares(FIELD, best.v), SX, SY, MK.indiff, 2, true);
+  if(st.layers.opt && best) dot(ctx, SX(best.c), SY(yAxisOf(best.L)), MK.opt, 5);
+  ctx.restore();
+  $("vp1-title").textContent = st.axis === "leisure" ? t.vp1 : t.vp1b;
+  return {best, F, V};
+}
+
+/* Panel 2, tax view: net against gross labour income, with the 45 degree line
+   for reference. Marginal rates bend it; average rates cut it into steps that
+   fall. Preferences play no part here, which is the point — the notch is a
+   property of the schedule, not of the worker. */
+function drawTax(res){
+  const cv = $("cPanel2"), {ctx,w,h} = setup(cv);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+  const t = T(), Ymax = Math.max(st.w, st.s1*1.2, 1);
+  const up = v => { const s2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/s2)*s2; };
+  const X = up(Ymax), Yv = up(X);
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, X, 0, Yv, "w·L", "");
+  ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
+
+  poly(ctx, [[SX(0),SY(0)],[SX(X),SY(X)]], MK.gross, 1.4, false);
+
+  const N = 400, pts = [];
+  let prevB = -1;
+  for(let i=0;i<=N;i++){
+    const Y = X*i/N, b = bracketOf(Y, st);
+    if(st.mode === "average" && b !== prevB && i > 0) pts.push(null);  // break at a notch
+    prevB = b;
+    pts.push([SX(Y), SY(Y - taxOn(Y, st))]);
+  }
+  poly(ctx, pts, MK.net, 2.6, true);
+
+  ctx.save(); ctx.setLineDash([3,4]);
+  for(const s of [st.s0, st.s1]) if(s > 0 && s < X)
+    poly(ctx, [[SX(s),bx.y0],[SX(s),bx.y1]], "rgba(255,61,203,.45)", 1, false);
+  ctx.restore();
+
+  if(res && res.best){
+    const pc = res.F.pieces[res.best.piece];
+    const Y = st.w*res.best.L, i = pc ? pc.i : bracketOf(Y, st);
+    dot(ctx, SX(Y), SY(Y - taxIn(Y, i, st)), MK.opt, 4.5);
+  }
+  ctx.restore();
+  $("vp2-title").textContent = t.vp2tax;
+}
+
+/* Panel 2, utility view: u along the frontier as L runs from 0 to a full day.
+   The peak is the optimum; under average rates the curve breaks at each notch. */
+function drawUtil(res){
+  const cv = $("cPanel2"), {ctx,w,h} = setup(cv);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+  if(!res || !st.U) return;
+  const t = T(), F = res.F, u = st.U.u;
+  const groups = F.pieces.map(pc => {
+    const out = [];
+    for(let i=0;i<=160;i++){
+      const L = pc.L0 + (pc.L1-pc.L0)*i/160;
+      const c = pc.c(L), v = c >= 0 ? u(c, 1-L) : NaN;
+      out.push({L, v});
+    }
+    return out;
+  });
+  let lo = Infinity, hi = -Infinity;
+  for(const g of groups) for(const p of g) if(fin(p.v)){ if(p.v<lo)lo=p.v; if(p.v>hi)hi=p.v; }
+  if(!(hi>lo)){ lo=(lo||0)-1; hi=(hi||0)+1; }
+  const pad=(hi-lo)*0.1; lo-=pad; hi+=pad;
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, 1, lo, hi, "L", "u");
+  ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
+  for(const g of groups)
+    poly(ctx, g.map(p => fin(p.v) ? [SX(p.L),SY(p.v)] : null), MK.main, 2.6, true);
+  ctx.save(); ctx.setLineDash([3,4]);
+  for(const e of F.edges.slice(1,-1))
+    poly(ctx, [[SX(e),bx.y0],[SX(e),bx.y1]], "rgba(255,61,203,.45)", 1, false);
+  ctx.restore();
+  if(res.best){
+    ctx.save(); ctx.setLineDash([5,4]);
+    poly(ctx, [[bx.x0,SY(res.best.v)],[bx.x1,SY(res.best.v)]], "rgba(193,92,255,.55)", 1.4, false);
+    ctx.restore();
+    dot(ctx, SX(res.best.L), SY(res.best.v), MK.opt, 4.5);
+  }
+  ctx.restore();
+  $("vp2-title").textContent = t.vp2util;
+}
+
+/* ==========================================================================
+   9. Readouts and the verdict
+   ========================================================================== */
+function rows(el, list){
+  el.innerHTML = list.map(([lab,val,cls]) =>
+    `<div class="ro"><div class="lab">${lab}</div><div class="val ${cls||""}">${val}</div></div>`).join("");
+}
+function paint(res){
+  const t = T();
+  if(!res || !res.best){ rows($("ro1"),[]); rows($("ro2"),[]); return; }
+  const b = res.best, F = res.F;
+  /* the optimum can sit exactly on a threshold while belonging to the bracket
+     below it, so the bracket comes from the piece it was found on */
+  const bi = F.pieces[b.piece] ? F.pieces[b.piece].i : bracketOf(st.w*b.L, st);
+  const Y = st.w*b.L, tax = taxIn(Y, bi, st);
+  const avg = Y > 1e-9 ? tax/Y : 0;
+  const marg = rateOf(bi, st);
+
+  rows($("ro1"), [
+    [t.roC, fmt(b.c,2)], [t.roL, fmt(b.L,3)], [t.roLei, fmt(b.leisure,3)], [t.roU, fmt(b.v,3)]
+  ]);
+  let biggest = 0;
+  for(let k=1;k<F.pieces.length;k++){
+    const n = notchAt(F,k,st); if(Math.abs(n) > Math.abs(biggest)) biggest = n;
+  }
+  rows($("ro2"), [
+    [t.roGross, fmt(Y,1)], [t.roTax, fmt(tax,1)],
+    [t.roAvg, (avg*100).toFixed(1)+"%"], [t.roMarg, (marg*100).toFixed(1)+"%"],
+    [t.roNotch, Math.abs(biggest)>1e-7 ? fmt(biggest,2) : "—", Math.abs(biggest)>1e-7?"is-crit":""]
+  ]);
+
+  const map = {
+    tangency:[t.vTangency,t.vTangencyT,""], kink:[t.vKink,t.vKinkT," is-kink"],
+    notch:[t.vNotch,t.vNotchT," is-jump"], noWork:[t.vNoWork,t.vNoWorkT,""],
+    allWork:[t.vAllWork,t.vAllWorkT,""]
+  };
+  const [ti,tx,cl] = map[b.kind] || map.tangency;
+  $("verdict").className = "verdict" + cl;
+  $("v-title").textContent = ti; $("v-text").textContent = tx;
+  $("mode-hint").textContent = t.modeHint[st.mode];
+}
+function render(){
+  const res = drawPlane();
+  if(st.panel2 === "tax") drawTax(res); else drawUtil(res);
+  paint(res);
+}
+
+/* ==========================================================================
+   10. Controls
+   ========================================================================== */
+function readUtility(){
+  const t = T();
+  const src = st.fam === "custom" ? $("u-expr").value.trim() : FAMS[st.fam].src(st);
+  try{
+    st.U = buildUtility(src);
+    $("u-expr").setAttribute("aria-invalid","false"); $("u-err").textContent = "";
+  }catch(err){
+    st.U = null;
+    $("u-expr").setAttribute("aria-invalid","true");
+    $("u-err").textContent = /unknown/i.test(err.message) ? t.errVars : t.errParse;
+  }
+  FIELD_KEY = "";
+}
+function buildModes(){
+  const t = T();
+  $("mode").innerHTML = ["marginal","average"].map((k,i) =>
+    `<button type="button" data-m="${k}" aria-pressed="${k===st.mode}">
+       <span class="n">${i}</span><span>${t.modes[k]}</span></button>`).join("");
+  $("mode").querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => {
+    st.mode = b.dataset.m; buildModes(); render();
+  }));
+}
+function buildFams(){
+  const t = T();
+  $("fams").innerHTML = Object.keys(FAMS).map(k =>
+    `<button type="button" class="chip" data-fam="${k}" aria-pressed="${k===st.fam}">${t.fams[k]}</button>`).join("");
+  $("fams").querySelectorAll("[data-fam]").forEach(b => b.addEventListener("click", () => {
+    st.fam = b.dataset.fam;
+    if(st.fam !== "custom") $("u-expr").value = FAMS[st.fam].src(st);
+    buildFams(); syncParams(); readUtility(); render();
+  }));
+}
+function buildLayers(){
+  const t = T();
+  $("layers").innerHTML = LAYER_KEYS.map(k =>
+    `<label class="check"><input type="checkbox" data-l="${k}" ${st.layers[k]?"checked":""}><span>${t.layers[k]}</span></label>`).join("");
+  $("layers").querySelectorAll("input").forEach(cb => cb.addEventListener("change", () => {
+    st.layers[cb.dataset.l] = cb.checked; render();
+  }));
+}
+function syncParams(){
+  const on = new Set(FAMS[st.fam].params);
+  document.querySelectorAll(".slider-row[data-p]").forEach(r => { r.hidden = !on.has(r.dataset.p); });
+  $("u-expr").hidden = st.fam !== "custom";
+  const f = FAMS[st.fam].formula;
+  $("fam-formula").hidden = !f; if(f) $("fam-formula").textContent = f;
+}
+function bind(id, key, after){
+  const s = $(id), b = $(id+"-v");
+  const set = v => {
+    v = parseFloat(v); if(!fin(v)) return;
+    v = clamp(v, parseFloat(s.min), parseFloat(s.max));
+    st[key] = v; s.value = v; b.value = +v.toFixed(3);
+    if(after) after();
+    render();
+  };
+  s.addEventListener("input", () => set(s.value));
+  b.addEventListener("change", () => set(b.value));
+  b.value = st[key]; s.value = st[key];
+}
+/* A second threshold below the first would invert the schedule, so s1 is held
+   at or above s0 rather than allowed to cross it. */
+function orderBrackets(){
+  if(st.s1 < st.s0){ st.s1 = st.s0; $("s1").value = st.s0; $("s1-v").value = st.s0; }
+}
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = LANG;
+  document.title = t.docTitle;
+  $("h-title").textContent = t.title; $("h-sub").textContent = t.sub;
+  document.querySelectorAll("[data-t]").forEach(el => {
+    const v = t[el.dataset.t]; if(v !== undefined) el.textContent = v;
+  });
+  $("foot").textContent = t.foot;
+  $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
+  $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));
+  const leg = (c,l) => `<span><i style="background:${c}"></i>${l}</span>`;
+  $("legend1").innerHTML = leg(MK.main,t.legFront)+leg(MK.opt,t.legOpt)+leg(MK.indiff,t.legIndiff);
+  buildModes(); buildFams(); buildLayers(); syncParams(); render();
+  try{ localStorage.setItem("ltx.lang", LANG); }catch(_){}
+}
+function setTheme(th){
+  document.documentElement.setAttribute("data-theme", th);
+  $("th-dark").setAttribute("aria-pressed", String(th==="dark"));
+  $("th-light").setAttribute("aria-pressed", String(th==="light"));
+  try{ localStorage.setItem("ltx.theme", th); }catch(_){}
+  render();
+}
+const reU = () => { if(st.fam!=="custom") $("u-expr").value = FAMS[st.fam].src(st); readUtility(); };
+bind("t0","t0"); bind("t1","t1"); bind("t2","t2");
+bind("s0","s0",orderBrackets); bind("s1","s1",orderBrackets);
+bind("w","w"); bind("I0","I0"); bind("px","px");
+bind("alpha","alpha",reU); bind("rho","rho",reU);
+$("u-expr").addEventListener("change", () => { st.customSrc = $("u-expr").value; readUtility(); render(); });
+document.querySelectorAll("#axis-seg [data-axis]").forEach(b => b.addEventListener("click", () => {
+  st.axis = b.dataset.axis;
+  document.querySelectorAll("#axis-seg [data-axis]").forEach(o => o.setAttribute("aria-pressed", String(o===b)));
+  render();
+}));
+document.querySelectorAll("#p2-seg [data-p2]").forEach(b => b.addEventListener("click", () => {
+  st.panel2 = b.dataset.p2;
+  document.querySelectorAll("#p2-seg [data-p2]").forEach(o => o.setAttribute("aria-pressed", String(o===b)));
+  render();
+}));
+$("lg-es").addEventListener("click", () => { LANG="es"; applyLang(); });
+$("lg-en").addEventListener("click", () => { LANG="en"; applyLang(); });
+$("th-dark").addEventListener("click", () => setTheme("dark"));
+$("th-light").addEventListener("click", () => setTheme("light"));
+new ResizeObserver(() => render()).observe(document.querySelector(".viewports"));
+
+let lang0="es", theme0="dark";
+try{ lang0 = localStorage.getItem("ltx.lang")||"es"; theme0 = localStorage.getItem("ltx.theme")||"dark"; }catch(_){}
+LANG = lang0;
+readUtility();
+setTheme(theme0);
+applyLang();
+</script>
+</body>
+</html>

@@ -390,6 +390,15 @@ Peak less than three kilometres north of it. There is no canonical polygon for "
 mountain", so the window is chosen to be the widest one in which the statement holds, and
 everything it claims is on screen to be checked.</p>
 
+<p>Two presentation choices are worth naming to a class. The window is pushed back into the
+summit's own country rather than centred on the peak, so there is a proper mountain to walk on
+while only a narrow strip of the other country is in frame — that strip is what keeps the
+constrained maximum on the frontier. And the z axis opens <strong>stretched</strong>, three to nine
+times depending on the mountain, because at true scale two kilometres of relief across eighteen
+kilometres of ground is a swelling rather than a peak. It is a display scale only: <code>f</code>,
+its gradients, the level curves and every readout stay in real kilometres, and the z-axis dial puts
+it back to 1 whenever you want to show the class how gentle a real mountain is.</p>
+
 <h2>Walking the frontier</h2>
 <p><strong>Walk only along the frontier</strong> (<kbd>B</kbd>, in the Feasible set section) ropes
 the explorer to the constraint curve. Every step is projected back onto it, so pushing in any
@@ -727,6 +736,41 @@ That is a real consequence of drawing the depth axis at an angle without foresho
 is what keeps forward from collapsing into the frame.</p>
 
 <!-- =========================================================== PART 5 -->
+<h2>Border Run — the game</h2>
+<p><strong>play.html</strong> is the same program with an objective. It is built for a controller:
+plug an Xbox-layout gamepad into a laptop, or pair one with a phone or tablet, and it plays
+without touching a keyboard. Everything also works from the keyboard, because one pad between four
+students is normal.</p>
+<p>Every mission has the same shape, because it is the shape of the mathematics. You are dropped in
+the country that does <em>not</em> own the summit. The peak is in plain sight across the frontier
+and it is not yours. Somewhere along the line there is a highest point you are allowed to stand on
+— that is <code>argmax f</code> subject to <code>g ≤ 0</code> — and the job is to walk until you
+are standing on it and plant your flag. The score is how many metres you left on the table: within
+10 m is three stars, 30 m two, 80 m one.</p>
+<p><strong>Crossing the border is allowed, and that is deliberate.</strong> A wall that physically
+stopped the player would quietly turn a constrained maximisation into an unconstrained one on a
+smaller domain. So a student may walk right up to the summit, stand on it, press A — and watch the
+game refuse the flag and name the country they are trespassing in. That refusal <em>is</em> the
+constraint, and feeling it is worth more than reading it.</p>
+<p>The teaching moment is the one nobody plans: a student walks uphill, hits the frontier, and
+discovers that the only way left to gain height is to slide <em>along</em> it — and that they keep
+gaining until the ground stops rising in the direction the line runs. That is the tangency
+condition happening to them. The result card says so afterwards, in the mountain's own numbers.</p>
+<table class="compact">
+  <tr><th style="width:44mm">Control</th><th>Does</th></tr>
+  <tr><td>Left stick / <kbd>WASD</kbd></td><td>walk</td></tr>
+  <tr><td>Right stick / mouse</td><td>look</td></tr>
+  <tr><td><b>A</b> / <kbd>Enter</kbd></td><td>choose, confirm, plant the flag</td></tr>
+  <tr><td><b>B</b> / <kbd>Esc</kbd></td><td>back to the mountains</td></tr>
+  <tr><td><b>X</b></td><td>level curves on and off</td></tr>
+  <tr><td><b>Y</b></td><td>show the frontier</td></tr>
+  <tr><td><b>Start</b></td><td>clip the level curves to your own country</td></tr>
+  <tr><td>D-pad / <kbd>↑</kbd><kbd>↓</kbd></td><td>choose a mountain</td></tr>
+</table>
+<p>Medals are remembered in the browser, so a class can come back to a half-finished set. The
+sandbox is still underneath — press <kbd>Tab</kbd> during a run to open the panel and show the
+formula the mountain is made of, or the constraint in the box.</p>
+
 <h1 class="part"><span class="num">5</span>Writing your own functions</h1>
 
 <p>Type into the <code>f(x, y) =</code> box and press <kbd>Enter</kbd>. The notation is the ordinary

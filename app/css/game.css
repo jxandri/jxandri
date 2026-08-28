@@ -1,0 +1,175 @@
+/*
+ * game.css — Border Run.
+ *
+ * Sized for the back of a classroom and for a thumb, not a mouse: nothing
+ * smaller than a fingertip, nothing that needs a hover to be discoverable, and
+ * the state of the run readable from three metres away. The scene shows through
+ * everywhere it can, because the mountain is the thing being taught and the
+ * interface is only the frame around it.
+ */
+
+#game {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #eef5fa;
+  pointer-events: none;
+}
+#game > section { pointer-events: auto; }
+
+/* The run is a heads-up display, not a dialogue: it must not take the middle
+   of the screen or eat the controls underneath it. */
+#game[data-screen="run"] { align-items: stretch; justify-content: stretch; }
+#game[data-screen="run"] > section { pointer-events: none; }
+#game[data-screen="run"] .g-btn { pointer-events: auto; }
+
+/* --- the cards ---------------------------------------------------------- */
+
+#g-menu, #g-brief, #g-result {
+  width: min(880px, 94vw); max-height: 92vh; overflow: auto;
+  padding: 22px 24px 20px; border-radius: 20px;
+  background: rgba(11, 16, 23, .90);
+  border: 1px solid rgba(255, 255, 255, .12);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+}
+
+#g-menu h1 {
+  margin: 0; font-size: 30px; letter-spacing: .4px; font-weight: 700;
+}
+.g-sub { margin: 4px 0 16px; color: #9fb3c4; }
+
+.g-cols { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
+@media (max-width: 720px) { .g-cols { grid-template-columns: 1fr; } }
+
+.g-list { display: flex; flex-direction: column; gap: 2px; }
+.g-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+  padding: 9px 12px; border-radius: 10px; cursor: pointer;
+  border: 1px solid transparent;
+}
+.g-row:hover { background: rgba(255, 255, 255, .05); }
+/* The selected row has to be obvious on a projector, so it is a filled block
+   rather than an outline. */
+.g-row.on {
+  background: rgba(89, 247, 214, .16);
+  border-color: rgba(89, 247, 214, .55);
+}
+.g-name { font-weight: 600; }
+.g-where { color: #93a7b8; font-size: 13px; }
+.g-stars { color: #ffd76a; letter-spacing: 2px; font-size: 14px; }
+
+.g-side img {
+  width: 100%; height: 168px; object-fit: cover;
+  border-radius: 12px; background: #0d1117; display: block;
+}
+.g-side p { margin: 10px 0 0; font-size: 13px; line-height: 1.5; color: #a9bccb; }
+
+#g-brief h2, #g-result h2 { margin: 0 0 8px; font-size: 24px; }
+#g-brief p { color: #cfe0ec; }
+#g-brief b { color: #7ef0d4; font-weight: 600; }
+
+/* --- prompts and buttons ------------------------------------------------ */
+
+.g-keys {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 16px 0 4px;
+  font-size: 13px; color: #8fa3b4;
+}
+.g-keys b {
+  display: inline-block; min-width: 20px; padding: 2px 7px; margin-right: 4px;
+  border-radius: 6px; background: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(255, 255, 255, .16);
+  color: #dceaf3; font: 600 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+}
+
+.g-btn {
+  margin-top: 14px; padding: 12px 22px; min-height: 46px;
+  border-radius: 12px; border: 1px solid rgba(89, 247, 214, .5);
+  background: rgba(89, 247, 214, .18); color: #eafff9;
+  font: 600 15px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  cursor: pointer;
+}
+.g-btn:hover { background: rgba(89, 247, 214, .28); }
+.g-btn.ghost {
+  border-color: rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .06);
+  color: #cfe0ec;
+}
+.g-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+.g-actions .g-btn { flex: 0 0 auto; }
+
+/* --- the run ------------------------------------------------------------ */
+
+.g-hud {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  top: max(64px, calc(env(safe-area-inset-top) + 62px));
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+}
+.g-stat {
+  min-width: 104px; padding: 7px 13px; border-radius: 12px;
+  background: rgba(11, 16, 23, .78);
+  border: 1px solid rgba(255, 255, 255, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  text-align: center;
+}
+.g-stat label {
+  display: block; font-size: 10px; letter-spacing: .5px; text-transform: uppercase;
+  color: #8497a7;
+}
+.g-stat b { font: 700 19px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.g-stat.wide { min-width: 0; padding: 10px 15px; font-size: 13px; font-weight: 600; }
+/* Standing where a flag counts, or not. This is the constraint, so it is the
+   one thing on the HUD that changes colour. */
+.g-stat.wide[data-legal="yes"] { color: #7ef0d4; border-color: rgba(126, 240, 212, .40); }
+.g-stat.wide[data-legal="no"] { color: #ff9a8a; border-color: rgba(255, 154, 138, .45); }
+
+.g-flash, .g-warn {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  top: max(132px, calc(env(safe-area-inset-top) + 130px));
+  padding: 9px 18px; border-radius: 999px;
+  font-weight: 600; font-size: 14px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.g-flash { background: rgba(20, 120, 100, .82); color: #d9fff5; border: 1px solid rgba(126, 240, 212, .5); }
+.g-warn { background: rgba(140, 40, 30, .86); color: #ffe4de; border: 1px solid rgba(255, 154, 138, .55); }
+
+/* Clear of the sandbox's own mode pills, which stay visible during a run so a
+   student can still switch to the drone and look down at what they are doing. */
+#g-run .g-actions {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: max(58px, calc(env(safe-area-inset-bottom) + 54px));
+}
+#g-run .g-btn { margin-top: 0; }
+
+/* --- the result --------------------------------------------------------- */
+
+.g-medal { font-size: 44px; letter-spacing: 6px; color: #55627a; line-height: 1; }
+.g-medal[data-tier="gold"] { color: #ffd76a; }
+.g-medal[data-tier="silver"] { color: #d6e2ec; }
+.g-medal[data-tier="bronze"] { color: #e0a273; }
+.g-numbers { font-size: 15px; color: #cfe0ec; }
+.g-numbers b { color: #7ef0d4; }
+.g-lesson {
+  margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+  background: rgba(255, 255, 255, .05);
+  border-left: 3px solid rgba(89, 247, 214, .55);
+  font-size: 14px; line-height: 1.55; color: #b9cddb;
+}
+
+/* The sandbox chrome, out of the way on the card screens.
+ *
+ * The readouts, the direction indicator and the dials belong to the sandbox and
+ * would only compete with a menu. During the run they come back, because
+ * altitude and heading are exactly what the player is reading — the game HUD
+ * sits above them rather than replacing them. The panel stays one Tab away for
+ * a teacher who wants to show the formula behind the mountain.
+ */
+body[data-mode="play"] #panel-show { display: none; }
+body[data-mode="play"]:not([data-screen="run"]) #hud-top,
+body[data-mode="play"]:not([data-screen="run"]) #hud-bottom,
+body[data-mode="play"]:not([data-screen="run"]) #right-rail,
+body[data-mode="play"]:not([data-screen="run"]) #panel { display: none; }
+
+/* The mountain's photograph belongs to the card while choosing and to the
+   corner while playing, never to both at once. */
+body[data-mode="play"][data-screen="menu"] #peak-card { display: none; }
