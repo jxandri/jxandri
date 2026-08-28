@@ -915,9 +915,9 @@ const st = {
   lim:{pxLo:0.2, pxHi:10, pyLo:0.2, pyHi:10, ILo:1, IHi:40, dpHi:8},
   autoAxes:false, xmaxFix:10, ymaxFix:10,
   layers:{contours:true, b0:true, bComp:true, b1:true, indiff:true,
-          bundles:true, arrows:true, grid:true}
+          bundles:true, decomp:true, arrows:true, grid:true}
 };
-const LAYER_KEYS = ["contours","b0","bComp","b1","indiff","bundles","arrows","grid"];
+const LAYER_KEYS = ["contours","b0","bComp","b1","indiff","bundles","decomp","arrows","grid"];
 
 let LANG = "es";
 const STR = {
@@ -935,7 +935,8 @@ es:{
   fams:{cd:"Cobb–Douglas", ces:"CES generalizada", sub:"Sustitutos perfectos",
         com:"Complementarios perfectos", ql:"Cuasilineal", inf:"X inferior", custom:"Personalizada"},
   layers:{contours:"Curvas de fondo", b0:"Restricción inicial", bComp:"Restricción compensada",
-          b1:"Restricción final", indiff:"Curvas de indiferencia", bundles:"Canastas",
+          b1:"Restricción final", indiff:"Curvas de indiferencia", bundles:"Canastas (B₀, B₁)",
+          decomp:"Descomposición (B_S)",
           arrows:"Flechas de los efectos", grid:"Retícula"},
   showMap:"Degradado de calor", showDemand:"Panel de demanda", autoAxes:"Ajustar los ejes solos",
   gLimits:"Límites de los deslizadores", bothGoods:"Ambos",
@@ -945,10 +946,10 @@ es:{
   giffenMany:"Bandera roja: la demanda ordinaria de %G% sube con su propio precio en %N% tramos, el primero entre %A% y %B%.",
   vp1:"Plano (x, y)", vp2:"Demanda de x",
   newPrices:"Precios nuevos: pₓ = %A%, pᵧ = %B%. Renta compensada: %C%.",
-  roA:"A · inicial", roB:"B · compensada", roC:"C · final", roComp:"Renta compensada",
+  roA:"B₀ · inicial", roB:"B_S · sustitución", roC:"B₁ · final", roComp:"Renta compensada",
   effSub:"Sustitución", effInc:"Ingreso", effTot:"Total", effGood:"Bien",
   legOrd:"Demanda ordinaria", legComp:"Demanda compensada",
-  legB0:"Inicial", legBc:"Compensada", legB1:"Final",
+  legB0:"B₀ inicial", legBc:"B_S compensada", legB1:"B₁ final",
   vNormal:"Bien normal",
   vNormalT:"Los dos efectos empujan en el mismo sentido: el precio de x sube, la sustitución aleja de x, y la pérdida de poder adquisitivo también reduce x. La demanda cae, como manda la intuición.",
   vInferior:"Bien inferior",
@@ -975,7 +976,8 @@ en:{
   fams:{cd:"Cobb–Douglas", ces:"Generalised CES", sub:"Perfect substitutes",
         com:"Perfect complements", ql:"Quasilinear", inf:"X inferior", custom:"Custom"},
   layers:{contours:"Background contours", b0:"Original constraint", bComp:"Compensated constraint",
-          b1:"Final constraint", indiff:"Indifference curves", bundles:"Bundles",
+          b1:"Final constraint", indiff:"Indifference curves", bundles:"Bundles (B₀, B₁)",
+          decomp:"Decomposition (B_S)",
           arrows:"Effect arrows", grid:"Grid"},
   showMap:"Heat gradient", showDemand:"Demand panel", autoAxes:"Fit the axes automatically",
   gLimits:"Slider limits", bothGoods:"Both",
@@ -985,10 +987,10 @@ en:{
   giffenMany:"Red flag: ordinary demand for %G% rises with its own price over %N% stretches, the first between %A% and %B%.",
   vp1:"Plane (x, y)", vp2:"Demand for x",
   newPrices:"New prices: pₓ = %A%, pᵧ = %B%. Compensated income: %C%.",
-  roA:"A · original", roB:"B · compensated", roC:"C · final", roComp:"Compensated income",
+  roA:"B₀ · original", roB:"B_S · substitution", roC:"B₁ · final", roComp:"Compensated income",
   effSub:"Substitution", effInc:"Income", effTot:"Total", effGood:"Good",
   legOrd:"Ordinary demand", legComp:"Compensated demand",
-  legB0:"Original", legBc:"Compensated", legB1:"Final",
+  legB0:"B₀ original", legBc:"B_S compensated", legB1:"B₁ final",
   vNormal:"Normal good",
   vNormalT:"Both effects push the same way: the price of x rises, substitution moves away from x, and the loss of purchasing power cuts x further. Demand falls, as intuition says it should.",
   vInferior:"Inferior good",
@@ -1175,33 +1177,44 @@ function drawPlane(D){
     ctx.globalAlpha = 1;
   }
   if(st.layers.b0)    budgetLine(ctx, st.px, st.py, st.I, SX, SY, MK.b0, 2, null);
-  if(st.layers.bComp) budgetLine(ctx, D.pnx, D.pny, D.mComp, SX, SY, MK.bComp, 2, [6,4]);
+  if(st.layers.bComp && st.layers.decomp)
+    budgetLine(ctx, D.pnx, D.pny, D.mComp, SX, SY, MK.bComp, 2, [6,4]);
   if(st.layers.b1)    budgetLine(ctx, D.pnx, D.pny, st.I, SX, SY, MK.b1, 2.4, null);
 
   if(st.layers.indiff){
     drawIndiff(ctx, D.A.v, SX, SY, 2.2);
-    if(Math.abs(D.B.v - D.A.v) > 1e-9) drawIndiff(ctx, D.B.v, SX, SY, 1.6);
+    if(st.layers.decomp && Math.abs(D.B.v - D.A.v) > 1e-9) drawIndiff(ctx, D.B.v, SX, SY, 1.6);
     if(Math.abs(D.C.v - D.B.v) > 1e-9) drawIndiff(ctx, D.C.v, SX, SY, 2.2);
   }
   /* the effects are horizontal distances, so they are drawn as arrows down on
      the x axis where they can actually be measured against the numbers */
+  /* Without the decomposition there is one move to show — where the consumer
+     started and where they ended. Turning it on is what splits that move in
+     two and puts B_S between them. */
+  const showS = st.layers.decomp;
   if(st.layers.arrows){
-    const yA = bx.y1 - 14, yB = bx.y1 - 30;
-    arrow(ctx, SX(D.A.x), SX(D.B.x), yA, MK.B, "S");
-    arrow(ctx, SX(D.B.x), SX(D.C.x), yB, MK.b1, "I");
+    const y1 = bx.y1 - 14, y2 = bx.y1 - 30;
+    if(showS){
+      arrow(ctx, SX(D.A.x), SX(D.B.x), y1, MK.B, "S");
+      arrow(ctx, SX(D.B.x), SX(D.C.x), y2, MK.b1, "I");
+    } else {
+      arrow(ctx, SX(D.A.x), SX(D.C.x), y1, MK.C, "T");
+    }
     ctx.save(); ctx.setLineDash([2,3]);
-    for(const [p,c] of [[D.A.x,MK.A],[D.B.x,MK.B],[D.C.x,MK.C]])
+    const drops = showS ? [[D.A.x,MK.A],[D.B.x,MK.B],[D.C.x,MK.C]]
+                        : [[D.A.x,MK.A],[D.C.x,MK.C]];
+    for(const [p,c] of drops)
       poly(ctx, [[SX(p),bx.y0],[SX(p),bx.y1]], c, 1, false);
     ctx.restore();
   }
-  if(st.layers.bundles){
-    dot(ctx, SX(D.A.x), SY(D.A.y), MK.A, 4.5);
-    dot(ctx, SX(D.B.x), SY(D.B.y), MK.B, 4.5);
-    dot(ctx, SX(D.C.x), SY(D.C.y), MK.C, 4.5);
+  if(st.layers.bundles || showS){
+    const marks = [];
+    if(st.layers.bundles) marks.push([D.A,"B₀",MK.A], [D.C,"B₁",MK.C]);
+    if(showS)             marks.push([D.B,"B\u209B",MK.B]);
+    for(const [p,,c] of marks) dot(ctx, SX(p.x), SY(p.y), c, 4.5);
     ctx.fillStyle = MK.white; ctx.font = `bold 11px ${css("--f-mono")}`;
     ctx.textAlign = "left"; ctx.textBaseline = "bottom";
-    for(const [p,l] of [[D.A,"A"],[D.B,"B"],[D.C,"C"]])
-      ctx.fillText(l, SX(p.x)+9, SY(p.y)-7);
+    for(const [p,l] of marks) ctx.fillText(l, SX(p.x)+9, SY(p.y)-7);
   }
   ctx.restore();
   return V;
@@ -1327,7 +1340,7 @@ function drawDemand(D){
   }
   for(const g of goods){
     dot(ctx, SX(C.p0), SY(D.A[g]), MK.A, 4);
-    dot(ctx, SX(C.p1), SY(D.B[g]), MK.B, 4);
+    if(st.layers.decomp) dot(ctx, SX(C.p1), SY(D.B[g]), MK.B, 4);
     dot(ctx, SX(C.p1), SY(D.C[g]), MK.C, 4);
   }
   ctx.restore();
