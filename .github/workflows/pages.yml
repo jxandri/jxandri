@@ -10,6 +10,7 @@ name: Deploy applets to GitHub Pages
 #   /nonlinear-budget/   the kinked-constraint applet (nonlinear-budget/)
 #   /labor-tax/          the income-tax applet        (labor-tax/)
 #   /edgeworth-box/      the exchange applet          (edgeworth-box/)
+#   /manuales/           the bilingual PDF manuals    (manuales/ + dist/)
 #
 # ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
 # "GitHub Actions". Until that is done every run fails at configure-pages.
@@ -71,6 +72,18 @@ jobs:
           mkdir -p _site/edgeworth-box
           cp edgeworth-box/index.html _site/edgeworth-box/index.html
 
+          # the bilingual manuals: a hub page plus the two rendered PDFs
+          mkdir -p _site/manuales
+          cp manuales/index.html _site/manuales/index.html
+          for pdf in Microeconomics-Applets-Manual.pdf Applets-Microeconomia-Manual.pdf; do
+            if [ -f "dist/$pdf" ]; then
+              cp "dist/$pdf" "_site/manuales/$pdf"
+            else
+              echo "::error::missing manual: dist/$pdf"
+              exit 1
+            fi
+          done
+
           # keep the PDF guides reachable if they were committed, in both
           # languages — the Spanish edition is screenshotted in Spanish, so it
           # is a different document, not a translated copy of the English one
@@ -108,7 +121,10 @@ jobs:
             _site/demand-functions/index.html \
             _site/nonlinear-budget/index.html \
             _site/labor-tax/index.html \
-            _site/edgeworth-box/index.html
+            _site/edgeworth-box/index.html \
+            _site/manuales/index.html \
+            _site/manuales/Microeconomics-Applets-Manual.pdf \
+            _site/manuales/Applets-Microeconomia-Manual.pdf
           do
             if [ ! -s "$f" ]; then
               echo "::error::missing or empty: $f"
