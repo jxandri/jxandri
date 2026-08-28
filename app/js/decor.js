@@ -261,7 +261,26 @@ export class Decorations {
     // what the domain numbers are, so the human stays the reference for scale.
     const unit = Math.max(0.4, field.worldSize / 200) * (o.scale ?? 1);
 
-    const area = field.worldSize * field.worldSize;
+    // How many of each thing to scatter.
+    //
+    // The count is per ten thousand square units of world, which is the right
+    // rule while a world unit is a nominal metre and every domain is the same
+    // 220 units across. A surface that declares its real metres — the campus
+    // is 2 194 of them — is a hundred times the area, and the same rule asks
+    // for two hundred thousand grass tufts and a third of a million instances
+    // in total: six million triangles, a third of a frame a second, and from
+    // the drone a grey speckle of sub-pixel props that reads as noise over a
+    // surface that is perfectly smooth underneath it.
+    //
+    // So the area is capped. Past about 630 m of world the density falls
+    // instead of the count rising: the scenery stays as thick as the eye can
+    // use at walking distance and stops multiplying beyond it. Nothing changes
+    // on any of the nominal surfaces, whose area is far below the ceiling —
+    // and nothing is lost on a surveyed one, because what the survey actually
+    // knows about the vegetation is in the colour of the ground, which is
+    // drawn per vertex and does not thin out at all.
+    const AREA_CEIL = 400000;                  // ~630 m of world, squared
+    const area = Math.min(field.worldSize * field.worldSize, AREA_CEIL);
     const cap = (per10k) => Math.max(16, Math.round((area / 10000) * per10k * density));
 
     const conifer = new DecorLayer(makeTreeGeometry('conifer'), cap(190), shadows);

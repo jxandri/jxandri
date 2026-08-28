@@ -63,6 +63,47 @@ const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FA
   check('f is the altitude of the ground, not of the roofs',
     ground < 12, `largest step over 4 m of walking: ${ground.toFixed(1)} m`);
 
+  // One scale for the whole scene.
+  //
+  // This is the check that would have caught the picture the surface got
+  // blamed for. A world unit is a metre; the window is 2.19 km; so the world
+  // is 2 194 units across, the explorer is 1.8 of them, and a real five-metre
+  // house is five. When the world was a nominal 220 units instead, the houses
+  // came out a tenth of the explorer's height — pale slabs lying almost flat
+  // on the ground, which reads as a faceted surface however smooth the
+  // function underneath it is.
+  const scale = await p.evaluate(async () => {
+    const m = await import('./js/campus.js');
+    const a = window.__peaks, T = a.THREE, f = a.field;
+    let tree = 0;
+    for (const g of a.scene.getObjectByName('decorations').children) {
+      if (!g.isInstancedMesh || !g.count) continue;
+      g.geometry.computeBoundingBox();
+      const h = g.geometry.boundingBox.max.y - g.geometry.boundingBox.min.y;
+      const mm = new T.Matrix4(); g.getMatrixAt(0, mm);
+      tree = Math.max(tree, h * new T.Vector3().setFromMatrixScale(mm).y);
+    }
+    let hi = 0;
+    for (const b of m.buildings()) hi = Math.max(hi, b.height);
+    return {
+      metreInWorld: f.worldY(0.001),
+      explorerMetres: 1.8 * a.state.zoom / f.worldY(0.001),
+      tallestTreeMetres: tree / f.worldY(0.001),
+      tallestBuildingMetres: hi,
+      instances: a.scene.getObjectByName('decorations').children.reduce((s, c) => s + (c.count || 0), 0),
+    };
+  });
+  check('a world unit is a real metre here',
+    Math.abs(scale.metreInWorld - 1) < 0.02, `${scale.metreInWorld.toFixed(3)} units per metre`);
+  check('the explorer is 1.8 m, and the houses tower over him',
+    Math.abs(scale.explorerMetres - 1.8) < 0.05 && scale.tallestBuildingMetres > 8,
+    `explorer ${scale.explorerMetres.toFixed(2)} m, tallest building ${scale.tallestBuildingMetres} m`);
+  check('the trees are trees and not landmarks',
+    scale.tallestTreeMetres > 4 && scale.tallestTreeMetres < 20,
+    `${scale.tallestTreeMetres.toFixed(1)} m`);
+  check('the scenery stays inside a budget a laptop can draw',
+    scale.instances < 60000, `${scale.instances} instances`);
+
   // Smoothness: second differences bounded, as for any cosine series.
   const smooth = await p.evaluate(() => {
     const a = window.__peaks, h = 0.002;
@@ -77,6 +118,27 @@ const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FA
   });
   check('the surface is a smooth function, second derivative and all',
     smooth < 400, `|f''| <= ${smooth.toFixed(0)} per km`);
+
+  // ...and the mesh drawn from it turns no visible corner. A facet a student
+  // can see is a normal that jumps between neighbouring nodes; on this surface
+  // the worst jump is a degree and a half and the average a fifth of one.
+  const facets = await p.evaluate(() => {
+    const a = window.__peaks, T = a.THREE, g = a.grid;
+    const n1 = new T.Vector3(), n2 = new T.Vector3(), grad = [0, 0];
+    let worst = 0, sum = 0, cnt = 0;
+    for (let j = 1; j < g.n - 1; j += 3) {
+      for (let i = 1; i < g.n - 1; i += 3) {
+        g.gradientAt(i, j, grad); a.field.normalFromGrad(grad[0], grad[1], n1);
+        g.gradientAt(i + 1, j, grad); a.field.normalFromGrad(grad[0], grad[1], n2);
+        const ang = Math.acos(Math.max(-1, Math.min(1, n1.dot(n2)))) * 180 / Math.PI;
+        if (isFinite(ang)) { worst = Math.max(worst, ang); sum += ang; cnt++; }
+      }
+    }
+    return { worst, mean: sum / cnt };
+  });
+  check('the rendered mesh has no facet the eye can find',
+    facets.worst < 4 && facets.mean < 0.6,
+    `normal turns ${facets.mean.toFixed(2)}° per step, worst ${facets.worst.toFixed(2)}°`);
 
   // The vegetation follows the survey, not the height.
   const veg = await p.evaluate(() => {

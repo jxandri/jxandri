@@ -120,9 +120,24 @@ export function buildBuildings(field, grid, list, predicate) {
 
   let placed = 0, skipped = 0;
   for (const b of list) {
-    const ring = b.ring;
+    let ring = b.ring;
     const n = ring.length / 2;
     if (n < 3) { skipped++; continue; }
+
+    // Every ring counter-clockwise in the domain, so one winding rule and one
+    // normal rule serve all fifteen hundred. Overture supplies both
+    // handednesses, and a per-building `outward` sign got the walls' shading
+    // normals pointing inwards on half of them — invisible while the material
+    // was double-sided and the renderer flipped the normal for back faces, and
+    // fatal the moment it is not.
+    if (signedArea(ring) < 0) {
+      const r = new Float32Array(ring.length);
+      for (let i = 0; i < n; i++) {
+        r[i * 2] = ring[(n - 1 - i) * 2];
+        r[i * 2 + 1] = ring[(n - 1 - i) * 2 + 1];
+      }
+      ring = r;
+    }
 
     // The ground the outline stands on, read off the mesh the student sees so
     // nothing floats or sinks. The lowest corner wins; the walls then reach a
@@ -155,19 +170,26 @@ export function buildBuildings(field, grid, list, predicate) {
     for (let i = 0; i < n; i++) {
       push(field.worldX(ring[i * 2]), topW, field.worldZ(ring[i * 2 + 1]), 0, 1, 0, ROOF);
     }
-    // Winding: the domain's y runs to world −z, which flips handedness, so a
-    // ring that was counter-clockwise on the map is clockwise on screen.
+    // The domain's y runs to world −z, which reverses handedness; the ear
+    // clipper works counter-clockwise in the domain, so its own order is the
+    // one whose face normal comes out pointing up on screen. (It used to be
+    // reversed here, which pointed every roof at the ground — again invisible
+    // only because the material was double-sided.)
     for (let i = 0; i < cap.length; i += 3) {
-      tris.push(roofBase + cap[i], roofBase + cap[i + 2], roofBase + cap[i + 1]);
+      tris.push(roofBase + cap[i], roofBase + cap[i + 1], roofBase + cap[i + 2]);
     }
 
     // --- the walls, one quad an edge, flat-shaded ---
-    const outward = signedArea(ring) > 0 ? 1 : -1;
+    //
+    // With the ring normalised, the outward normal of the edge is the world
+    // direction of travel turned a quarter turn, and the quad wound a-b-c,
+    // a-c-d has its geometric normal in the same direction. Shading normal and
+    // face now agree, which is what lets the material be single-sided.
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       const x1 = field.worldX(ring[i * 2]), z1 = field.worldZ(ring[i * 2 + 1]);
       const x2 = field.worldX(ring[j * 2]), z2 = field.worldZ(ring[j * 2 + 1]);
-      let nx = (z2 - z1) * outward, nz = -(x2 - x1) * outward;
+      let nx = -(z2 - z1), nz = (x2 - x1);
       const len = Math.hypot(nx, nz) || 1;
       nx /= len; nz /= len;
       const a = push(x1, baseW, z1, nx, 0, nz, WALL);
@@ -193,8 +215,16 @@ export function buildBuildings(field, grid, list, predicate) {
   geometry.addGroup(groups[0].length, groups[1].length, 1);
   geometry.computeBoundingSphere();
 
+  // Single-sided, deliberately.
+  //
+  // The chase camera does not collide with buildings — it collides with the
+  // ground, which is the surface the program is about — so walking down a
+  // street regularly puts it inside a wall. Culling back faces turns that from
+  // a grey rectangle filling the screen into simply seeing out of the
+  // building, which is the behaviour a student wants and needs no collision
+  // code at all. It is only safe because the winding above is now consistent.
   const mk = () => new THREE.MeshStandardMaterial({
-    vertexColors: true, roughness: 0.82, metalness: 0.0, side: THREE.DoubleSide,
+    vertexColors: true, roughness: 0.82, metalness: 0.0, side: THREE.FrontSide,
   });
   const materials = [mk(), mk()];
   const mesh = new THREE.Mesh(geometry, materials);

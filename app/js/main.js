@@ -1030,10 +1030,33 @@ function rebuild() {
   clearGraphWorld();
 
   // --- sample -----------------------------------------------------------
+  //
+  // How big the world is, in the metres a world unit stands for.
+  //
+  // Everywhere else this is a fixed 220: the domain has no units — the graph of
+  // x² + y² is not a number of kilometres wide — so the program declares that
+  // whatever is on screen is 220 m across, and draws a 1.8 m explorer against
+  // it. That is the only sensible convention for a formula, and it is why the
+  // explorer on Mount Saint Elias is, strictly, a giant.
+  //
+  // On the campus it is the wrong convention, and visibly so, because the
+  // buildings are real. A 2.19 km window squeezed into 220 m is the place at
+  // one tenth scale, and a real five-metre house drawn on it comes out
+  // knee-high beside an explorer the program insists is 1.8 m — a scatter of
+  // pale slabs lying almost flat on the ground, which is what made the
+  // close-up look faceted when the surface underneath it is smooth to a fifth
+  // of a degree of normal per mesh step. Saying the world is 2 194 m across
+  // makes one world unit one real metre: the explorer is 1.8 m, the houses are
+  // four to fourteen, the trees stand over both, and every number the readouts
+  // print becomes true rather than nominal. Camera distance, fog and the sun
+  // are all proportional to this, so the framing is unchanged.
+  const worldSize = isCampus()
+    ? Math.max(state.xmax - state.xmin, state.ymax - state.ymin) * 1000
+    : state.worldSize;
   field = new Field({
     fn,
     xmin: state.xmin, xmax: state.xmax, ymin: state.ymin, ymax: state.ymax,
-    worldSize: state.worldSize,
+    worldSize,
     sx: state.sx, sy: state.sy, sz: state.sz,
   });
   grid = new FieldGrid(field, state.res);
@@ -1197,15 +1220,17 @@ function configureShadows() {
   renderer.shadowMap.enabled = state.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   sun.castShadow = state.shadows;
-  // state.worldSize rather than field.worldSize: the same number sizes
-  // whichever kind of surface is actually on screen, and field is null on a
-  // parametric or implicit one.
+  // The field's own world size where there is a field, because a surface that
+  // declares its metres — the campus does — is not 220 units across and a
+  // shadow camera built for 220 would cover a tenth of it. Falls back to the
+  // state's number for a parametric or implicit surface, where field is null.
+  const ws = (state.surfaceKind === 'graph' && field) ? field.worldSize : state.worldSize;
   if (state.shadows) {
-    const r = state.worldSize * 0.75;
+    const r = ws * 0.75;
     const c = sun.shadow.camera;
     c.left = -r; c.right = r; c.top = r; c.bottom = -r;
-    c.near = state.worldSize * 0.5;
-    c.far = state.worldSize * 6;
+    c.near = ws * 0.5;
+    c.far = ws * 6;
     c.updateProjectionMatrix();
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.bias = -0.0012;
@@ -1275,7 +1300,12 @@ function applyPalette() {
   // the sandbox's exposure clips them to white, which is why the mountains are
   // lit down; scrub, dry grass and tarmac are much darker, and the same
   // exposure leaves a suburb looking like dusk. Santiago is not a dark place.
-  else if (isCampus()) { hemi.intensity = 2.9; sun.intensity = 3.2; }
+  // A city hillside sits between the two. Rock and snow are bright enough that
+  // the sandbox's exposure clips them to white, which is why the mountains are
+  // lit down; dry scrub, tarmac and roofs are darker, but they also take the
+  // sky's blue readily, and a strong hemisphere light floods a whole suburb
+  // pale teal. Less sky, more sun.
+  else if (isCampus()) { hemi.intensity = 1.75; sun.intensity = 3.4; }
   else { hemi.intensity = 3.1; sun.intensity = 3.4; }
   if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
@@ -2483,6 +2513,17 @@ function wireUI() {
       $('t-feas').checked = false; state.feasible = false;
       $('t-isolate').checked = false; state.isolate = false;
       $('t-decor').checked = true; state.decor = true;
+      // Vegetation at its real size too.
+      //
+      // The scenery is normally sized against the world rather than against
+      // the ground — a "tree" is a fixed fraction of the frame — which on a
+      // window this wide would put 72 m trees over 5 m houses. Here the world
+      // unit is a real metre, so the dial is set to make a tree about nine of
+      // them, a boulder under one, and the grass ankle-high, which is what
+      // they are. Everything in the scene is then at one scale: the explorer
+      // 1.8 m, the houses four to fourteen, the trees over both.
+      $('in-decsize').value = -0.9;
+      $('in-decsize').dispatchEvent(new Event('input'));
       // Two kilometres across with half a kilometre of relief is already a
       // steep hillside; it needs no help from the exaggeration dial to read as
       // one, and at 1 the buildings are their real heights beside it.

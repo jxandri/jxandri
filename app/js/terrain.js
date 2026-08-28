@@ -217,18 +217,42 @@ export function setBiomeProfile(name) {
  * COVER_RGB is keyed by the ESA class code, so the numbers here are the
  * numbers in the published legend and can be checked against it.
  */
-const COVER_RGB = {
-  10: [0.15, 0.28, 0.13],   // tree cover
-  20: [0.40, 0.38, 0.23],   // shrubland — Chilean matorral, olive and dusty
-  30: [0.54, 0.50, 0.30],   // grassland, dry for most of the year here
-  40: [0.34, 0.43, 0.19],   // cropland
-  50: [0.46, 0.44, 0.42],   // built-up: roofs, tarmac and courtyards
-  60: [0.52, 0.46, 0.37],   // bare / sparse vegetation
-  70: [0.92, 0.94, 0.97],   // snow and ice
-  80: [0.16, 0.34, 0.46],   // permanent water
-  90: [0.28, 0.40, 0.28],   // herbaceous wetland
-  95: [0.20, 0.34, 0.22],   // mangroves
-  100: [0.55, 0.58, 0.44],  // moss and lichen
+// Two tones a class, not one.
+//
+// A single colour per class paints the hillside in flat blocks, and under a
+// strong sky light flat blocks read as a milky wash rather than as ground —
+// which is what made a perfectly smooth surface look like a haze with nothing
+// in it. Every class therefore carries its dry, pale extreme and its lush,
+// dark one, and the vegetation noise field mixes between them. That is not
+// invention on top of the survey: the survey says "this ten metres is
+// matorral", and matorral in a Santiago summer really is straw-gold on the
+// sun-facing ribs and dark green in the gullies. The class is data; where
+// within the class a patch sits is texture.
+const COVER_A = {                            // dry, pale, sun-facing
+  10: [0.24, 0.34, 0.16],   // tree cover
+  20: [0.56, 0.47, 0.27],   // shrubland — matorral, straw-gold in late summer
+  30: [0.64, 0.56, 0.31],   // grassland, dry for most of the year here
+  40: [0.50, 0.51, 0.24],   // cropland
+  50: [0.58, 0.55, 0.50],   // built-up: roofs, tarmac and courtyards
+  60: [0.62, 0.53, 0.40],   // bare / sparse vegetation
+  70: [0.96, 0.97, 0.99],   // snow and ice
+  80: [0.21, 0.40, 0.50],   // permanent water
+  90: [0.38, 0.46, 0.30],   // herbaceous wetland
+  95: [0.26, 0.38, 0.24],   // mangroves
+  100: [0.62, 0.63, 0.47],  // moss and lichen
+};
+const COVER_B = {                            // lush, dark, shaded
+  10: [0.09, 0.19, 0.08],
+  20: [0.28, 0.31, 0.17],
+  30: [0.41, 0.42, 0.22],
+  40: [0.24, 0.36, 0.14],
+  50: [0.33, 0.31, 0.30],
+  60: [0.40, 0.34, 0.27],
+  70: [0.84, 0.87, 0.93],
+  80: [0.09, 0.22, 0.32],
+  90: [0.22, 0.33, 0.22],
+  95: [0.15, 0.27, 0.18],
+  100: [0.44, 0.48, 0.34],
 };
 
 let coverSource = null;
@@ -321,8 +345,11 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // ten metres long.
   if (coverSource) {
     const cls = coverSource(wx + (fine - 0.5) * 9, wz + (veg - 0.5) * 9);
-    const base = COVER_RGB[cls] || COVER_RGB[30];
-    out[0] = base[0]; out[1] = base[1]; out[2] = base[2];
+    const a = COVER_A[cls] || COVER_A[30];
+    const b = COVER_B[cls] || COVER_B[30];
+    // Where within the class this patch sits: the vegetation field for the
+    // large pattern, the fine field to break its edges.
+    mixRGB(a, b, smoothstep(0.22, 0.78, veg * 0.72 + fine * 0.28), out);
   } else {
     let i = 0;
     while (i < BAND_AT.length - 2 && t > BAND_AT[i + 1]) i++;
