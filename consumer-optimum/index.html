@@ -2466,6 +2466,60 @@ function boot(){
   bindNum("xmax","xmax-v","xmax", onDomainChange);
   bindNum("ymax","ymax-v","ymax", onDomainChange);
 
+/* ==========================================================================
+   Zoom
+   --------------------------------------------------------------------------
+   Wheel over a plot scales its frame. A trackpad pinch arrives as a wheel
+   event with ctrlKey set, so one handler covers both — damped, because a pinch
+   reports far larger deltas than a wheel notch. A two-finger pinch on a
+   touchscreen is a separate pair of events and gets its own path.
+
+   Every plot here has its origin at a corner, so zooming is a multiplier on
+   the maxima and the origin stays where it is. That is the right anchor for a
+   first-quadrant diagram: the reader is looking at the corner, not the middle.
+
+   preventDefault stops the page scrolling under the pointer, which is what
+   makes the gesture feel like it belongs to the plot.
+   ========================================================================== */
+function attachZoom(cv, scale){
+  if(!cv) return;
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    const damp = e.ctrlKey ? 0.35 : 1;          // ctrlKey means a pinch
+    scale(Math.exp(e.deltaY * 0.0022 * damp));
+  }, {passive:false});
+  let d0 = 0;
+  const span = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  cv.addEventListener("touchstart", e => {
+    if(e.touches.length === 2) d0 = span(e.touches);
+  }, {passive:true});
+  cv.addEventListener("touchmove", e => {
+    if(e.touches.length !== 2 || !d0) return;
+    e.preventDefault();
+    const d = span(e.touches);
+    if(d > 0){ scale(d0 / d); d0 = d; }
+  }, {passive:false});
+  const end = () => { d0 = 0; };
+  cv.addEventListener("touchend", end, {passive:true});
+  cv.addEventListener("touchcancel", end, {passive:true});
+}
+
+  /* The domain sliders are the frame, so zooming writes to them: the 2D map,
+     the 3D mesh and the numbers all follow from st.xmax and st.ymax, and
+     nothing can drift out of step with what the controls read. The 3D panel
+     has its own wheel handler, which orbits the camera instead. */
+  attachZoom(document.getElementById("c2d"), f => {
+    const nx = Math.min(60, Math.max(2, st.xmax * f));
+    const ny = Math.min(60, Math.max(2, st.ymax * f));
+    st.xmax = nx; st.ymax = ny;
+    for(const [id, v] of [["xmax", nx], ["ymax", ny]]){
+      const sl = document.getElementById(id), bxx = document.getElementById(id + "-v");
+      if(sl) sl.value = v;
+      if(bxx) bxx.value = +v.toFixed(2);
+    }
+    onDomainChange();
+  });
+
   $("u-expr").addEventListener("change", () => {
     st.src = $("u-expr").value.trim();
     if(recompute()){ buildChips(); render(); }

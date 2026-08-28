@@ -210,6 +210,16 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         <h2 data-t="gPref">Preferencias</h2>
         <div class="chips" id="fam-chips"></div>
         <div class="formula" id="fam-formula">—</div>
+        <div id="ql-box" hidden>
+          <p class="hint" data-t="qlAsk">¿Cuál es la variable lineal?</p>
+          <div class="chips" id="ql-side">
+            <button type="button" class="chip" data-side="phi" aria-pressed="true">u = φ(x) + y</button>
+            <button type="button" class="chip" data-side="psi" aria-pressed="false">u = x + ψ(y)</button>
+          </div>
+          <label class="hint" for="ql-expr" id="ql-label">φ(x) =</label>
+          <input class="text-in" id="ql-expr" value="ln(x)" spellcheck="false" autocomplete="off">
+          <div class="err" id="ql-err"></div>
+        </div>
         <div class="custom-only" id="custom-box" hidden>
           <label class="hint" for="u-expr" data-t="customLabel">Escribe tu propia U(x, y)</label>
           <input class="text-in" id="u-expr" value="x^0.5*y^0.5" spellcheck="false" autocomplete="off">
@@ -220,7 +230,8 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       <div class="group" id="grp-params">
         <h2 data-t="gParams">Parámetros</h2>
         <div class="slider-row" data-p="alpha"><span class="k">α</span><input type="range" id="alpha" min="0.05" max="0.95" step="0.01" value="0.57"><input class="v" id="alpha-v"></div>
-        <div class="slider-row" data-p="r"><span class="k">r</span><input type="range" id="r" min="-6" max="0.95" step="0.01" value="0.42"><input class="v" id="r-v"></div>
+        <div class="slider-row" data-p="gam"><span class="k">γ</span><input type="range" id="gam" min="0.01" max="0.99" step="0.01" value="0.5"><input class="v" id="gam-v"></div>
+        <div class="slider-row" data-p="r"><span class="k">ρ</span><input type="range" id="r" min="-6" max="0.95" step="0.01" value="0.42"><input class="v" id="r-v"></div>
         <div class="slider-row" data-p="a"><span class="k">a</span><input type="range" id="a" min="0.05" max="5" step="0.05" value="0.9"><input class="v" id="a-v"></div>
         <div class="slider-row" data-p="beta"><span class="k">β</span><input type="range" id="beta" min="0.05" max="0.99" step="0.005" value="0.889"><input class="v" id="beta-v"></div>
         <div class="slider-row" data-p="xlow"><span class="k">x̲</span><input type="range" id="xlow" min="0" max="3" step="0.01" value="0.27"><input class="v" id="xlow-v"></div>
@@ -455,11 +466,34 @@ const FAMS={
   cd:{ key:"cd", params:["alpha"], formula:"U(x, y) = x^α · y^(1−α)",
     U:(s,x,y)=>Math.pow(x,s.alpha)*Math.pow(y,1-s.alpha),
     demand:(s,px,py,I)=>[s.alpha*I/px,(1-s.alpha)*I/py] },
-  ces:{ key:"ces", params:["r"], formula:"U(x, y) = (x^r + y^r)^(1/r)",
-    U:(s,x,y)=>Math.pow(Math.pow(x,s.r)+Math.pow(y,s.r),1/s.r),
-    demand:(s,px,py,I)=>{ const e=s.r/(s.r-1), A=Math.pow(px,e), B=Math.pow(py,e);
+  /* Weighted CES. The leading factor is the harmonic mean of gamma and 1-gamma,
+     which equals gamma*(1-gamma) identically: 1/g + 1/(1-g) collapses to
+     1/(g(1-g)). Written that way it stays finite as the slider approaches
+     either end, where the literal form divides by zero. Being a positive
+     constant it rescales utility without touching demand at all — the demands
+     below do not mention it.
+     At rho = 0 the CES is undefined and its limit is Cobb-Douglas with
+     exponents gamma and 1-gamma, so a slider resting on zero takes that limit
+     rather than dividing by it. */
+  ces:{ key:"ces", params:["gam","r"],
+    formula:"U(x, y) = γ_H · (γ·x^ρ + (1−γ)·y^ρ)^(1/ρ),  γ_H = (1/γ + 1/(1−γ))⁻¹ = γ(1−γ)",
+    U:(s,x,y)=>{ const g=s.gam, gH=g*(1-g);
+      if(Math.abs(s.r)<0.02) return gH*Math.pow(x,g)*Math.pow(y,1-g);
+      return gH*Math.pow(g*Math.pow(x,s.r)+(1-g)*Math.pow(y,s.r),1/s.r); },
+    demand:(s,px,py,I)=>{ const g=s.gam;
+      if(Math.abs(s.r)<0.02) return [g*I/px,(1-g)*I/py];
+      const sig=1/(1-s.r), e=1-sig;          // e = r/(r-1)
+      const A=Math.pow(g,sig)*Math.pow(px,e), B=Math.pow(1-g,sig)*Math.pow(py,e);
       if(!fin(A)||!fin(B)||A+B===0) return [NaN,NaN];
       return [A/(A+B)*I/px, B/(A+B)*I/py]; } },
+  /* Quasilinear. Which good enters linearly is the user's first choice, and the
+     curved part is then typed in. Nothing about phi or psi is known ahead of
+     time, so the optimum is found numerically like any typed utility. */
+  ql:{ key:"ql", params:[], numeric:true, formula:"",
+    U:(s,x,y)=> s.qlSide==="phi"
+      ? (s.qlF ? s.qlF(x,y)+y : NaN)
+      : (s.qlF ? x+s.qlF(x,y) : NaN),
+    demand:(s,px,py,I)=> s.qlF ? numericDemand((x,y)=>FAMS.ql.U(s,x,y),px,py,I) : [NaN,NaN] },
   lin:{ key:"lin", params:["a"], formula:"U(x, y) = a·x + y",
     U:(s,x,y)=>s.a*x+y,
     demand:(s,px,py,I)=> s.a>px/py?[I/px,0] : s.a<px/py?[0,I/py] : [I/px/2,I/py/2] },
@@ -482,7 +516,8 @@ const MARK={x:"#00A8C7",y:"#E0631B",giffen:"#B14BE0",bundle:"#00C2DB",pcc:"#7A5A
 
 const st={
   fam:"cd", axis:"px", autoMark:true,
-  alpha:0.57, r:0.42, a:0.9, beta:0.889, xlow:0.27, yup:15.2,
+  alpha:0.57, r:0.42, gam:0.5, a:0.9, beta:0.889, xlow:0.27, yup:15.2,
+  qlSide:"phi", qlPhi:"ln(x)", qlPsi:"ln(y)", qlF:null,
   px:1.83, py:1.1, I:5.4,
   /* The ceiling below is m_max/p_min, so how wide the dials are set decides how
      much empty space sits above the curve. A price floor well under 1 buys a
@@ -490,7 +525,7 @@ const st={
      ends up pressed flat along the axis, so the defaults keep the floor at 1
      and the income ceiling near the income in play. */
   minPx:1, minPy:1, maxPx:6, maxPy:4, minI:0, maxI:8,
-  fixedAxis:true,
+  fixedAxis:true, zoomB:1, zoomD:1,
   overlay:true,
   customU:null, customSrc:"x^0.5*y^0.5",
   pts:{px:[],py:[],I:[]},
@@ -518,7 +553,9 @@ const STR={
   discoverHint:"Mueve la variable elegida y observa la nueva canasta óptima. Cada par queda marcado: el rastro que dejas <em>es</em> la curva de demanda.",
   autoMark:"Marcar al mover", rec:"Registrar punto", sweep:"Barrido", stop:"Parar",
   clear:"Limpiar", ptsRecorded:"puntos registrados",
-  fams:{cd:"Cobb–Douglas", ces:"CES", lin:"Lineal (sustitutos)", inf:"X inferior (Giffen)", custom:"Personalizada"},
+  fams:{cd:"Cobb–Douglas", ces:"CES", ql:"Cuasilineal", lin:"Lineal (sustitutos)", inf:"X inferior (Giffen)", custom:"Personalizada"},
+  qlAsk:"¿Cuál es la variable lineal?",
+  qlOnlyX:"φ sólo puede depender de x.", qlOnlyY:"ψ sólo puede depender de y.",
   vp1:"Elección · plano (x, y)",
   vpDem:"Demanda · función de", vpEngel:"Curva de Engel · función de m",
   layers:{pts:"Puntos registrados", join:"Unir los puntos", curve:"Revelar la curva",
@@ -551,7 +588,9 @@ const STR={
   discoverHint:"Move the chosen variable and watch the new optimal bundle. Every pair is marked: the trail you leave <em>is</em> the demand curve.",
   autoMark:"Mark while moving", rec:"Record point", sweep:"Sweep", stop:"Stop",
   clear:"Clear", ptsRecorded:"points recorded",
-  fams:{cd:"Cobb–Douglas", ces:"CES", lin:"Linear (substitutes)", inf:"X inferior (Giffen)", custom:"Custom"},
+  fams:{cd:"Cobb–Douglas", ces:"CES", ql:"Quasilinear", lin:"Linear (substitutes)", inf:"X inferior (Giffen)", custom:"Custom"},
+  qlAsk:"Which variable is the linear one?",
+  qlOnlyX:"φ may only depend on x.", qlOnlyY:"ψ may only depend on y.",
   vp1:"Choice · (x, y) plane",
   vpDem:"Demand · as a function of", vpEngel:"Engel curve · as a function of m",
   layers:{pts:"Recorded points", join:"Join the points", curve:"Reveal the curve",
@@ -677,7 +716,7 @@ function drawBundle(){
      for the same reason the demand panel does */
   const xmax = st.fixedAxis ? boundX() : Math.max(st.I/st.px*1.25,(fin(xs)?xs:0)*1.4,1);
   const ymax = st.fixedAxis ? boundY() : Math.max(st.I/st.py*1.25,(fin(ys)?ys:0)*1.4,1);
-  const {bx,SX,SY}=frame(ctx,{x0:0,y0:0,x1:w,y1:h},xmax,ymax,"x","y");
+  const {bx,SX,SY}=frame(ctx,{x0:0,y0:0,x1:w,y1:h},xmax*st.zoomB,ymax*st.zoomB,"x","y");
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
   if(st.layers.indiff&&fin(xs)&&fin(ys)){
@@ -765,7 +804,11 @@ function drawDemand(){
     if(!(ymax>0)) ymax=1;
     const ylab = rows.length>1 ? "" : rows[0].lab;
     const rect={x0:0,y0:gi*hh,x1:w,y1:(gi+1)*hh};
-    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,gi===groups.length-1?A.lab:"",ylab,true,A.min);
+    /* the swept interval is what the boxes name, so zoom widens it about its
+       middle rather than dragging one end */
+    const mid=(A.min+A.max)/2, half=(A.max-A.min)/2*st.zoomD;
+    const {bx,SX,SY}=frame(ctx,rect,mid+half,ymax*st.zoomD,
+      gi===groups.length-1?A.lab:"",ylab,true,Math.max(0,mid-half));
     ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
     for(const row of rows){
@@ -906,6 +949,8 @@ function syncParams(){
   const on=new Set(F().params);
   document.querySelectorAll(".slider-row[data-p]").forEach(r=>{ r.hidden=!on.has(r.dataset.p); });
   $("custom-box").hidden = st.fam!=="custom";
+  $("ql-box").hidden = st.fam!=="ql";
+  if(st.fam==="ql") syncQL();
   /* an empty group is just a heading over nothing: hide the whole block when
      the family has no parameters, rather than leaving a stub behind */
   $("grp-params").hidden = on.size===0;
@@ -971,6 +1016,39 @@ function bind(id,key){
   b.addEventListener("change",()=>set(b.value));
   b.value=st[key]; s.value=st[key];
 }
+/* The curved half of a quasilinear utility. It is compiled on its own, so a
+   phi written in terms of y (or a psi in terms of x) is caught here rather than
+   silently producing a utility that is not quasilinear at all. */
+function readQL(){
+  const t=T(), side=st.qlSide;
+  const src=(side==="phi" ? $("ql-expr").value : $("ql-expr").value).trim();
+  const wrong = side==="phi" ? /\by\b/ : /\bx\b/;
+  try{
+    if(wrong.test(src)) throw new Error("side");
+    const f=compile(parseExpr(src));
+    if(!fin(f(1.4,1.4))) throw new Error("value");
+    st.qlF=f;
+    if(side==="phi") st.qlPhi=src; else st.qlPsi=src;
+    $("ql-expr").setAttribute("aria-invalid","false"); $("ql-err").textContent="";
+  }catch(err){
+    st.qlF=null;
+    $("ql-expr").setAttribute("aria-invalid","true");
+    $("ql-err").textContent = err.message==="side"
+      ? (side==="phi" ? t.qlOnlyX : t.qlOnlyY)
+      : (/unknown:/.test(err.message)?t.errVars:t.errParse);
+  }
+  st.pts={px:[],py:[],I:[]};
+  buildChips(); render();
+}
+function syncQL(){
+  const t=T(), phi=st.qlSide==="phi";
+  $("ql-label").textContent = phi ? "φ(x) =" : "ψ(y) =";
+  $("ql-expr").value = phi ? st.qlPhi : st.qlPsi;
+  document.querySelectorAll("#ql-side [data-side]").forEach(b=>
+    b.setAttribute("aria-pressed", String(b.dataset.side===st.qlSide)));
+  $("fam-formula").textContent = phi ? "U(x, y) = φ(x) + y" : "U(x, y) = x + ψ(y)";
+  void t;
+}
 function readCustom(){
   const src=$("u-expr").value.trim();
   try{
@@ -1017,6 +1095,10 @@ $("btn-rec").addEventListener("click",record);
 $("btn-clear").addEventListener("click",clearPts);
 $("btn-sweep").addEventListener("click",sweep);
 $("u-expr").addEventListener("change",readCustom);
+$("ql-expr").addEventListener("change",readQL);
+document.querySelectorAll("#ql-side [data-side]").forEach(b=>b.addEventListener("click",()=>{
+  st.qlSide=b.dataset.side; syncQL(); readQL();
+}));
 $("lg-es").addEventListener("click",()=>{LANG="es"; applyLang();});
 $("lg-en").addEventListener("click",()=>{LANG="en"; applyLang();});
 $("th-dark").addEventListener("click",()=>setTheme("dark"));
@@ -1026,7 +1108,7 @@ addEventListener("keydown",e=>{
   if(e.key==="r"||e.key==="R"){ e.preventDefault(); record(); }
 });
 
-["alpha","r","a","beta","xlow","yup"].forEach(k=>bind(k,k));
+["alpha","r","gam","a","beta","xlow","yup"].forEach(k=>bind(k,k));
 bind("px","px"); bind("py","py"); bind("inc","I");
 bindRange("minPx","maxPx","px");
 bindRange("minPy","maxPy","py");
@@ -1039,12 +1121,54 @@ document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventL
     o.setAttribute("aria-pressed",String(o===btn)));
   render();
 }));
+
+/* ==========================================================================
+   Zoom
+   --------------------------------------------------------------------------
+   Wheel over a plot scales its frame. A trackpad pinch arrives as a wheel
+   event with ctrlKey set, so one handler covers both — damped, because a pinch
+   reports far larger deltas than a wheel notch. A two-finger pinch on a
+   touchscreen is a separate pair of events and gets its own path.
+
+   Every plot here has its origin at a corner, so zooming is a multiplier on
+   the maxima and the origin stays where it is. That is the right anchor for a
+   first-quadrant diagram: the reader is looking at the corner, not the middle.
+
+   preventDefault stops the page scrolling under the pointer, which is what
+   makes the gesture feel like it belongs to the plot.
+   ========================================================================== */
+function attachZoom(cv, scale){
+  if(!cv) return;
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    const damp = e.ctrlKey ? 0.35 : 1;          // ctrlKey means a pinch
+    scale(Math.exp(e.deltaY * 0.0022 * damp));
+  }, {passive:false});
+  let d0 = 0;
+  const span = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  cv.addEventListener("touchstart", e => {
+    if(e.touches.length === 2) d0 = span(e.touches);
+  }, {passive:true});
+  cv.addEventListener("touchmove", e => {
+    if(e.touches.length !== 2 || !d0) return;
+    e.preventDefault();
+    const d = span(e.touches);
+    if(d > 0){ scale(d0 / d); d0 = d; }
+  }, {passive:false});
+  const end = () => { d0 = 0; };
+  cv.addEventListener("touchend", end, {passive:true});
+  cv.addEventListener("touchcancel", end, {passive:true});
+}
+
+attachZoom($("cBundle"), f => { st.zoomB = clamp(st.zoomB * f, 0.15, 8); render(); });
+attachZoom($("cDemand"), f => { st.zoomD = clamp(st.zoomD * f, 0.15, 8); render(); });
 new ResizeObserver(()=>render()).observe(document.querySelector(".viewports"));
 
 let lang0="es", theme0="dark";
 try{ lang0=localStorage.getItem("demanda.lang")||"es"; theme0=localStorage.getItem("demanda.theme")||"dark"; }catch(_){}
 LANG=lang0;
 readCustom();
+readQL();
 syncParams();
 setTheme(theme0);
 applyLang();

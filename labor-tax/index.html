@@ -805,6 +805,7 @@ const FAMS = {
 };
 const st = {
   mode:"marginal", fam:"cd", axis:"leisure", panel2:"tax",
+  zoom:1, zoom2:1,
   w:50, I0:10, px:1,
   t0:0, t1:0.4, t2:0.8, s0:20, s1:30,
   alpha:0.5, rho:0.5, customSrc:"x^0.5*y^0.5", U:null,
@@ -927,23 +928,6 @@ function buildMap(F){
   return cv;
 }
 
-function frameOf(){
-  const B = budget(st), Bc = st.cmp ? budget({...st, scheme:st.cmp}) : null;
-  let xmax = 0, ymax = 0;
-  for(const src of [B, Bc]) if(src) for(const pc of src.pieces){
-    xmax = Math.max(xmax, pc.x1);
-    ymax = Math.max(ymax, pc.y(pc.x0), pc.y(pc.x1));
-  }
-  /* Rounded up to a round number rather than fitted exactly. Two reasons: the
-     axes then stop swimming while a slider is dragged, so two settings can be
-     compared by eye; and the sampled utility field is keyed on this domain, so
-     a frame that only changes at round steps is a frame that re-samples the
-     141x141 grid and its eleven contour sets a few times instead of on every
-     animation frame. */
-  const up = v => { const st2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/st2)*st2; };
-  return {xmax: Math.max(up(xmax*1.12), 0.5), ymax: Math.max(up(ymax*1.12), 0.5), B, Bc};
-}
-
 function setup(cv){
   const dpr = Math.min(devicePixelRatio||1, 2), r = cv.getBoundingClientRect();
   const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
@@ -1029,7 +1013,8 @@ function drawPlane(){
   const V = viewFrame(), F = V.F;
   const t = T();
   const ylab = st.axis === "leisure" ? "ℓ" : "L";
-  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, V.xmax, 0, 1, "c", ylab);
+  /* leisure runs 0..1 by construction, so only the consumption axis zooms */
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, V.xmax*st.zoom, 0, 1, "c", ylab);
 
   const key = [st.U.src, V.xmax, st.axis].join("|");
   if(FIELD_KEY !== key){
@@ -1107,7 +1092,7 @@ function drawTax(res){
   const t = T(), Ymax = Math.max(st.w, st.s1*1.2, 1);
   const up = v => { const s2 = niceStep(Math.max(v,1e-6), 6); return Math.ceil(v/s2)*s2; };
   const X = up(Ymax), Yv = up(X);
-  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, X, 0, Yv, "w·L", "");
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, X*st.zoom2, 0, Yv*st.zoom2, "w·L", "");
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
   poly(ctx, [[SX(0),SY(0)],[SX(X),SY(X)]], MK.gross, 1.4, false);
@@ -1156,6 +1141,7 @@ function drawUtil(res){
   for(const g of groups) for(const p of g) if(fin(p.v)){ if(p.v<lo)lo=p.v; if(p.v>hi)hi=p.v; }
   if(!(hi>lo)){ lo=(lo||0)-1; hi=(hi||0)+1; }
   const pad=(hi-lo)*0.1; lo-=pad; hi+=pad;
+  if(st.zoom2 !== 1){ const mid=(lo+hi)/2, half=(hi-lo)/2*st.zoom2; lo=mid-half; hi=mid+half; }
   const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, 1, lo, hi, "L", "u");
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
   for(const g of groups)
@@ -1332,6 +1318,47 @@ $("lg-es").addEventListener("click", () => { LANG="es"; applyLang(); });
 $("lg-en").addEventListener("click", () => { LANG="en"; applyLang(); });
 $("th-dark").addEventListener("click", () => setTheme("dark"));
 $("th-light").addEventListener("click", () => setTheme("light"));
+
+/* ==========================================================================
+   Zoom
+   --------------------------------------------------------------------------
+   Wheel over a plot scales its frame. A trackpad pinch arrives as a wheel
+   event with ctrlKey set, so one handler covers both — damped, because a pinch
+   reports far larger deltas than a wheel notch. A two-finger pinch on a
+   touchscreen is a separate pair of events and gets its own path.
+
+   Every plot here has its origin at a corner, so zooming is a multiplier on
+   the maxima and the origin stays where it is. That is the right anchor for a
+   first-quadrant diagram: the reader is looking at the corner, not the middle.
+
+   preventDefault stops the page scrolling under the pointer, which is what
+   makes the gesture feel like it belongs to the plot.
+   ========================================================================== */
+function attachZoom(cv, scale){
+  if(!cv) return;
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    const damp = e.ctrlKey ? 0.35 : 1;          // ctrlKey means a pinch
+    scale(Math.exp(e.deltaY * 0.0022 * damp));
+  }, {passive:false});
+  let d0 = 0;
+  const span = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  cv.addEventListener("touchstart", e => {
+    if(e.touches.length === 2) d0 = span(e.touches);
+  }, {passive:true});
+  cv.addEventListener("touchmove", e => {
+    if(e.touches.length !== 2 || !d0) return;
+    e.preventDefault();
+    const d = span(e.touches);
+    if(d > 0){ scale(d0 / d); d0 = d; }
+  }, {passive:false});
+  const end = () => { d0 = 0; };
+  cv.addEventListener("touchend", end, {passive:true});
+  cv.addEventListener("touchcancel", end, {passive:true});
+}
+
+attachZoom($("cPlane"),  f => { st.zoom  = clamp(st.zoom  * f, 0.15, 8); render(); });
+attachZoom($("cPanel2"), f => { st.zoom2 = clamp(st.zoom2 * f, 0.15, 8); render(); });
 new ResizeObserver(() => render()).observe(document.querySelector(".viewports"));
 
 let lang0="es", theme0="dark";
