@@ -15,3 +15,7 @@ dist/package/
 
 # Local scratch scripts for probing remote data sources
 .scratch/
+
+# Assembled upload folder and its archive — rebuildable with tools/build-site.mjs
+dist/site/
+dist/jxandri-*.zip
