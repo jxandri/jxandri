@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual · Efectos Ingreso y Sustitución / Income and Substitution Effects</title>
+<meta name="description" content="Manual de uso del applet Efectos Ingreso y Sustitución, en español e inglés.">
+<style>
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --sunk:#0F171A; --panel:#192126;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --warn:#E3BC72; --warn-soft:#2C2314; --warn-rule:#6B5227;
+  --good:#6FD3A0; --good-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#F2F4F4; --surface:#FFFFFF; --sunk:#E9EDEE; --panel:#F7F9F9;
+  --ink:#14191B; --ink-2:#4A585D; --ink-3:#78878C;
+  --rule:#CDD6D8; --rule-2:#E2E8E9;
+  --accent:#0E6E78; --accent-soft:#D8EAEC; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --warn:#8A5512; --warn-soft:#F6E9D3; --warn-rule:#D9B071;
+  --good:#1B6E48; --good-soft:#D8EDE1;
+  --shadow:0 1px 2px rgba(20,25,27,.05), 0 8px 22px -14px rgba(20,25,27,.3);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-ui);
+  font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased; padding:36px 20px 70px}
+.wrap{max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:32px}
+.top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.kicker{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--accent-ink); background:var(--accent-soft); padding:4px 9px; border-radius:2px}
+h1{margin:8px 0 0; font-family:var(--f-display); font-size:clamp(27px,4.3vw,37px);
+  font-weight:600; letter-spacing:-.012em; line-height:1.15; text-wrap:balance}
+.lede{margin:8px 0 0; color:var(--ink-2); max-width:64ch; font-size:16.5px}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; flex:none}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:6px 13px; font-size:12.5px; font-family:var(--f-ui)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+section{display:flex; flex-direction:column; gap:14px}
+.part{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); padding-bottom:8px; border-bottom:1px solid var(--rule)}
+h2{margin:0; font-family:var(--f-display); font-size:24px; font-weight:600; letter-spacing:-.008em; text-wrap:balance}
+h3{margin:0; font-size:15.5px; font-weight:700}
+p{margin:0; max-width:66ch}
+code{font-family:var(--f-mono); font-size:.885em; background:var(--sunk);
+  border:1px solid var(--rule-2); border-radius:3px; padding:1px 5px; word-break:break-word}
+a{color:var(--accent-ink); text-decoration:none; border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+.btn{display:inline-block; text-decoration:none; border:1px solid var(--accent);
+  background:var(--accent); color:var(--btn-ink); border-radius:3px; padding:9px 17px;
+  font-size:14px; font-weight:600; align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.tbl-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:480px}
+th,td{text-align:left; padding:10px 15px; border-bottom:1px solid var(--rule-2); vertical-align:top}
+th{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--panel); border-bottom-color:var(--rule)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600; width:34%}
+ol.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:17px}
+ol.steps>li{display:grid; grid-template-columns:32px minmax(0,1fr); gap:13px; align-items:start}
+ol.steps>li>.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px;
+  font-weight:700; color:var(--accent-ink); background:var(--accent-soft); border-radius:3px;
+  text-align:center; padding:3px 0; margin-top:1px}
+ol.steps>li>.body{display:flex; flex-direction:column; gap:6px; min-width:0}
+.note,.warn{border-radius:4px; padding:13px 16px; display:flex; flex-direction:column; gap:6px;
+  border:1px solid var(--rule); border-left-width:3px}
+.note{background:var(--panel); border-left-color:var(--accent)}
+.warn{background:var(--warn-soft); border-color:var(--warn-rule); border-left-color:var(--warn); color:var(--warn)}
+.res{background:var(--good-soft); border:1px solid var(--good); border-radius:3px;
+  padding:8px 12px; font-family:var(--f-mono); font-size:13px; color:var(--good); max-width:66ch}
+footer{border-top:1px solid var(--rule); padding-top:18px; color:var(--ink-3); font-size:13.5px;
+  display:flex; flex-direction:column; gap:8px}
+[data-l]{display:none}
+[data-l].on{display:revert}
+p[data-l].on,h1[data-l].on,h2[data-l].on,h3[data-l].on,li[data-l].on{display:revert}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@page{margin:19mm 16mm}
+@media print{
+  body{padding:0; font-size:10.6pt; line-height:1.5}
+  .wrap{max-width:none; gap:24px}
+  .seg{display:none!important}
+  .top{display:block}
+  h1{font-size:26pt} .lede{font-size:11.4pt}
+  h2{font-size:15pt; break-after:avoid} h3{break-after:avoid}
+  .part{break-after:avoid} p{max-width:none}
+  ol.steps>li,.note,.warn,.res,.tbl-wrap,footer{break-inside:avoid}
+  table{min-width:0} th,td{padding:7px 11px}
+  a{border-bottom:0}
+  section{break-inside:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="kicker" data-l="es">Manual de uso</span><span class="kicker" data-l="en">User guide</span>
+      <h1 data-l="es">Efectos Ingreso y Sustitución</h1><h1 data-l="en">Income and Substitution Effects</h1>
+      <p class="lede" data-l="es">Cambia un precio y la canasta óptima se mueve por dos razones a la vez. La compensación las separa: primero gira la restricción sin cambiar el bienestar, después devuelve la renta.</p><p class="lede" data-l="en">Change a price and the optimal bundle moves for two reasons at once. Compensation separates them: first pivot the constraint without changing welfare, then hand the income back.</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <div class="seg" id="lang">
+        <button type="button" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme">
+        <button type="button" data-th="dark" aria-pressed="true"><span data-l="es">Oscuro</span><span data-l="en">Dark</span></button>
+        <button type="button" data-th="light" aria-pressed="false"><span data-l="es">Claro</span><span data-l="en">Light</span></button>
+      </div>
+    </div>
+  </div>
+  <section>
+    <div class="part" data-l="es">Antes de empezar</div><div class="part" data-l="en">Before you start</div>
+    <h2 data-l="es">Cómo se abre</h2><h2 data-l="en">Opening it</h2>
+    <p data-l="es">No hay nada que instalar. Es una página web: se abre en Chrome, Safari, Edge o Firefox, en ordenador, tableta o teléfono. La primera vez necesitas conexión; después el navegador la conserva y funciona sin ella.</p><p data-l="en">There is nothing to install. It is a web page: it opens in Chrome, Safari, Edge or Firefox, on a computer, tablet or phone. You need a connection the first time; after that the browser keeps it and it works offline.</p>
+    <p data-l="es">Arriba a la derecha hay dos parejas de botones. La primera X; la segunda pasa de <b>Oscuro</b> a <b>Claro</b>. Para proyectar en clase, el modo claro se ve mejor en un cañón; en pantalla, el oscuro cansa menos.</p><p data-l="en">Top right there are two pairs of buttons. The first switches the language between <b>ES</b> and <b>EN</b>; the second goes from <b>Dark</b> to <b>Light</b>. For projecting in class, light mode reads better on a beamer; on screen, dark is easier on the eyes.</p>
+    <div class="note"><p data-l="es"><b>Se puede hacer zoom en cualquier gráfica.</b> Rueda del ratón sobre la gráfica, o pellizco con dos dedos en el trackpad o la pantalla táctil. El zoom afecta sólo a la gráfica bajo el cursor, no a la página entera.</p><p data-l="en"><b>Every graph zooms.</b> Mouse wheel over the graph, or a two-finger pinch on the trackpad or touchscreen. The zoom applies to the graph under the pointer only, not to the whole page.</p></div>
+    <div class="note"><p data-l="es">Los deslizadores tienen al lado una casilla con el número. Para un valor exacto, escríbelo en la casilla y pulsa <code>Intro</code>; el deslizador es para explorar, la casilla para precisar.</p><p data-l="en">Each slider has a number box beside it. For an exact value, type it into the box and press <code>Enter</code>; the slider is for exploring, the box is for precision.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Las tres canastas</div><div class="part" data-l="en">The three bundles</div>
+    <h2 data-l="es">Por qué hacen falta tres</h2><h2 data-l="en">Why there have to be three</h2>
+    <p data-l="es">Cuando sube p<sub>x</sub> el consumidor compra menos x por dos motivos distintos que ocurren a la vez: x se ha encarecido <i>en relación con</i> y, y además el consumidor es más pobre en términos reales. La descomposición inventa una canasta intermedia para separarlos.</p><p data-l="en">When p<sub>x</sub> rises the consumer buys less x for two distinct reasons happening at once: x has become dearer <i>relative to</i> y, and the consumer is also poorer in real terms. The decomposition invents an intermediate bundle to pull them apart.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Canasta</th><th data-l="en">Bundle</th><th data-l="es">Qué es</th><th data-l="en">What it is</th></tr></thead><tbody><tr><td><b>B₀</b></td><td data-l="es">La elección inicial, a los precios y la renta de partida.</td><td data-l="en">The original choice, at the starting prices and income.</td></tr><tr><td><b>B<sub>S</sub></b></td><td data-l="es">La elección a los <b>precios nuevos</b> pero con la renta <b>compensada</b>: el consumidor ha visto cambiar los precios relativos, pero no ha empobrecido. De B₀ a B<sub>S</sub> está el <b>efecto sustitución</b>.</td><td data-l="en">The choice at the <b>new prices</b> but with <b>compensated</b> income: the consumer has seen relative prices change, but has not got poorer. From B₀ to B<sub>S</sub> is the <b>substitution effect</b>.</td></tr><tr><td><b>B₁</b></td><td data-l="es">La elección final, a los precios nuevos y la renta de verdad. De B<sub>S</sub> a B₁ está el <b>efecto ingreso</b>.</td><td data-l="en">The final choice, at the new prices and the real income. From B<sub>S</sub> to B₁ is the <b>income effect</b>.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">El efecto total, de B₀ a B₁, es la suma de los otros dos. Es lo único observable: B<sub>S</sub> no existe en los datos, es un instrumento de análisis.</p><p data-l="en">The total effect, B₀ to B₁, is the sum of the other two. It is the only observable one: B<sub>S</sub> does not exist in the data, it is an analytical device.</p></div>
+    <h2 data-l="es">Slutsky o Hicks</h2><h2 data-l="en">Slutsky or Hicks</h2>
+    <p data-l="es">La compensación se puede definir de dos maneras, y el applet las tiene las dos porque los libros no se ponen de acuerdo.</p><p data-l="en">Compensation can be defined two ways, and the applet has both because the textbooks do not agree.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Regla</th><th data-l="en">Rule</th><th data-l="es">Qué se le compensa</th><th data-l="en">What is compensated</th></tr></thead><tbody><tr><td data-l="es"><b>Slutsky</b> — mantener la canasta</td><td data-l="en"><b>Slutsky</b> — hold the bundle</td><td data-l="es">Se le da justo lo necesario para poder comprar <b>la canasta original</b> a los precios nuevos. Es observable —basta con saber qué compraba antes— y deja al consumidor algo <i>mejor</i> que antes, porque además de poder repetir la canasta puede recomponerla.</td><td data-l="en">Give exactly enough to buy <b>the original bundle</b> at the new prices. It is observable — you only need to know what was bought before — and it leaves the consumer slightly <i>better off</i>, because on top of repeating the bundle he can rearrange it.</td></tr><tr><td data-l="es"><b>Hicks</b> — mantener la utilidad</td><td data-l="en"><b>Hicks</b> — hold the utility</td><td data-l="es">Se le da justo lo necesario para alcanzar <b>la utilidad original</b> a los precios nuevos. No es observable, porque nadie ve una curva de indiferencia, pero mantiene el bienestar exactamente fijo, que es lo que la teoría pide.</td><td data-l="en">Give exactly enough to reach <b>the original utility</b> at the new prices. Not observable, since nobody sees an indifference curve, but it holds welfare exactly fixed, which is what the theory asks for.</td></tr></tbody></table></div>
+    <div class="warn"><p data-l="es">Cambiar de regla cambia dónde cae B<sub>S</sub> y, por tanto, cómo se reparte el efecto total entre los dos componentes. Lo que <b>no</b> cambia es el efecto total ni el signo del efecto sustitución: ése apunta siempre en contra del precio, con cualquiera de las dos reglas y con cualquier función de utilidad.</p><p data-l="en">Switching rule changes where B<sub>S</sub> lands and therefore how the total splits between the two components. What does <b>not</b> change is the total effect, nor the sign of the substitution effect: it always points against the price, under either rule and with any utility function.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Qué hay en pantalla</div><div class="part" data-l="en">What is on screen</div>
+    <h2 data-l="es">Los dos paneles</h2><h2 data-l="en">The two panels</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Panel</th><th data-l="en">Panel</th><th data-l="es">Qué muestra</th><th data-l="en">What it shows</th></tr></thead><tbody><tr><td data-l="es"><b>Plano (x, y)</b></td><td data-l="en"><b>Plane (x, y)</b></td><td data-l="es">Las tres restricciones, las curvas de indiferencia, las tres canastas y —si enciendes las flechas— los vectores de los efectos.</td><td data-l="en">The three constraints, the indifference curves, the three bundles and — if you switch the arrows on — the effect vectors.</td></tr><tr><td data-l="es"><b>Panel de demanda</b></td><td data-l="en"><b>Demand panel</b></td><td data-l="es">El precio en el eje horizontal y la cantidad demandada en el vertical, con la demanda <b>ordinaria</b> y la <b>compensada</b> superpuestas. Puedes ver x, y, o las dos a la vez.</td><td data-l="en">Price on the horizontal axis and quantity demanded on the vertical, with <b>ordinary</b> and <b>compensated</b> demand overlaid. You can show x, y, or both at once.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">Mostrar los <b>dos</b> bienes es la opción que más enseña. El efecto sobre y suele ser el que sorprende: al subir p<sub>x</sub>, la demanda de y se mueve aunque su precio no haya cambiado.</p><p data-l="en">Showing <b>both</b> goods teaches the most. The effect on y is usually the surprise: when p<sub>x</sub> rises, demand for y moves even though its own price did not change.</p></div>
+    <h2 data-l="es">Las capas y las flechas</h2><h2 data-l="en">Layers and arrows</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Capa</th><th data-l="en">Layer</th><th data-l="es">Qué dibuja</th><th data-l="en">What it draws</th></tr></thead><tbody><tr><td data-l="es">Restricción inicial / compensada / final</td><td data-l="en">Original / compensated / final constraint</td><td data-l="es">Las tres rectas. La compensada es paralela a la final y pasa por B₀ (Slutsky) o es tangente a la curva original (Hicks).</td><td data-l="en">The three lines. The compensated one is parallel to the final one and passes through B₀ (Slutsky) or is tangent to the original curve (Hicks).</td></tr><tr><td data-l="es">Canastas (B₀, B₁)</td><td data-l="en">Bundles (B₀, B₁)</td><td data-l="es">Sólo el punto de partida y el de llegada, con sus nombres. Es la vista honesta: lo que se observa.</td><td data-l="en">Just the start and the finish, labelled. This is the honest view: what is observed.</td></tr><tr><td data-l="es">Descomposición (B_S)</td><td data-l="en">Decomposition (B_S)</td><td data-l="es">Añade la canasta intermedia. Enciéndela cuando vayas a explicar la separación, no antes.</td><td data-l="en">Adds the intermediate bundle. Switch it on when you are about to explain the split, not before.</td></tr><tr><td data-l="es">Flechas de los efectos</td><td data-l="en">Effect arrows</td><td data-l="es">Los vectores. Sin descomposición sale sólo el efecto total, de B₀ a B₁. Con descomposición aparecen dos: uno <b>rojo</b> de B₀ a B<sub>S</sub> rotulado «E. Sustitución» y uno <b>azul</b> de B<sub>S</sub> a B₁ rotulado «E. Ingreso». Los mismos colores marcan los tramos sobre el eje x y sobre el eje y.</td><td data-l="en">The vectors. Without the decomposition you get only the total effect, B₀ to B₁. With it, two more appear: a <b>red</b> one from B₀ to B<sub>S</sub> labelled “Subst. effect” and a <b>blue</b> one from B<sub>S</sub> to B₁ labelled “Income effect”. The same colours mark the stretches on the x axis and on the y axis.</td></tr><tr><td data-l="es">Curvas de indiferencia</td><td data-l="en">Indifference curves</td><td data-l="es">Las que pasan por las canastas.</td><td data-l="en">The ones through the bundles.</td></tr><tr><td data-l="es">Curvas de fondo</td><td data-l="en">Contours</td><td data-l="es">El resto del mapa, a niveles regulares.</td><td data-l="en">The rest of the map, at regular levels.</td></tr><tr><td data-l="es">Retícula</td><td data-l="en">Grid</td><td data-l="es">La cuadrícula.</td><td data-l="en">The grid.</td></tr></tbody></table></div>
+    <h2 data-l="es">Los números</h2><h2 data-l="en">The readouts</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Lectura</th><th data-l="en">Readout</th><th data-l="es">Cómo leerla</th><th data-l="en">How to read it</th></tr></thead><tbody><tr><td data-l="es">B₀ · inicial, B<sub>S</sub> · sustitución, B₁ · final</td><td data-l="en">B₀ · original, B<sub>S</sub> · substitution, B₁ · final</td><td data-l="es">Las tres canastas, con sus coordenadas.</td><td data-l="en">The three bundles, with their coordinates.</td></tr><tr><td data-l="es">Renta compensada</td><td data-l="en">Compensated income</td><td data-l="es">Cuánto habría que darle o quitarle para la compensación elegida.</td><td data-l="en">How much to hand over or take back for the chosen compensation.</td></tr><tr><td data-l="es">Sustitución / Ingreso / Total</td><td data-l="en">Substitution / Income / Total</td><td data-l="es">Los tres efectos, en unidades del bien, para x y para y.</td><td data-l="en">The three effects, in units of the good, for x and for y.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">El caso de libro, en números</div><div class="part" data-l="en">The textbook case, in numbers</div>
+    <h2 data-l="es">Cobb–Douglas, precio que se duplica</h2><h2 data-l="en">Cobb–Douglas, price doubling</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Elige <b>Cobb–Douglas</b> con a = <b>0,5</b>. Situación inicial: p<sub>x</sub> = <b>1</b>, p<sub>y</sub> = <b>1</b>, m = <b>8</b>. Variación: Δp<sub>x</sub> = <b>1</b>, Δp<sub>y</sub> = <b>0</b>.</p><p data-l="en">Pick <b>Cobb–Douglas</b> with a = <b>0.5</b>. Starting point: p<sub>x</sub> = <b>1</b>, p<sub>y</sub> = <b>1</b>, m = <b>8</b>. Change: Δp<sub>x</sub> = <b>1</b>, Δp<sub>y</sub> = <b>0</b>.</p><div class="res" data-l="es">B₀ = (4, 4) con u = 4. B₁ = (2, 4). El efecto total sobre x es −2.</div><div class="res" data-l="en">B₀ = (4, 4) with u = 4. B₁ = (2, 4). The total effect on x is −2.</div></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Fíjate primero en y: no ha cambiado. Con Cobb–Douglas el gasto en cada bien es una fracción fija de la renta, así que la subida de p<sub>x</sub> no toca a y en absoluto.</p><p data-l="en">Look at y first: it has not moved. With Cobb–Douglas the spending on each good is a fixed share of income, so the rise in p<sub>x</sub> does not touch y at all.</p></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Pon la compensación en <b>Slutsky</b> y enciende <b>Descomposición (B_S)</b>.</p><p data-l="en">Set compensation to <b>Slutsky</b> and switch on <b>Decomposition (B_S)</b>.</p><div class="res" data-l="es">Renta compensada 12 = 2·4 + 1·4: justo lo que cuesta la canasta vieja a precios nuevos. B<sub>S</sub> = (3, 6). Sustitución −1, ingreso −1.</div><div class="res" data-l="en">Compensated income 12 = 2·4 + 1·4: exactly what the old bundle costs at the new prices. B<sub>S</sub> = (3, 6). Substitution −1, income −1.</div></div></li>
+      <li><span class="n">4</span><div class="body"><p data-l="es">Cambia a <b>Hicks</b> sin tocar nada más.</p><p data-l="en">Switch to <b>Hicks</b> without touching anything else.</p><div class="res" data-l="es">Renta compensada 11,314 = 8·√2: la justa para volver a u = 4. B<sub>S</sub> = (2,828, 5,657). Sustitución −1,172, ingreso −0,828.</div><div class="res" data-l="en">Compensated income 11.314 = 8·√2: just enough to get back to u = 4. B<sub>S</sub> = (2.828, 5.657). Substitution −1.172, income −0.828.</div></div></li>
+      <li><span class="n">5</span><div class="body"><p data-l="es">Compara las dos lecturas: el total sigue siendo −2 con las dos reglas, pero el reparto cambia. Slutsky compensa de más —deja al consumidor en u = 4,243, por encima del original— y por eso atribuye menos al efecto sustitución.</p><p data-l="en">Compare the two readings: the total is still −2 under both rules, but the split changes. Slutsky over-compensates — it leaves the consumer at u = 4.243, above the original — and so attributes less to the substitution effect.</p></div></li>
+      <li><span class="n">6</span><div class="body"><p data-l="es">Enciende <b>Flechas de los efectos</b> y mira los ejes: los tramos rojo y azul del eje x suman el desplazamiento total, y en el eje y aparecen los mismos dos tramos, porque y también se mueve entre B₀ y B<sub>S</sub> aunque acabe donde empezó.</p><p data-l="en">Switch on <b>Effect arrows</b> and look at the axes: the red and blue stretches on the x axis add up to the total move, and the same two stretches appear on the y axis, because y moves between B₀ and B<sub>S</sub> even though it ends where it started.</p></div></li>
+    </ol>
+  </section>
+  <section>
+    <div class="part" data-l="es">La bandera roja: encontrar un Giffen</div><div class="part" data-l="en">The red flag: finding a Giffen</div>
+    <h2 data-l="es">Qué avisa el applet</h2><h2 data-l="en">What the applet warns about</h2>
+    <p data-l="es">Si en algún tramo del recorrido la demanda <b>ordinaria</b> de un bien sube con su <b>propio</b> precio, aparece un aviso en rojo que dice entre qué precios ocurre. Sólo cuenta el precio propio: una demanda cruzada con pendiente positiva sólo significa que los bienes son sustitutos brutos, que es lo normal y no merece aviso.</p><p data-l="en">If over some stretch of the sweep the <b>ordinary</b> demand for a good rises with its <b>own</b> price, a red warning appears naming the prices between which it happens. Only the own price counts: a cross-price curve sloping up merely means the goods are gross substitutes, which is ordinary and needs no warning.</p>
+    <h2 data-l="es">Una receta comprobada</h2><h2 data-l="en">A checked recipe</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Elige la familia <b>X inferior</b>. Parámetros: ȳ = <b>4</b>, β = <b>0,4</b>, x̲ = <b>0,6</b>.</p><p data-l="en">Pick the <b>X inferior</b> family. Parameters: ȳ = <b>4</b>, β = <b>0.4</b>, x̲ = <b>0.6</b>.</p></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Situación inicial: p<sub>x</sub> = <b>3</b>, p<sub>y</sub> = <b>1</b>, m = <b>5,6</b>. Variación: Δp<sub>x</sub> = <b>2</b>, Δp<sub>y</sub> = <b>0</b>. Deja el panel de demanda en <b>x</b>.</p><p data-l="en">Starting point: p<sub>x</sub> = <b>3</b>, p<sub>y</sub> = <b>1</b>, m = <b>5.6</b>. Change: Δp<sub>x</sub> = <b>2</b>, Δp<sub>y</sub> = <b>0</b>. Leave the demand panel on <b>x</b>.</p><div class="res" data-l="es">Sale el aviso: «la demanda ordinaria de x sube con su propio precio entre 2,72 y 6,66».</div><div class="res" data-l="en">The warning appears: “ordinary demand for x rises with its own price between 2.72 and 6.66”.</div></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Mira las tres canastas con <b>Slutsky</b>.</p><p data-l="en">Look at the three bundles under <b>Slutsky</b>.</p><div class="res" data-l="es">B₀ = (0,644, 3,667), B<sub>S</sub> = (0,615, 3,815), B₁ = (0,787, 1,667). Sustitución −0,030, ingreso +0,172, total <b>+0,142</b>.</div><div class="res" data-l="en">B₀ = (0.644, 3.667), B<sub>S</sub> = (0.615, 3.815), B₁ = (0.787, 1.667). Substitution −0.030, income +0.172, total <b>+0.142</b>.</div></div></li>
+      <li><span class="n">4</span><div class="body"><p data-l="es">Ahí está el mecanismo completo, en tres números. La sustitución es negativa, como siempre. El efecto ingreso es <b>positivo</b>, porque x es inferior. Y es lo bastante grande para dominar: el total sale positivo y la demanda sube con el precio.</p><p data-l="en">There is the whole mechanism, in three numbers. Substitution is negative, as always. The income effect is <b>positive</b>, because x is inferior. And it is big enough to dominate: the total comes out positive and demand rises with the price.</p></div></li>
+      <li><span class="n">5</span><div class="body"><p data-l="es">Cambia a <b>Hicks</b>: sustitución −0,026, ingreso +0,168, total +0,142 otra vez.</p><p data-l="en">Switch to <b>Hicks</b>: substitution −0.026, income +0.168, total +0.142 again.</p><div class="res" data-l="es">El reparto cambia un poco, el total no. Es la comprobación de que la descomposición es un instrumento y no un hecho.</div><div class="res" data-l="en">The split shifts a little, the total does not. That is the check that the decomposition is a device, not a fact.</div></div></li>
+      <li><span class="n">6</span><div class="body"><p data-l="es">Mira ahora el panel de demanda: la curva <b>ordinaria</b> sube de izquierda a derecha, y la <b>compensada</b> baja. Las dos a la vez, en el mismo dibujo.</p><p data-l="en">Now look at the demand panel: the <b>ordinary</b> curve rises from left to right, and the <b>compensated</b> one falls. Both at once, in the same picture.</p><div class="res" data-l="es">La demanda compensada nunca puede tener pendiente positiva. Ésa es la ley de la demanda que sí se cumple siempre.</div><div class="res" data-l="en">Compensated demand can never slope upward. That is the law of demand that does always hold.</div></div></li>
+    </ol>
+    <div class="note"><p data-l="es">Si quieres el caso intermedio —x inferior pero no Giffen— sube la renta a 3, por debajo de p<sub>y</sub>·ȳ = 4. El aviso desaparece y el efecto ingreso sigue siendo positivo, pero ya no gana.</p><p data-l="en">For the in-between case — x inferior but not Giffen — lower income to 3, below p<sub>y</sub>·ȳ = 4. The warning disappears and the income effect is still positive, but no longer wins.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Los límites de los deslizadores</div><div class="part" data-l="en">The slider limits</div>
+    <h2 data-l="es">Para qué sirven</h2><h2 data-l="en">What they are for</h2>
+    <p data-l="es">El grupo <b>Límites de los deslizadores</b> tiene una pareja de casillas por variable. Deciden dos cosas: hasta dónde llega cada deslizador, y qué tramo barre el panel de demanda. Los valores por defecto sirven para el caso de libro, pero para cazar un Giffen casi siempre hay que ensancharlos.</p><p data-l="en">The <b>Slider limits</b> group has a pair of boxes per variable. They decide two things: how far each slider travels, and what stretch the demand panel sweeps. The defaults suit the textbook case, but hunting a Giffen nearly always needs them widened.</p>
+    <div class="warn"><p data-l="es">Los límites no cambian la economía, sólo la ventana desde la que se mira. Si un efecto parece desaparecer al mover un límite, es que ha salido del encuadre, no que haya dejado de existir.</p><p data-l="en">The limits do not change the economics, only the window you look through. If an effect seems to vanish when you move a limit, it has left the frame, not stopped existing.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Escribir tu propia función</div><div class="part" data-l="en">Writing your own function</div>
+    <h2 data-l="es">La sintaxis admitida</h2><h2 data-l="en">The syntax it accepts</h2>
+    <p data-l="es">En la casilla de preferencias personalizadas las variables son <b>x</b> e <b>y</b>. Con una utilidad escrita a mano, la canasta óptima y la renta compensada de Hicks se calculan numéricamente, así que valen funciones con vértices.</p><p data-l="en">In the custom preferences box the variables are <b>x</b> and <b>y</b>. With a hand-written utility, the optimal bundle and the Hicks compensated income are computed numerically, so functions with kinks are fine.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td><code>+ − * / ^</code></td><td data-l="es">Suma, resta, producto, cociente y potencia. <code>x^0.5</code> es la raíz de x.</td><td data-l="en">Add, subtract, multiply, divide, power. <code>x^0.5</code> is the square root of x.</td></tr><tr><td><code>( )</code></td><td data-l="es">Paréntesis. <code>(x+y)^2</code> no es lo mismo que <code>x+y^2</code>.</td><td data-l="en">Brackets. <code>(x+y)^2</code> is not the same as <code>x+y^2</code>.</td></tr><tr><td><code>sqrt ln log exp abs</code></td><td data-l="es">Raíz, logaritmo natural, logaritmo decimal, exponencial y valor absoluto.</td><td data-l="en">Root, natural log, base-10 log, exponential and absolute value.</td></tr><tr><td><code>min max</code></td><td data-l="es">Con dos argumentos: <code>min(x,y)</code> son complementarios perfectos.</td><td data-l="en">Two arguments: <code>min(x,y)</code> is perfect complements.</td></tr><tr><td><code>sin cos</code></td><td data-l="es">Trigonométricas, en radianes. Rara vez útiles aquí, pero están.</td><td data-l="en">Trigonometric, in radians. Rarely useful here, but available.</td></tr><tr><td><code>e pi</code></td><td data-l="es">Las dos constantes. <code>e</code> es 2,718…, <code>pi</code> es 3,1416…</td><td data-l="en">The two constants. <code>e</code> is 2.718…, <code>pi</code> is 3.1416…</td></tr><tr><td><code>2x</code>, <code>3xy</code></td><td data-l="es">El producto implícito funciona: <code>2x</code> se lee como <code>2*x</code>.</td><td data-l="en">Implicit multiplication works: <code>2x</code> reads as <code>2*x</code>.</td></tr></tbody></table></div>
+    <h2 data-l="es">Ejemplos que funcionan</h2><h2 data-l="en">Examples that work</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Expresión</th><th data-l="en">Expression</th><th data-l="es">Qué preferencias describe</th><th data-l="en">What preferences it describes</th></tr></thead><tbody><tr><td><code>x^0.5*y^0.5</code></td><td data-l="es">El caso de libro, con el que se comprueban los números de arriba.</td><td data-l="en">The textbook case, the one that checks the numbers above.</td></tr><tr><td><code>min(x,y)</code></td><td data-l="es">Complementarios perfectos: el efecto sustitución es <b>cero</b>, y todo el movimiento es efecto ingreso.</td><td data-l="en">Perfect complements: the substitution effect is <b>zero</b>, and the whole move is income effect.</td></tr><tr><td><code>x+y</code></td><td data-l="es">Sustitutos perfectos: el efecto sustitución se lo lleva todo, de golpe.</td><td data-l="en">Perfect substitutes: the substitution effect takes everything, all at once.</td></tr><tr><td><code>2ln(x)+y</code></td><td data-l="es">Cuasilineal: el efecto ingreso sobre x es <b>cero</b>, y sustitución y total coinciden.</td><td data-l="en">Quasilinear: the income effect on x is <b>zero</b>, so substitution and total coincide.</td></tr></tbody></table></div>
+    <div class="warn"><p data-l="es">Si escribes algo que no se entiende, aparece <i>«No entiendo esa expresión»</i> y la gráfica se queda como estaba. Las causas habituales son un paréntesis sin cerrar, una coma decimal en vez de un punto (<code>0,5</code> en vez de <code>0.5</code>) o una variable que no sea x ni y.</p><p data-l="en">If it cannot be read you get <i>“I can't read that expression”</i> and the graph stays as it was. The usual causes are an unclosed bracket, a decimal comma instead of a point (<code>0,5</code> instead of <code>0.5</code>) or a variable other than x and y.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Si algo no sale</div><div class="part" data-l="en">If something goes wrong</div>
+    <h2 data-l="es">Problemas frecuentes</h2><h2 data-l="en">Common problems</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Síntoma</th><th data-l="en">Symptom</th><th data-l="es">Qué hacer</th><th data-l="en">What to do</th></tr></thead><tbody><tr><td data-l="es">Las tres canastas coinciden</td><td data-l="en">The three bundles coincide</td><td data-l="es">No has cambiado ningún precio. Mueve Δp<sub>x</sub> o Δp<sub>y</sub>.</td><td data-l="en">You have not changed any price. Move Δp<sub>x</sub> or Δp<sub>y</sub>.</td></tr><tr><td data-l="es">No aparece B<sub>S</sub></td><td data-l="en">B<sub>S</sub> does not appear</td><td data-l="es">Enciende la capa <b>Descomposición (B_S)</b>. La capa <b>Canastas</b> muestra sólo B₀ y B₁ a propósito.</td><td data-l="en">Switch on the <b>Decomposition (B_S)</b> layer. The <b>Bundles</b> layer shows only B₀ and B₁ on purpose.</td></tr><tr><td data-l="es">El efecto sustitución sale positivo</td><td data-l="en">The substitution effect comes out positive</td><td data-l="es">No puede serlo en el propio precio. Si lo ves, estás mirando el efecto sobre el <i>otro</i> bien, que sí puede ir en cualquier sentido.</td><td data-l="en">It cannot be, in the own price. If you see one, you are looking at the effect on the <i>other</i> good, which can go either way.</td></tr><tr><td data-l="es">Sale «Algo se sale del marco»</td><td data-l="en">It says “Something runs outside the frame”</td><td data-l="es">Sube el tope de x o de y en el grupo de vista, o marca <b>Ajustar los ejes solos</b>.</td><td data-l="en">Raise the x or y ceiling in the view group, or tick <b>Fit the axes automatically</b>.</td></tr><tr><td data-l="es">El panel de demanda sale a trozos</td><td data-l="en">The demand panel comes out in pieces</td><td data-l="es">La utilidad no está definida en parte del recorrido —típico de la familia X inferior, que exige x &gt; x̲ e y &lt; ȳ—. Estrecha los límites de p<sub>x</sub> o cambia la renta.</td><td data-l="en">Utility is undefined over part of the sweep — typical of the X inferior family, which needs x &gt; x̲ and y &lt; ȳ. Narrow the p<sub>x</sub> limits or change income.</td></tr><tr><td data-l="es">La bandera roja no sale nunca</td><td data-l="en">The red flag never appears</td><td data-l="es">El caso Giffen es raro y hay que buscarlo. Usa la receta de arriba, y recuerda que hace falta m &gt; p<sub>y</sub>·ȳ.</td><td data-l="en">The Giffen case is rare and has to be hunted. Use the recipe above, and remember it needs m &gt; p<sub>y</sub>·ȳ.</td></tr></tbody></table></div>
+  </section>
+  <footer>
+    <p data-l="es">Abre el applet: <a href="../income-substitution/">Efectos Ingreso y Sustitución</a>. Todo funciona en el navegador; una vez cargado, también sin conexión.</p>
+    <p data-l="en">Open the applet: <a href="../income-substitution/">Income and Substitution Effects</a>. It all runs in the browser, and once loaded, offline too.</p>
+    <p><a href="../index.html" data-l="es">← Volver al menú</a><a href="../index.html" data-l="en">← Back to the menu</a></p>
+  </footer>
+</div>
+<script>
+"use strict";
+/* One page, two languages: every block is tagged and the toggle just switches
+   which set is shown. Keeping both in one file means a correction lands in both
+   at once instead of drifting apart. */
+function setLang(l){
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-l]").forEach(function(el){
+    el.classList.toggle("on", el.dataset.l === l);
+  });
+  document.querySelectorAll("#lang button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.lang === l));
+  });
+  try{ localStorage.setItem("manual.lang", l); }catch(e){}
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#theme button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.th === t));
+  });
+  try{ localStorage.setItem("manual.theme", t); }catch(e){}
+}
+document.querySelectorAll("#lang button").forEach(function(b){
+  b.addEventListener("click", function(){ setLang(b.dataset.lang); });
+});
+document.querySelectorAll("#theme button").forEach(function(b){
+  b.addEventListener("click", function(){ setTheme(b.dataset.th); });
+});
+var l0 = "es", t0 = "dark";
+try{ l0 = localStorage.getItem("manual.lang") || "es";
+     t0 = localStorage.getItem("manual.theme") || "dark"; }catch(e){}
+setLang(l0); setTheme(t0);
+</script>
+</body>
+</html>

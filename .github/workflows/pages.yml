@@ -10,6 +10,7 @@ name: Deploy applets to GitHub Pages
 #   /nonlinear-budget/   the kinked-constraint applet (nonlinear-budget/)
 #   /labor-tax/          the income-tax applet        (labor-tax/)
 #   /income-substitution/  the Slutsky/Hicks applet   (income-substitution/)
+#   /manuales/           the five user guides, ES+EN, web and PDF (manuales/)
 #
 # ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
 # "GitHub Actions". Until that is done every run fails at configure-pages.
@@ -71,6 +72,12 @@ jobs:
           mkdir -p _site/income-substitution
           cp income-substitution/index.html _site/income-substitution/index.html
 
+          # the user guides: one bilingual web page per applet, plus a PDF per
+          # applet per language. They link to ../<applet>/ and ../index.html,
+          # which resolve because manuales/ sits beside them at the root.
+          mkdir -p _site/manuales
+          cp -R manuales/. _site/manuales/
+
           # keep the PDF guides reachable if they were committed, in both
           # languages — the Spanish edition is screenshotted in Spanish, so it
           # is a different document, not a translated copy of the English one
@@ -88,6 +95,14 @@ jobs:
           if [ -f dist/Gradient-Peaks.html ]; then
             cp dist/Gradient-Peaks.html _site/gradient-peaks/Gradient-Peaks-offline.html
           fi
+          # the two one-file builds link to each other by their dist names,
+          # which are not the names they are published under
+          for f in _site/gradient-peaks/Gradient-Peaks-offline.html \
+                   _site/gradient-peaks/Gradient-Peaks-Lab-offline.html; do
+            [ -f "$f" ] || continue
+            sed -i 's|"Gradient-Peaks-Lab\.html"|"Gradient-Peaks-Lab-offline.html"|g;
+                    s|"Gradient-Peaks\.html"|"Gradient-Peaks-offline.html"|g' "$f"
+          done
 
           # stop Jekyll from swallowing files whose names begin with _
           touch _site/.nojekyll
@@ -104,7 +119,13 @@ jobs:
             _site/demand-functions/index.html \
             _site/nonlinear-budget/index.html \
             _site/labor-tax/index.html \
-            _site/income-substitution/index.html
+            _site/income-substitution/index.html \
+            _site/manuales/index.html \
+            _site/manuales/consumer-optimum.html \
+            _site/manuales/demand-functions.html \
+            _site/manuales/nonlinear-budget.html \
+            _site/manuales/labor-tax.html \
+            _site/manuales/income-substitution.html
           do
             if [ ! -s "$f" ]; then
               echo "::error::missing or empty: $f"
@@ -113,6 +134,13 @@ jobs:
               printf '%-46s %s bytes\n' "$f" "$(wc -c < "$f")"
             fi
           done
+          n=$(find _site/manuales/pdf -name "*.pdf" 2>/dev/null | wc -l)
+          if [ "$n" -ne 10 ]; then
+            echo "::error::expected 10 manual PDFs (5 applets x 2 languages), found $n"
+            fail=1
+          else
+            echo "manual PDFs: $n"
+          fi
           exit $fail
 
       - uses: actions/configure-pages@v5

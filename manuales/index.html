@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manuales · Applets de microeconomía</title>
+<meta name="description" content="Manuales de uso de los cinco applets de microeconomía, en español e inglés, en la web y en PDF.">
+<style>
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --sunk:#0F171A; --panel:#192126;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --warn:#E3BC72; --warn-soft:#2C2314; --warn-rule:#6B5227;
+  --good:#6FD3A0; --good-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#F2F4F4; --surface:#FFFFFF; --sunk:#E9EDEE; --panel:#F7F9F9;
+  --ink:#14191B; --ink-2:#4A585D; --ink-3:#78878C;
+  --rule:#CDD6D8; --rule-2:#E2E8E9;
+  --accent:#0E6E78; --accent-soft:#D8EAEC; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --warn:#8A5512; --warn-soft:#F6E9D3; --warn-rule:#D9B071;
+  --good:#1B6E48; --good-soft:#D8EDE1;
+  --shadow:0 1px 2px rgba(20,25,27,.05), 0 8px 22px -14px rgba(20,25,27,.3);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-ui);
+  font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased; padding:36px 20px 70px}
+.wrap{max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:32px}
+.top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.kicker{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--accent-ink); background:var(--accent-soft); padding:4px 9px; border-radius:2px}
+h1{margin:8px 0 0; font-family:var(--f-display); font-size:clamp(27px,4.3vw,37px);
+  font-weight:600; letter-spacing:-.012em; line-height:1.15; text-wrap:balance}
+.lede{margin:8px 0 0; color:var(--ink-2); max-width:64ch; font-size:16.5px}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; flex:none}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:6px 13px; font-size:12.5px; font-family:var(--f-ui)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+section{display:flex; flex-direction:column; gap:14px}
+.part{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); padding-bottom:8px; border-bottom:1px solid var(--rule)}
+h2{margin:0; font-family:var(--f-display); font-size:24px; font-weight:600; letter-spacing:-.008em; text-wrap:balance}
+h3{margin:0; font-size:15.5px; font-weight:700}
+p{margin:0; max-width:66ch}
+code{font-family:var(--f-mono); font-size:.885em; background:var(--sunk);
+  border:1px solid var(--rule-2); border-radius:3px; padding:1px 5px; word-break:break-word}
+a{color:var(--accent-ink); text-decoration:none; border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+.btn{display:inline-block; text-decoration:none; border:1px solid var(--accent);
+  background:var(--accent); color:var(--btn-ink); border-radius:3px; padding:9px 17px;
+  font-size:14px; font-weight:600; align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.tbl-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:480px}
+th,td{text-align:left; padding:10px 15px; border-bottom:1px solid var(--rule-2); vertical-align:top}
+th{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--panel); border-bottom-color:var(--rule)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600; width:34%}
+ol.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:17px}
+ol.steps>li{display:grid; grid-template-columns:32px minmax(0,1fr); gap:13px; align-items:start}
+ol.steps>li>.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px;
+  font-weight:700; color:var(--accent-ink); background:var(--accent-soft); border-radius:3px;
+  text-align:center; padding:3px 0; margin-top:1px}
+ol.steps>li>.body{display:flex; flex-direction:column; gap:6px; min-width:0}
+.note,.warn{border-radius:4px; padding:13px 16px; display:flex; flex-direction:column; gap:6px;
+  border:1px solid var(--rule); border-left-width:3px}
+.note{background:var(--panel); border-left-color:var(--accent)}
+.warn{background:var(--warn-soft); border-color:var(--warn-rule); border-left-color:var(--warn); color:var(--warn)}
+.res{background:var(--good-soft); border:1px solid var(--good); border-radius:3px;
+  padding:8px 12px; font-family:var(--f-mono); font-size:13px; color:var(--good); max-width:66ch}
+footer{border-top:1px solid var(--rule); padding-top:18px; color:var(--ink-3); font-size:13.5px;
+  display:flex; flex-direction:column; gap:8px}
+[data-l]{display:none}
+[data-l].on{display:revert}
+p[data-l].on,h1[data-l].on,h2[data-l].on,h3[data-l].on,li[data-l].on{display:revert}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@page{margin:19mm 16mm}
+@media print{
+  body{padding:0; font-size:10.6pt; line-height:1.5}
+  .wrap{max-width:none; gap:24px}
+  .seg{display:none!important}
+  .top{display:block}
+  h1{font-size:26pt} .lede{font-size:11.4pt}
+  h2{font-size:15pt; break-after:avoid} h3{break-after:avoid}
+  .part{break-after:avoid} p{max-width:none}
+  ol.steps>li,.note,.warn,.res,.tbl-wrap,footer{break-inside:avoid}
+  table{min-width:0} th,td{padding:7px 11px}
+  a{border-bottom:0}
+  section{break-inside:auto}
+}
+
+.wrap{max-width:960px}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px}
+.card{display:flex; flex-direction:column; gap:11px; background:var(--surface);
+  border:1px solid var(--rule); border-radius:4px; padding:20px; box-shadow:var(--shadow)}
+.card h3{font-family:var(--f-display); font-size:20px; font-weight:600; letter-spacing:-.006em}
+.card p{color:var(--ink-2); font-size:14px}
+.grow{flex:1}
+.row{display:flex; gap:9px; flex-wrap:wrap; align-items:center}
+.pdfs{display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  border-top:1px solid var(--rule-2); padding-top:11px}
+.pdfs>span{font-family:var(--f-mono); font-size:10px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-3)}
+.pill{font-size:13px; text-decoration:none; color:var(--accent-ink); border:1px solid var(--rule);
+  border-radius:3px; padding:5px 11px; white-space:nowrap}
+.pill:hover{border-color:var(--accent)}
+.quiet{font-size:13.5px; text-decoration:none; color:var(--ink-2); border-bottom:1px solid var(--rule)}
+.quiet:hover{color:var(--accent-ink); border-bottom-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="kicker" data-l="es">Documentación</span><span class="kicker" data-l="en">Documentation</span>
+      <h1 data-l="es">Manuales de los applets</h1><h1 data-l="en">Applet user guides</h1>
+      <p class="lede" data-l="es">Uno por applet, en español y en inglés. La versión web lleva el
+         interruptor de idioma; el PDF va en un idioma por archivo, listo para imprimir o repartir.</p>
+      <p class="lede" data-l="en">One per applet, in Spanish and in English. The web version carries
+         the language switch; the PDF is one language per file, ready to print or hand out.</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <div class="seg" id="lang">
+        <button type="button" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme">
+        <button type="button" data-th="dark" aria-pressed="true"><span data-l="es">Oscuro</span><span data-l="en">Dark</span></button>
+        <button type="button" data-th="light" aria-pressed="false"><span data-l="es">Claro</span><span data-l="en">Light</span></button>
+      </div>
+    </div>
+  </div>
+  <section>
+    <div class="grid">
+      <article class="card">
+        <h3 data-l="es">Óptimo del Consumidor</h3><h3 data-l="en">Consumer Optimum</h3>
+        <p data-l="es">Dos bienes, una renta y unos precios. Tangencia, vértices y esquinas, y la superficie 3D.</p><p data-l="en">Two goods, an income and some prices. Tangency, kinks and corners, and the 3D surface.</p>
+        <div class="grow"></div>
+        <div class="row">
+          <a class="btn" href="consumer-optimum.html" data-l="es">Leer el manual</a><a class="btn" href="consumer-optimum.html" data-l="en">Read the guide</a>
+          <a class="quiet" href="../consumer-optimum/" data-l="es">Abrir el applet →</a><a class="quiet" href="../consumer-optimum/" data-l="en">Open the applet →</a>
+        </div>
+        <div class="pdfs">
+          <span>PDF</span>
+          <a class="pill" href="pdf/Optimo-del-Consumidor-ES.pdf">Español</a>
+          <a class="pill" href="pdf/Consumer-Optimum-EN.pdf">English</a>
+        </div>
+      </article>
+      <article class="card">
+        <h3 data-l="es">Funciones de Demanda</h3><h3 data-l="en">Demand Functions</h3>
+        <p data-l="es">Cómo se construye una curva de demanda punto a punto, y cómo se caza un bien Giffen.</p><p data-l="en">How a demand curve is built point by point, and how to hunt a Giffen good.</p>
+        <div class="grow"></div>
+        <div class="row">
+          <a class="btn" href="demand-functions.html" data-l="es">Leer el manual</a><a class="btn" href="demand-functions.html" data-l="en">Read the guide</a>
+          <a class="quiet" href="../demand-functions/" data-l="es">Abrir el applet →</a><a class="quiet" href="../demand-functions/" data-l="en">Open the applet →</a>
+        </div>
+        <div class="pdfs">
+          <span>PDF</span>
+          <a class="pill" href="pdf/Funciones-de-Demanda-ES.pdf">Español</a>
+          <a class="pill" href="pdf/Demand-Functions-EN.pdf">English</a>
+        </div>
+      </article>
+      <article class="card">
+        <h3 data-l="es">Restricciones No Lineales</h3><h3 data-l="en">Non-Linear Budget Constraints</h3>
+        <p data-l="es">Siete esquemas de subsidio, el argumento del efectivo contra la especie, y el panel 3D.</p><p data-l="en">Seven subsidy schemes, the cash-versus-in-kind argument, and the 3D panel.</p>
+        <div class="grow"></div>
+        <div class="row">
+          <a class="btn" href="nonlinear-budget.html" data-l="es">Leer el manual</a><a class="btn" href="nonlinear-budget.html" data-l="en">Read the guide</a>
+          <a class="quiet" href="../nonlinear-budget/" data-l="es">Abrir el applet →</a><a class="quiet" href="../nonlinear-budget/" data-l="en">Open the applet →</a>
+        </div>
+        <div class="pdfs">
+          <span>PDF</span>
+          <a class="pill" href="pdf/Restricciones-No-Lineales-ES.pdf">Español</a>
+          <a class="pill" href="pdf/Non-Linear-Budget-Constraints-EN.pdf">English</a>
+        </div>
+      </article>
+      <article class="card">
+        <h3 data-l="es">Impuesto a la Renta del Trabajo</h3><h3 data-l="en">Labour Income Tax</h3>
+        <p data-l="es">Tipos marginales frente a tipos medios, y por qué la gente se amontona bajo un umbral.</p><p data-l="en">Marginal versus average rates, and why people bunch below a threshold.</p>
+        <div class="grow"></div>
+        <div class="row">
+          <a class="btn" href="labor-tax.html" data-l="es">Leer el manual</a><a class="btn" href="labor-tax.html" data-l="en">Read the guide</a>
+          <a class="quiet" href="../labor-tax/" data-l="es">Abrir el applet →</a><a class="quiet" href="../labor-tax/" data-l="en">Open the applet →</a>
+        </div>
+        <div class="pdfs">
+          <span>PDF</span>
+          <a class="pill" href="pdf/Impuesto-a-la-Renta-del-Trabajo-ES.pdf">Español</a>
+          <a class="pill" href="pdf/Labour-Income-Tax-EN.pdf">English</a>
+        </div>
+      </article>
+      <article class="card">
+        <h3 data-l="es">Efectos Ingreso y Sustitución</h3><h3 data-l="en">Income and Substitution Effects</h3>
+        <p data-l="es">Slutsky y Hicks, las tres canastas, los vectores de los efectos y la bandera roja del Giffen.</p><p data-l="en">Slutsky and Hicks, the three bundles, the effect vectors and the Giffen red flag.</p>
+        <div class="grow"></div>
+        <div class="row">
+          <a class="btn" href="income-substitution.html" data-l="es">Leer el manual</a><a class="btn" href="income-substitution.html" data-l="en">Read the guide</a>
+          <a class="quiet" href="../income-substitution/" data-l="es">Abrir el applet →</a><a class="quiet" href="../income-substitution/" data-l="en">Open the applet →</a>
+        </div>
+        <div class="pdfs">
+          <span>PDF</span>
+          <a class="pill" href="pdf/Efectos-Ingreso-y-Sustitucion-ES.pdf">Español</a>
+          <a class="pill" href="pdf/Income-and-Substitution-Effects-EN.pdf">English</a>
+        </div>
+      </article>
+    </div>
+  </section>
+  <footer>
+    <p data-l="es">Los manuales explican los controles y traen recorridos guiados con los números ya
+       comprobados: si sigues los pasos, los resultados deben coincidir hasta la última cifra.</p>
+    <p data-l="en">The guides explain the controls and carry guided runs with the numbers already
+       checked: follow the steps and the results should match to the last digit.</p>
+    <p><a href="../index.html" data-l="es">← Volver al menú de applets</a><a href="../index.html" data-l="en">← Back to the applet menu</a></p>
+  </footer>
+</div>
+<script>
+"use strict";
+function setLang(l){
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-l]").forEach(function(el){
+    el.classList.toggle("on", el.dataset.l === l);
+  });
+  document.querySelectorAll("#lang button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.lang === l));
+  });
+  try{ localStorage.setItem("manual.lang", l); }catch(e){}
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#theme button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.th === t));
+  });
+  try{ localStorage.setItem("manual.theme", t); }catch(e){}
+}
+document.querySelectorAll("#lang button").forEach(function(b){
+  b.addEventListener("click", function(){ setLang(b.dataset.lang); });
+});
+document.querySelectorAll("#theme button").forEach(function(b){
+  b.addEventListener("click", function(){ setTheme(b.dataset.th); });
+});
+var l0 = "es", t0 = "dark";
+try{ l0 = localStorage.getItem("manual.lang") || "es";
+     t0 = localStorage.getItem("manual.theme") || "dark"; }catch(e){}
+setLang(l0); setTheme(t0);
+</script>
+</body>
+</html>

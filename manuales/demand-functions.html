@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual · Funciones de Demanda / Demand Functions</title>
+<meta name="description" content="Manual de uso del applet Algunas Funciones de Demanda, en español e inglés.">
+<style>
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --sunk:#0F171A; --panel:#192126;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --warn:#E3BC72; --warn-soft:#2C2314; --warn-rule:#6B5227;
+  --good:#6FD3A0; --good-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#F2F4F4; --surface:#FFFFFF; --sunk:#E9EDEE; --panel:#F7F9F9;
+  --ink:#14191B; --ink-2:#4A585D; --ink-3:#78878C;
+  --rule:#CDD6D8; --rule-2:#E2E8E9;
+  --accent:#0E6E78; --accent-soft:#D8EAEC; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --warn:#8A5512; --warn-soft:#F6E9D3; --warn-rule:#D9B071;
+  --good:#1B6E48; --good-soft:#D8EDE1;
+  --shadow:0 1px 2px rgba(20,25,27,.05), 0 8px 22px -14px rgba(20,25,27,.3);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-ui);
+  font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased; padding:36px 20px 70px}
+.wrap{max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:32px}
+.top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.kicker{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--accent-ink); background:var(--accent-soft); padding:4px 9px; border-radius:2px}
+h1{margin:8px 0 0; font-family:var(--f-display); font-size:clamp(27px,4.3vw,37px);
+  font-weight:600; letter-spacing:-.012em; line-height:1.15; text-wrap:balance}
+.lede{margin:8px 0 0; color:var(--ink-2); max-width:64ch; font-size:16.5px}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; flex:none}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:6px 13px; font-size:12.5px; font-family:var(--f-ui)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+section{display:flex; flex-direction:column; gap:14px}
+.part{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); padding-bottom:8px; border-bottom:1px solid var(--rule)}
+h2{margin:0; font-family:var(--f-display); font-size:24px; font-weight:600; letter-spacing:-.008em; text-wrap:balance}
+h3{margin:0; font-size:15.5px; font-weight:700}
+p{margin:0; max-width:66ch}
+code{font-family:var(--f-mono); font-size:.885em; background:var(--sunk);
+  border:1px solid var(--rule-2); border-radius:3px; padding:1px 5px; word-break:break-word}
+a{color:var(--accent-ink); text-decoration:none; border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+.btn{display:inline-block; text-decoration:none; border:1px solid var(--accent);
+  background:var(--accent); color:var(--btn-ink); border-radius:3px; padding:9px 17px;
+  font-size:14px; font-weight:600; align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.tbl-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:480px}
+th,td{text-align:left; padding:10px 15px; border-bottom:1px solid var(--rule-2); vertical-align:top}
+th{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--panel); border-bottom-color:var(--rule)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600; width:34%}
+ol.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:17px}
+ol.steps>li{display:grid; grid-template-columns:32px minmax(0,1fr); gap:13px; align-items:start}
+ol.steps>li>.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px;
+  font-weight:700; color:var(--accent-ink); background:var(--accent-soft); border-radius:3px;
+  text-align:center; padding:3px 0; margin-top:1px}
+ol.steps>li>.body{display:flex; flex-direction:column; gap:6px; min-width:0}
+.note,.warn{border-radius:4px; padding:13px 16px; display:flex; flex-direction:column; gap:6px;
+  border:1px solid var(--rule); border-left-width:3px}
+.note{background:var(--panel); border-left-color:var(--accent)}
+.warn{background:var(--warn-soft); border-color:var(--warn-rule); border-left-color:var(--warn); color:var(--warn)}
+.res{background:var(--good-soft); border:1px solid var(--good); border-radius:3px;
+  padding:8px 12px; font-family:var(--f-mono); font-size:13px; color:var(--good); max-width:66ch}
+footer{border-top:1px solid var(--rule); padding-top:18px; color:var(--ink-3); font-size:13.5px;
+  display:flex; flex-direction:column; gap:8px}
+[data-l]{display:none}
+[data-l].on{display:revert}
+p[data-l].on,h1[data-l].on,h2[data-l].on,h3[data-l].on,li[data-l].on{display:revert}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@page{margin:19mm 16mm}
+@media print{
+  body{padding:0; font-size:10.6pt; line-height:1.5}
+  .wrap{max-width:none; gap:24px}
+  .seg{display:none!important}
+  .top{display:block}
+  h1{font-size:26pt} .lede{font-size:11.4pt}
+  h2{font-size:15pt; break-after:avoid} h3{break-after:avoid}
+  .part{break-after:avoid} p{max-width:none}
+  ol.steps>li,.note,.warn,.res,.tbl-wrap,footer{break-inside:avoid}
+  table{min-width:0} th,td{padding:7px 11px}
+  a{border-bottom:0}
+  section{break-inside:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="kicker" data-l="es">Manual de uso</span><span class="kicker" data-l="en">User guide</span>
+      <h1 data-l="es">Funciones de Demanda</h1><h1 data-l="en">Demand Functions</h1>
+      <p class="lede" data-l="es">De dónde sale la curva de demanda. Mueve un precio, la canasta óptima se mueve, y el rastro que va dejando <i>es</i> la función de demanda.</p><p class="lede" data-l="en">Where the demand curve comes from. Move a price, the optimal bundle moves, and the trail it leaves <i>is</i> the demand function.</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <div class="seg" id="lang">
+        <button type="button" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme">
+        <button type="button" data-th="dark" aria-pressed="true"><span data-l="es">Oscuro</span><span data-l="en">Dark</span></button>
+        <button type="button" data-th="light" aria-pressed="false"><span data-l="es">Claro</span><span data-l="en">Light</span></button>
+      </div>
+    </div>
+  </div>
+  <section>
+    <div class="part" data-l="es">Antes de empezar</div><div class="part" data-l="en">Before you start</div>
+    <h2 data-l="es">Cómo se abre</h2><h2 data-l="en">Opening it</h2>
+    <p data-l="es">No hay nada que instalar. Es una página web: se abre en Chrome, Safari, Edge o Firefox, en ordenador, tableta o teléfono. La primera vez necesitas conexión; después el navegador la conserva y funciona sin ella.</p><p data-l="en">There is nothing to install. It is a web page: it opens in Chrome, Safari, Edge or Firefox, on a computer, tablet or phone. You need a connection the first time; after that the browser keeps it and it works offline.</p>
+    <p data-l="es">Arriba a la derecha hay dos parejas de botones. La primera X; la segunda pasa de <b>Oscuro</b> a <b>Claro</b>. Para proyectar en clase, el modo claro se ve mejor en un cañón; en pantalla, el oscuro cansa menos.</p><p data-l="en">Top right there are two pairs of buttons. The first switches the language between <b>ES</b> and <b>EN</b>; the second goes from <b>Dark</b> to <b>Light</b>. For projecting in class, light mode reads better on a beamer; on screen, dark is easier on the eyes.</p>
+    <div class="note"><p data-l="es"><b>Se puede hacer zoom en cualquier gráfica.</b> Rueda del ratón sobre la gráfica, o pellizco con dos dedos en el trackpad o la pantalla táctil. El zoom afecta sólo a la gráfica bajo el cursor, no a la página entera.</p><p data-l="en"><b>Every graph zooms.</b> Mouse wheel over the graph, or a two-finger pinch on the trackpad or touchscreen. The zoom applies to the graph under the pointer only, not to the whole page.</p></div>
+    <div class="note"><p data-l="es">Los deslizadores tienen al lado una casilla con el número. Para un valor exacto, escríbelo en la casilla y pulsa <code>Intro</code>; el deslizador es para explorar, la casilla para precisar.</p><p data-l="en">Each slider has a number box beside it. For an exact value, type it into the box and press <code>Enter</code>; the slider is for exploring, the box is for precision.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Qué hay en pantalla</div><div class="part" data-l="en">What is on screen</div>
+    <h2 data-l="es">Los paneles</h2><h2 data-l="en">The panels</h2>
+    <p data-l="es">A la izquierda, la elección: el plano (x, y) con la recta presupuestaria y la curva de indiferencia que pasa por el óptimo. A la derecha, la demanda: el mismo óptimo pero dibujado contra la variable que estés moviendo.</p><p data-l="en">On the left, the choice: the (x, y) plane with the budget line and the indifference curve through the optimum. On the right, the demand: the same optimum, drawn against whichever variable you are moving.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Panel</th><th data-l="en">Panel</th><th data-l="es">Qué muestra</th><th data-l="en">What it shows</th></tr></thead><tbody><tr><td data-l="es"><b>Elección</b> · plano (x, y)</td><td data-l="en"><b>Choice</b> · (x, y) plane</td><td data-l="es">Recta presupuestaria, curva de indiferencia y el punto óptimo. Es de dónde sale todo lo demás.</td><td data-l="en">Budget line, indifference curve and the optimal point. Everything else comes from here.</td></tr><tr><td data-l="es"><b>Demanda</b></td><td data-l="en"><b>Demand</b></td><td data-l="es">El óptimo dibujado contra p<sub>x</sub>, p<sub>y</sub> o la renta. Si mueves la renta, el panel se titula <i>Curva de Engel</i>, que es su nombre propio.</td><td data-l="en">The optimum drawn against p<sub>x</sub>, p<sub>y</sub> or income. If you move income the panel is titled <i>Engel curve</i>, which is its proper name.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">Puedes ver un panel o los dos. Con uno solo se ve más grande, y para proyectar en clase suele ser mejor.</p><p data-l="en">You can show one panel or both. One alone is bigger, and for projecting in class that is usually better.</p></div>
+    <h2 data-l="es">Los números</h2><h2 data-l="en">The readouts</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Lectura</th><th data-l="en">Readout</th><th data-l="es">Cómo leerla</th><th data-l="en">How to read it</th></tr></thead><tbody><tr><td>x*, y*</td><td data-l="es">La canasta óptima a los precios y la renta actuales.</td><td data-l="en">The optimal bundle at the current prices and income.</td></tr><tr><td data-l="es">Gasto</td><td data-l="en">Spend</td><td data-l="es">p<sub>x</sub>·x* + p<sub>y</sub>·y*. Con preferencias monótonas es igual a la renta.</td><td data-l="en">p<sub>x</sub>·x* + p<sub>y</sub>·y*. With monotone preferences it equals income.</td></tr><tr><td data-l="es">Tipo</td><td data-l="en">Type</td><td data-l="es">Si x es normal, inferior o Giffen <b>en el punto donde estás</b>. No es una propiedad de la función entera: cambia de un tramo a otro.</td><td data-l="en">Whether x is normal, inferior or Giffen <b>at the point you are at</b>. It is not a property of the whole function: it changes from stretch to stretch.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Los intervalos: lo primero que hay que ajustar</div><div class="part" data-l="en">Ranges: the first thing to set</div>
+    <h2 data-l="es">Por qué existen esas casillas</h2><h2 data-l="en">Why those boxes are there</h2>
+    <p data-l="es">Arriba del todo hay tres parejas de casillas: p<sub>x</sub> de … a …, p<sub>y</sub> de … a …, m de … a … Cada pareja hace dos cosas a la vez: fija hasta dónde llega el deslizador, y fija el tramo que dibuja el eje horizontal del panel de demanda.</p><p data-l="en">At the very top there are three pairs of boxes: p<sub>x</sub> from … to …, p<sub>y</sub> from … to …, m from … to … Each pair does two things at once: it sets how far the slider travels, and it sets the stretch the horizontal axis of the demand panel draws.</p>
+    <div class="warn"><p data-l="es">Un precio mínimo muy cerca de cero arruina el dibujo. La demanda de x tiende a infinito cuando p<sub>x</sub> → 0, así que el eje vertical se estira hasta que la parte interesante de la curva queda aplastada contra el eje. Deja el mínimo en 1, o al menos en 0,5.</p><p data-l="en">A minimum price near zero ruins the picture. Demand for x runs off to infinity as p<sub>x</sub> → 0, so the vertical axis stretches until the interesting part of the curve is squashed flat against the axis. Leave the minimum at 1, or at least 0.5.</p></div>
+    <h2 data-l="es">El eje vertical fijo</h2><h2 data-l="en">The fixed vertical axis</h2>
+    <p data-l="es">Con <b>Eje vertical fijo</b> encendido, el tope del eje vertical es m<sub>máx</sub> dividido entre el precio mínimo, y no se mueve nunca. Es la mayor cantidad que se podría comprar con los intervalos que has puesto, así que la curva siempre cabe y siempre llega hasta cero por abajo. Apágalo y el eje se ajusta a la curva del momento: se ve más grande, pero salta cada vez que tocas un parámetro y las comparaciones dejan de ser justas.</p><p data-l="en">With <b>Fixed vertical axis</b> on, the ceiling of the vertical axis is m<sub>max</sub> divided by the minimum price, and it never moves. That is the most anyone could buy given the ranges you set, so the curve always fits and always reaches down to zero. Turn it off and the axis fits the current curve: bigger, but it jumps every time you touch a parameter and comparisons stop being fair.</p>
+    <div class="note"><p data-l="es">Para comparar dos situaciones —antes y después de una subida de precio, o dos familias de preferencias— el eje fijo es imprescindible. Si el eje se mueve, las dos curvas están dibujadas a escalas distintas y la comparación engaña.</p><p data-l="en">To compare two situations — before and after a price rise, or two preference families — the fixed axis is essential. If the axis moves, the two curves are drawn at different scales and the comparison lies.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Las familias de preferencias</div><div class="part" data-l="en">The preference families</div>
+    <h2 data-l="es">Seis puntos de partida</h2><h2 data-l="en">Six starting points</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Familia</th><th data-l="en">Family</th><th data-l="es">Qué es y qué parámetros tiene</th><th data-l="en">What it is and its parameters</th></tr></thead><tbody><tr><td data-l="es"><b>Cobb–Douglas</b></td><td data-l="en"><b>Cobb–Douglas</b></td><td data-l="es">U = x<sup>α</sup>·y<sup>1−α</sup>. Un parámetro, α. La demanda es x* = α·m/p<sub>x</sub>: una hipérbola, y el gasto en x no depende del precio.</td><td data-l="en">U = x<sup>α</sup>·y<sup>1−α</sup>. One parameter, α. Demand is x* = α·m/p<sub>x</sub>: a hyperbola, and spending on x does not depend on the price.</td></tr><tr><td data-l="es"><b>CES</b></td><td data-l="en"><b>CES</b></td><td data-l="es">U = γ<sub>H</sub>·(γ·x<sup>ρ</sup> + (1−γ)·y<sup>ρ</sup>)<sup>1/ρ</sup>, donde γ<sub>H</sub> es la media armónica de γ y 1−γ. Dos parámetros: γ reparte el peso, ρ manda en la sustituibilidad. Con ρ = 0 se convierte en Cobb–Douglas.</td><td data-l="en">U = γ<sub>H</sub>·(γ·x<sup>ρ</sup> + (1−γ)·y<sup>ρ</sup>)<sup>1/ρ</sup>, where γ<sub>H</sub> is the harmonic mean of γ and 1−γ. Two parameters: γ splits the weight, ρ governs substitutability. At ρ = 0 it becomes Cobb–Douglas.</td></tr><tr><td data-l="es"><b>Cuasilineal</b></td><td data-l="en"><b>Quasilinear</b></td><td data-l="es">Primero eliges cuál es la variable lineal —<b>u = φ(x) + y</b> o <b>u = x + ψ(y)</b>— y después escribes tú la parte curva en la casilla que aparece.</td><td data-l="en">First you choose which variable is the linear one — <b>u = φ(x) + y</b> or <b>u = x + ψ(y)</b> — and then you type the curved half into the box that appears.</td></tr><tr><td data-l="es"><b>Lineal (sustitutos)</b></td><td data-l="en"><b>Linear (substitutes)</b></td><td data-l="es">U = a·x + y. La RMS es constante e igual a a. La demanda es todo o nada: un salto de un eje al otro cuando p<sub>x</sub>/p<sub>y</sub> cruza a.</td><td data-l="en">U = a·x + y. MRS is constant at a. Demand is all-or-nothing: a jump from one axis to the other when p<sub>x</sub>/p<sub>y</sub> crosses a.</td></tr><tr><td data-l="es"><b>X inferior (Giffen)</b></td><td data-l="en"><b>X inferior (Giffen)</b></td><td data-l="es">U = ln(x − x̲) − ((1+b)/b)·ln(ȳ − y), con b = (1−β)/β. Tres parámetros: β, el mínimo de subsistencia x̲ y el techo ȳ. Es la familia con la que se caza el caso Giffen.</td><td data-l="en">U = ln(x − x̲) − ((1+b)/b)·ln(ȳ − y), with b = (1−β)/β. Three parameters: β, the subsistence floor x̲ and the ceiling ȳ. This is the family you hunt the Giffen case with.</td></tr><tr><td data-l="es"><b>Personalizada</b></td><td data-l="en"><b>Custom</b></td><td data-l="es">Escribe tú la utilidad. El óptimo se busca numéricamente, así que valen funciones con vértices y esquinas.</td><td data-l="en">Type your own utility. The optimum is found numerically, so kinks and corners are fine.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">La cuasilineal tiene dos pasos a propósito. Hasta que no dices cuál es la variable lineal, la casilla de la función no aparece: φ sólo puede depender de x, y ψ sólo de y. Si escribes <code>ln(y)</code> en la casilla de φ, el applet lo rechaza.</p><p data-l="en">The quasilinear one has two steps on purpose. Until you say which variable is linear, the function box does not appear: φ may only depend on x, and ψ only on y. If you type <code>ln(y)</code> into the φ box, the applet refuses it.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Descubrir una curva de demanda</div><div class="part" data-l="en">Discovering a demand curve</div>
+    <h2 data-l="es">La idea</h2><h2 data-l="en">The idea</h2>
+    <p data-l="es">La curva de demanda no se postula: se construye. Se fija todo menos una variable, se mueve esa variable, y se apunta la canasta óptima que sale cada vez. El grupo de <b>Descubrir la demanda</b> hace exactamente eso, y deja que el alumno lo vea ocurrir en lugar de contárselo.</p><p data-l="en">The demand curve is not postulated: it is built. Hold everything fixed but one variable, move that variable, and record the optimal bundle each time. The <b>Discover the demand curve</b> group does exactly that, and lets the student watch it happen rather than being told.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td data-l="es"><b>Variable que varía</b></td><td data-l="en"><b>Variable being swept</b></td><td data-l="es">Cuál mueves: p<sub>x</sub>, p<sub>y</sub> o m. Las otras dos quedan fijas. Los puntos que registres pertenecen sólo a la variable elegida: si la cambias, empiezas otra colección.</td><td data-l="en">Which one you move: p<sub>x</sub>, p<sub>y</sub> or m. The other two stay fixed. Recorded points belong to the chosen variable only: change it and you start a fresh collection.</td></tr><tr><td data-l="es"><b>Marcar al mover</b></td><td data-l="en"><b>Mark while moving</b></td><td data-l="es">Encendido, cada vez que tocas el deslizador queda una marca. Es la forma rápida.</td><td data-l="en">On, every touch of the slider leaves a mark. This is the quick way.</td></tr><tr><td data-l="es"><b>Registrar punto</b></td><td data-l="en"><b>Record point</b></td><td data-l="es">Marca sólo cuando lo pulsas. Es la forma lenta, y la mejor para explicar: mueves, preguntas, registras.</td><td data-l="en">Marks only when you press it. This is the slow way, and the better one for explaining: move, ask, record.</td></tr><tr><td data-l="es"><b>Barrido</b> / <b>Parar</b></td><td data-l="en"><b>Sweep</b> / <b>Stop</b></td><td data-l="es">El applet recorre la variable de un extremo al otro solo, dejando marcas. Para rematar, cuando ya se ha entendido de dónde salen los puntos.</td><td data-l="en">The applet sweeps the variable from end to end on its own, leaving marks. For the finish, once it is clear where the points come from.</td></tr><tr><td data-l="es"><b>Limpiar</b></td><td data-l="en"><b>Clear</b></td><td data-l="es">Borra todos los puntos registrados y vuelve a empezar.</td><td data-l="en">Clears every recorded point and starts over.</td></tr></tbody></table></div>
+    <h2 data-l="es">Un recorrido de diez minutos</h2><h2 data-l="en">A ten-minute run</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Elige <b>Cobb–Douglas</b>. Pon los intervalos: p<sub>x</sub> de <b>0,5</b> a <b>6</b>, p<sub>y</sub> de <b>0,5</b> a <b>4</b>, m de <b>0</b> a <b>10</b>. Escribe los números en las casillas y pulsa <code>Intro</code>.</p><p data-l="en">Pick <b>Cobb–Douglas</b>. Set the ranges: p<sub>x</sub> from <b>0.5</b> to <b>6</b>, p<sub>y</sub> from <b>0.5</b> to <b>4</b>, m from <b>0</b> to <b>10</b>. Type the numbers into the boxes and press <code>Enter</code>.</p></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Pon α = <b>0,5</b>, p<sub>y</sub> = <b>2</b>, m = <b>6</b>. Deja p<sub>x</sub> en 1.</p><p data-l="en">Set α = <b>0.5</b>, p<sub>y</sub> = <b>2</b>, m = <b>6</b>. Leave p<sub>x</sub> at 1.</p><div class="res" data-l="es">x* = 3, y* = 1,5. La mitad de la renta en cada bien.</div><div class="res" data-l="en">x* = 3, y* = 1.5. Half the income on each good.</div></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Apaga <b>Marcar al mover</b> y <b>Revelar la curva</b>. La variable que varía debe ser p<sub>x</sub>. Sube p<sub>x</sub> a 1,5 y pulsa <b>Registrar punto</b>. Repite en 2 y en 3.</p><p data-l="en">Turn off <b>Mark while moving</b> and <b>Reveal the curve</b>. The swept variable should be p<sub>x</sub>. Raise p<sub>x</sub> to 1.5 and press <b>Record point</b>. Repeat at 2 and at 3.</p><div class="res" data-l="es">Cuatro puntos: (1, 3), (1,5, 2), (2, 1,5), (3, 1). Es exactamente x* = 3/p<sub>x</sub>.</div><div class="res" data-l="en">Four points: (1, 3), (1.5, 2), (2, 1.5), (3, 1). That is exactly x* = 3/p<sub>x</sub>.</div></div></li>
+      <li><span class="n">4</span><div class="body"><p data-l="es">Enciende <b>Unir los puntos</b>. Sale una poligonal que ya se parece a una hipérbola. Enciende ahora <b>Revelar la curva</b> para ver la curva exacta por debajo.</p><p data-l="en">Switch on <b>Join the points</b>. A polyline appears that already looks like a hyperbola. Now switch on <b>Reveal the curve</b> to see the exact curve underneath.</p><div class="res" data-l="es">Los puntos caen sobre la curva. No hay truco: son el mismo cálculo.</div><div class="res" data-l="en">The points land on the curve. No trick: it is the same computation.</div></div></li>
+      <li><span class="n">5</span><div class="body"><p data-l="es">Fíjate en el gasto en x mientras mueves p<sub>x</sub>: p<sub>x</sub>·x* = 3 siempre. Ésa es la firma de Cobb–Douglas, y explica por qué la curva es una hipérbola.</p><p data-l="en">Watch spending on x as you move p<sub>x</sub>: p<sub>x</sub>·x* = 3 always. That is the Cobb–Douglas signature, and it explains why the curve is a hyperbola.</p></div></li>
+      <li><span class="n">6</span><div class="body"><p data-l="es">Cambia la variable que varía a <b>m</b> y limpia los puntos. Barre la renta de 0 a 10.</p><p data-l="en">Change the swept variable to <b>m</b> and clear the points. Sweep income from 0 to 10.</p><div class="res" data-l="es">La curva de Engel es una recta por el origen: x* = 0,5·m/p<sub>x</sub>.</div><div class="res" data-l="en">The Engel curve is a straight line through the origin: x* = 0.5·m/p<sub>x</sub>.</div></div></li>
+    </ol>
+  </section>
+  <section>
+    <div class="part" data-l="es">Cazar un bien Giffen</div><div class="part" data-l="en">Hunting a Giffen good</div>
+    <h2 data-l="es">Qué hace falta</h2><h2 data-l="en">What it takes</h2>
+    <p data-l="es">Un bien Giffen es un bien cuya demanda <i>sube</i> cuando sube su propio precio. Es raro, y hacen falta dos cosas a la vez: que el bien sea inferior, y que pese tanto en el presupuesto que el efecto renta se coma al efecto sustitución. Ser inferior no basta.</p><p data-l="en">A Giffen good is one whose demand <i>rises</i> when its own price rises. It is rare, and it needs two things at once: the good must be inferior, and it must weigh so heavily in the budget that the income effect swallows the substitution effect. Being inferior is not enough.</p>
+    <div class="note"><p data-l="es">En la familia <b>X inferior</b>, el tramo Giffen aparece cuando la renta supera p<sub>y</sub>·ȳ. Con esa desigualdad al revés, x es inferior pero no Giffen — que es justo la distinción que interesa enseñar.</p><p data-l="en">In the <b>X inferior</b> family the Giffen stretch appears once income exceeds p<sub>y</sub>·ȳ. With that inequality the other way round, x is inferior but not Giffen — which is exactly the distinction worth teaching.</p></div>
+    <h2 data-l="es">Una receta que funciona</h2><h2 data-l="en">A recipe that works</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Elige la familia <b>X inferior (Giffen)</b>.</p><p data-l="en">Pick the <b>X inferior (Giffen)</b> family.</p></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Intervalos: p<sub>x</sub> de <b>7</b> a <b>21</b>, p<sub>y</sub> de <b>0,5</b> a <b>4</b>, m de <b>0</b> a <b>10</b>.</p><p data-l="en">Ranges: p<sub>x</sub> from <b>7</b> to <b>21</b>, p<sub>y</sub> from <b>0.5</b> to <b>4</b>, m from <b>0</b> to <b>10</b>.</p></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Parámetros: β = <b>0,89</b>, x̲ = <b>0,3</b>, ȳ = <b>5</b>. Precios y renta: p<sub>y</sub> = <b>1</b>, m = <b>7</b>.</p><p data-l="en">Parameters: β = <b>0.89</b>, x̲ = <b>0.3</b>, ȳ = <b>5</b>. Prices and income: p<sub>y</sub> = <b>1</b>, m = <b>7</b>.</p><div class="res" data-l="es">La condición se cumple: m = 7 &gt; p<sub>y</sub>·ȳ = 5.</div><div class="res" data-l="en">The condition holds: m = 7 &gt; p<sub>y</sub>·ȳ = 5.</div></div></li>
+      <li><span class="n">4</span><div class="body"><p data-l="es">Enciende <b>Resaltar tramo Giffen</b> y <b>Revelar la curva</b>, y barre p<sub>x</sub> de punta a punta.</p><p data-l="en">Switch on <b>Highlight Giffen stretch</b> and <b>Reveal the curve</b>, and sweep p<sub>x</sub> from end to end.</p><div class="res" data-l="es">La demanda de x sube: 0,302 en p<sub>x</sub> = 7, 0,312 en 10, 0,321 en 15 y 0,325 en 21. La curva tiene pendiente positiva y el tramo queda resaltado.</div><div class="res" data-l="en">Demand for x rises: 0.302 at p<sub>x</sub> = 7, 0.312 at 10, 0.321 at 15 and 0.325 at 21. The curve slopes upward and the stretch is highlighted.</div></div></li>
+      <li><span class="n">5</span><div class="body"><p data-l="es">Baja ahora la renta a <b>4</b>, por debajo de p<sub>y</sub>·ȳ = 5, y vuelve a barrer.</p><p data-l="en">Now drop income to <b>4</b>, below p<sub>y</sub>·ȳ = 5, and sweep again.</p><div class="res" data-l="es">El resaltado desaparece: x sigue siendo inferior, pero ya no es Giffen.</div><div class="res" data-l="en">The highlight disappears: x is still inferior, but no longer Giffen.</div></div></li>
+    </ol>
+    <div class="warn"><p data-l="es">Si el panel de demanda sale vacío en parte del recorrido, es que estás fuera del dominio de la función: en esta familia hace falta x &gt; x̲ e y &lt; ȳ. Sube el precio mínimo o baja la renta hasta que la curva vuelva a aparecer entera.</p><p data-l="en">If the demand panel goes blank over part of the sweep, you are outside the domain of the function: this family needs x &gt; x̲ and y &lt; ȳ. Raise the minimum price or lower income until the curve is whole again.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Las capas</div><div class="part" data-l="en">The layers</div>
+    <h2 data-l="es">Qué enciende cada una</h2><h2 data-l="en">What each one turns on</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Capa</th><th data-l="en">Layer</th><th data-l="es">Qué dibuja</th><th data-l="en">What it draws</th></tr></thead><tbody><tr><td data-l="es">Puntos registrados</td><td data-l="en">Recorded points</td><td data-l="es">Las marcas que has ido dejando.</td><td data-l="en">The marks you have left.</td></tr><tr><td data-l="es">Unir los puntos</td><td data-l="en">Join the points</td><td data-l="es">Una poligonal entre marca y marca.</td><td data-l="en">A polyline from mark to mark.</td></tr><tr><td data-l="es">Revelar la curva</td><td data-l="en">Reveal the curve</td><td data-l="es">La curva de demanda exacta. Déjala apagada mientras el alumno la construye.</td><td data-l="en">The exact demand curve. Leave it off while the student builds it.</td></tr><tr><td data-l="es">Senda precio-consumo</td><td data-l="en">Price-consumption path</td><td data-l="es">En el plano (x, y), el rastro del óptimo al mover el precio. Es la misma información que la curva de demanda, en otro sistema de coordenadas.</td><td data-l="en">In the (x, y) plane, the trail of the optimum as the price moves. The same information as the demand curve, in other coordinates.</td></tr><tr><td data-l="es">Recta presupuestaria</td><td data-l="en">Budget line</td><td data-l="es">La restricción en el plano (x, y).</td><td data-l="en">The constraint in the (x, y) plane.</td></tr><tr><td data-l="es">Curva de indiferencia</td><td data-l="en">Indifference curve</td><td data-l="es">La que pasa por el óptimo actual.</td><td data-l="en">The one through the current optimum.</td></tr><tr><td data-l="es">Demanda de x</td><td data-l="en">Demand for x</td><td data-l="es">La curva de x en el panel de demanda.</td><td data-l="en">The curve for x in the demand panel.</td></tr><tr><td data-l="es">Demanda de y</td><td data-l="en">Demand for y</td><td data-l="es">La de y, en el mismo panel. Suele ser la que sorprende.</td><td data-l="en">The one for y, in the same panel. It is usually the surprising one.</td></tr><tr><td data-l="es">Resaltar tramo Giffen</td><td data-l="en">Highlight Giffen stretch</td><td data-l="es">Marca en color el tramo donde la demanda sube con el precio.</td><td data-l="en">Colours the stretch where demand rises with the price.</td></tr><tr><td data-l="es">Retícula</td><td data-l="en">Grid</td><td data-l="es">La cuadrícula de fondo.</td><td data-l="en">The background grid.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">Un ejemplo bonito con la cuasilineal: elige <b>u = φ(x) + y</b>, escribe <code>4ln(x)</code>, pon p<sub>y</sub> = 2 y m = 10. La demanda de x es x* = 4p<sub>y</sub>/p<sub>x</sub> = 8/p<sub>x</sub>, y la de y sale <b>plana</b>: valga lo que valga p<sub>x</sub>, y* = 1. El gasto en x es siempre 4p<sub>y</sub> = 8.</p><p data-l="en">A nice example with the quasilinear: choose <b>u = φ(x) + y</b>, type <code>4ln(x)</code>, set p<sub>y</sub> = 2 and m = 10. Demand for x is x* = 4p<sub>y</sub>/p<sub>x</sub> = 8/p<sub>x</sub>, and demand for y comes out <b>flat</b>: whatever p<sub>x</sub> is, y* = 1. Spending on x is always 4p<sub>y</sub> = 8.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Escribir tu propia función</div><div class="part" data-l="en">Writing your own function</div>
+    <h2 data-l="es">La sintaxis admitida</h2><h2 data-l="en">The syntax it accepts</h2>
+    <p data-l="es">Se escribe en dos sitios: en la casilla de la utilidad personalizada (variables <b>x</b> e <b>y</b>) y en la casilla de la parte curva de la cuasilineal (sólo <b>x</b> si has elegido φ, sólo <b>y</b> si has elegido ψ).</p><p data-l="en">There are two boxes: the custom utility one (variables <b>x</b> and <b>y</b>) and the curved half of the quasilinear one (only <b>x</b> if you chose φ, only <b>y</b> if you chose ψ).</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td><code>+ − * / ^</code></td><td data-l="es">Suma, resta, producto, cociente y potencia. <code>x^0.5</code> es la raíz de x.</td><td data-l="en">Add, subtract, multiply, divide, power. <code>x^0.5</code> is the square root of x.</td></tr><tr><td><code>( )</code></td><td data-l="es">Paréntesis. <code>(x+y)^2</code> no es lo mismo que <code>x+y^2</code>.</td><td data-l="en">Brackets. <code>(x+y)^2</code> is not the same as <code>x+y^2</code>.</td></tr><tr><td><code>sqrt ln log exp abs</code></td><td data-l="es">Raíz, logaritmo natural, logaritmo decimal, exponencial y valor absoluto.</td><td data-l="en">Root, natural log, base-10 log, exponential and absolute value.</td></tr><tr><td><code>min max</code></td><td data-l="es">Con dos argumentos: <code>min(x,y)</code> son complementarios perfectos.</td><td data-l="en">Two arguments: <code>min(x,y)</code> is perfect complements.</td></tr><tr><td><code>sin cos</code></td><td data-l="es">Trigonométricas, en radianes. Rara vez útiles aquí, pero están.</td><td data-l="en">Trigonometric, in radians. Rarely useful here, but available.</td></tr><tr><td><code>e pi</code></td><td data-l="es">Las dos constantes. <code>e</code> es 2,718…, <code>pi</code> es 3,1416…</td><td data-l="en">The two constants. <code>e</code> is 2.718…, <code>pi</code> is 3.1416…</td></tr><tr><td><code>2x</code>, <code>3xy</code></td><td data-l="es">El producto implícito funciona: <code>2x</code> se lee como <code>2*x</code>.</td><td data-l="en">Implicit multiplication works: <code>2x</code> reads as <code>2*x</code>.</td></tr></tbody></table></div>
+    <h2 data-l="es">Ejemplos que funcionan</h2><h2 data-l="en">Examples that work</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Expresión</th><th data-l="en">Expression</th><th data-l="es">Qué preferencias describe</th><th data-l="en">What preferences it describes</th></tr></thead><tbody><tr><td><code>x^0.5*y^0.5</code></td><td data-l="es">Cobb–Douglas simétrica, como comprobación.</td><td data-l="en">Symmetric Cobb–Douglas, as a check.</td></tr><tr><td><code>4ln(x)</code></td><td data-l="es">En φ(x): la demanda sale x* = 4p<sub>y</sub>/p<sub>x</sub>, independiente de la renta.</td><td data-l="en">In φ(x): demand comes out x* = 4p<sub>y</sub>/p<sub>x</sub>, independent of income.</td></tr><tr><td><code>2sqrt(x)</code></td><td data-l="es">En φ(x): x* = p<sub>y</sub>²/p<sub>x</sub>².</td><td data-l="en">In φ(x): x* = p<sub>y</sub>²/p<sub>x</sub>².</td></tr><tr><td><code>3ln(y)</code></td><td data-l="es">En ψ(y): ahora el bien lineal es x, y la demanda plana es la de x.</td><td data-l="en">In ψ(y): now x is the linear good, and the flat demand is x's.</td></tr><tr><td><code>min(x,y)</code></td><td data-l="es">En la personalizada: complementarios perfectos, demanda m/(p<sub>x</sub>+p<sub>y</sub>).</td><td data-l="en">In the custom box: perfect complements, demand m/(p<sub>x</sub>+p<sub>y</sub>).</td></tr></tbody></table></div>
+    <div class="warn"><p data-l="es">Si escribes algo que no se entiende, aparece <i>«No entiendo esa expresión»</i> y la gráfica se queda como estaba. Las causas habituales son un paréntesis sin cerrar, una coma decimal en vez de un punto (<code>0,5</code> en vez de <code>0.5</code>) o una variable que no sea x ni y.</p><p data-l="en">If it cannot be read you get <i>“I can't read that expression”</i> and the graph stays as it was. The usual causes are an unclosed bracket, a decimal comma instead of a point (<code>0,5</code> instead of <code>0.5</code>) or a variable other than x and y.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Si algo no sale</div><div class="part" data-l="en">If something goes wrong</div>
+    <h2 data-l="es">Problemas frecuentes</h2><h2 data-l="en">Common problems</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Síntoma</th><th data-l="en">Symptom</th><th data-l="es">Qué hacer</th><th data-l="en">What to do</th></tr></thead><tbody><tr><td data-l="es">La curva está aplastada contra el eje</td><td data-l="en">The curve is squashed against the axis</td><td data-l="es">El precio mínimo es demasiado bajo. Súbelo a 1 y el eje vertical baja con él.</td><td data-l="en">The minimum price is too low. Raise it to 1 and the vertical axis comes down with it.</td></tr><tr><td data-l="es">El eje se mueve cada vez que toco algo</td><td data-l="en">The axis moves every time I touch something</td><td data-l="es">Enciende <b>Eje vertical fijo</b>.</td><td data-l="en">Switch on <b>Fixed vertical axis</b>.</td></tr><tr><td data-l="es">La casilla del número no hace nada</td><td data-l="en">The number box does nothing</td><td data-l="es">Las casillas de los intervalos se aplican al pulsar <code>Intro</code> o al salir de la casilla, no mientras escribes.</td><td data-l="en">The range boxes apply when you press <code>Enter</code> or leave the box, not while you type.</td></tr><tr><td data-l="es">Los puntos registrados desaparecen</td><td data-l="en">The recorded points vanish</td><td data-l="es">Has cambiado la variable que varía. Cada variable tiene su propia colección de puntos.</td><td data-l="en">You changed the swept variable. Each variable keeps its own collection of points.</td></tr><tr><td data-l="es">No aparece la casilla para escribir φ</td><td data-l="en">The box for typing φ does not appear</td><td data-l="es">Hay que elegir antes cuál es la variable lineal, pulsando una de las dos opciones.</td><td data-l="en">You must first choose which variable is the linear one, by pressing one of the two options.</td></tr><tr><td data-l="es">Sale «φ sólo puede depender de x»</td><td data-l="en">It says “φ may only depend on x”</td><td data-l="es">Has escrito una y dentro de φ. La parte curva de una cuasilineal depende de una sola variable.</td><td data-l="en">You put a y inside φ. The curved half of a quasilinear function depends on one variable only.</td></tr></tbody></table></div>
+  </section>
+  <footer>
+    <p data-l="es">Abre el applet: <a href="../demand-functions/">Funciones de Demanda</a>. Todo funciona en el navegador; una vez cargado, también sin conexión.</p>
+    <p data-l="en">Open the applet: <a href="../demand-functions/">Demand Functions</a>. It all runs in the browser, and once loaded, offline too.</p>
+    <p><a href="../index.html" data-l="es">← Volver al menú</a><a href="../index.html" data-l="en">← Back to the menu</a></p>
+  </footer>
+</div>
+<script>
+"use strict";
+/* One page, two languages: every block is tagged and the toggle just switches
+   which set is shown. Keeping both in one file means a correction lands in both
+   at once instead of drifting apart. */
+function setLang(l){
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-l]").forEach(function(el){
+    el.classList.toggle("on", el.dataset.l === l);
+  });
+  document.querySelectorAll("#lang button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.lang === l));
+  });
+  try{ localStorage.setItem("manual.lang", l); }catch(e){}
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#theme button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.th === t));
+  });
+  try{ localStorage.setItem("manual.theme", t); }catch(e){}
+}
+document.querySelectorAll("#lang button").forEach(function(b){
+  b.addEventListener("click", function(){ setLang(b.dataset.lang); });
+});
+document.querySelectorAll("#theme button").forEach(function(b){
+  b.addEventListener("click", function(){ setTheme(b.dataset.th); });
+});
+var l0 = "es", t0 = "dark";
+try{ l0 = localStorage.getItem("manual.lang") || "es";
+     t0 = localStorage.getItem("manual.theme") || "dark"; }catch(e){}
+setLang(l0); setTheme(t0);
+</script>
+</body>
+</html>

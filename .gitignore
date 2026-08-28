@@ -12,3 +12,9 @@ dist/package/
 # Elevation tiles fetched by tools/build-borders.mjs — build scratch, refetchable
 .tilecache/
 .photocache/
+
+# Assembled by .github/workflows/pages.yml, and locally to check the links
+_site/
+
+# Python bytecode from tools/build-manuals.py
+tools/__pycache__/

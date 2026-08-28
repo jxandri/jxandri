@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual · Impuesto a la Renta del Trabajo / Labour Income Tax</title>
+<meta name="description" content="Manual de uso del applet Impuesto a la Renta del Trabajo, en español e inglés.">
+<style>
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --sunk:#0F171A; --panel:#192126;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --warn:#E3BC72; --warn-soft:#2C2314; --warn-rule:#6B5227;
+  --good:#6FD3A0; --good-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#F2F4F4; --surface:#FFFFFF; --sunk:#E9EDEE; --panel:#F7F9F9;
+  --ink:#14191B; --ink-2:#4A585D; --ink-3:#78878C;
+  --rule:#CDD6D8; --rule-2:#E2E8E9;
+  --accent:#0E6E78; --accent-soft:#D8EAEC; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --warn:#8A5512; --warn-soft:#F6E9D3; --warn-rule:#D9B071;
+  --good:#1B6E48; --good-soft:#D8EDE1;
+  --shadow:0 1px 2px rgba(20,25,27,.05), 0 8px 22px -14px rgba(20,25,27,.3);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-ui);
+  font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased; padding:36px 20px 70px}
+.wrap{max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:32px}
+.top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.kicker{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--accent-ink); background:var(--accent-soft); padding:4px 9px; border-radius:2px}
+h1{margin:8px 0 0; font-family:var(--f-display); font-size:clamp(27px,4.3vw,37px);
+  font-weight:600; letter-spacing:-.012em; line-height:1.15; text-wrap:balance}
+.lede{margin:8px 0 0; color:var(--ink-2); max-width:64ch; font-size:16.5px}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; flex:none}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:6px 13px; font-size:12.5px; font-family:var(--f-ui)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+section{display:flex; flex-direction:column; gap:14px}
+.part{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); padding-bottom:8px; border-bottom:1px solid var(--rule)}
+h2{margin:0; font-family:var(--f-display); font-size:24px; font-weight:600; letter-spacing:-.008em; text-wrap:balance}
+h3{margin:0; font-size:15.5px; font-weight:700}
+p{margin:0; max-width:66ch}
+code{font-family:var(--f-mono); font-size:.885em; background:var(--sunk);
+  border:1px solid var(--rule-2); border-radius:3px; padding:1px 5px; word-break:break-word}
+a{color:var(--accent-ink); text-decoration:none; border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+.btn{display:inline-block; text-decoration:none; border:1px solid var(--accent);
+  background:var(--accent); color:var(--btn-ink); border-radius:3px; padding:9px 17px;
+  font-size:14px; font-weight:600; align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.tbl-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:480px}
+th,td{text-align:left; padding:10px 15px; border-bottom:1px solid var(--rule-2); vertical-align:top}
+th{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--panel); border-bottom-color:var(--rule)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600; width:34%}
+ol.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:17px}
+ol.steps>li{display:grid; grid-template-columns:32px minmax(0,1fr); gap:13px; align-items:start}
+ol.steps>li>.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px;
+  font-weight:700; color:var(--accent-ink); background:var(--accent-soft); border-radius:3px;
+  text-align:center; padding:3px 0; margin-top:1px}
+ol.steps>li>.body{display:flex; flex-direction:column; gap:6px; min-width:0}
+.note,.warn{border-radius:4px; padding:13px 16px; display:flex; flex-direction:column; gap:6px;
+  border:1px solid var(--rule); border-left-width:3px}
+.note{background:var(--panel); border-left-color:var(--accent)}
+.warn{background:var(--warn-soft); border-color:var(--warn-rule); border-left-color:var(--warn); color:var(--warn)}
+.res{background:var(--good-soft); border:1px solid var(--good); border-radius:3px;
+  padding:8px 12px; font-family:var(--f-mono); font-size:13px; color:var(--good); max-width:66ch}
+footer{border-top:1px solid var(--rule); padding-top:18px; color:var(--ink-3); font-size:13.5px;
+  display:flex; flex-direction:column; gap:8px}
+[data-l]{display:none}
+[data-l].on{display:revert}
+p[data-l].on,h1[data-l].on,h2[data-l].on,h3[data-l].on,li[data-l].on{display:revert}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@page{margin:19mm 16mm}
+@media print{
+  body{padding:0; font-size:10.6pt; line-height:1.5}
+  .wrap{max-width:none; gap:24px}
+  .seg{display:none!important}
+  .top{display:block}
+  h1{font-size:26pt} .lede{font-size:11.4pt}
+  h2{font-size:15pt; break-after:avoid} h3{break-after:avoid}
+  .part{break-after:avoid} p{max-width:none}
+  ol.steps>li,.note,.warn,.res,.tbl-wrap,footer{break-inside:avoid}
+  table{min-width:0} th,td{padding:7px 11px}
+  a{border-bottom:0}
+  section{break-inside:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="kicker" data-l="es">Manual de uso</span><span class="kicker" data-l="en">User guide</span>
+      <h1 data-l="es">Impuesto a la Renta del Trabajo</h1><h1 data-l="en">Labour Income Tax</h1>
+      <p class="lede" data-l="es">Un impuesto por tramos dobla la restricción entre consumo y ocio. Con tipos marginales la frontera se quiebra; con tipos medios se rompe, y cruzar un umbral deja al trabajador estrictamente peor.</p><p class="lede" data-l="en">A bracketed tax bends the constraint between consumption and leisure. Marginal rates kink the frontier; average rates break it, and crossing a threshold leaves the worker strictly worse off.</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <div class="seg" id="lang">
+        <button type="button" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme">
+        <button type="button" data-th="dark" aria-pressed="true"><span data-l="es">Oscuro</span><span data-l="en">Dark</span></button>
+        <button type="button" data-th="light" aria-pressed="false"><span data-l="es">Claro</span><span data-l="en">Light</span></button>
+      </div>
+    </div>
+  </div>
+  <section>
+    <div class="part" data-l="es">Antes de empezar</div><div class="part" data-l="en">Before you start</div>
+    <h2 data-l="es">Cómo se abre</h2><h2 data-l="en">Opening it</h2>
+    <p data-l="es">No hay nada que instalar. Es una página web: se abre en Chrome, Safari, Edge o Firefox, en ordenador, tableta o teléfono. La primera vez necesitas conexión; después el navegador la conserva y funciona sin ella.</p><p data-l="en">There is nothing to install. It is a web page: it opens in Chrome, Safari, Edge or Firefox, on a computer, tablet or phone. You need a connection the first time; after that the browser keeps it and it works offline.</p>
+    <p data-l="es">Arriba a la derecha hay dos parejas de botones. La primera X; la segunda pasa de <b>Oscuro</b> a <b>Claro</b>. Para proyectar en clase, el modo claro se ve mejor en un cañón; en pantalla, el oscuro cansa menos.</p><p data-l="en">Top right there are two pairs of buttons. The first switches the language between <b>ES</b> and <b>EN</b>; the second goes from <b>Dark</b> to <b>Light</b>. For projecting in class, light mode reads better on a beamer; on screen, dark is easier on the eyes.</p>
+    <div class="note"><p data-l="es"><b>Se puede hacer zoom en cualquier gráfica.</b> Rueda del ratón sobre la gráfica, o pellizco con dos dedos en el trackpad o la pantalla táctil. El zoom afecta sólo a la gráfica bajo el cursor, no a la página entera.</p><p data-l="en"><b>Every graph zooms.</b> Mouse wheel over the graph, or a two-finger pinch on the trackpad or touchscreen. The zoom applies to the graph under the pointer only, not to the whole page.</p></div>
+    <div class="note"><p data-l="es">Los deslizadores tienen al lado una casilla con el número. Para un valor exacto, escríbelo en la casilla y pulsa <code>Intro</code>; el deslizador es para explorar, la casilla para precisar.</p><p data-l="en">Each slider has a number box beside it. For an exact value, type it into the box and press <code>Enter</code>; the slider is for exploring, the box is for precision.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">El modelo, en una página</div><div class="part" data-l="en">The model, on one page</div>
+    <h2 data-l="es">Qué está eligiendo el trabajador</h2><h2 data-l="en">What the worker is choosing</h2>
+    <p data-l="es">La dotación de tiempo está normalizada a <b>1</b>. El trabajador reparte esa unidad entre trabajo L y ocio ℓ = 1 − L. Trabajando toda la dotación gana <b>w</b>; trabajando la mitad, w/2. Además tiene una renta no laboral <b>m₀</b> que cobra trabaje o no.</p><p data-l="en">The time endowment is normalised to <b>1</b>. The worker splits that unit between labour L and leisure ℓ = 1 − L. Working the whole endowment earns <b>w</b>; working half of it, w/2. On top of that there is non-labour income <b>m₀</b>, received whether he works or not.</p>
+    <p data-l="es">El consumo es lo que queda después del impuesto, dividido por el precio del bien: c = (m₀ + w·L − impuesto) / p<sub>x</sub>. El impuesto recae sobre la renta del trabajo w·L, no sobre m₀.</p><p data-l="en">Consumption is what is left after tax, divided by the price of the good: c = (m₀ + w·L − tax) / p<sub>x</sub>. The tax falls on labour income w·L, not on m₀.</p>
+    <div class="note"><p data-l="es">Que m₀ no tribute es una decisión del modelo, y conviene decirla en voz alta en clase: si tributase, la frontera se desplazaría entera y los umbrales caerían en otros sitios. Aquí los dos modos usan la misma base imponible, que es lo que permite compararlos.</p><p data-l="en">That m₀ is untaxed is a modelling choice, and worth saying out loud in class: if it were taxed, the whole frontier would shift and the thresholds would land elsewhere. Here both modes use the same tax base, which is what makes them comparable.</p></div>
+    <h2 data-l="es">Los tres tramos</h2><h2 data-l="en">The three brackets</h2>
+    <p data-l="es">Dos umbrales, <b>s₀</b> y <b>s₁</b>, definidos sobre la renta del trabajo, y tres tipos, <b>t₀</b>, <b>t₁</b> y <b>t₂</b>. Lo interesante no son los números sino cómo se aplican, y eso lo decide el grupo <b>Cómo se aplica</b>.</p><p data-l="en">Two thresholds, <b>s₀</b> and <b>s₁</b>, defined on labour income, and three rates, <b>t₀</b>, <b>t₁</b> and <b>t₂</b>. What matters is not the numbers but how they apply, and that is what the <b>How it applies</b> group decides.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Modo</th><th data-l="en">Mode</th><th data-l="es">Cómo se calcula el impuesto</th><th data-l="en">How the tax is worked out</th></tr></thead><tbody><tr><td data-l="es"><b>Tipos marginales</b></td><td data-l="en"><b>Marginal rates</b></td><td data-l="es">Cada tipo se aplica sólo a la parte de la renta que cae dentro de su tramo. Es el sistema real de casi todos los países. La renta neta es <b>continua</b>: la frontera se quiebra pero no se rompe, y ganar un peso más siempre deja algo más.</td><td data-l="en">Each rate applies only to the slice of income falling inside its own bracket. This is how nearly every real system works. Net income is <b>continuous</b>: the frontier kinks but does not break, and earning one more always leaves you with more.</td></tr><tr><td data-l="es"><b>Tipos medios</b></td><td data-l="en"><b>Average rates</b></td><td data-l="es">El tramo en el que caes fija el tipo sobre <b>toda</b> tu renta. En cada umbral la renta neta da un salto hacia abajo. Ganar un peso más puede dejarte con bastante menos.</td><td data-l="en">The bracket you land in sets the rate on <b>all</b> of your income. At each threshold net income jumps down. Earning one more can leave you with considerably less.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Qué hay en pantalla</div><div class="part" data-l="en">What is on screen</div>
+    <h2 data-l="es">Los dos paneles</h2><h2 data-l="en">The two panels</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Panel</th><th data-l="en">Panel</th><th data-l="es">Qué muestra</th><th data-l="en">What it shows</th></tr></thead><tbody><tr><td data-l="es"><b>Consumo y ocio</b></td><td data-l="en"><b>Consumption and leisure</b></td><td data-l="es">La restricción entre consumo y ocio, con el mapa de utilidad de fondo, la curva de indiferencia por el óptimo y los umbrales marcados. Con el interruptor de eje puedes poner <b>trabajo</b> en la horizontal en vez de ocio: es el mismo dibujo del revés, pero para hablar de horas trabajadas se lee mejor.</td><td data-l="en">The constraint between consumption and leisure, with the utility map behind, the indifference curve through the optimum and the thresholds marked. The axis switch puts <b>labour</b> on the horizontal instead of leisure: the same picture mirrored, but easier to read when talking about hours worked.</td></tr><tr><td data-l="es"><b>Renta neta</b> / <b>Utilidad</b></td><td data-l="en"><b>Net income</b> / <b>Utility</b></td><td data-l="es">El segundo panel muestra o la renta neta frente a la bruta —donde el salto de los tipos medios salta a la vista— o la utilidad recorrida a lo largo de la frontera.</td><td data-l="en">The second panel shows either net against gross income — where the average-rate drop is unmissable — or utility traced along the frontier.</td></tr></tbody></table></div>
+    <h2 data-l="es">Los números</h2><h2 data-l="en">The readouts</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Lectura</th><th data-l="en">Readout</th><th data-l="es">Cómo leerla</th><th data-l="en">How to read it</th></tr></thead><tbody><tr><td data-l="es">Consumo, Trabajo L*, Ocio</td><td data-l="en">Consumption, Labour L*, Leisure</td><td data-l="es">La elección óptima.</td><td data-l="en">The optimal choice.</td></tr><tr><td>u(c*, ℓ*)</td><td data-l="es">La utilidad que alcanza.</td><td data-l="en">The utility it reaches.</td></tr><tr><td data-l="es">Renta bruta</td><td data-l="en">Gross income</td><td data-l="es">w·L*, antes de impuestos.</td><td data-l="en">w·L*, before tax.</td></tr><tr><td data-l="es">Impuesto</td><td data-l="en">Tax</td><td data-l="es">Lo que paga.</td><td data-l="en">What is paid.</td></tr><tr><td data-l="es">Tipo medio</td><td data-l="en">Average rate</td><td data-l="es">Impuesto dividido entre renta bruta.</td><td data-l="en">Tax divided by gross income.</td></tr><tr><td data-l="es">Tipo marginal</td><td data-l="en">Marginal rate</td><td data-l="es">Lo que se lleva el fisco del siguiente peso ganado. Es el número que gobierna la decisión de trabajar una hora más.</td><td data-l="en">What the taxman takes from the next unit earned. This is the number that governs the decision to work one more hour.</td></tr><tr><td data-l="es">Tipo de óptimo</td><td data-l="en">Kind of optimum</td><td data-l="es">Tangencia, quiebre, borde del salto, no trabaja o trabaja todo.</td><td data-l="en">Tangency, kink, jump edge, no work or all work.</td></tr><tr><td data-l="es">Mayor salto</td><td data-l="en">Largest drop</td><td data-l="es">El escalón más grande de la frontera. Cero con tipos marginales.</td><td data-l="en">The biggest step in the frontier. Zero under marginal rates.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">El experimento central</div><div class="part" data-l="en">The central experiment</div>
+    <h2 data-l="es">Los mismos tramos, dos maneras de aplicarlos</h2><h2 data-l="en">The same brackets, two ways of applying them</h2>
+    <p data-l="es">Éste es el ejercicio que justifica el applet entero. Los números están comprobados: si no te salen, revisa que hayas puesto todos los deslizadores.</p><p data-l="en">This is the exercise that justifies the whole applet. The numbers are checked: if yours differ, make sure every slider is set.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Elige <b>Cobb–Douglas</b> con α = <b>0,5</b>. Salario y renta: w = <b>100</b>, m₀ = <b>0</b>, p<sub>x</sub> = <b>1</b>.</p><p data-l="en">Pick <b>Cobb–Douglas</b> with α = <b>0.5</b>. Wage and income: w = <b>100</b>, m₀ = <b>0</b>, p<sub>x</sub> = <b>1</b>.</p></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Tramos: t₀ = <b>0</b>, s₀ = <b>40</b>, t₁ = <b>0,2</b>, s₁ = <b>70</b>, t₂ = <b>0,8</b>. Los primeros 40 no tributan; entre 40 y 70 el tipo es del 20 %; por encima, del 80 %.</p><p data-l="en">Brackets: t₀ = <b>0</b>, s₀ = <b>40</b>, t₁ = <b>0.2</b>, s₁ = <b>70</b>, t₂ = <b>0.8</b>. The first 40 is untaxed; between 40 and 70 the rate is 20 %; above that, 80 %.</p></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Ponlo en <b>Tipos marginales</b>.</p><p data-l="en">Set it to <b>Marginal rates</b>.</p><div class="res" data-l="es">L* = 0,45 — trabaja el 45 % de su tiempo. Consumo 44, ocio 0,55, u = 4,919. Renta bruta 45, impuesto 1. El applet lo llama <b>tangencia</b>: es un óptimo interior corriente.</div><div class="res" data-l="en">L* = 0.45 — he works 45 % of his time. Consumption 44, leisure 0.55, u = 4.919. Gross income 45, tax 1. The applet calls it a <b>tangency</b>: an ordinary interior optimum.</div></div></li>
+      <li><span class="n">4</span><div class="body"><p data-l="es">Cambia sólo el modo a <b>Tipos medios</b>. No toques nada más: mismos tramos, mismo salario, mismas preferencias.</p><p data-l="en">Change only the mode to <b>Average rates</b>. Touch nothing else: same brackets, same wage, same preferences.</p><div class="res" data-l="es">L* = 0,40 — trabaja menos. Consumo 40, ocio 0,60, u = 4,899, y el tipo de óptimo pasa a ser <b>borde del salto</b>. Se ha quedado clavado justo debajo del umbral.</div><div class="res" data-l="en">L* = 0.40 — he works less. Consumption 40, leisure 0.60, u = 4.899, and the optimum type becomes <b>jump edge</b>. He has parked himself just below the threshold.</div></div></li>
+      <li><span class="n">5</span><div class="body"><p data-l="es">Pon el segundo panel en <b>Renta neta</b> y mira el escalón en 40.</p><p data-l="en">Set the second panel to <b>Net income</b> and look at the step at 40.</p><div class="res" data-l="es">Con renta bruta 40 se queda 40; con 40,01 se queda 32,01. Un peso más de renta bruta cuesta <b>ocho</b> de renta neta.</div><div class="res" data-l="en">At gross 40 he keeps 40; at 40.01 he keeps 32.01. One more unit of gross income costs <b>eight</b> of net income.</div></div></li>
+      <li><span class="n">6</span><div class="body"><p data-l="es">Vuelve a <b>Tipos marginales</b> y sube t₁ a <b>0,4</b>.</p><p data-l="en">Go back to <b>Marginal rates</b> and raise t₁ to <b>0.4</b>.</p><div class="res" data-l="es">Ahora L* = 0,40 también, con u = 4,899, pero el tipo de óptimo es <b>quiebre</b>, no salto. También hay amontonamiento en el umbral, sólo que por una razón más suave.</div><div class="res" data-l="en">Now L* = 0.40 too, with u = 4.899, but the optimum type is <b>kink</b>, not jump. There is bunching at the threshold here as well, only for a gentler reason.</div></div></li>
+    </ol>
+    <div class="note"><p data-l="es">Ésa es la distinción que hay que llevarse: los <b>quiebres</b> amontonan gente porque el salario neto cae de golpe, y los <b>saltos</b> la amontonan porque cruzar el umbral deja estrictamente peor. Lo primero es un coste de eficiencia; lo segundo es, sencillamente, un error de diseño.</p><p data-l="en">That is the distinction to take away: <b>kinks</b> bunch people because the net wage falls abruptly, and <b>jumps</b> bunch them because crossing the threshold leaves them strictly worse off. The first is an efficiency cost; the second is simply a design error.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Más cosas que probar</div><div class="part" data-l="en">More to try</div>
+    <h2 data-l="es">Tres variaciones</h2><h2 data-l="en">Three variations</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es"><b>Subir la renta no laboral.</b> Con los tramos de antes en modo marginal, sube m₀ de 0 a 20. El trabajador se hace más rico sin trabajar más.</p><p data-l="en"><b>Raise non-labour income.</b> With the same brackets in marginal mode, raise m₀ from 0 to 20. The worker gets richer without working more.</p><div class="res" data-l="es">L* baja: con el ocio como bien normal, la renta extra se gasta en parte en no trabajar.</div><div class="res" data-l="en">L* falls: with leisure a normal good, part of the extra income is spent on not working.</div></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es"><b>Un tipo confiscatorio.</b> Sube t₂ hasta 0,95 y baja s₁ a 45.</p><p data-l="en"><b>A confiscatory rate.</b> Raise t₂ to 0.95 and lower s₁ to 45.</p><div class="res" data-l="es">Casi nadie cruza el segundo umbral: la frontera queda casi horizontal a partir de ahí y trabajar más apenas paga.</div><div class="res" data-l="en">Almost nobody crosses the second threshold: the frontier goes nearly flat beyond it and working more barely pays.</div></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es"><b>Preferencias cuasilineales.</b> Elige <b>Cuasilineal</b> y compara los dos modos otra vez. En la casilla personalizada, x es el consumo e y el ocio.</p><p data-l="en"><b>Quasilinear preferences.</b> Pick <b>Quasilinear</b> and compare the two modes again. In the custom box, x is consumption and y is leisure.</p><div class="res" data-l="es">El efecto renta desaparece del bien lineal, así que el amontonamiento se ve más limpio.</div><div class="res" data-l="en">The income effect drops out of the linear good, so the bunching shows more cleanly.</div></div></li>
+    </ol>
+    <h2 data-l="es">Las capas</h2><h2 data-l="en">The layers</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Capa</th><th data-l="en">Layer</th><th data-l="es">Qué dibuja</th><th data-l="en">What it draws</th></tr></thead><tbody><tr><td data-l="es">Mapa de utilidad</td><td data-l="en">Utility map</td><td data-l="es">El fondo de color.</td><td data-l="en">The coloured background.</td></tr><tr><td data-l="es">Curvas de fondo</td><td data-l="en">Contours</td><td data-l="es">Curvas de indiferencia a niveles regulares.</td><td data-l="en">Indifference curves at regular levels.</td></tr><tr><td data-l="es">Conjunto factible</td><td data-l="en">Feasible set</td><td data-l="es">Lo alcanzable bajo la frontera.</td><td data-l="en">What is reachable under the frontier.</td></tr><tr><td data-l="es">Curva por el óptimo</td><td data-l="en">Curve through the optimum</td><td data-l="es">La curva de indiferencia de la solución.</td><td data-l="en">The indifference curve of the solution.</td></tr><tr><td data-l="es">Óptimo</td><td data-l="en">Optimum</td><td data-l="es">El punto elegido.</td><td data-l="en">The chosen point.</td></tr><tr><td data-l="es">Umbrales</td><td data-l="en">Thresholds</td><td data-l="es">Las líneas verticales en s₀/w y s₁/w. Encendidas es como se ve que el óptimo cae justo encima.</td><td data-l="en">The vertical lines at s₀/w and s₁/w. With these on you can see the optimum land right on top of one.</td></tr><tr><td data-l="es">Retícula</td><td data-l="en">Grid</td><td data-l="es">La cuadrícula.</td><td data-l="en">The grid.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Escribir tu propia función</div><div class="part" data-l="en">Writing your own function</div>
+    <h2 data-l="es">La sintaxis admitida</h2><h2 data-l="en">The syntax it accepts</h2>
+    <p data-l="es">En la casilla de utilidad personalizada, <b>x es el consumo</b> e <b>y es el ocio</b>. Es la convención que más confunde del applet, así que conviene decirla dos veces.</p><p data-l="en">In the custom utility box, <b>x is consumption</b> and <b>y is leisure</b>. It is the applet's most confusing convention, so it is worth saying twice.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td><code>+ − * / ^</code></td><td data-l="es">Suma, resta, producto, cociente y potencia. <code>x^0.5</code> es la raíz de x.</td><td data-l="en">Add, subtract, multiply, divide, power. <code>x^0.5</code> is the square root of x.</td></tr><tr><td><code>( )</code></td><td data-l="es">Paréntesis. <code>(x+y)^2</code> no es lo mismo que <code>x+y^2</code>.</td><td data-l="en">Brackets. <code>(x+y)^2</code> is not the same as <code>x+y^2</code>.</td></tr><tr><td><code>sqrt ln log exp abs</code></td><td data-l="es">Raíz, logaritmo natural, logaritmo decimal, exponencial y valor absoluto.</td><td data-l="en">Root, natural log, base-10 log, exponential and absolute value.</td></tr><tr><td><code>min max</code></td><td data-l="es">Con dos argumentos: <code>min(x,y)</code> son complementarios perfectos.</td><td data-l="en">Two arguments: <code>min(x,y)</code> is perfect complements.</td></tr><tr><td><code>sin cos</code></td><td data-l="es">Trigonométricas, en radianes. Rara vez útiles aquí, pero están.</td><td data-l="en">Trigonometric, in radians. Rarely useful here, but available.</td></tr><tr><td><code>e pi</code></td><td data-l="es">Las dos constantes. <code>e</code> es 2,718…, <code>pi</code> es 3,1416…</td><td data-l="en">The two constants. <code>e</code> is 2.718…, <code>pi</code> is 3.1416…</td></tr><tr><td><code>2x</code>, <code>3xy</code></td><td data-l="es">El producto implícito funciona: <code>2x</code> se lee como <code>2*x</code>.</td><td data-l="en">Implicit multiplication works: <code>2x</code> reads as <code>2*x</code>.</td></tr></tbody></table></div>
+    <h2 data-l="es">Ejemplos que funcionan</h2><h2 data-l="en">Examples that work</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Expresión</th><th data-l="en">Expression</th><th data-l="es">Qué preferencias describe</th><th data-l="en">What preferences it describes</th></tr></thead><tbody><tr><td><code>x^0.5*y^0.5</code></td><td data-l="es">Consumo y ocio con el mismo peso.</td><td data-l="en">Consumption and leisure weighted equally.</td></tr><tr><td><code>x^0.7*y^0.3</code></td><td data-l="es">Alguien a quien le importa más consumir: trabaja más.</td><td data-l="en">Someone who cares more about consuming: works more.</td></tr><tr><td><code>x+2ln(y)</code></td><td data-l="es">Cuasilineal en el consumo. El ocio óptimo no depende de m₀.</td><td data-l="en">Quasilinear in consumption. Optimal leisure does not depend on m₀.</td></tr><tr><td><code>2ln(x)+y</code></td><td data-l="es">Cuasilineal en el ocio, el caso contrario.</td><td data-l="en">Quasilinear in leisure, the other way round.</td></tr><tr><td><code>min(x,3y)</code></td><td data-l="es">Complementarios: un vértice que interactúa con los del impuesto.</td><td data-l="en">Complements: a kink that interacts with the tax's own.</td></tr></tbody></table></div>
+    <div class="warn"><p data-l="es">Si escribes algo que no se entiende, aparece <i>«No entiendo esa expresión»</i> y la gráfica se queda como estaba. Las causas habituales son un paréntesis sin cerrar, una coma decimal en vez de un punto (<code>0,5</code> en vez de <code>0.5</code>) o una variable que no sea x ni y.</p><p data-l="en">If it cannot be read you get <i>“I can't read that expression”</i> and the graph stays as it was. The usual causes are an unclosed bracket, a decimal comma instead of a point (<code>0,5</code> instead of <code>0.5</code>) or a variable other than x and y.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Si algo no sale</div><div class="part" data-l="en">If something goes wrong</div>
+    <h2 data-l="es">Problemas frecuentes</h2><h2 data-l="en">Common problems</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Síntoma</th><th data-l="en">Symptom</th><th data-l="es">Qué hacer</th><th data-l="en">What to do</th></tr></thead><tbody><tr><td data-l="es">El óptimo sale en «No trabaja»</td><td data-l="en">The optimum comes out as “No work”</td><td data-l="es">Con m₀ alto o w bajo puede ser lo correcto. Sube el salario o baja la renta no laboral.</td><td data-l="en">With a high m₀ or a low w that can be right. Raise the wage or lower non-labour income.</td></tr><tr><td data-l="es">Los umbrales no aparecen</td><td data-l="en">The thresholds do not appear</td><td data-l="es">Están fuera del rango: hace falta 0 &lt; s/w &lt; 1, es decir umbrales por debajo de lo que se gana trabajando toda la dotación. Baja s₀ y s₁ o sube w.</td><td data-l="en">They are out of range: you need 0 &lt; s/w &lt; 1, that is, thresholds below what full-time work earns. Lower s₀ and s₁, or raise w.</td></tr><tr><td data-l="es">No veo ninguna diferencia entre los dos modos</td><td data-l="en">I see no difference between the two modes</td><td data-l="es">Con t₀ = t₁ = t₂ los dos coinciden por construcción. Separa los tipos.</td><td data-l="en">With t₀ = t₁ = t₂ they coincide by construction. Spread the rates apart.</td></tr><tr><td data-l="es">«Mayor salto» sale cero</td><td data-l="en">“Largest drop” comes out zero</td><td data-l="es">Estás en tipos marginales, donde la renta neta es continua por definición. Es la respuesta correcta.</td><td data-l="en">You are in marginal rates, where net income is continuous by definition. That is the right answer.</td></tr><tr><td data-l="es">El dibujo se ve al revés de lo que espero</td><td data-l="en">The picture is mirrored from what I expect</td><td data-l="es">Comprueba el eje: <b>Ocio</b> y <b>Trabajo</b> dan la imagen especular. Los libros usan ocio; hablando de horas suele ser más claro trabajo.</td><td data-l="en">Check the axis: <b>Leisure</b> and <b>Labour</b> give mirror images. Textbooks use leisure; when talking about hours, labour is usually clearer.</td></tr></tbody></table></div>
+  </section>
+  <footer>
+    <p data-l="es">Abre el applet: <a href="../labor-tax/">Impuesto a la Renta del Trabajo</a>. Todo funciona en el navegador; una vez cargado, también sin conexión.</p>
+    <p data-l="en">Open the applet: <a href="../labor-tax/">Labour Income Tax</a>. It all runs in the browser, and once loaded, offline too.</p>
+    <p><a href="../index.html" data-l="es">← Volver al menú</a><a href="../index.html" data-l="en">← Back to the menu</a></p>
+  </footer>
+</div>
+<script>
+"use strict";
+/* One page, two languages: every block is tagged and the toggle just switches
+   which set is shown. Keeping both in one file means a correction lands in both
+   at once instead of drifting apart. */
+function setLang(l){
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-l]").forEach(function(el){
+    el.classList.toggle("on", el.dataset.l === l);
+  });
+  document.querySelectorAll("#lang button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.lang === l));
+  });
+  try{ localStorage.setItem("manual.lang", l); }catch(e){}
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#theme button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.th === t));
+  });
+  try{ localStorage.setItem("manual.theme", t); }catch(e){}
+}
+document.querySelectorAll("#lang button").forEach(function(b){
+  b.addEventListener("click", function(){ setLang(b.dataset.lang); });
+});
+document.querySelectorAll("#theme button").forEach(function(b){
+  b.addEventListener("click", function(){ setTheme(b.dataset.th); });
+});
+var l0 = "es", t0 = "dark";
+try{ l0 = localStorage.getItem("manual.lang") || "es";
+     t0 = localStorage.getItem("manual.theme") || "dark"; }catch(e){}
+setLang(l0); setTheme(t0);
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual · Restricciones No Lineales / Non-Linear Budget Constraints</title>
+<meta name="description" content="Manual de uso del applet Restricciones Presupuestarias No Lineales, en español e inglés.">
+<style>
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --sunk:#0F171A; --panel:#192126;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --warn:#E3BC72; --warn-soft:#2C2314; --warn-rule:#6B5227;
+  --good:#6FD3A0; --good-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#F2F4F4; --surface:#FFFFFF; --sunk:#E9EDEE; --panel:#F7F9F9;
+  --ink:#14191B; --ink-2:#4A585D; --ink-3:#78878C;
+  --rule:#CDD6D8; --rule-2:#E2E8E9;
+  --accent:#0E6E78; --accent-soft:#D8EAEC; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --warn:#8A5512; --warn-soft:#F6E9D3; --warn-rule:#D9B071;
+  --good:#1B6E48; --good-soft:#D8EDE1;
+  --shadow:0 1px 2px rgba(20,25,27,.05), 0 8px 22px -14px rgba(20,25,27,.3);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-ui);
+  font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased; padding:36px 20px 70px}
+.wrap{max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:32px}
+.top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.kicker{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--accent-ink); background:var(--accent-soft); padding:4px 9px; border-radius:2px}
+h1{margin:8px 0 0; font-family:var(--f-display); font-size:clamp(27px,4.3vw,37px);
+  font-weight:600; letter-spacing:-.012em; line-height:1.15; text-wrap:balance}
+.lede{margin:8px 0 0; color:var(--ink-2); max-width:64ch; font-size:16.5px}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; flex:none}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:6px 13px; font-size:12.5px; font-family:var(--f-ui)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+section{display:flex; flex-direction:column; gap:14px}
+.part{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); padding-bottom:8px; border-bottom:1px solid var(--rule)}
+h2{margin:0; font-family:var(--f-display); font-size:24px; font-weight:600; letter-spacing:-.008em; text-wrap:balance}
+h3{margin:0; font-size:15.5px; font-weight:700}
+p{margin:0; max-width:66ch}
+code{font-family:var(--f-mono); font-size:.885em; background:var(--sunk);
+  border:1px solid var(--rule-2); border-radius:3px; padding:1px 5px; word-break:break-word}
+a{color:var(--accent-ink); text-decoration:none; border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+.btn{display:inline-block; text-decoration:none; border:1px solid var(--accent);
+  background:var(--accent); color:var(--btn-ink); border-radius:3px; padding:9px 17px;
+  font-size:14px; font-weight:600; align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.tbl-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:480px}
+th,td{text-align:left; padding:10px 15px; border-bottom:1px solid var(--rule-2); vertical-align:top}
+th{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--panel); border-bottom-color:var(--rule)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600; width:34%}
+ol.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:17px}
+ol.steps>li{display:grid; grid-template-columns:32px minmax(0,1fr); gap:13px; align-items:start}
+ol.steps>li>.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px;
+  font-weight:700; color:var(--accent-ink); background:var(--accent-soft); border-radius:3px;
+  text-align:center; padding:3px 0; margin-top:1px}
+ol.steps>li>.body{display:flex; flex-direction:column; gap:6px; min-width:0}
+.note,.warn{border-radius:4px; padding:13px 16px; display:flex; flex-direction:column; gap:6px;
+  border:1px solid var(--rule); border-left-width:3px}
+.note{background:var(--panel); border-left-color:var(--accent)}
+.warn{background:var(--warn-soft); border-color:var(--warn-rule); border-left-color:var(--warn); color:var(--warn)}
+.res{background:var(--good-soft); border:1px solid var(--good); border-radius:3px;
+  padding:8px 12px; font-family:var(--f-mono); font-size:13px; color:var(--good); max-width:66ch}
+footer{border-top:1px solid var(--rule); padding-top:18px; color:var(--ink-3); font-size:13.5px;
+  display:flex; flex-direction:column; gap:8px}
+[data-l]{display:none}
+[data-l].on{display:revert}
+p[data-l].on,h1[data-l].on,h2[data-l].on,h3[data-l].on,li[data-l].on{display:revert}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@page{margin:19mm 16mm}
+@media print{
+  body{padding:0; font-size:10.6pt; line-height:1.5}
+  .wrap{max-width:none; gap:24px}
+  .seg{display:none!important}
+  .top{display:block}
+  h1{font-size:26pt} .lede{font-size:11.4pt}
+  h2{font-size:15pt; break-after:avoid} h3{break-after:avoid}
+  .part{break-after:avoid} p{max-width:none}
+  ol.steps>li,.note,.warn,.res,.tbl-wrap,footer{break-inside:avoid}
+  table{min-width:0} th,td{padding:7px 11px}
+  a{border-bottom:0}
+  section{break-inside:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="kicker" data-l="es">Manual de uso</span><span class="kicker" data-l="en">User guide</span>
+      <h1 data-l="es">Restricciones No Lineales</h1><h1 data-l="en">Non-Linear Budget Constraints</h1>
+      <p class="lede" data-l="es">Subsidios en especie, subsidios parciales y esquemas excluyentes. Cada uno dobla la recta de presupuesto en un sitio distinto, y el óptimo puede caer justo en el pliegue.</p><p class="lede" data-l="en">In-kind subsidies, partial subsidies and exclusive schemes. Each one bends the budget line somewhere different, and the optimum can land right on the fold.</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <div class="seg" id="lang">
+        <button type="button" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme">
+        <button type="button" data-th="dark" aria-pressed="true"><span data-l="es">Oscuro</span><span data-l="en">Dark</span></button>
+        <button type="button" data-th="light" aria-pressed="false"><span data-l="es">Claro</span><span data-l="en">Light</span></button>
+      </div>
+    </div>
+  </div>
+  <section>
+    <div class="part" data-l="es">Antes de empezar</div><div class="part" data-l="en">Before you start</div>
+    <h2 data-l="es">Cómo se abre</h2><h2 data-l="en">Opening it</h2>
+    <p data-l="es">No hay nada que instalar. Es una página web: se abre en Chrome, Safari, Edge o Firefox, en ordenador, tableta o teléfono. La primera vez necesitas conexión; después el navegador la conserva y funciona sin ella.</p><p data-l="en">There is nothing to install. It is a web page: it opens in Chrome, Safari, Edge or Firefox, on a computer, tablet or phone. You need a connection the first time; after that the browser keeps it and it works offline.</p>
+    <p data-l="es">Arriba a la derecha hay dos parejas de botones. La primera X; la segunda pasa de <b>Oscuro</b> a <b>Claro</b>. Para proyectar en clase, el modo claro se ve mejor en un cañón; en pantalla, el oscuro cansa menos.</p><p data-l="en">Top right there are two pairs of buttons. The first switches the language between <b>ES</b> and <b>EN</b>; the second goes from <b>Dark</b> to <b>Light</b>. For projecting in class, light mode reads better on a beamer; on screen, dark is easier on the eyes.</p>
+    <div class="note"><p data-l="es"><b>Se puede hacer zoom en cualquier gráfica.</b> Rueda del ratón sobre la gráfica, o pellizco con dos dedos en el trackpad o la pantalla táctil. El zoom afecta sólo a la gráfica bajo el cursor, no a la página entera.</p><p data-l="en"><b>Every graph zooms.</b> Mouse wheel over the graph, or a two-finger pinch on the trackpad or touchscreen. The zoom applies to the graph under the pointer only, not to the whole page.</p></div>
+    <div class="note"><p data-l="es">Los deslizadores tienen al lado una casilla con el número. Para un valor exacto, escríbelo en la casilla y pulsa <code>Intro</code>; el deslizador es para explorar, la casilla para precisar.</p><p data-l="en">Each slider has a number box beside it. For an exact value, type it into the box and press <code>Enter</code>; the slider is for exploring, the box is for precision.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Qué hay en pantalla</div><div class="part" data-l="en">What is on screen</div>
+    <h2 data-l="es">Hasta tres paneles</h2><h2 data-l="en">Up to three panels</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Panel</th><th data-l="en">Panel</th><th data-l="es">Qué muestra</th><th data-l="en">What it shows</th></tr></thead><tbody><tr><td data-l="es"><b>Plano (x, y)</b></td><td data-l="en"><b>Plane (x, y)</b></td><td data-l="es">La frontera presupuestaria con sus pliegues, el conjunto factible, la curva de indiferencia por el óptimo y —si lo pides— un segundo esquema superpuesto para comparar.</td><td data-l="en">The budget frontier with its folds, the feasible set, the indifference curve through the optimum and — if you ask — a second scheme overlaid for comparison.</td></tr><tr><td data-l="es"><b>Utilidad sobre la restricción</b></td><td data-l="en"><b>Utility along the constraint</b></td><td data-l="es">La utilidad recorrida a lo largo de la frontera, de x = 0 al extremo. El óptimo es el máximo de esta curva, y aquí se ve por qué a veces cae en un pico anguloso.</td><td data-l="en">Utility traced along the frontier, from x = 0 to the far end. The optimum is this curve's maximum, and here you can see why it sometimes lands on a sharp peak.</td></tr><tr><td data-l="es"><b>Superficie 3D</b> · z = u(x, y)</td><td data-l="en"><b>3D surface</b> · z = u(x, y)</td><td data-l="es">Opcional, al pie de la pantalla. La misma restricción levantada sobre la superficie de utilidad: el óptimo es la cima del arco.</td><td data-l="en">Optional, at the foot of the screen. The same constraint lifted onto the utility surface: the optimum is the summit of the arch.</td></tr></tbody></table></div>
+    <h2 data-l="es">Los números</h2><h2 data-l="en">The readouts</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Lectura</th><th data-l="en">Readout</th><th data-l="es">Cómo leerla</th><th data-l="en">How to read it</th></tr></thead><tbody><tr><td>x*, y*, u(x*, y*)</td><td data-l="es">La canasta óptima y su utilidad.</td><td data-l="en">The optimal bundle and its utility.</td></tr><tr><td data-l="es">Coste</td><td data-l="en">Cost</td><td data-l="es">Lo que le cuesta el programa a quien lo financia.</td><td data-l="en">What the programme costs whoever funds it.</td></tr><tr><td data-l="es">Ventaja del efectivo</td><td data-l="en">Cash advantage</td><td data-l="es">Cuánta utilidad más se alcanzaría con una transferencia en efectivo del mismo coste. Es el número que resume el argumento.</td><td data-l="en">How much more utility a cash transfer of the same cost would reach. This is the number that carries the argument.</td></tr><tr><td data-l="es">Tipo de óptimo</td><td data-l="en">Kind of optimum</td><td data-l="es">Tangencia, vértice, esquina o borde del salto. Cada uno pide un argumento distinto, y sólo el primero admite «RMS = precio relativo».</td><td data-l="en">Tangency, kink, corner or jump edge. Each needs a different argument, and only the first admits “MRS = relative price”.</td></tr><tr><td data-l="es">Pendiente en x_s</td><td data-l="en">Slope at x_s</td><td data-l="es">Cuánto cambia la pendiente de la frontera al cruzar el cupo.</td><td data-l="en">How much the frontier's slope changes as you cross the allowance.</td></tr><tr><td data-l="es">Salto en x_s</td><td data-l="en">Jump at x_s</td><td data-l="es">Cuánto cae la frontera en vertical en el cupo. Cero salvo en los esquemas excluyentes.</td><td data-l="en">How far the frontier drops vertically at the allowance. Zero except in the exclusive schemes.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Los siete esquemas</div><div class="part" data-l="en">The seven schemes</div>
+    <h2 data-l="es">Qué hace cada uno</h2><h2 data-l="en">What each one does</h2>
+    <p data-l="es">Todos parten de la misma renta m y los mismos precios. Lo que cambia es dónde y cómo se dobla la recta. El cupo se llama <b>x_s</b> y la intensidad del subsidio <b>s</b>.</p><p data-l="en">All of them start from the same income m and the same prices. What changes is where and how the line bends. The allowance is called <b>x_s</b> and the subsidy intensity <b>s</b>.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Esquema</th><th data-l="en">Scheme</th><th data-l="es">La frontera que produce</th><th data-l="en">The frontier it produces</th></tr></thead><tbody><tr><td data-l="es"><b>Restricción simple</b></td><td data-l="en"><b>Simple constraint</b></td><td data-l="es">La recta de siempre, sin programa. El punto de comparación.</td><td data-l="en">The ordinary line, no programme. The benchmark.</td></tr><tr><td data-l="es"><b>Subsidio en especie (no excluyente)</b></td><td data-l="en"><b>In-kind subsidy (non-exclusive)</b></td><td data-l="es">Las primeras x_s unidades de x son gratis. La frontera arranca <b>horizontal</b> hasta x_s, y a partir de ahí baja con la pendiente normal. Coste: p<sub>x</sub>·x_s.</td><td data-l="en">The first x_s units of x are free. The frontier starts <b>flat</b> up to x_s and from there falls with the normal slope. Cost: p<sub>x</sub>·x_s.</td></tr><tr><td data-l="es"><b>Subsidio parcial en especie</b></td><td data-l="en"><b>Partial in-kind subsidy</b></td><td data-l="es">Descuento de s sobre las primeras x_s unidades. La frontera arranca con pendiente (1−s)·p<sub>x</sub>/p<sub>y</sub> y luego recupera la normal. Coste: s·p<sub>x</sub>·x_s.</td><td data-l="en">A discount of s on the first x_s units. The frontier starts with slope (1−s)·p<sub>x</sub>/p<sub>y</sub> and then reverts to normal. Cost: s·p<sub>x</sub>·x_s.</td></tr><tr><td data-l="es"><b>Subsidio excluyente</b></td><td data-l="en"><b>Exclusive subsidy (public schools)</b></td><td data-l="es">Como el de especie, pero <b>pasar del cupo hace perder la ayuda entera</b>. La frontera cae en vertical en x_s y continúa desde la recta original. El ejemplo típico son los colegios públicos: si matriculas fuera, pierdes la plaza.</td><td data-l="en">Like the in-kind one, but <b>going past the allowance forfeits the whole grant</b>. The frontier drops vertically at x_s and continues from the original line. The standard example is public schooling: enrol elsewhere and you lose the place.</td></tr><tr><td data-l="es"><b>Subsidio parcial excluyente</b></td><td data-l="en"><b>Partial exclusive subsidy</b></td><td data-l="es">Igual, con descuento en vez de gratuidad. El salto es más pequeño pero está.</td><td data-l="en">The same with a discount instead of free units. The drop is smaller but it is there.</td></tr><tr><td data-l="es"><b>Equivalente en efectivo (total)</b></td><td data-l="en"><b>Cash equivalent (full)</b></td><td data-l="es">Una transferencia de p<sub>x</sub>·x_s en dinero. La recta se desplaza hacia fuera, paralela, sin doblarse.</td><td data-l="en">A cash transfer of p<sub>x</sub>·x_s. The line shifts outward, parallel, with no bend.</td></tr><tr><td data-l="es"><b>Equivalente en efectivo (parcial)</b></td><td data-l="en"><b>Cash equivalent (partial)</b></td><td data-l="es">Lo mismo con s·p<sub>x</sub>·x_s. Es el rival justo del subsidio parcial.</td><td data-l="en">The same with s·p<sub>x</sub>·x_s. The fair rival to the partial subsidy.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">El deslizador <b>s</b> llega hasta −1. Con s negativo el programa deja de ser subsidio y pasa a ser un <b>impuesto</b> de tipo τ = |s| sobre las primeras x_s unidades: la frontera se dobla hacia dentro en vez de hacia fuera.</p><p data-l="en">The <b>s</b> slider reaches down to −1. With s negative the programme stops being a subsidy and becomes a <b>tax</b> at rate τ = |s| on the first x_s units: the frontier bends inward instead of outward.</p></div>
+    <h2 data-l="es">Comparar con</h2><h2 data-l="en">Compare with</h2>
+    <p data-l="es">El menú <b>Comparar con</b> superpone un segundo esquema en otro color. La comparación que importa es casi siempre contra la transferencia en efectivo del mismo coste, y viene elegida por defecto.</p><p data-l="en">The <b>Compare with</b> menu overlays a second scheme in another colour. The comparison that matters is nearly always against the cash transfer of equal cost, and that is the default.</p>
+  </section>
+  <section>
+    <div class="part" data-l="es">El argumento clásico, en números</div><div class="part" data-l="en">The classic argument, in numbers</div>
+    <h2 data-l="es">Efectivo contra especie</h2><h2 data-l="en">Cash versus in-kind</h2>
+    <p data-l="es">El resultado que se enseña es que una transferencia en efectivo nunca es peor para quien la recibe que un subsidio en especie del mismo coste, y a veces es estrictamente mejor. Aquí se comprueba en dos minutos, y —más importante— se ve <i>cuándo</i> hay diferencia y cuándo no.</p><p data-l="en">The standard result is that a cash transfer is never worse for the recipient than an in-kind subsidy of the same cost, and is sometimes strictly better. You can check that in two minutes here and — more importantly — see <i>when</i> there is a difference and when there is not.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Pon <b>Cobb–Douglas</b>, p<sub>x</sub> = <b>2</b>, p<sub>y</sub> = <b>2</b>, m = <b>20</b>, x_s = <b>4</b>. Elige el esquema <b>Subsidio en especie (no excluyente)</b> y compara con el <b>Equivalente en efectivo (total)</b>.</p><p data-l="en">Set <b>Cobb–Douglas</b>, p<sub>x</sub> = <b>2</b>, p<sub>y</sub> = <b>2</b>, m = <b>20</b>, x_s = <b>4</b>. Pick the scheme <b>In-kind subsidy (non-exclusive)</b> and compare with the <b>Cash equivalent (full)</b>.</p><div class="res" data-l="es">Coste del programa: p<sub>x</sub>·x_s = 8.</div><div class="res" data-l="en">Programme cost: p<sub>x</sub>·x_s = 8.</div></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Deja a = <b>0,5</b>. Mira los dos óptimos.</p><p data-l="en">Leave a = <b>0.5</b>. Look at the two optima.</p><div class="res" data-l="es">Los dos dan x* = 7, y* = 7, u = 7. <b>Empatan.</b> El óptimo cae en la parte donde las dos fronteras coinciden, así que el cupo no restringe.</div><div class="res" data-l="en">Both give x* = 7, y* = 7, u = 7. <b>A tie.</b> The optimum lands where the two frontiers coincide, so the allowance does not bind.</div></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Baja ahora a a <b>0,15</b>. El consumidor deja de querer tanto x.</p><p data-l="en">Now lower a to <b>0.15</b>. The consumer stops wanting so much x.</p><div class="res" data-l="es">En especie: x* = 4, y* = 10, u = 8,716, y el applet lo clasifica como <b>vértice</b>. En efectivo: x* = 2,1, y* = 11,9, u = 9,174. <b>El efectivo gana.</b></div><div class="res" data-l="en">In kind: x* = 4, y* = 10, u = 8.716, and the applet classes it as a <b>kink</b>. In cash: x* = 2.1, y* = 11.9, u = 9.174. <b>Cash wins.</b></div></div></li>
+      <li><span class="n">4</span><div class="body"><p data-l="es">Ésa es la moraleja completa: el subsidio en especie sólo hace daño cuando <i>empuja</i>. Con a = 0,5 el consumidor ya quería 7 unidades y las 4 gratis no le obligan a nada; con a = 0,15 sólo quería 2,1 y el programa le deja parado en 4.</p><p data-l="en">That is the whole moral: an in-kind subsidy only hurts when it <i>pushes</i>. At a = 0.5 the consumer already wanted 7 units and the 4 free ones force nothing; at a = 0.15 he only wanted 2.1, and the programme parks him at 4.</p></div></li>
+    </ol>
+    <h2 data-l="es">Lo que añade la exclusión</h2><h2 data-l="en">What exclusion adds</h2>
+    <p data-l="es">Los esquemas excluyentes son peores todavía, y por una razón distinta. Con el mismo coste no sólo doblan la frontera: la <b>rompen</b>.</p><p data-l="en">Exclusive schemes are worse still, and for a different reason. At the same cost they do not merely bend the frontier: they <b>break</b> it.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Vuelve a a = <b>0,5</b> y cambia el esquema a <b>Subsidio excluyente</b>, con los mismos p<sub>x</sub> = 2, p<sub>y</sub> = 2, m = 20, x_s = 4.</p><p data-l="en">Go back to a = <b>0.5</b> and change the scheme to <b>Exclusive subsidy</b>, with the same p<sub>x</sub> = 2, p<sub>y</sub> = 2, m = 20, x_s = 4.</p><div class="res" data-l="es">x* = 4, y* = 10, u = 6,325. El tipo de óptimo es <b>borde del salto</b>.</div><div class="res" data-l="en">x* = 4, y* = 10, u = 6.325. The optimum type is <b>jump edge</b>.</div></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Compáralo con el subsidio en especie no excluyente, que costaba lo mismo (8) y daba u = 7.</p><p data-l="en">Compare it with the non-exclusive in-kind subsidy, which cost the same (8) and gave u = 7.</p><div class="res" data-l="es">Mismo dinero público, 0,675 menos de utilidad. Lo único que ha cambiado es la regla de exclusión.</div><div class="res" data-l="en">The same public money, 0.675 less utility. The only thing that changed is the exclusion rule.</div></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Enciende la capa <b>Vértices</b> y mira el panel de <b>Utilidad sobre la restricción</b>: la curva salta hacia abajo justo en x_s. El consumidor se queda pegado al borde izquierdo del salto porque cruzarlo le cuesta la ayuda entera.</p><p data-l="en">Switch on the <b>Kinks</b> layer and look at the <b>Utility along the constraint</b> panel: the curve drops at x_s. The consumer sticks to the left edge of the drop because crossing it costs the whole grant.</p></div></li>
+    </ol>
+    <div class="note"><p data-l="es">Ésta es la lectura política del applet: no se trata sólo de cuánto se gasta, sino de qué forma tiene la frontera que se le deja al beneficiario. Un programa mal diseñado puede gastar lo mismo y valer menos.</p><p data-l="en">This is the applet's policy reading: it is not only how much is spent, but what shape of frontier the recipient is left with. A badly designed programme can spend the same and be worth less.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">La superficie 3D</div><div class="part" data-l="en">The 3D surface</div>
+    <h2 data-l="es">Para qué sirve</h2><h2 data-l="en">What it is for</h2>
+    <p data-l="es">El interruptor <b>Superficie 3D</b> abre un panel al pie con la misma función de utilidad dibujada en altura, y la frontera presupuestaria levantada sobre ella. El óptimo, que en el plano es un punto de tangencia, aquí es sencillamente la cima del arco: para mucha gente ésa es la imagen que hace clic.</p><p data-l="en">The <b>3D surface</b> switch opens a panel at the foot with the same utility function drawn in height, and the budget frontier lifted onto it. The optimum, a tangency point in the plane, is here simply the summit of the arch: for many people that is the picture that makes it click.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td><b>3D</b></td><td data-l="es">Vista libre en perspectiva. Arrastra para girar la cámara, rueda para acercar.</td><td data-l="en">Free perspective view. Drag to rotate the camera, wheel to zoom.</td></tr><tr><td><b>X–Z</b></td><td data-l="es">Proyección ortogonal sobre el plano y = 0. Se ve la utilidad frente a x sola.</td><td data-l="en">Orthogonal projection onto the plane y = 0. Utility against x alone.</td></tr><tr><td><b>X–Y</b></td><td data-l="es">Proyección sobre z = 0: la vista cenital. Es literalmente el mapa de curvas de nivel, y sirve para enseñar de dónde salen.</td><td data-l="en">Projection onto z = 0: the view from above. Literally the contour map, and useful for showing where contours come from.</td></tr><tr><td><b>Y–Z</b></td><td data-l="es">Proyección sobre x = 0: la utilidad frente a y.</td><td data-l="en">Projection onto x = 0: utility against y.</td></tr><tr><td data-l="es"><b>Sombrear fuera del conjunto factible</b></td><td data-l="en"><b>Shade outside the feasible set</b></td><td data-l="es">Apaga el color de la parte de la superficie que no se puede pagar. Queda encendida sólo la rebanada asequible, que es donde vive el problema.</td><td data-l="en">Washes out the colour of the part of the surface you cannot afford. Only the affordable slice stays lit, which is where the problem lives.</td></tr><tr><td data-l="es"><b>Plano XY</b></td><td data-l="en"><b>XY plane</b></td><td data-l="es">Dibuja el suelo z = 0 y proyecta la frontera sobre él, para ver a la vez la curva levantada y su sombra.</td><td data-l="en">Draws the floor z = 0 and projects the frontier onto it, so you see the lifted curve and its shadow at once.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">Las tres proyecciones son <b>ortográficas</b>, no en perspectiva: no hay escorzo, así que las distancias se pueden comparar directamente. La vista libre sí es en perspectiva, que es más fácil de leer como volumen pero engaña con las medidas.</p><p data-l="en">The three projections are <b>orthographic</b>, not perspective: nothing foreshortens, so distances compare directly. The free view is perspective, which reads better as a solid but misleads about measurements.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Los ejes y las capas</div><div class="part" data-l="en">Axes and layers</div>
+    <h2 data-l="es">Ajustar los ejes</h2><h2 data-l="en">Setting the axes</h2>
+    <p data-l="es">Por defecto los ejes están <b>fijos</b> en los topes que escribas, para que dos esquemas se puedan comparar a la misma escala. Si la frontera se sale del marco aparece un aviso: sube el tope o marca <b>Ajustar los ejes solos</b>.</p><p data-l="en">By default the axes are <b>fixed</b> at the ceilings you type, so two schemes compare at the same scale. If the frontier leaves the frame a warning appears: raise the ceiling or tick <b>Fit the axes automatically</b>.</p>
+    <h2 data-l="es">Las capas</h2><h2 data-l="en">The layers</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Capa</th><th data-l="en">Layer</th><th data-l="es">Qué dibuja</th><th data-l="en">What it draws</th></tr></thead><tbody><tr><td data-l="es">Degradado de calor</td><td data-l="en">Heat gradient</td><td data-l="es">El fondo de color del mapa de utilidad. Apágalo y el fondo queda liso; las curvas de indiferencia conservan su color de altura.</td><td data-l="en">The coloured utility map. Turn it off and the background goes plain; the indifference curves keep their height colour.</td></tr><tr><td data-l="es">Curvas de fondo</td><td data-l="en">Contours</td><td data-l="es">Curvas de indiferencia a niveles regulares.</td><td data-l="en">Indifference curves at regular levels.</td></tr><tr><td data-l="es">Conjunto factible</td><td data-l="en">Feasible set</td><td data-l="es">Oscurece todo lo que queda fuera del presupuesto.</td><td data-l="en">Darkens everything outside the budget.</td></tr><tr><td data-l="es">Curva por el óptimo</td><td data-l="en">Curve through the optimum</td><td data-l="es">La curva de indiferencia que pasa por la solución.</td><td data-l="en">The indifference curve through the solution.</td></tr><tr><td data-l="es">Óptimo</td><td data-l="en">Optimum</td><td data-l="es">El punto. Apágalo mientras el alumno lo busca.</td><td data-l="en">The point. Turn it off while the student looks for it.</td></tr><tr><td data-l="es">Vértices</td><td data-l="en">Vertices</td><td data-l="es">Marca los pliegues y los saltos de la frontera.</td><td data-l="en">Marks the folds and the jumps of the frontier.</td></tr><tr><td data-l="es">Conjunto comparado</td><td data-l="en">Compared set</td><td data-l="es">El área factible del segundo esquema.</td><td data-l="en">The feasible area of the second scheme.</td></tr><tr><td data-l="es">Retícula</td><td data-l="en">Grid</td><td data-l="es">La cuadrícula.</td><td data-l="en">The grid.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Escribir tu propia función</div><div class="part" data-l="en">Writing your own function</div>
+    <h2 data-l="es">La sintaxis admitida</h2><h2 data-l="en">The syntax it accepts</h2>
+    <p data-l="es">En la casilla de preferencias personalizadas las variables son <b>x</b> e <b>y</b>. El óptimo se busca recorriendo la frontera tramo por tramo y comprobando además los dos extremos de cada tramo, así que los vértices y los saltos se encuentran bien aunque la condición de primer orden no diga nada allí.</p><p data-l="en">In the custom preferences box the variables are <b>x</b> and <b>y</b>. The optimum is found by walking the frontier piece by piece and also testing both ends of every piece, so kinks and jumps are found properly even where the first-order condition says nothing.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td><code>+ − * / ^</code></td><td data-l="es">Suma, resta, producto, cociente y potencia. <code>x^0.5</code> es la raíz de x.</td><td data-l="en">Add, subtract, multiply, divide, power. <code>x^0.5</code> is the square root of x.</td></tr><tr><td><code>( )</code></td><td data-l="es">Paréntesis. <code>(x+y)^2</code> no es lo mismo que <code>x+y^2</code>.</td><td data-l="en">Brackets. <code>(x+y)^2</code> is not the same as <code>x+y^2</code>.</td></tr><tr><td><code>sqrt ln log exp abs</code></td><td data-l="es">Raíz, logaritmo natural, logaritmo decimal, exponencial y valor absoluto.</td><td data-l="en">Root, natural log, base-10 log, exponential and absolute value.</td></tr><tr><td><code>min max</code></td><td data-l="es">Con dos argumentos: <code>min(x,y)</code> son complementarios perfectos.</td><td data-l="en">Two arguments: <code>min(x,y)</code> is perfect complements.</td></tr><tr><td><code>sin cos</code></td><td data-l="es">Trigonométricas, en radianes. Rara vez útiles aquí, pero están.</td><td data-l="en">Trigonometric, in radians. Rarely useful here, but available.</td></tr><tr><td><code>e pi</code></td><td data-l="es">Las dos constantes. <code>e</code> es 2,718…, <code>pi</code> es 3,1416…</td><td data-l="en">The two constants. <code>e</code> is 2.718…, <code>pi</code> is 3.1416…</td></tr><tr><td><code>2x</code>, <code>3xy</code></td><td data-l="es">El producto implícito funciona: <code>2x</code> se lee como <code>2*x</code>.</td><td data-l="en">Implicit multiplication works: <code>2x</code> reads as <code>2*x</code>.</td></tr></tbody></table></div>
+    <h2 data-l="es">Ejemplos que funcionan</h2><h2 data-l="en">Examples that work</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Expresión</th><th data-l="en">Expression</th><th data-l="es">Qué preferencias describe</th><th data-l="en">What preferences it describes</th></tr></thead><tbody><tr><td><code>x^0.3*y^0.7</code></td><td data-l="es">Cobb–Douglas con más peso en y: el cupo de x tiende a morder.</td><td data-l="en">Cobb–Douglas weighted towards y: the x allowance tends to bind.</td></tr><tr><td><code>min(x,y)</code></td><td data-l="es">Complementarios perfectos. El óptimo salta de un pliegue a otro.</td><td data-l="en">Perfect complements. The optimum jumps from fold to fold.</td></tr><tr><td><code>x+2y</code></td><td data-l="es">Sustitutos perfectos: soluciones de esquina, y el subsidio puede voltearlas.</td><td data-l="en">Perfect substitutes: corner solutions, and the subsidy can flip them.</td></tr><tr><td><code>ln(x)+y</code></td><td data-l="es">Cuasilineal: la demanda de x no depende de la renta, y el cupo se ve limpio.</td><td data-l="en">Quasilinear: demand for x does not depend on income, so the allowance shows clean.</td></tr></tbody></table></div>
+    <div class="warn"><p data-l="es">Si escribes algo que no se entiende, aparece <i>«No entiendo esa expresión»</i> y la gráfica se queda como estaba. Las causas habituales son un paréntesis sin cerrar, una coma decimal en vez de un punto (<code>0,5</code> en vez de <code>0.5</code>) o una variable que no sea x ni y.</p><p data-l="en">If it cannot be read you get <i>“I can't read that expression”</i> and the graph stays as it was. The usual causes are an unclosed bracket, a decimal comma instead of a point (<code>0,5</code> instead of <code>0.5</code>) or a variable other than x and y.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Si algo no sale</div><div class="part" data-l="en">If something goes wrong</div>
+    <h2 data-l="es">Problemas frecuentes</h2><h2 data-l="en">Common problems</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Síntoma</th><th data-l="en">Symptom</th><th data-l="es">Qué hacer</th><th data-l="en">What to do</th></tr></thead><tbody><tr><td data-l="es">Sale «La frontera se sale del marco»</td><td data-l="en">It says “The frontier runs outside the frame”</td><td data-l="es">Sube el tope de x o de y, o marca <b>Ajustar los ejes solos</b>. Con x_s grande la frontera se alarga mucho.</td><td data-l="en">Raise the x or y ceiling, or tick <b>Fit the axes automatically</b>. With a large x_s the frontier stretches a long way.</td></tr><tr><td data-l="es">Los dos esquemas se ven idénticos</td><td data-l="en">The two schemes look identical</td><td data-l="es">Es un resultado, no un fallo: el cupo no está mordiendo. Baja el parámetro a de las preferencias, o sube x_s, hasta que el óptimo caiga sobre el pliegue.</td><td data-l="en">That is a result, not a bug: the allowance is not biting. Lower the preference parameter a, or raise x_s, until the optimum lands on the fold.</td></tr><tr><td data-l="es">La ventaja del efectivo sale cero</td><td data-l="en">The cash advantage comes out zero</td><td data-l="es">Lo mismo: el óptimo está en el tramo donde las dos fronteras coinciden. Es exactamente el caso en que dar en especie no cuesta nada en bienestar.</td><td data-l="en">Same thing: the optimum is on the stretch where the two frontiers coincide. That is exactly the case where giving in kind costs nothing in welfare.</td></tr><tr><td data-l="es">El panel 3D va lento</td><td data-l="en">The 3D panel is slow</td><td data-l="es">Cierra el panel de sustitución, o baja los topes de los ejes. La malla se recalcula al girar.</td><td data-l="en">Close the substitution panel, or lower the axis ceilings. The mesh is rebuilt as you rotate.</td></tr><tr><td data-l="es">No consigo volver a la vista libre</td><td data-l="en">I cannot get back to the free view</td><td data-l="es">Pulsa el botón <b>3D</b> del grupo de vistas, o arrastra directamente sobre el panel: arrastrar sale de la proyección.</td><td data-l="en">Press the <b>3D</b> button in the view group, or just drag on the panel: dragging leaves the projection.</td></tr></tbody></table></div>
+  </section>
+  <footer>
+    <p data-l="es">Abre el applet: <a href="../nonlinear-budget/">Restricciones No Lineales</a>. Todo funciona en el navegador; una vez cargado, también sin conexión.</p>
+    <p data-l="en">Open the applet: <a href="../nonlinear-budget/">Non-Linear Budget Constraints</a>. It all runs in the browser, and once loaded, offline too.</p>
+    <p><a href="../index.html" data-l="es">← Volver al menú</a><a href="../index.html" data-l="en">← Back to the menu</a></p>
+  </footer>
+</div>
+<script>
+"use strict";
+/* One page, two languages: every block is tagged and the toggle just switches
+   which set is shown. Keeping both in one file means a correction lands in both
+   at once instead of drifting apart. */
+function setLang(l){
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-l]").forEach(function(el){
+    el.classList.toggle("on", el.dataset.l === l);
+  });
+  document.querySelectorAll("#lang button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.lang === l));
+  });
+  try{ localStorage.setItem("manual.lang", l); }catch(e){}
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#theme button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.th === t));
+  });
+  try{ localStorage.setItem("manual.theme", t); }catch(e){}
+}
+document.querySelectorAll("#lang button").forEach(function(b){
+  b.addEventListener("click", function(){ setLang(b.dataset.lang); });
+});
+document.querySelectorAll("#theme button").forEach(function(b){
+  b.addEventListener("click", function(){ setTheme(b.dataset.th); });
+});
+var l0 = "es", t0 = "dark";
+try{ l0 = localStorage.getItem("manual.lang") || "es";
+     t0 = localStorage.getItem("manual.theme") || "dark"; }catch(e){}
+setLang(l0); setTheme(t0);
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual · Óptimo del Consumidor / Consumer Optimum</title>
+<meta name="description" content="Manual de uso del applet Óptimo del Consumidor, en español e inglés.">
+<style>
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --sunk:#0F171A; --panel:#192126;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --warn:#E3BC72; --warn-soft:#2C2314; --warn-rule:#6B5227;
+  --good:#6FD3A0; --good-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#F2F4F4; --surface:#FFFFFF; --sunk:#E9EDEE; --panel:#F7F9F9;
+  --ink:#14191B; --ink-2:#4A585D; --ink-3:#78878C;
+  --rule:#CDD6D8; --rule-2:#E2E8E9;
+  --accent:#0E6E78; --accent-soft:#D8EAEC; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --warn:#8A5512; --warn-soft:#F6E9D3; --warn-rule:#D9B071;
+  --good:#1B6E48; --good-soft:#D8EDE1;
+  --shadow:0 1px 2px rgba(20,25,27,.05), 0 8px 22px -14px rgba(20,25,27,.3);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-ui);
+  font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased; padding:36px 20px 70px}
+.wrap{max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:32px}
+.top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.kicker{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--accent-ink); background:var(--accent-soft); padding:4px 9px; border-radius:2px}
+h1{margin:8px 0 0; font-family:var(--f-display); font-size:clamp(27px,4.3vw,37px);
+  font-weight:600; letter-spacing:-.012em; line-height:1.15; text-wrap:balance}
+.lede{margin:8px 0 0; color:var(--ink-2); max-width:64ch; font-size:16.5px}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; flex:none}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:6px 13px; font-size:12.5px; font-family:var(--f-ui)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+section{display:flex; flex-direction:column; gap:14px}
+.part{font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); padding-bottom:8px; border-bottom:1px solid var(--rule)}
+h2{margin:0; font-family:var(--f-display); font-size:24px; font-weight:600; letter-spacing:-.008em; text-wrap:balance}
+h3{margin:0; font-size:15.5px; font-weight:700}
+p{margin:0; max-width:66ch}
+code{font-family:var(--f-mono); font-size:.885em; background:var(--sunk);
+  border:1px solid var(--rule-2); border-radius:3px; padding:1px 5px; word-break:break-word}
+a{color:var(--accent-ink); text-decoration:none; border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+.btn{display:inline-block; text-decoration:none; border:1px solid var(--accent);
+  background:var(--accent); color:var(--btn-ink); border-radius:3px; padding:9px 17px;
+  font-size:14px; font-weight:600; align-self:flex-start}
+.btn:hover{filter:brightness(1.08)}
+.tbl-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:480px}
+th,td{text-align:left; padding:10px 15px; border-bottom:1px solid var(--rule-2); vertical-align:top}
+th{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--panel); border-bottom-color:var(--rule)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600; width:34%}
+ol.steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:17px}
+ol.steps>li{display:grid; grid-template-columns:32px minmax(0,1fr); gap:13px; align-items:start}
+ol.steps>li>.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px;
+  font-weight:700; color:var(--accent-ink); background:var(--accent-soft); border-radius:3px;
+  text-align:center; padding:3px 0; margin-top:1px}
+ol.steps>li>.body{display:flex; flex-direction:column; gap:6px; min-width:0}
+.note,.warn{border-radius:4px; padding:13px 16px; display:flex; flex-direction:column; gap:6px;
+  border:1px solid var(--rule); border-left-width:3px}
+.note{background:var(--panel); border-left-color:var(--accent)}
+.warn{background:var(--warn-soft); border-color:var(--warn-rule); border-left-color:var(--warn); color:var(--warn)}
+.res{background:var(--good-soft); border:1px solid var(--good); border-radius:3px;
+  padding:8px 12px; font-family:var(--f-mono); font-size:13px; color:var(--good); max-width:66ch}
+footer{border-top:1px solid var(--rule); padding-top:18px; color:var(--ink-3); font-size:13.5px;
+  display:flex; flex-direction:column; gap:8px}
+[data-l]{display:none}
+[data-l].on{display:revert}
+p[data-l].on,h1[data-l].on,h2[data-l].on,h3[data-l].on,li[data-l].on{display:revert}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@page{margin:19mm 16mm}
+@media print{
+  body{padding:0; font-size:10.6pt; line-height:1.5}
+  .wrap{max-width:none; gap:24px}
+  .seg{display:none!important}
+  .top{display:block}
+  h1{font-size:26pt} .lede{font-size:11.4pt}
+  h2{font-size:15pt; break-after:avoid} h3{break-after:avoid}
+  .part{break-after:avoid} p{max-width:none}
+  ol.steps>li,.note,.warn,.res,.tbl-wrap,footer{break-inside:avoid}
+  table{min-width:0} th,td{padding:7px 11px}
+  a{border-bottom:0}
+  section{break-inside:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="kicker" data-l="es">Manual de uso</span><span class="kicker" data-l="en">User guide</span>
+      <h1 data-l="es">Óptimo del Consumidor</h1><h1 data-l="en">Consumer Optimum</h1>
+      <p class="lede" data-l="es">Dos bienes, una renta y unos precios. Dónde para el consumidor, por qué para ahí, y qué se ve en la superficie 3D que no se ve en el plano.</p><p class="lede" data-l="en">Two goods, an income and some prices. Where the consumer stops, why there, and what the 3D surface shows that the plane does not.</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <div class="seg" id="lang">
+        <button type="button" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme">
+        <button type="button" data-th="dark" aria-pressed="true"><span data-l="es">Oscuro</span><span data-l="en">Dark</span></button>
+        <button type="button" data-th="light" aria-pressed="false"><span data-l="es">Claro</span><span data-l="en">Light</span></button>
+      </div>
+    </div>
+  </div>
+  <section>
+    <div class="part" data-l="es">Antes de empezar</div><div class="part" data-l="en">Before you start</div>
+    <h2 data-l="es">Cómo se abre</h2><h2 data-l="en">Opening it</h2>
+    <p data-l="es">No hay nada que instalar. Es una página web: se abre en Chrome, Safari, Edge o Firefox, en ordenador, tableta o teléfono. La primera vez necesitas conexión; después el navegador la conserva y funciona sin ella.</p><p data-l="en">There is nothing to install. It is a web page: it opens in Chrome, Safari, Edge or Firefox, on a computer, tablet or phone. You need a connection the first time; after that the browser keeps it and it works offline.</p>
+    <p data-l="es">Arriba a la derecha hay dos parejas de botones. La primera X; la segunda pasa de <b>Oscuro</b> a <b>Claro</b>. Para proyectar en clase, el modo claro se ve mejor en un cañón; en pantalla, el oscuro cansa menos.</p><p data-l="en">Top right there are two pairs of buttons. The first switches the language between <b>ES</b> and <b>EN</b>; the second goes from <b>Dark</b> to <b>Light</b>. For projecting in class, light mode reads better on a beamer; on screen, dark is easier on the eyes.</p>
+    <div class="note"><p data-l="es"><b>Se puede hacer zoom en cualquier gráfica.</b> Rueda del ratón sobre la gráfica, o pellizco con dos dedos en el trackpad o la pantalla táctil. El zoom afecta sólo a la gráfica bajo el cursor, no a la página entera.</p><p data-l="en"><b>Every graph zooms.</b> Mouse wheel over the graph, or a two-finger pinch on the trackpad or touchscreen. The zoom applies to the graph under the pointer only, not to the whole page.</p></div>
+    <div class="note"><p data-l="es">Los deslizadores tienen al lado una casilla con el número. Para un valor exacto, escríbelo en la casilla y pulsa <code>Intro</code>; el deslizador es para explorar, la casilla para precisar.</p><p data-l="en">Each slider has a number box beside it. For an exact value, type it into the box and press <code>Enter</code>; the slider is for exploring, the box is for precision.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Qué hay en pantalla</div><div class="part" data-l="en">What is on screen</div>
+    <h2 data-l="es">Los dos paneles</h2><h2 data-l="en">The two panels</h2>
+    <p data-l="es">La pantalla se parte en dos vistas del mismo problema. No son dos ejercicios: son un solo objeto mirado desde dos sitios. Mueve algo en cualquiera de los dos y el otro responde.</p><p data-l="en">The screen splits into two views of one problem. They are not two exercises: they are one object seen from two places. Move something in either and the other follows.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Panel</th><th data-l="en">Panel</th><th data-l="es">Qué muestra</th><th data-l="en">What it shows</th></tr></thead><tbody><tr><td data-l="es"><b>Diagrama 2D</b> · plano (x, y)</td><td data-l="en"><b>2D diagram</b> · (x, y) plane</td><td data-l="es">El plano de siempre. El fondo es un mapa de calor de la utilidad —azul abajo, rojo arriba—, con la recta presupuestaria, las curvas de indiferencia y el punto <b>P</b> que puedes arrastrar.</td><td data-l="en">The familiar plane. The background is a heat map of utility — blue low, red high — with the budget line, the indifference curves and the point <b>P</b> you can drag.</td></tr><tr><td data-l="es"><b>Superficie 3D</b> · z = u(x, y)</td><td data-l="en"><b>3D surface</b> · z = u(x, y)</td><td data-l="es">La misma función levantada en altura. La recta presupuestaria se convierte en un plano vertical que corta la superficie, y el óptimo es la cima de esa curva de corte.</td><td data-l="en">The same function lifted into height. The budget line becomes a vertical plane cutting the surface, and the optimum is the summit of that cut.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">Arrastrar <b>P</b> funciona en los dos paneles. En el 3D, arrastrar sobre el fondo —no sobre el punto— gira la cámara.</p><p data-l="en">Dragging <b>P</b> works in both panels. In the 3D one, dragging on the background — not on the point — rotates the camera.</p></div>
+    <h2 data-l="es">Los números de la derecha</h2><h2 data-l="en">The readouts</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Lectura</th><th data-l="en">Readout</th><th data-l="es">Cómo leerla</th><th data-l="en">How to read it</th></tr></thead><tbody><tr><td>x, y</td><td data-l="es">Las coordenadas de P: cuánto de cada bien.</td><td data-l="en">P's coordinates: how much of each good.</td></tr><tr><td>u(P)</td><td data-l="es">La utilidad en P. Es la altura en el panel 3D.</td><td data-l="en">Utility at P. It is the height in the 3D panel.</td></tr><tr><td data-l="es">Gasto</td><td data-l="en">Spend</td><td data-l="es">p<sub>x</sub>·x + p<sub>y</sub>·y. Si es menor que la renta, sobra dinero.</td><td data-l="en">p<sub>x</sub>·x + p<sub>y</sub>·y. If it is below income, money is left over.</td></tr><tr><td data-l="es">RMS</td><td data-l="en">MRS</td><td data-l="es">La relación marginal de sustitución en P, es decir la pendiente de la curva de indiferencia que pasa por ahí.</td><td data-l="en">The marginal rate of substitution at P — the slope of the indifference curve through that point.</td></tr><tr><td>p<sub>x</sub>/p<sub>y</sub></td><td data-l="es">El precio relativo, o sea la pendiente de la recta presupuestaria.</td><td data-l="en">The relative price — the slope of the budget line.</td></tr><tr><td data-l="es">Brecha</td><td data-l="en">Gap</td><td data-l="es">La distancia entre RMS y p<sub>x</sub>/p<sub>y</sub>. Cuando se acerca a cero, estás en tangencia.</td><td data-l="en">The distance between MRS and p<sub>x</sub>/p<sub>y</sub>. As it approaches zero you are at tangency.</td></tr><tr><td data-l="es">u máx.</td><td data-l="en">max u</td><td data-l="es">La utilidad del óptimo verdadero, para comparar con la tuya.</td><td data-l="en">The utility of the true optimum, to compare against yours.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Los controles</div><div class="part" data-l="en">The controls</div>
+    <h2 data-l="es">Panel de la izquierda</h2><h2 data-l="en">The left-hand panel</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td data-l="es"><b>Explorar</b> / <b>Retos</b></td><td data-l="en"><b>Explore</b> / <b>Challenges</b></td><td data-l="es">Dos modos. En Explorar mandas tú: eliges la utilidad y los precios. En Retos el applet propone un problema con números aleatorios y puntúa tu respuesta.</td><td data-l="en">Two modes. In Explore you are in charge: you pick the utility and the prices. In Challenges the applet poses a problem with random numbers and scores your answer.</td></tr><tr><td data-l="es"><b>Preferencias</b></td><td data-l="en"><b>Preferences</b></td><td data-l="es">La casilla <code>u(x, y)</code>. Escribe la función que quieras; empieza en <code>x^0.5*y^0.5</code>.</td><td data-l="en">The <code>u(x, y)</code> box. Type whatever function you want; it starts at <code>x^0.5*y^0.5</code>.</td></tr><tr><td data-l="es"><b>Restricción presupuestaria</b></td><td data-l="en"><b>Budget constraint</b></td><td data-l="es">Tres deslizadores: p<sub>x</sub>, p<sub>y</sub> y la renta m. Por defecto 2, 3 y 24.</td><td data-l="en">Three sliders: p<sub>x</sub>, p<sub>y</sub> and income m. They start at 2, 3 and 24.</td></tr><tr><td data-l="es"><b>Método gráfico</b></td><td data-l="en"><b>Graphical method</b></td><td data-l="es">Cómo buscas el óptimo: <i>Elegir la canasta</i> (arrastras P sobre la recta), <i>Subir la curva de nivel</i> (subes u hasta que toque) o <i>Punto libre</i> (mueves P por todo el cuadrante).</td><td data-l="en">How you hunt for the optimum: <i>Pick the bundle</i> (drag P along the line), <i>Raise the level curve</i> (raise u until it touches) or <i>Free point</i> (move P anywhere in the quadrant).</td></tr><tr><td data-l="es"><b>Capas</b></td><td data-l="en"><b>Layers</b></td><td data-l="es">Enciende y apaga cada elemento del dibujo. Menos capas es casi siempre mejor para explicar; enciéndelas de una en una.</td><td data-l="en">Turns each element of the drawing on and off. Fewer layers is nearly always better for explaining; switch them on one at a time.</td></tr><tr><td data-l="es"><b>Dominio</b></td><td data-l="en"><b>Domain</b></td><td data-l="es">Hasta dónde llegan los ejes. Súbelo si el óptimo se sale del marco.</td><td data-l="en">How far the axes reach. Raise it if the optimum leaves the frame.</td></tr><tr><td data-l="es"><b>Ajustar al presupuesto</b></td><td data-l="en"><b>Fit to budget</b></td><td data-l="es">Devuelve P a la recta presupuestaria si lo has llevado fuera.</td><td data-l="en">Puts P back on the budget line if you have taken it off.</td></tr></tbody></table></div>
+    <h2 data-l="es">Las capas, una a una</h2><h2 data-l="en">The layers, one by one</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Capa</th><th data-l="en">Layer</th><th data-l="es">Qué dibuja</th><th data-l="en">What it draws</th></tr></thead><tbody><tr><td data-l="es">Mapa de utilidad</td><td data-l="en">Utility map</td><td data-l="es">El fondo de color. Azul es poca utilidad, rojo mucha.</td><td data-l="en">The coloured background. Blue is low utility, red is high.</td></tr><tr><td data-l="es">Curvas de fondo</td><td data-l="en">Contours</td><td data-l="es">Curvas de indiferencia a niveles regulares, como las de un mapa topográfico.</td><td data-l="en">Indifference curves at regular levels, like a topographic map.</td></tr><tr><td data-l="es">Curva de nivel</td><td data-l="en">Level curve</td><td data-l="es">La curva del nivel que fijas tú con el deslizador.</td><td data-l="en">The curve at the level you set with the slider.</td></tr><tr><td data-l="es">Curva por P</td><td data-l="en">Curve through P</td><td data-l="es">La curva de indiferencia que pasa exactamente por P.</td><td data-l="en">The indifference curve running exactly through P.</td></tr><tr><td data-l="es">Conjunto factible</td><td data-l="en">Feasible set</td><td data-l="es">La zona que puedes pagar: el triángulo bajo la recta.</td><td data-l="en">What you can afford: the triangle under the line.</td></tr><tr><td data-l="es">Corte 3D</td><td data-l="en">3D slice</td><td data-l="es">En el panel 3D, la curva donde el plano presupuestario corta la superficie.</td><td data-l="en">In the 3D panel, the curve where the budget plane cuts the surface.</td></tr><tr><td data-l="es">Tangente en P</td><td data-l="en">Tangent at P</td><td data-l="es">La recta tangente a la curva de indiferencia en P. Cuando coincide con la recta presupuestaria, has llegado.</td><td data-l="en">The tangent to the indifference curve at P. When it lines up with the budget line, you are there.</td></tr><tr><td data-l="es">Gradiente</td><td data-l="en">Gradient</td><td data-l="es">El vector ∇u en P: apunta en la dirección de máximo crecimiento de la utilidad.</td><td data-l="en">The vector ∇u at P: it points where utility grows fastest.</td></tr><tr><td data-l="es">Parciales</td><td data-l="en">Partials</td><td data-l="es">Las dos componentes del gradiente por separado, u<sub>x</sub> y u<sub>y</sub>.</td><td data-l="en">The two components of the gradient separately, u<sub>x</sub> and u<sub>y</sub>.</td></tr><tr><td data-l="es">Plano de corte</td><td data-l="en">Cutting plane</td><td data-l="es">El plano vertical del presupuesto, en el panel 3D.</td><td data-l="en">The vertical budget plane, in the 3D panel.</td></tr><tr><td data-l="es">Sólo lo asequible</td><td data-l="en">Affordable only</td><td data-l="es">Recorta la superficie 3D al conjunto factible: lo demás desaparece.</td><td data-l="en">Clips the 3D surface to the feasible set: the rest disappears.</td></tr><tr><td data-l="es">Mostrar óptimo</td><td data-l="en">Show optimum</td><td data-l="es">Marca la solución verdadera. Apágala mientras el alumno busca.</td><td data-l="en">Marks the true solution. Turn it off while the student searches.</td></tr><tr><td data-l="es">Dejar rastro</td><td data-l="en">Leave a trail</td><td data-l="es">P va dejando marcas por donde pasa.</td><td data-l="en">P leaves a trail of marks as it moves.</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Primeros diez minutos</div><div class="part" data-l="en">The first ten minutes</div>
+    <h2 data-l="es">Un recorrido guiado</h2><h2 data-l="en">A guided run</h2>
+    <p data-l="es">Ábrelo y haz esto en orden. Los resultados están comprobados con los valores de arranque, así que si no coinciden es que algo se ha movido: recarga la página y vuelve a empezar.</p><p data-l="en">Open it and do this in order. The results are checked against the starting values, so if they do not match something has moved: reload the page and start again.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Déjalo como viene: <code>u = x^0.5*y^0.5</code>, p<sub>x</sub> = 2, p<sub>y</sub> = 3, m = 24. Enciende <b>Mostrar óptimo</b>.</p><p data-l="en">Leave it as it comes: <code>u = x^0.5*y^0.5</code>, p<sub>x</sub> = 2, p<sub>y</sub> = 3, m = 24. Switch on <b>Show optimum</b>.</p><div class="res" data-l="es">El óptimo cae en x* = 6, y* = 4, con u = 4,899.</div><div class="res" data-l="en">The optimum sits at x* = 6, y* = 4, with u = 4.899.</div></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Comprueba la aritmética a mano: con Cobb–Douglas de exponentes iguales, cada bien se lleva la mitad de la renta. 12 pesos en x a 2 el uno son 6 unidades; 12 en y a 3 el uno son 4.</p><p data-l="en">Check the arithmetic by hand: with equal Cobb–Douglas exponents each good takes half the income. 12 on x at 2 each is 6 units; 12 on y at 3 each is 4.</p><div class="res" data-l="es">Gasto = 2·6 + 3·4 = 24. No sobra nada.</div><div class="res" data-l="en">Spend = 2·6 + 3·4 = 24. Nothing left over.</div></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Enciende <b>Tangente en P</b> y arrastra P por la recta hasta que la tangente se tumbe sobre la propia recta. Mira la <b>Brecha</b> mientras lo haces.</p><p data-l="en">Switch on <b>Tangent at P</b> and drag P along the line until the tangent lies flat on the line itself. Watch the <b>Gap</b> as you do it.</p><div class="res" data-l="es">En el óptimo, RMS = 0,667 = p<sub>x</sub>/p<sub>y</sub> = 2/3, y la brecha es cero.</div><div class="res" data-l="en">At the optimum, MRS = 0.667 = p<sub>x</sub>/p<sub>y</sub> = 2/3, and the gap is zero.</div></div></li>
+      <li><span class="n">4</span><div class="body"><p data-l="es">Cambia el método a <b>Subir la curva de nivel</b> y sube u despacio. Verás la curva pasar de cortar la recta dos veces, a rozarla, a no llegar.</p><p data-l="en">Switch the method to <b>Raise the level curve</b> and raise u slowly. You will watch the curve go from cutting the line twice, to grazing it, to missing it.</p><div class="res" data-l="es">El nivel donde deja de cortar es exactamente u = 4,899.</div><div class="res" data-l="en">The level where it stops cutting is exactly u = 4.899.</div></div></li>
+      <li><span class="n">5</span><div class="body"><p data-l="es">Ahora mira el panel 3D. El plano vertical corta la superficie en un arco; el óptimo es su punto más alto. Gira la cámara arrastrando el fondo.</p><p data-l="en">Now look at the 3D panel. The vertical plane cuts the surface in an arch; the optimum is its highest point. Rotate the camera by dragging the background.</p><div class="res" data-l="es">Los dos paneles marcan el mismo punto al mismo tiempo.</div><div class="res" data-l="en">Both panels mark the same point at the same time.</div></div></li>
+    </ol>
+  </section>
+  <section>
+    <div class="part" data-l="es">Tres experimentos</div><div class="part" data-l="en">Three experiments</div>
+    <h2 data-l="es">1 · Cuando la tangencia no sirve</h2><h2 data-l="en">1 · When tangency is no use</h2>
+    <p data-l="es">La condición RMS = p<sub>x</sub>/p<sub>y</sub> es la que se enseña, pero sólo vale para soluciones interiores con curvas suaves. Los dos casos siguientes la rompen, y el applet lo dice en voz alta.</p><p data-l="en">The condition MRS = p<sub>x</sub>/p<sub>y</sub> is what gets taught, but it only holds for interior solutions with smooth curves. The next two cases break it, and the applet says so.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><p data-l="es">Escribe <code>min(x,y)</code> y deja p<sub>x</sub> = 2, p<sub>y</sub> = 3, m = 24. Las curvas de indiferencia son ángulos rectos.</p><p data-l="en">Type <code>min(x,y)</code> and leave p<sub>x</sub> = 2, p<sub>y</sub> = 3, m = 24. The indifference curves are right angles.</p><div class="res" data-l="es">x* = y* = 4,8. El applet lo llama «vértice»: la RMS no existe ahí.</div><div class="res" data-l="en">x* = y* = 4.8. The applet calls it a “kink”: MRS does not exist there.</div></div></li>
+      <li><span class="n">2</span><div class="body"><p data-l="es">Escribe ahora <code>2x+y</code>, sustitutos perfectos. La RMS vale 2 en todas partes; el precio relativo vale 2/3.</p><p data-l="en">Now type <code>2x+y</code>, perfect substitutes. MRS is 2 everywhere; the relative price is 2/3.</p><div class="res" data-l="es">x* = 12, y* = 0. Es una esquina: la RMS nunca llega a igualar al precio.</div><div class="res" data-l="en">x* = 12, y* = 0. A corner: MRS never gets down to the price ratio.</div></div></li>
+      <li><span class="n">3</span><div class="body"><p data-l="es">Con los mismos sustitutos, sube p<sub>x</sub> hasta pasar de 6 (es decir, hasta que p<sub>x</sub>/p<sub>y</sub> pase de 2).</p><p data-l="en">With the same substitutes, raise p<sub>x</sub> past 6 (that is, until p<sub>x</sub>/p<sub>y</sub> goes above 2).</p><div class="res" data-l="es">La solución salta de golpe al otro eje: todo en y. No hay transición suave.</div><div class="res" data-l="en">The solution jumps straight to the other axis: everything in y. There is no smooth transition.</div></div></li>
+    </ol>
+    <h2 data-l="es">2 · El gradiente y por qué apunta hacia fuera</h2><h2 data-l="en">2 · The gradient, and why it points outward</h2>
+    <p data-l="es">Enciende <b>Gradiente</b> y <b>Parciales</b> y arrastra P por la recta presupuestaria. El gradiente siempre apunta hacia arriba en la superficie; en el óptimo queda perpendicular a la recta. Ésa es la misma condición de tangencia, dicha con vectores.</p><p data-l="en">Switch on <b>Gradient</b> and <b>Partials</b> and drag P along the budget line. The gradient always points uphill on the surface; at the optimum it ends up perpendicular to the line. That is the same tangency condition, said with vectors.</p>
+    <h2 data-l="es">3 · Los retos</h2><h2 data-l="en">3 · The challenges</h2>
+    <p data-l="es">Pulsa <b>Retos</b>. Hay seis niveles y cada uno genera números nuevos cada vez, así que no se puede memorizar la respuesta. Se desbloquean en orden.</p><p data-l="en">Press <b>Challenges</b>. There are six levels and each one generates fresh numbers every time, so the answer cannot be memorised. They unlock in order.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Nivel</th><th data-l="en">Level</th><th data-l="es">Qué se practica</th><th data-l="en">What it drills</th></tr></thead><tbody><tr><td data-l="es">1 · Cobb–Douglas</td><td data-l="en">1 · Cobb–Douglas</td><td data-l="es">Tangencia interior con exponentes iguales. El caso de libro.</td><td data-l="en">Interior tangency with equal exponents. The textbook case.</td></tr><tr><td data-l="es">2 · Cobb–Douglas asimétrica</td><td data-l="en">2 · Asymmetric Cobb–Douglas</td><td data-l="es">Lo mismo con exponentes distintos, por el método del nivel.</td><td data-l="en">The same with unequal exponents, by the level-curve method.</td></tr><tr><td data-l="es">3 · Sustitutos perfectos</td><td data-l="en">3 · Perfect substitutes</td><td data-l="es">Soluciones de esquina y el salto de un eje a otro.</td><td data-l="en">Corner solutions and the jump from one axis to the other.</td></tr><tr><td data-l="es">4 · Complementarios perfectos</td><td data-l="en">4 · Perfect complements</td><td data-l="es">El vértice, donde la RMS no está definida.</td><td data-l="en">The kink, where MRS is undefined.</td></tr><tr><td data-l="es">5 · Cuasilineal</td><td data-l="en">5 · Quasilinear</td><td data-l="es">La demanda de un bien no depende de la renta; el otro absorbe el resto.</td><td data-l="en">One good's demand does not depend on income; the other absorbs the rest.</td></tr><tr><td data-l="es">6 · CES</td><td data-l="en">6 · CES</td><td data-l="es">Elasticidad de sustitución distinta de uno, con ρ positivo o negativo.</td><td data-l="en">Elasticity of substitution away from one, with ρ positive or negative.</td></tr></tbody></table></div>
+    <div class="note"><p data-l="es">La puntuación premia acercarse al óptimo verdadero. <b>Comprobar</b> evalúa, <b>Reintentar</b> repite con los mismos números y <b>Siguiente</b> pasa de nivel.</p><p data-l="en">The score rewards getting close to the true optimum. <b>Check</b> grades it, <b>Try again</b> repeats with the same numbers and <b>Next</b> moves on.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Escribir tu propia función</div><div class="part" data-l="en">Writing your own function</div>
+    <h2 data-l="es">La sintaxis admitida</h2><h2 data-l="en">The syntax it accepts</h2>
+    <p data-l="es">En la casilla <code>u(x, y)</code> las variables son <b>x</b> e <b>y</b>, y sólo ésas. Las derivadas parciales se calculan de forma exacta, no aproximada, así que la RMS que ves es la de verdad.</p><p data-l="en">In the <code>u(x, y)</code> box the variables are <b>x</b> and <b>y</b>, and only those. The partial derivatives are computed exactly, not approximated, so the MRS you see is the real one.</p>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Control</th><th data-l="en">Control</th><th data-l="es">Qué hace</th><th data-l="en">What it does</th></tr></thead><tbody><tr><td><code>+ − * / ^</code></td><td data-l="es">Suma, resta, producto, cociente y potencia. <code>x^0.5</code> es la raíz de x.</td><td data-l="en">Add, subtract, multiply, divide, power. <code>x^0.5</code> is the square root of x.</td></tr><tr><td><code>( )</code></td><td data-l="es">Paréntesis. <code>(x+y)^2</code> no es lo mismo que <code>x+y^2</code>.</td><td data-l="en">Brackets. <code>(x+y)^2</code> is not the same as <code>x+y^2</code>.</td></tr><tr><td><code>sqrt ln log exp abs</code></td><td data-l="es">Raíz, logaritmo natural, logaritmo decimal, exponencial y valor absoluto.</td><td data-l="en">Root, natural log, base-10 log, exponential and absolute value.</td></tr><tr><td><code>min max</code></td><td data-l="es">Con dos argumentos: <code>min(x,y)</code> son complementarios perfectos.</td><td data-l="en">Two arguments: <code>min(x,y)</code> is perfect complements.</td></tr><tr><td><code>sin cos</code></td><td data-l="es">Trigonométricas, en radianes. Rara vez útiles aquí, pero están.</td><td data-l="en">Trigonometric, in radians. Rarely useful here, but available.</td></tr><tr><td><code>e pi</code></td><td data-l="es">Las dos constantes. <code>e</code> es 2,718…, <code>pi</code> es 3,1416…</td><td data-l="en">The two constants. <code>e</code> is 2.718…, <code>pi</code> is 3.1416…</td></tr><tr><td><code>2x</code>, <code>3xy</code></td><td data-l="es">El producto implícito funciona: <code>2x</code> se lee como <code>2*x</code>.</td><td data-l="en">Implicit multiplication works: <code>2x</code> reads as <code>2*x</code>.</td></tr></tbody></table></div>
+    <h2 data-l="es">Ejemplos que funcionan</h2><h2 data-l="en">Examples that work</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Expresión</th><th data-l="en">Expression</th><th data-l="es">Qué preferencias describe</th><th data-l="en">What preferences it describes</th></tr></thead><tbody><tr><td><code>x^0.5*y^0.5</code></td><td data-l="es">Cobb–Douglas simétrica.</td><td data-l="en">Symmetric Cobb–Douglas.</td></tr><tr><td><code>x^0.3*y^0.7</code></td><td data-l="es">Cobb–Douglas con más peso en y.</td><td data-l="en">Cobb–Douglas weighted towards y.</td></tr><tr><td><code>min(2x,y)</code></td><td data-l="es">Complementarios en proporción fija: dos x por cada y.</td><td data-l="en">Fixed-proportion complements: two x per y.</td></tr><tr><td><code>3x+y</code></td><td data-l="es">Sustitutos perfectos con RMS constante igual a 3.</td><td data-l="en">Perfect substitutes with a constant MRS of 3.</td></tr><tr><td><code>4ln(x)+y</code></td><td data-l="es">Cuasilineal. El óptimo en x no depende de la renta: x* = 4p<sub>y</sub>/p<sub>x</sub>.</td><td data-l="en">Quasilinear. The optimum in x does not depend on income: x* = 4p<sub>y</sub>/p<sub>x</sub>.</td></tr><tr><td><code>(x^0.5+y^0.5)^2</code></td><td data-l="es">CES con ρ = 0,5, más sustituibles que Cobb–Douglas.</td><td data-l="en">CES with ρ = 0.5, more substitutable than Cobb–Douglas.</td></tr><tr><td><code>(x^(-1)+y^(-1))^(-1)</code></td><td data-l="es">CES con ρ = −1, menos sustituibles.</td><td data-l="en">CES with ρ = −1, less substitutable.</td></tr></tbody></table></div>
+    <div class="warn"><p data-l="es">Si escribes algo que no se entiende, aparece <i>«No entiendo esa expresión»</i> y la gráfica se queda como estaba. Las causas habituales son un paréntesis sin cerrar, una coma decimal en vez de un punto (<code>0,5</code> en vez de <code>0.5</code>) o una variable que no sea x ni y.</p><p data-l="en">If it cannot be read you get <i>“I can't read that expression”</i> and the graph stays as it was. The usual causes are an unclosed bracket, a decimal comma instead of a point (<code>0,5</code> instead of <code>0.5</code>) or a variable other than x and y.</p></div>
+  </section>
+  <section>
+    <div class="part" data-l="es">Si algo no sale</div><div class="part" data-l="en">If something goes wrong</div>
+    <h2 data-l="es">Problemas frecuentes</h2><h2 data-l="en">Common problems</h2>
+    <div class="tbl-wrap"><table><thead><tr><th data-l="es">Síntoma</th><th data-l="en">Symptom</th><th data-l="es">Qué hacer</th><th data-l="en">What to do</th></tr></thead><tbody><tr><td data-l="es">El óptimo se sale del marco</td><td data-l="en">The optimum leaves the frame</td><td data-l="es">Sube el <b>Dominio</b>, o baja la renta. Con m grande y precios pequeños la canasta óptima se va lejos.</td><td data-l="en">Raise the <b>Domain</b>, or lower income. With large m and small prices the optimal bundle runs far out.</td></tr><tr><td data-l="es">La superficie 3D se ve plana</td><td data-l="en">The 3D surface looks flat</td><td data-l="es">Estás mirándola casi de canto. Arrastra el fondo del panel para girar la cámara y subir el ángulo de elevación.</td><td data-l="en">You are looking at it almost edge-on. Drag the panel background to rotate the camera and raise the elevation.</td></tr><tr><td data-l="es">No consigo arrastrar P</td><td data-l="en">I cannot drag P</td><td data-l="es">En el panel 3D hay que agarrar el punto, no el fondo: el fondo gira la cámara. Si P está fuera de la recta, pulsa <b>Ajustar al presupuesto</b>.</td><td data-l="en">In the 3D panel you must grab the point, not the background: the background rotates the camera. If P has left the line, press <b>Fit to budget</b>.</td></tr><tr><td data-l="es">La curva de indiferencia no aparece</td><td data-l="en">The indifference curve does not appear</td><td data-l="es">Con funciones como <code>ln(x)+ln(y)</code> la utilidad es negativa en parte del cuadrante y no hay curva que dibujar ahí. Prueba con <code>x^0.5*y^0.5</code>.</td><td data-l="en">With functions like <code>ln(x)+ln(y)</code> utility is negative over part of the quadrant and there is no curve to draw there. Try <code>x^0.5*y^0.5</code>.</td></tr><tr><td data-l="es">Los retos están bloqueados</td><td data-l="en">The challenges are locked</td><td data-l="es">Se abren en orden: hay que superar el anterior. Pulsa <b>Comprobar</b> con P en el óptimo.</td><td data-l="en">They unlock in order: you must clear the previous one. Press <b>Check</b> with P at the optimum.</td></tr></tbody></table></div>
+  </section>
+  <footer>
+    <p data-l="es">Abre el applet: <a href="../consumer-optimum/">Óptimo del Consumidor</a>. Todo funciona en el navegador; una vez cargado, también sin conexión.</p>
+    <p data-l="en">Open the applet: <a href="../consumer-optimum/">Consumer Optimum</a>. It all runs in the browser, and once loaded, offline too.</p>
+    <p><a href="../index.html" data-l="es">← Volver al menú</a><a href="../index.html" data-l="en">← Back to the menu</a></p>
+  </footer>
+</div>
+<script>
+"use strict";
+/* One page, two languages: every block is tagged and the toggle just switches
+   which set is shown. Keeping both in one file means a correction lands in both
+   at once instead of drifting apart. */
+function setLang(l){
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-l]").forEach(function(el){
+    el.classList.toggle("on", el.dataset.l === l);
+  });
+  document.querySelectorAll("#lang button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.lang === l));
+  });
+  try{ localStorage.setItem("manual.lang", l); }catch(e){}
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#theme button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.th === t));
+  });
+  try{ localStorage.setItem("manual.theme", t); }catch(e){}
+}
+document.querySelectorAll("#lang button").forEach(function(b){
+  b.addEventListener("click", function(){ setLang(b.dataset.lang); });
+});
+document.querySelectorAll("#theme button").forEach(function(b){
+  b.addEventListener("click", function(){ setTheme(b.dataset.th); });
+});
+var l0 = "es", t0 = "dark";
+try{ l0 = localStorage.getItem("manual.lang") || "es";
+     t0 = localStorage.getItem("manual.theme") || "dark"; }catch(e){}
+setLang(l0); setTheme(t0);
+</script>
+</body>
+</html>
