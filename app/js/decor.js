@@ -250,6 +250,9 @@ export class Decorations {
     const o = options || {};
     const density = o.density ?? 1;
     const shadows = !!o.shadows;
+    // A surveyed land-cover lookup, in domain coordinates, when the surface
+    // has one. See the note where it is used.
+    const cover = o.cover || null;
     this.clear();
     if (density <= 0 || !grid.anyValid) return;
 
@@ -316,6 +319,67 @@ export class Decorations {
       const r = rnd();
 
       if (z < 0) continue;               // below the waterline: leave it to the lake
+
+      // Where the ground was surveyed, plant what the survey found.
+      //
+      // The band rules below are an inference from height and they are the
+      // right thing for an invented function. On a real square kilometre a
+      // ten-metre land-cover raster knows better, and the difference shows:
+      // trees stop at the edge of the trees, the dry matorral above the campus
+      // stays scrub instead of turning into forest because it happens to sit
+      // a third of the way up the relief, and nothing at all grows through
+      // the tarmac. The buildings are drawn separately, so built-up ground is
+      // left clear for them apart from the odd street tree.
+      if (cover) {
+        const cls = cover(x, y);
+        if (cls === 80) continue;                       // water
+        if (cls === 50) {                               // built-up
+          if (r < 0.05 && slope < 2.4) {
+            place(broadleaf, x, y, z, 0.20, unit * (0.55 + rnd() * 0.35), yaw);
+          } else if (r < 0.09) {
+            place(grass, x, y, z, 0.7, unit * (0.35 + rnd() * 0.30), yaw);
+          }
+          continue;
+        }
+        if (cls === 10) {                               // tree cover
+          if (r < 0.66 * flat && slope < 2.6) {
+            place(rnd() < 0.62 ? broadleaf : conifer, x, y, z,
+              0.26, unit * (0.75 + rnd() * 0.75), yaw);
+          } else if (r < 0.86) {
+            place(grass, x, y, z, 0.7, unit * (0.45 + rnd() * 0.55), yaw);
+          }
+          continue;
+        }
+        if (cls === 20) {                               // shrubland / matorral
+          // Chilean matorral: thorny bushes, waist to shoulder high, with a
+          // lot of stony ground showing between them. Drawn as small
+          // broadleaves rather than trees, which is what they are.
+          if (r < 0.30 * flat) {
+            place(broadleaf, x, y, z, 0.35, unit * (0.20 + rnd() * 0.22), yaw);
+          } else if (r < 0.52) {
+            place(grass, x, y, z, 0.75, unit * (0.35 + rnd() * 0.45), yaw);
+          } else if (r < 0.62 || slope > 1.6) {
+            place(rock, x, y, z, 0.85, unit * (0.14 + rnd() * 0.34), yaw);
+          }
+          continue;
+        }
+        if (cls === 30 || cls === 40) {                 // grass / cropland
+          if (r < 0.80 && slope < 3.0) {
+            place(grass, x, y, z, 0.75, unit * (0.45 + rnd() * 0.55), yaw);
+          }
+          continue;
+        }
+        if (cls === 60) {                               // bare / sparse
+          if (r < 0.30) place(rock, x, y, z, 0.85, unit * (0.16 + rnd() * 0.44), yaw);
+          else if (r < 0.42) place(grass, x, y, z, 0.75, unit * (0.30 + rnd() * 0.30), yaw);
+          continue;
+        }
+        if (cls === 70) {                               // snow and ice
+          if (r < 0.30) place(snowRock, x, y, z, 0.9, unit * (0.22 + rnd() * 0.45), yaw);
+          continue;
+        }
+        // Anything else the legend can carry falls through to the band rules.
+      }
 
       // Every population is driven by the band weights, so what grows where
       // matches the colour underneath it exactly. Sizes stay relative to the

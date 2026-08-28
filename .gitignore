@@ -12,3 +12,6 @@ dist/package/
 # Elevation tiles fetched by tools/build-borders.mjs — build scratch, refetchable
 .tilecache/
 .photocache/
+
+# Local scratch scripts for probing remote data sources
+.scratch/

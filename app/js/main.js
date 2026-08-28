@@ -7,9 +7,13 @@ import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
   buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
-  GROUP_OUTSIDE, heightColor, setBiomeProfile,
+  GROUP_OUTSIDE, heightColor, setBiomeProfile, setCoverSource,
 } from './terrain.js';
 import { ELIAS_INFO } from './elias.js';
+import {
+  CAMPUS_INFO, coverAt, buildings as campusBuildings, startPoint as campusStart,
+} from './campus.js';
+import { buildBuildings } from './buildings.js';
 import { BORDERS } from './borders-data.js';
 import { feasibleFor, boundaryOf, BORDER_IDS } from './borders.js';
 import { photoFor } from './borders-photos.js';
@@ -218,6 +222,7 @@ let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
+let townscape = null;    // the real buildings, when the surface is a real place
 let game = null;         // Border Run — declared here rather than beside its own
                          // setup because the frame loop starts before that setup
                          // runs and must be able to ask for it
@@ -295,6 +300,7 @@ function clearGraphWorld() {
   if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
   if (curveGizmo) { disposeTree(curveGizmo.mesh); curveGizmo.dispose(); }
   if (tangentLine) { disposeTree(tangentLine.mesh); tangentLine.dispose(); }
+  if (townscape) { world.remove(townscape.group); townscape.dispose(); townscape = null; }
   decorations.clear();
   surface = water = walls = contourLines = null;
   surfaceDetail = gizmo = tangentPlane = optMarker = curveGizmo = tangentLine = null;
@@ -618,7 +624,11 @@ function decorScaleFactor() {
 }
 
 function decorOptions() {
-  return { density: state.density, shadows: state.shadows, scale: decorScaleFactor() };
+  return {
+    density: state.density, shadows: state.shadows, scale: decorScaleFactor(),
+    // On a surveyed square kilometre the forest is not guessed from height.
+    cover: isCampus() ? coverAt : null,
+  };
 }
 
 /** Rebuild whichever forest is on screen — a graph's or a curved surface's. */
@@ -988,6 +998,8 @@ function rebuild() {
     : borderId ? BORDERS[borderId].meta.biome
       : 'temperate');
 
+
+
   // --- parse first, so a typo never destroys a working scene -------------
   let fn, pred;
   try {
@@ -1028,6 +1040,15 @@ function rebuild() {
   field.zTop = grid.zmax;
   field.zBottom = grid.zmin;
 
+  // Where the ground was actually surveyed, hand the survey over and stop
+  // inferring what grows on it. The lookup is given in world coordinates
+  // because that is what the colouring already has; the campus module wants
+  // kilometres, so the field's own inverse does the conversion. Cleared for
+  // every other surface, so a stale raster can never colour a hillside it
+  // knows nothing about.
+  const onCampus = isCampus();
+  setCoverSource(onCampus ? (wx, wz) => coverAt(field.mathX(wx), field.mathY(wz)) : null);
+
   if (!grid.anyValid) {
     showError('err-fn', localError('err.undefinedEverywhere'));
     return false;
@@ -1040,6 +1061,16 @@ function rebuild() {
 
   water = buildWater(field, grid);
   if (water) { world.add(water); water.visible = state.water; }
+
+  // The buildings, where there are real ones. They are scenery, not geometry:
+  // f is still the altitude of the ground, and a roof is not a maximum of it.
+  townscape = onCampus ? buildBuildings(field, grid, campusBuildings(), predicate) : null;
+  if (townscape) {
+    world.add(townscape.group);
+    townscape.group.visible = state.decor;
+    townscape.mesh.castShadow = state.shadows;
+    townscape.setIsolate(state.isolate && hasConstraint());
+  }
 
   // In the game the player stands a few hundred metres from the frontier and
   // looks straight at it, so the wall is built waist-high rather than at the
@@ -1101,6 +1132,14 @@ function rebuild() {
   } else {
     player.field = field;
     player.resetToDomainCentre();
+  }
+  // The centre of the campus window is a patch of hillside scrub; the
+  // university is towards its western edge. Open on the built ground, so the
+  // first thing a student sees is the place they recognise.
+  if (onCampus) {
+    const s0 = campusStart();
+    player.x = s0.x; player.y = s0.y;
+    if (!isFinite(player.height())) player.resetToDomainCentre();
   }
   player.setZoom(state.zoom);
   player.speedScale = state.walkSpeed;
@@ -1232,6 +1271,11 @@ function applyPalette() {
   const rocky = /\belias\s*\(/.test(state.fnSrc || '') || !!currentBorder();
   if (state.heightColors) { hemi.intensity = 4.2; sun.intensity = 1.1; }
   else if (rocky) { hemi.intensity = 1.55; sun.intensity = 2.25; }
+  // A city hillside sits between the two. Rock and snow are bright enough that
+  // the sandbox's exposure clips them to white, which is why the mountains are
+  // lit down; scrub, dry grass and tarmac are much darker, and the same
+  // exposure leaves a suburb looking like dusk. Santiago is not a dark place.
+  else if (isCampus()) { hemi.intensity = 2.9; sun.intensity = 3.2; }
   else { hemi.intensity = 3.1; sun.intensity = 3.4; }
   if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
@@ -1279,6 +1323,7 @@ function applyIsolation() {
   out.depthWrite = !on;
   out.needsUpdate = true;
   decorations.setIsolate(on);
+  if (townscape) townscape.setIsolate(on);
   if (water) water.visible = state.water && !on;
 }
 
@@ -2025,6 +2070,7 @@ const CROCHET_FN = 'y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2
 
 /** Mount Saint Elias: the baked elevation model, as a formula. */
 const ELIAS_FN = 'elias(x, y)';
+const CAMPUS_FN = 'uandes(x, y)';
 
 /**
  * The Alaska side of the frontier, as one linear inequality.
@@ -2057,6 +2103,16 @@ function currentBorder() {
   const m = /^\s*([a-z]+)\s*\(\s*x\s*,\s*y\s*\)\s*$/.exec(state.fnSrc || '');
   return m && BORDERS[m[1]] ? m[1] : null;
 }
+
+/**
+ * Is the surface on screen the surveyed campus?
+ *
+ * Read off the formula, like everything else here, so typing `uandes(x, y)`
+ * into the box is exactly as good as choosing it from the list — and so the
+ * scenery can never be left switched on over a surface it has nothing to say
+ * about.
+ */
+function isCampus() { return /\buandes\s*\(/.test(state.fnSrc || ''); }
 
 /**
  * Wait for the chosen mountain to actually exist, then let the game offer it.
@@ -2162,6 +2218,8 @@ function updateCrochetNote() {
   if (crochet) crochet.hidden = fn !== CROCHET_FN;
   const elias = $('note-elias');
   if (elias) elias.hidden = fn !== ELIAS_FN;
+  const campus = $('note-campus');
+  if (campus) campus.hidden = fn !== CAMPUS_FN;
   const border = $('note-border');
   const id = currentBorder();
   if (border) {
@@ -2405,6 +2463,32 @@ function wireUI() {
       // ground exists to stand on — the card names the objective and goes away
       // on one key, so choosing the mountain to look at it costs nothing.
       offerGameFor(id);
+    } else if (e.target.value === CAMPUS_FN) {
+      // A surveyed place. The window is the rectangle the coordinates name and
+      // nothing else: it does not follow the explorer, because walking east off
+      // the edge would be walking off the survey, and it is not square, because
+      // the request was not.
+      $('in-xmin').value = CAMPUS_INFO.xmin.toFixed(4);
+      $('in-xmax').value = CAMPUS_INFO.xmax.toFixed(4);
+      $('in-ymin').value = CAMPUS_INFO.ymin.toFixed(4);
+      $('in-ymax').value = CAMPUS_INFO.ymax.toFixed(4);
+      $('t-follow').checked = false; state.follow = false;
+      // No constraint here. This one is not a Lagrange problem — it is a place
+      // to ask the unconstrained questions in, where the student knows the
+      // ground: which way is downhill from the lecture theatre, how steep is
+      // the walk up to the library, what does a level curve of altitude look
+      // like when it crosses a car park.
+      $('t-feas').checked = false; state.feasible = false;
+      $('t-isolate').checked = false; state.isolate = false;
+      $('t-decor').checked = true; state.decor = true;
+      // Two kilometres across with half a kilometre of relief is already a
+      // steep hillside; it needs no help from the exaggeration dial to read as
+      // one, and at 1 the buildings are their real heights beside it.
+      $('in-sz').value = 1;
+      $('in-sz').dispatchEvent(new Event('input'));
+      // Fine enough that the mesh resolves single buildings rather than the
+      // block they stand in: 520 samples across 2.19 km is a node every 4 m.
+      $('in-res').value = 520;
     } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the
@@ -2556,6 +2640,8 @@ function wireUI() {
   });
   bindCheck('t-decor', 'decor', () => {
     decorations.setVisible(state.decor);
+    // The buildings are scenery too, and go with the rest of it.
+    if (townscape) townscape.group.visible = state.decor;
     // On a curved surface the forest is not built until it is asked for, so
     // the first tick has to build it rather than just unhide nothing.
     if (state.decor && state.surfaceKind !== 'graph' && !decorations.layers.length) {
@@ -2565,6 +2651,7 @@ function wireUI() {
   bindCheck('t-water', 'water', () => { if (water) water.visible = state.water && !(state.feasible && state.isolate); });
   bindCheck('t-shadow', 'shadows', () => {
     configureShadows();
+    if (townscape) townscape.mesh.castShadow = state.shadows;
     withLoading(rebuildDecor);
   });
 

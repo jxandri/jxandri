@@ -197,6 +197,45 @@ export function setBiomeProfile(name) {
   BAND_RGB = tint ? BANDS.map((b, i) => tint[i] || b) : BANDS;
 }
 
+/* ------------------------------------------------- surveyed land cover */
+
+/**
+ * When the ground is a real place, stop guessing what grows on it.
+ *
+ * Everything above infers vegetation from height: a band ramp says this
+ * fraction of the relief is forest, that fraction is scree. For an invented
+ * function that is the only thing available and it is a good story. For a
+ * surveyed square kilometre it is a worse story than the survey, which knows
+ * at ten metres whether a patch is trees, scrub, dry grass, bare or paved.
+ *
+ * So a surface may hand in a land-cover source — a function of *world*
+ * coordinates returning an ESA WorldCover class — and the colour comes from
+ * that instead of from the height bands. The height-driven texture stays:
+ * noise, mottling and the bare rock that steep ground sheds are all still
+ * true, and are what stop the result looking like a classified raster.
+ *
+ * COVER_RGB is keyed by the ESA class code, so the numbers here are the
+ * numbers in the published legend and can be checked against it.
+ */
+const COVER_RGB = {
+  10: [0.15, 0.28, 0.13],   // tree cover
+  20: [0.40, 0.38, 0.23],   // shrubland — Chilean matorral, olive and dusty
+  30: [0.54, 0.50, 0.30],   // grassland, dry for most of the year here
+  40: [0.34, 0.43, 0.19],   // cropland
+  50: [0.46, 0.44, 0.42],   // built-up: roofs, tarmac and courtyards
+  60: [0.52, 0.46, 0.37],   // bare / sparse vegetation
+  70: [0.92, 0.94, 0.97],   // snow and ice
+  80: [0.16, 0.34, 0.46],   // permanent water
+  90: [0.28, 0.40, 0.28],   // herbaceous wetland
+  95: [0.20, 0.34, 0.22],   // mangroves
+  100: [0.55, 0.58, 0.44],  // moss and lichen
+};
+
+let coverSource = null;
+/** @param fn (wx, wz) -> ESA class code, or null to go back to the bands. */
+export function setCoverSource(fn) { coverSource = fn || null; }
+export function hasCoverSource() { return !!coverSource; }
+
 /**
  * Whether this climate has cloud in it at all.
  *
@@ -270,17 +309,35 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // does is the giveaway that you are looking at a plot rather than a place.
   const t = Math.min(1, Math.max(0, h + (macro - 0.5) * 0.11 + (meso - 0.5) * 0.045));
 
-  // Blend the two bands `t` falls between.
-  let i = 0;
-  while (i < BAND_AT.length - 2 && t > BAND_AT[i + 1]) i++;
-  const span = BAND_AT[i + 1] - BAND_AT[i] || 1e-6;
-  mixRGB(BAND_RGB[i], BAND_RGB[i + 1], (t - BAND_AT[i]) / span, out);
+  // Blend the two bands `t` falls between — unless the ground was surveyed,
+  // in which case take the class the survey recorded.
+  //
+  // The lookup is jittered by the finest noise field before it is taken. That
+  // is not decoration: the raster is ten metres a cell and the mesh is finer
+  // than that, so an unjittered read would draw the cell boundaries as a
+  // staircase across the hillside. Dithering the sample turns the staircase
+  // into an interlocking edge of the two classes, which is both prettier and
+  // more honest — the boundary between scrub and grass is not a straight line
+  // ten metres long.
+  if (coverSource) {
+    const cls = coverSource(wx + (fine - 0.5) * 9, wz + (veg - 0.5) * 9);
+    const base = COVER_RGB[cls] || COVER_RGB[30];
+    out[0] = base[0]; out[1] = base[1]; out[2] = base[2];
+  } else {
+    let i = 0;
+    while (i < BAND_AT.length - 2 && t > BAND_AT[i + 1]) i++;
+    const span = BAND_AT[i + 1] - BAND_AT[i] || 1e-6;
+    mixRGB(BAND_RGB[i], BAND_RGB[i + 1], (t - BAND_AT[i]) / span, out);
+  }
 
   // Anything actually below the waterline is lake bed, whatever the band says.
   if (z < 0) mixRGB(out, BAND_WATER, 0.75, out);
 
   // The vegetation bands break into patches of lighter and darker growth.
-  const vegetated = bandWeight(2, t) + bandWeight(3, t);
+  // Under a survey the class already says what grows here, so the band-derived
+  // patchiness would be a second opinion nobody asked for: mottle the class
+  // colour instead, which keeps the texture without overruling the data.
+  const vegetated = coverSource ? 0 : bandWeight(2, t) + bandWeight(3, t);
   if (vegetated > 0.01) {
     mixRGB(out, BAND_VEG_LIGHT, smoothstep(0.35, 0.85, veg) * 0.35 * vegetated, out);
     mixRGB(out, BAND_VEG_DEEP, smoothstep(0.55, 0.95, meso) * 0.35 * vegetated, out);
@@ -292,7 +349,7 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   }
 
   // Lichen colonises the gentler faces of the arid and volcanic bands.
-  const stony = bandWeight(4, t) + bandWeight(5, t);
+  const stony = coverSource ? 0 : bandWeight(4, t) + bandWeight(5, t);
   const lichen = smoothstep(0.62, 0.92, meso) * (1 - steep * 0.6) * stony * 0.28;
   if (lichen > 0.001) mixRGB(out, LICHEN, lichen, out);
 
@@ -310,9 +367,12 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // looks like — fingers of snow reaching down the gullies, bare rock standing
   // out of it on the ribs, and the two interleaved for hundreds of metres
   // rather than a line drawn round the peak. Steep ground sheds it.
+  // ...and where the ground was surveyed, snow is not a matter of opinion
+  // either: the class raster puts it where it was, which on a Santiago
+  // hillside in the growing season is nowhere.
   const snowAt = BAND_AT[6];
   const drift = (meso - 0.5) * 0.30 + (macro - 0.5) * 0.20 + (fine - 0.5) * 0.06;
-  const snow = smoothstep(snowAt - 0.02, snowAt + 0.06,
+  const snow = coverSource ? 0 : smoothstep(snowAt - 0.02, snowAt + 0.06,
     t + drift - steep * 0.16);
   if (snow > 0.001) mixRGB(out, BAND_SNOW, snow, out);
 

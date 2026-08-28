@@ -26,6 +26,7 @@
 
 import { eliasHeight } from './elias.js';
 import { BORDER_FUNCS } from './borders.js';
+import { campusHeight } from './campus.js';
 
 const CONSTANTS = {
   pi: Math.PI, PI: Math.PI, Pi: Math.PI,
@@ -65,6 +66,10 @@ const FUNCS = {
   // number out — which is the whole reason a real mountain can be a
   // "bivariate function" here at all.
   ...BORDER_FUNCS,
+  // A place rather than a landscape: the Universidad de los Andes campus in
+  // Santiago, its ground fitted the same way. km east and north of the centre
+  // of the window in, km of elevation out. See campus.js.
+  uandes: [2, 2, campusHeight],
   // Handy shapes for building test surfaces.
   gauss: [1, 3, (v, mu, s) => {
     const m = mu === undefined ? 0 : mu, sd = s === undefined ? 1 : s;
