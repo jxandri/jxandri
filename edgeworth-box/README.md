@@ -79,12 +79,25 @@ gift, and the planner's allocation is the competitive equilibrium. The checks
 confirm it lands on exactly the allocation and price the excess-demand root
 finds by a completely separate route.
 
-The **second welfare theorem** layer draws the consequence. One price line —
-A's budget line and B's are the same line, seen from the two origins — with
-A's budget set filled in red below it and B's in blue above, and a readout that
-states the implementation in words: *implemented by prices (p_x, p_y) = (…, 1)
-with transfers T_A = …, T_B = …*, and the sum, which is zero by construction
-because the two incomes add up to the value of everything there is.
+The **second welfare theorem** layer draws the consequence. One budget line, in
+its own bright hue and drawn the full width of the box, because it is a
+constraint the whole diagram is divided by rather than a segment joining two
+marks — and it is *both* budget constraints at once: A's is `p·x_A + y_A = m_A`
+read from the bottom left, B's is `p·x_B + y_B = m_B` read from the top right,
+and substituting `x_B = X − x_A` turns the second into the first. So the two
+constraints are one line seen from two origins, and the two budget sets are its
+two sides: A's filled red below, B's blue above, each with its own switch,
+because the thing to see is that they meet exactly on the line.
+
+Beside it a readout states the implementation in words: *implemented by prices
+(p_x, p_y) = (…, 1) with transfers T_A = …, T_B = …*, and the sum, which is
+zero by construction because the two incomes add up to the value of everything
+there is.
+
+The price line through the endowment is a different object and is drawn only
+under the auction, where it *is* the budget line at the announced price.
+Elsewhere it was a second line across the box at a price nothing on screen was
+using, which next to the supporting budget line read as noise.
 
 Three things about λ the applet does not hide:
 
@@ -172,6 +185,12 @@ still the one between the curves you can see.
 
 ## What the student can do
 
+- **Move the endowment** — ω is draggable in the diagram, not only from the
+  sliders. Dragging it moves the point, not the box: what A drops, B picks up,
+  so the rectangle stays put while ω slides. Both utility fields are therefore
+  untouched, and the expensive half of the recompute is skipped — only what
+  depends on who owns what is redone: the core, the price sweep, the equilibria
+  and the Negishi weight.
 - **Divide by hand** — drag the allocation anywhere in the box. The lens drawn
   from it is the set of allocations both people prefer; while that lens is not
   empty, the division is not efficient.

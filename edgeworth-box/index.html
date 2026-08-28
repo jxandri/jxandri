@@ -662,7 +662,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
           </div>
           <div class="canvas-wrap" id="wrapBox">
             <canvas id="cbox" tabindex="0" role="application"
-              aria-label="Caja de Edgeworth. Arrastra el reparto; usa las flechas para moverlo."></canvas>
+              aria-label="Caja de Edgeworth. Arrastra el reparto o la dotación; usa las flechas para mover el reparto."></canvas>
           </div>
           <dl class="readout" id="readoutBox"></dl>
         </section>
@@ -1881,6 +1881,7 @@ const MARK = {
   contract:"#C15CFF",   // the Pareto set
   core:"#C15CFF",       // the same path, haloed where neither would refuse
   frontier:"#66E3A6",   // the firm's production frontier
+  budget:"#FFC53D",     // the budget line, and so the price that supports it
   price:"#FFFFFF",      // the price line through the endowment
   ink:"#FFFFFF",        // the endowment and the allocation
   casing:"rgba(6,9,14,.62)",
@@ -2053,6 +2054,11 @@ function renderMap(st){
        gets painted crisply at display resolution instead of blurred up from
        this grid — so the two never double-paint the same pixels */
     const skipLens = st.layers.lens;
+    /* The one-sided tints cover exactly the two regions the budget sets cover,
+       in the opposite hues — A's set is red over ground tinted blue for "only
+       B gains" — and the pair composites to a flat lavender that says neither
+       thing. The budget sets are the more specific claim, so they win. */
+    const skipSides = st.layers.swt && (st.layers.budgetA || st.layers.budgetB) && st.swt;
 
     /* adaptive contrast: normalise by the largest joint gain actually present,
        so a lens that is a sliver still shows its own structure */
@@ -2074,6 +2080,7 @@ function renderMap(st){
           const c = lensRGB(t);
           d[o] = c[0]; d[o+1] = c[1]; d[o+2] = c[2];
           d[o+3] = Math.round(255 * (0.30 + 0.45 * t));
+        } else if(skipSides){ d[o+3] = 0;
         } else if(a >= 0){
           d[o] = tintA[0]; d[o+1] = tintA[1]; d[o+2] = tintA[2]; d[o+3] = 26;
         } else if(b >= 0){
@@ -2288,9 +2295,12 @@ function drawBox(st){
      casing reads as a single line on dark ground and as *two* thin dark lines
      with a gap between them on light ground, which is worse than useless on a
      diagram whose whole subject is where lines cross. So this one flips. */
-  /* the price line is anchored on the endowment, which a production economy
-     does not have — there the supporting line comes from the welfare theorem */
-  if(L.price && !hasFirm(st)){
+  /* The price line is anchored on the endowment at the announced price, which
+     makes it the budget line of the auction and nothing at all anywhere else:
+     under the planner the price that matters is the one supporting the
+     allocation, and drawing the slider's p as well put a second line across
+     the box at a price nothing on screen was using. */
+  if(L.price && !hasFirm(st) && st.method === "auction"){
     const p = st.p, mA = incomeA(st, p);
     cased(ctx, () => { ctx.moveTo(SX(0), SY(mA)); ctx.lineTo(SX(mA / p), SY(0)); },
           dark ? MARK.price : "#14181B", 1.8, dark ? MARK.casing : "rgba(255,255,255,.75)");
@@ -2334,7 +2344,13 @@ function drawBox(st){
     }
   }
 
-  /* --- the second welfare theorem: one price line, two budget sets --- */
+  /* --- the second welfare theorem ---
+     One line, and it is BOTH budget constraints: A's is p·x_A + y_A = m_A read
+     from the bottom left, B's is p·x_B + y_B = m_B read from the top right,
+     and substituting x_B = X - x_A turns the second into the first. So the two
+     constraints are one line seen from two origins, and the two budget sets
+     are the two sides of it. Each set has its own switch, because the point a
+     student has to see is that they meet exactly on the line. */
   if(L.swt && st.swt){
     const S = st.swt, p = S.p, m = S.incA;
     const bx = S.Wx, by = S.Wy;
@@ -2350,29 +2366,43 @@ function drawBox(st){
     }
     if(lineY(bx) > 0) under.push([bx, Math.min(by, lineY(bx))]);
     under.push([Math.min(bx, Math.max(0, m / p)), 0]);
-    const poly = pts => { ctx.beginPath();
+    /* adds a sub-path; it must NOT begin one, because B's set is drawn as the
+       sub-box with A's punched out of it and a beginPath here would throw the
+       enclosing rectangle away and paint B's set straight over A's */
+    const addPoly = pts => {
       pts.forEach((q, i) => i ? ctx.lineTo(SX(q[0]), SY(q[1])) : ctx.moveTo(SX(q[0]), SY(q[1])));
-      ctx.closePath(); };
+      ctx.closePath();
+    };
 
     ctx.save();
     ctx.globalAlpha = 0.20;
-    poly(under); ctx.fillStyle = MARK.A; ctx.fill();
-    /* B's set is the sub-box minus A's */
-    ctx.beginPath();
-    ctx.rect(SX(0), SY(by), SX(bx) - SX(0), SY(0) - SY(by));
-    poly(under);
-    ctx.fillStyle = MARK.B; ctx.fill("evenodd");
+    if(L.budgetA){
+      ctx.beginPath(); addPoly(under);
+      ctx.fillStyle = MARK.A; ctx.fill();
+    }
+    if(L.budgetB){
+      /* B's set is the sub-box minus A's, which is the same line from the
+         other side rather than a second constraint */
+      ctx.beginPath();
+      ctx.rect(SX(0), SY(by), SX(bx) - SX(0), SY(0) - SY(by));
+      addPoly(under);
+      ctx.fillStyle = MARK.B; ctx.fill("evenodd");
+    }
     ctx.restore();
 
+    /* The line runs the full width of the box rather than stopping at the
+       sub-box, so that it reads as a constraint — a boundary the whole
+       diagram is divided by — rather than as a segment joining two marks. */
     cased(ctx, () => {
-      ctx.moveTo(SX(Math.max(0, (m - by) / p)), SY(Math.min(by, m)));
-      ctx.lineTo(SX(Math.min(bx, m / p)), SY(Math.max(0, m - p * bx)));
-    }, dark ? MARK.price : "#14181B", 2,
-       dark ? MARK.casing : "rgba(255,255,255,.75)");
+      const x0 = Math.max(0, (m - st.Wy) / p), x1 = Math.min(st.Wx, m / p);
+      ctx.moveTo(SX(x0), SY(m - p * x0));
+      ctx.lineTo(SX(x1), SY(m - p * x1));
+    }, MARK.budget, 2.6, MARK.casing);
+
   }
 
   /* --- the endowment, the two demands, the allocation --- */
-  if(L.demands && st.mkt && !hasFirm(st)){
+  if(L.demands && st.mkt && !hasFirm(st) && st.method === "auction"){
     const [ax, ay] = st.mkt.A;
     const bx = st.Wx - st.mkt.B[0], by = st.Wy - st.mkt.B[1];
     square(ctx, SX(ax), SY(ay), 5, MARK.A, MARK.casing);
@@ -2716,7 +2746,9 @@ const LAYER_DEFS = [
   ["offer",    "lOffer",    false],
   ["optimum",  "lOptimum",  false],
   ["production","lProduction", true ],
-  ["swt",      "lSwt",      true ]
+  ["swt",      "lSwt",      true ],
+  ["budgetA",  "lBudgetA",  true ],
+  ["budgetB",  "lBudgetB",  true ]
 ];
 const MAP_DEFS = [["gains","mapGains"], ["ua","mapUA"], ["ub","mapUB"], ["none","mapNone"]];
 
@@ -2734,7 +2766,8 @@ const STR = {
     firmNote:"(x/F<sub>x</sub>)<sup>c</sup> + (y/F<sub>y</sub>)<sup>c</sup> = 1. Con c = 1 la frontera es recta; al crecer c se cuadra sobre la esquina, que es la caja de intercambio.",
     mPlanner:"Planificador · peso λ",
     mPlannerD:"Recorre el conjunto de Pareto maximizando λu_A + (1−λ)u_B.",
-    lProduction:"Punto de producción", lSwt:"Segundo teorema",
+    lProduction:"Punto de producción", lSwt:"Recta de presupuesto",
+    lBudgetA:"Conjunto de A", lBudgetB:"Conjunto de B",
     rProd:"Produce", rLam:"λ", rTA:"Transf. A", rTB:"Transf. B",
     rNeg:"λ de Negishi", rProfit:"Beneficio", rMRT:"RMT", rPrice:"Precio de apoyo",
     negishi:"Negishi", zOnlyExchange:"Sólo en intercambio puro",
@@ -2748,7 +2781,7 @@ const STR = {
     gPrice:"Precios", gMap:"Mapa", gShow:"Capas",
     uaExpr:"Utilidad de A — u", ubExpr:"Utilidad de B — u",
     prefNote:"Cada uno elige su propia familia. u<sub>B</sub> se evalúa en la canasta de B, medida desde su propio origen, arriba a la derecha.",
-    endowNote:(wx, wy) => `Caja: ${wx} × ${wy}. B recibe lo que A no tiene.`,
+    endowNote:(wx, wy) => `Caja: ${wx} × ${wy}. B recibe lo que A no tiene. ω también se arrastra en el diagrama.`,
     priceNote:"p = p<sub>x</sub>/p<sub>y</sub>, con p<sub>y</sub> = 1. La recta de precios pasa siempre por ω.",
     clear:"Vaciar el mercado",
 
@@ -2835,7 +2868,8 @@ const STR = {
     firmNote:"(x/F<sub>x</sub>)<sup>c</sup> + (y/F<sub>y</sub>)<sup>c</sup> = 1. At c = 1 the frontier is straight; as c grows it squares off against the corner, which is the exchange box.",
     mPlanner:"Planner · weight λ",
     mPlannerD:"Walks the Pareto set by maximising λu_A + (1−λ)u_B.",
-    lProduction:"Production point", lSwt:"Second welfare theorem",
+    lProduction:"Production point", lSwt:"Budget line",
+    lBudgetA:"A's budget set", lBudgetB:"B's budget set",
     rProd:"Produces", rLam:"λ", rTA:"Transfer A", rTB:"Transfer B",
     rNeg:"Negishi λ", rProfit:"Profit", rMRT:"MRT", rPrice:"Support price",
     negishi:"Negishi", zOnlyExchange:"Pure exchange only",
@@ -2849,7 +2883,7 @@ const STR = {
     gPrice:"Prices", gMap:"Map", gShow:"Layers",
     uaExpr:"A's utility — u", ubExpr:"B's utility — u",
     prefNote:"Each picks their own family. u<sub>B</sub> is evaluated at B's own bundle, measured from B's origin at the top right.",
-    endowNote:(wx, wy) => `Box: ${wx} × ${wy}. B holds whatever A does not.`,
+    endowNote:(wx, wy) => `Box: ${wx} × ${wy}. B holds whatever A does not. ω can also be dragged in the diagram.`,
     priceNote:"p = p<sub>x</sub>/p<sub>y</sub>, with p<sub>y</sub> = 1. The price line always passes through ω.",
     clear:"Clear the market",
 
@@ -3483,9 +3517,10 @@ function buildMapChips(){
 function layersFor(){
   return LAYER_DEFS.filter(([k]) => {
     if(k === "core") return hasCore(st);
-    if(k === "price" || k === "demands" || k === "offer" || k === "optimum") return !hasFirm(st);
+    if(k === "price" || k === "demands") return !hasFirm(st) && st.method === "auction";
+    if(k === "offer" || k === "optimum") return !hasFirm(st);
     if(k === "production") return hasFirm(st);
-    if(k === "swt") return hasB(st) || hasFirm(st);
+    if(k === "budgetB") return hasB(st);
     return true;
   });
 }
@@ -3663,6 +3698,34 @@ function pointerToModel(ev, cv){
     clamp(viewBox.my(ev.clientY - rct.top,  st, r), 0, st.Wy)
   ];
 }
+/* Dragging the endowment moves the point, not the box: what A brought and
+   what B brought still add to the same total, so ω slides while the rectangle
+   stays put. That also means the two utility fields are untouched — nothing
+   about preferences or totals has changed — so the expensive half of the
+   recompute is skipped and only what actually depends on who owns what is
+   redone: the core, the price sweep, the equilibria and the Negishi weight. */
+function moveEndowment(to){
+  st.wAx = clamp(to[0], 0, st.Wx); st.wAy = clamp(to[1], 0, st.Wy);
+  st.wBx = st.Wx - st.wAx;         st.wBy = st.Wy - st.wAy;
+  pushEndowUI();
+  st.core = coreOf(st, st.contract);
+  st.sweep = priceSweep(st);
+  st.eq = findEquilibria(st, st.sweep);
+  st.negishi = negishiSolve(st);
+  if(st.method === "trade" && !inLens(st.P[0], st.P[1])) st.P = [st.wAx, st.wAy];
+  syncState(); syncScrubFromState(); buildChips(); render();
+}
+
+/* Is the pointer on the endowment marker? */
+function overEndowment(ev, cv){
+  if(hasFirm(st) || challengeLocked()) return false;
+  const rct = cv.getBoundingClientRect();
+  const r = viewBox.rect(rct.width, rct.height, st);
+  const dx = (ev.clientX - rct.left) - viewBox.sx(st.wAx, st, r);
+  const dy = (ev.clientY - rct.top)  - viewBox.sy(st.wAy, st, r);
+  return Math.hypot(dx, dy) <= 11;
+}
+
 function moveAllocation(to){
   if(st.method === "planner"){
     /* clicking anywhere in the planner picks the nearest efficient allocation
@@ -3686,16 +3749,27 @@ function weightFor(st, x, y){
 }
 function bindBox(){
   const cv = $("cbox");
-  let dragging = false;
+  let dragging = null;
   const grab = ev => {
-    if(st.method === "auction") return;
-    dragging = true; cv.setPointerCapture(ev.pointerId);
-    moveAllocation(pointerToModel(ev, cv));
+    /* the endowment takes precedence when the pointer is on it, so that ω can
+       be moved even in the auction, where the allocation itself is not the
+       student's to place */
+    if(overEndowment(ev, cv)) dragging = "omega";
+    else if(st.method === "auction") return;
+    else dragging = "point";
+    /* a synthetic pointer has nothing to capture, and a real one occasionally
+       loses the race with its own pointerup */
+    try{ cv.setPointerCapture(ev.pointerId); }catch(e){}
+    (dragging === "omega" ? moveEndowment : moveAllocation)(pointerToModel(ev, cv));
     ev.preventDefault();
   };
   cv.addEventListener("pointerdown", grab);
-  cv.addEventListener("pointermove", ev => { if(dragging) moveAllocation(pointerToModel(ev, cv)); });
-  const drop = ev => { dragging = false; try{ cv.releasePointerCapture(ev.pointerId); }catch(e){} };
+  cv.addEventListener("pointermove", ev => {
+    if(dragging) (dragging === "omega" ? moveEndowment : moveAllocation)(pointerToModel(ev, cv));
+    else cv.style.cursor = overEndowment(ev, cv) ? "grab"
+                         : st.method === "auction" ? "default" : "crosshair";
+  });
+  const drop = ev => { dragging = null; try{ cv.releasePointerCapture(ev.pointerId); }catch(e){} };
   cv.addEventListener("pointerup", drop);
   cv.addEventListener("pointercancel", drop);
 
@@ -3917,6 +3991,7 @@ function setModel(m){
 function setMethod(m, quiet){
   st.method = m;
   document.querySelectorAll('input[name="method"]').forEach(r => { r.checked = r.value === m; });
+  buildLayers();
   if(m === "trade" && !inLens(st.P[0], st.P[1])) st.P = [st.wAx, st.wAy];
   updateScrubLabel();
   if(!quiet){ syncState(); syncScrubFromState(); render(); }
@@ -4049,7 +4124,7 @@ function boot(){
     st, render, syncState, recomputeModel, recomputeUtilities,
     marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod,
     setFamily, applyPrefs, applyPreset, exprOf, lensShare, FAMILIES, PRESETS,
-    setModel, paretoAtWeight, supportAt, negishiSolve, weightFor,
+    setModel, paretoAtWeight, supportAt, negishiSolve, weightFor, moveEndowment,
     ppfY, ppfX, mrt, firmAt, hasFirm, hasB, bUtilAt
   };
   applyLang();

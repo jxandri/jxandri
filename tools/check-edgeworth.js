@@ -598,7 +598,7 @@ const { chromium } = require('playwright-core');
   // the two budget sets have to be painted, in their owners' colours
   const paint = await p.evaluate(async () => {
     const E = window.__edgeworth, st = E.st;
-    st.layers.swt = true; st.map = "none"; st.layers.lens = false;
+    st.layers.swt = true; st.layers.lens = false;
     E.syncState(); E.render();
     await new Promise(r => setTimeout(r, 350));
     const cv = document.getElementById('cbox');
@@ -608,13 +608,111 @@ const { chromium } = require('playwright-core');
       if(g[i] > g[i+2] + 12 && g[i] > g[i+1] + 12) red++;
       if(g[i+2] > g[i] + 12 && g[i+2] > g[i+1] + 6) blue++;
     }
-    return { red, blue };
+    /* and they must be on the right SIDES: A's set holds A's origin at the
+       bottom left, B's holds B's at the top right. Counting alone would pass
+       just as happily with the two swapped. */
+    const w = cv.width, h = cv.height;
+    const at = (fx, fy) => {
+      const i = ((Math.round(fy * h) * w) + Math.round(fx * w)) * 4;
+      return [g[i], g[i+1], g[i+2]];
+    };
+    const nearA = at(0.18, 0.86);          // near O_A, bottom left
+    const nearB = at(0.82, 0.14);          // near O_B, top right
+    return { red, blue, nearA, nearB };
   });
   say("A's budget set is painted red and B's blue",
       paint.red > 4000 && paint.blue > 4000, `${paint.red} red px, ${paint.blue} blue px`);
+  say("and on the right sides of the line: A's holds A's origin",
+      paint.nearA[0] > paint.nearA[2] + 8 && paint.nearB[2] > paint.nearB[0] + 8,
+      `by O_A rgb(${paint.nearA}) · by O_B rgb(${paint.nearB})`);
+
+  // each set has its own switch, and the line survives both being off
+  const toggles = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    const count = async () => {
+      E.syncState(); E.render();
+      await new Promise(r => setTimeout(r, 300));
+      const cv = document.getElementById('cbox');
+      const g = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      let red = 0, blue = 0, gold = 0;
+      for(let i = 0; i < g.length; i += 4){
+        if(g[i] > g[i+2] + 12 && g[i] > g[i+1] + 12) red++;
+        if(g[i+2] > g[i] + 12 && g[i+2] > g[i+1] + 6) blue++;
+        if(g[i] > 180 && g[i+1] > 140 && g[i+2] < 120) gold++;
+      }
+      return { red, blue, gold };
+    };
+    st.layers.budgetA = true;  st.layers.budgetB = false; const aOnly = await count();
+    st.layers.budgetA = false; st.layers.budgetB = true;  const bOnly = await count();
+    st.layers.budgetA = false; st.layers.budgetB = false; const none  = await count();
+    st.layers.budgetA = true;  st.layers.budgetB = true;
+    return { aOnly, bOnly, none };
+  });
+  say("A's set can be shown without B's, and the other way round",
+      toggles.aOnly.red > 3 * toggles.bOnly.red &&
+      toggles.bOnly.blue > 3 * toggles.aOnly.blue &&
+      toggles.none.red < toggles.aOnly.red / 3 &&
+      toggles.none.blue < toggles.bOnly.blue / 3,
+      `A only: ${toggles.aOnly.red}r/${toggles.aOnly.blue}b · B only: ${toggles.bOnly.red}r/${toggles.bOnly.blue}b`);
+  say("and the budget line itself stays drawn with both sets off",
+      toggles.none.gold > 200, `${toggles.none.gold} px of line`);
 
   await p.evaluate(() => { const st = window.__edgeworth.st; st.map = "gains"; st.layers.lens = true; });
   await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+
+
+
+  // === dragging the endowment ============================================
+  await p.evaluate(() => { const E = window.__edgeworth; E.setMethod('free'); });
+  const drag = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    const before = { w:[st.wAx, st.wAy, st.wBx, st.wBy], Wx:st.Wx, Wy:st.Wy,
+                     eq:st.eq.length ? st.eq[0].p : NaN,
+                     eqA:st.eq.length ? st.eq[0].A.slice() : null,
+                     contract:st.contract.map(q => q.x + q.y) };
+    const cv = document.getElementById('cbox');
+    const r = cv.getBoundingClientRect();
+    // grab exactly on the omega marker and drop it somewhere else
+    const box = { x0:0, y0:0 };
+    const sx = x => r.left + 46 + (x / st.Wx) * (r.width - 92);
+    const sy = y => r.top + r.height - 36 - (y / st.Wy) * (r.height - 70);
+    cv.dispatchEvent(new PointerEvent('pointerdown', { clientX:sx(st.wAx), clientY:sy(st.wAy), pointerId:7, bubbles:true }));
+    await new Promise(res => setTimeout(res, 60));
+    const grabbed = st.wAx;
+    cv.dispatchEvent(new PointerEvent('pointermove', { clientX:sx(1.5), clientY:sy(1.5), pointerId:7, bubbles:true }));
+    await new Promise(res => setTimeout(res, 250));
+    cv.dispatchEvent(new PointerEvent('pointerup', { pointerId:7, bubbles:true }));
+    return { before, after:{ w:[st.wAx, st.wAy, st.wBx, st.wBy], Wx:st.Wx, Wy:st.Wy,
+                             eq:st.eq.length ? st.eq[0].p : NaN,
+                             eqA:st.eq.length ? st.eq[0].A.slice() : null,
+                             contract:st.contract.map(q => q.x + q.y),
+                             slider:+document.getElementById('eax').value } };
+  });
+  const moved = Math.abs(drag.after.w[0] - drag.before.w[0]) > 1;
+  say("the endowment can be dragged in the diagram", moved,
+      `(${drag.before.w[0]}, ${drag.before.w[1]}) -> (${drag.after.w[0].toFixed(2)}, ${drag.after.w[1].toFixed(2)})`);
+  say("and the box keeps its size: what A drops, B picks up",
+      Math.abs(drag.after.Wx - drag.before.Wx) < 1e-9 &&
+      Math.abs(drag.after.Wy - drag.before.Wy) < 1e-9 &&
+      Math.abs(drag.after.w[0] + drag.after.w[2] - drag.after.Wx) < 1e-9 &&
+      Math.abs(drag.after.w[1] + drag.after.w[3] - drag.after.Wy) < 1e-9,
+      `${drag.after.Wx} x ${drag.after.Wy}`);
+  say("the sliders follow the drag",
+      Math.abs(drag.after.slider - drag.after.w[0]) < 1e-9,
+      `slider ${drag.after.slider} vs state ${drag.after.w[0].toFixed(2)}`);
+  say("the Pareto set is untouched — only who owns what changed",
+      drag.before.contract.length === drag.after.contract.length &&
+      drag.before.contract.every((v, i) => Math.abs(v - drag.after.contract[i]) < 1e-9));
+  // Two identical Cobb-Douglas consumers clear at p = 1 whatever the split —
+  // each spends half of income on each good — so it is the equilibrium
+  // ALLOCATION that has to follow the endowment, not the price.
+  say("and the competitive equilibrium follows it",
+      drag.before.eqA && drag.after.eqA &&
+      Math.abs(drag.after.eqA[0] - drag.before.eqA[0]) > 2,
+      `equilibrium x_A ${drag.before.eqA[0].toFixed(3)} -> ${drag.after.eqA[0].toFixed(3)} ` +
+      `(p* stays ${drag.after.eq.toFixed(3)}, as it must for identical Cobb-Douglas)`);
+
+  await p.evaluate(() => { const E = window.__edgeworth; E.moveEndowment([6, 2]); });
 
 
   // --- language ------------------------------------------------------------
