@@ -172,7 +172,7 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
 .eff .hd{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
 .eff .g{color:var(--ink-2)}
 .eff .n{text-align:right}
-.eff .sub{color:#FF9E2C} .eff .inc{color:#4CC6D4} .eff .tot{color:#C15CFF}
+.eff .sub{color:#FF3B30} .eff .inc{color:#3D9BFF} .eff .tot{color:#C15CFF}
 </style>
 <div class="shell">
 
@@ -883,6 +883,9 @@ const MK = {
   b0:"#7A8B95", bComp:"#FF9E2C", b1:"#00D5F0",
   A:"#FFFFFF", B:"#FF9E2C", C:"#C15CFF",
   ordinary:"#00D5F0", compensated:"#FF9E2C",
+  /* the three effects, named by what they are rather than by which bundle they
+     touch: red substitutes, blue is the income change, violet is the sum */
+  sub:"#FF3B30", inc:"#3D9BFF", tot:"#C15CFF",
   casing:"rgba(6,9,14,.62)", white:"#FFFFFF"
 };
 function f3(v){ return (Math.round(v*1e4)/1e4).toString(); }
@@ -948,6 +951,7 @@ es:{
   newPrices:"Precios nuevos: pₓ = %A%, pᵧ = %B%. Renta compensada: %C%.",
   roA:"B₀ · inicial", roB:"B_S · sustitución", roC:"B₁ · final", roComp:"Renta compensada",
   effSub:"Sustitución", effInc:"Ingreso", effTot:"Total", effGood:"Bien",
+  vecSub:"E. Sustitución", vecInc:"E. Ingreso", vecTot:"E. Total",
   legOrd:"Demanda ordinaria", legComp:"Demanda compensada",
   legB0:"B₀ inicial", legBc:"B_S compensada", legB1:"B₁ final",
   vNormal:"Bien normal",
@@ -989,6 +993,7 @@ en:{
   newPrices:"New prices: pₓ = %A%, pᵧ = %B%. Compensated income: %C%.",
   roA:"B₀ · original", roB:"B_S · substitution", roC:"B₁ · final", roComp:"Compensated income",
   effSub:"Substitution", effInc:"Income", effTot:"Total", effGood:"Good",
+  vecSub:"Subst. effect", vecInc:"Income effect", vecTot:"Total effect",
   legOrd:"Ordinary demand", legComp:"Compensated demand",
   legB0:"B₀ original", legBc:"B_S compensated", legB1:"B₁ final",
   vNormal:"Normal good",
@@ -1112,18 +1117,46 @@ function levelColour(v){
 function drawIndiff(ctx, v, SX, SY, wd){
   drawSegs(ctx, marchingSquares(FIELD, v), SX, SY, levelColour(v), wd, true);
 }
-/* an arrow along the x axis, which is where the three effects are read off */
-function arrow(ctx, x0, x1, yPix, col, label){
-  if(Math.abs(x1-x0) < 0.5) return;
-  const dir = x1 > x0 ? 1 : -1;
-  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.lineCap = "butt";
-  ctx.beginPath(); ctx.moveTo(x0, yPix); ctx.lineTo(x1 - dir*6, yPix); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x1, yPix);
-  ctx.lineTo(x1 - dir*7, yPix - 4); ctx.lineTo(x1 - dir*7, yPix + 4); ctx.closePath(); ctx.fill();
-  if(label){
-    ctx.font = `10px ${css("--f-mono")}`; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-    ctx.fillText(label, (x0+x1)/2, yPix - 4);
+/* A vector drawn between two points, shaft plus solid head, cased so it stays
+   legible over a saturated utility map. The label sits just off the midpoint on
+   the side the arrow is not pointing, and is dropped when the vector is too
+   short to carry it. */
+function vec(ctx, x0, y0, x1, y1, col, label, at, side){
+  const dx = x1-x0, dy = y1-y0, len = Math.hypot(dx, dy);
+  if(len < 5) return;
+  const ux = dx/len, uy = dy/len, head = Math.min(11, len*0.34);
+  const px = -uy, py = ux;
+  ctx.save();
+  ctx.lineCap = "butt"; ctx.lineJoin = "round";
+  for(const [c,w] of [[MK.casing, 5],[col, 2.4]]){
+    ctx.strokeStyle = c; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(x0, y0);
+    ctx.lineTo(x1 - ux*head*0.85, y1 - uy*head*0.85); ctx.stroke();
   }
+  const headAt = (grow, fill) => {
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(x1 + ux*grow, y1 + uy*grow);
+    ctx.lineTo(x1 - ux*head + px*head*0.46 - px*grow, y1 - uy*head + py*head*0.46 - py*grow);
+    ctx.lineTo(x1 - ux*head - px*head*0.46 + px*grow, y1 - uy*head - py*head*0.46 + py*grow);
+    ctx.closePath(); ctx.fill();
+  };
+  headAt(2, MK.casing);
+  headAt(0, col);
+  if(label && len > 30){
+    /* The total vector and the income vector often end at the same bundle and
+       run nearly parallel, so a label pinned to each midpoint on the same side
+       lands on top of the other. Each caller places its own along the shaft and
+       chooses a side. */
+    const f = at == null ? 0.5 : at, sg = side == null ? 1 : side;
+    const mx = x0 + dx*f + px*12*sg, my = y0 + dy*f + py*12*sg;
+    ctx.font = `600 9.5px ${css("--f-ui")}`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineJoin = "round"; ctx.lineWidth = 3.2; ctx.strokeStyle = MK.casing;
+    ctx.strokeText(label, mx, my);
+    ctx.fillStyle = col; ctx.fillText(label, mx, my);
+  }
+  ctx.restore();
 }
 function budgetLine(ctx, px, py, m, SX, SY, col, wd, dash){
   if(!(px>0)||!(py>0)) return;
@@ -1189,23 +1222,43 @@ function drawPlane(D){
   /* the effects are horizontal distances, so they are drawn as arrows down on
      the x axis where they can actually be measured against the numbers */
   /* Without the decomposition there is one move to show — where the consumer
-     started and where they ended. Turning it on is what splits that move in
-     two and puts B_S between them. */
+     started and where they ended. Turning it on splits that move in two and
+     puts B_S between them.
+
+     Both goods move, so the effects are read three times over: as vectors in
+     the plane, and as their shadows on each axis. Same three colours
+     throughout, so a red segment on the x axis and a red arrow in the plane are
+     visibly the same quantity seen twice. */
   const showS = st.layers.decomp;
+  const t2 = T();
   if(st.layers.arrows){
-    const y1 = bx.y1 - 14, y2 = bx.y1 - 30;
-    if(showS){
-      arrow(ctx, SX(D.A.x), SX(D.B.x), y1, MK.B, "S");
-      arrow(ctx, SX(D.B.x), SX(D.C.x), y2, MK.b1, "I");
-    } else {
-      arrow(ctx, SX(D.A.x), SX(D.C.x), y1, MK.C, "T");
-    }
+    const pts = showS ? [[D.A,MK.A],[D.B,MK.B],[D.C,MK.C]] : [[D.A,MK.A],[D.C,MK.C]];
     ctx.save(); ctx.setLineDash([2,3]);
-    const drops = showS ? [[D.A.x,MK.A],[D.B.x,MK.B],[D.C.x,MK.C]]
-                        : [[D.A.x,MK.A],[D.C.x,MK.C]];
-    for(const [p,c] of drops)
-      poly(ctx, [[SX(p),bx.y0],[SX(p),bx.y1]], c, 1, false);
+    for(const [q,c] of pts){
+      poly(ctx, [[SX(q.x),SY(q.y)],[SX(q.x),bx.y1]], c, 1, false);   // down to x
+      poly(ctx, [[SX(q.x),SY(q.y)],[bx.x0,SY(q.y)]], c, 1, false);   // across to y
+    }
     ctx.restore();
+
+    /* the axis shadows: x along the bottom, y up the left margin */
+    const xr1 = bx.y1 - 13, xr2 = bx.y1 - 29;
+    const yr1 = bx.x0 + 13, yr2 = bx.x0 + 29;
+    if(showS){
+      vec(ctx, SX(D.A.x), xr1, SX(D.B.x), xr1, MK.sub, null);
+      vec(ctx, SX(D.B.x), xr2, SX(D.C.x), xr2, MK.inc, null);
+      vec(ctx, yr1, SY(D.A.y), yr1, SY(D.B.y), MK.sub, null);
+      vec(ctx, yr2, SY(D.B.y), yr2, SY(D.C.y), MK.inc, null);
+    } else {
+      vec(ctx, SX(D.A.x), xr1, SX(D.C.x), xr1, MK.tot, null);
+      vec(ctx, yr1, SY(D.A.y), yr1, SY(D.C.y), MK.tot, null);
+    }
+
+    /* and the moves themselves, in the plane */
+    vec(ctx, SX(D.A.x), SY(D.A.y), SX(D.C.x), SY(D.C.y), MK.tot, t2.vecTot, 0.72, -1);
+    if(showS){
+      vec(ctx, SX(D.A.x), SY(D.A.y), SX(D.B.x), SY(D.B.y), MK.sub, t2.vecSub, 0.55, 1);
+      vec(ctx, SX(D.B.x), SY(D.B.y), SX(D.C.x), SY(D.C.y), MK.inc, t2.vecInc, 0.42, 1);
+    }
   }
   if(st.layers.bundles || showS){
     const marks = [];
