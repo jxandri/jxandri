@@ -84,6 +84,9 @@ jobs:
           if [ -f dist/Gradient-Peaks.html ]; then
             cp dist/Gradient-Peaks.html _site/gradient-peaks/Gradient-Peaks-offline.html
           fi
+          if [ -f dist/Border-Run.html ]; then
+            cp dist/Border-Run.html _site/gradient-peaks/Border-Run-offline.html
+          fi
 
           # stop Jekyll from swallowing files whose names begin with _
           touch _site/.nojekyll
@@ -95,6 +98,7 @@ jobs:
           for f in \
             _site/index.html \
             _site/gradient-peaks/index.html \
+            _site/gradient-peaks/play.html \
             _site/gradient-peaks/guide/index.html \
             _site/consumer-optimum/index.html \
             _site/demand-functions/index.html \

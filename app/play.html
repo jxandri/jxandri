@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>Border Run — Gradient Peaks for a controller</title>
+<meta name="description" content="A light 3D sandbox for exploring surface plots, level curves, partial derivatives, gradients and constrained maxima of functions of two variables.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+
+<canvas id="view"></canvas>
+
+<!-- ============================ heads-up display ======================= -->
+<div id="hud-top" class="hud">
+  <div class="hud-block">
+    <span class="hud-label">x</span><span id="r-x" class="hud-val">0.000</span>
+    <span class="hud-label">y</span><span id="r-y" class="hud-val">0.000</span>
+    <span class="hud-label" data-i18n="hud.z">z = f(x,y)</span><span id="r-z" class="hud-val">0.000</span>
+    <span class="hud-label" data-i18n-title="hud.rmshelp" title="|∂f/∂x ÷ ∂f/∂y| — the slope of the level curve here">RMS</span><span id="r-rms" class="hud-val">0.000</span>
+  </div>
+  <div class="hud-block" id="hud-derivs">
+    <span class="chip chip-dx" id="c-dx" hidden></span>
+    <span class="chip chip-dy" id="c-dy" hidden></span>
+    <span class="chip chip-grad" id="c-grad" hidden></span>
+    <span class="chip chip-dir" id="c-dir" hidden></span>
+  </div>
+</div>
+
+<div id="hud-bottom" class="hud">
+  <span id="r-mode" class="pill" data-i18n="view.third">Third person</span>
+  <span id="r-zoom" class="pill" data-i18n="hud.scale11">scale 1 : 1</span>
+  <span id="r-opt" class="pill" hidden></span>
+  <span id="r-msg" class="pill pill-warn" hidden></span>
+</div>
+
+<div id="crosshair" hidden></div>
+
+
+<!-- ===================== Border Run: the game layer ===================== -->
+<!-- A layer over the ordinary app, not a separate program: the same surfaces,
+     the same walker, the same optimiser marking the answer at the end. What it
+     adds is an objective and a controller-first way in. -->
+<div id="game" data-screen="menu">
+
+  <section id="g-menu">
+    <h1>Border Run</h1>
+    <p class="g-sub" data-i18n="game.tagline">Find the highest ground you are allowed to stand on.</p>
+    <div class="g-cols">
+      <div id="g-list" class="g-list"></div>
+      <div class="g-side">
+        <img id="g-preview" alt="">
+        <p id="g-blurb"></p>
+      </div>
+    </div>
+    <div class="g-keys">
+      <span><b>↑↓</b> <span data-i18n="game.kchoose">choose</span></span>
+      <span><b>A</b> / <b>Enter</b> <span data-i18n="game.kstart">start</span></span>
+    </div>
+    <button id="g-start" class="g-btn" data-i18n="game.start">Start</button>
+  </section>
+
+  <section id="g-brief" hidden>
+    <h2 id="g-brief-name"></h2>
+    <p id="g-brief-text"></p>
+    <div class="g-keys">
+      <span><b>Left stick</b> <span data-i18n="game.kwalk">walk</span></span>
+      <span><b>Right stick</b> <span data-i18n="game.klook">look</span></span>
+      <span><b>A</b> <span data-i18n="game.kplant">plant your flag</span></span>
+      <span><b>X</b> <span data-i18n="game.kcurves">level curves</span></span>
+      <span><b>Y</b> <span data-i18n="game.kwalls">frontier</span></span>
+      <span><b>B</b> <span data-i18n="game.kquit">give up</span></span>
+    </div>
+    <button id="g-go" class="g-btn" data-i18n="game.go">Drop me in</button>
+  </section>
+
+  <section id="g-run" hidden>
+    <div class="g-hud">
+      <div class="g-stat"><label data-i18n="game.alt">Altitude</label><b id="g-alt">—</b></div>
+      <div class="g-stat"><label data-i18n="game.best">Best so far</label><b id="g-best">—</b></div>
+      <div class="g-stat"><label data-i18n="game.time">Time</label><b id="g-time">0:00</b></div>
+      <div id="g-side" class="g-stat wide" data-legal="yes"></div>
+    </div>
+    <div id="g-frontier" class="g-flash" hidden data-i18n="game.online">You are on the frontier — now follow it.</div>
+    <div id="g-warn" class="g-warn" hidden></div>
+    <div class="g-actions">
+      <button id="g-plant" class="g-btn" data-i18n="game.plant">Plant the flag  (A)</button>
+      <button id="g-back" class="g-btn ghost" data-i18n="game.quit">Give up  (B)</button>
+    </div>
+  </section>
+
+  <section id="g-result" hidden>
+    <div id="g-medal" class="g-medal"></div>
+    <h2 id="g-verdict"></h2>
+    <p id="g-numbers" class="g-numbers"></p>
+    <p id="g-lesson" class="g-lesson"></p>
+    <div class="g-actions">
+      <button id="g-again" class="g-btn" data-i18n="game.again">Try again  (Y)</button>
+      <button id="g-menu" class="g-btn ghost" data-i18n="game.menu">Mountains  (A)</button>
+    </div>
+  </section>
+</div>
+
+<!-- ========================= the right-hand rail ======================== -->
+<!-- The direction indicator, and everything the wheel does for a screen that
+     has no wheel. One column, so the two can never land on top of each other. -->
+<div id="right-rail">
+
+<!-- The mountain's own photograph, for the border-mountain examples. The
+     aerial view with the frontier drawn across it is the thing that makes the
+     constraint concrete: that red corridor is the inequality in the box. -->
+<div id="peak-card" hidden>
+  <img id="peak-photo" alt="">
+  <div class="pk-body">
+    <div id="peak-name" class="pk-name"></div>
+    <div id="peak-where" class="pk-where"></div>
+    <div id="peak-credit" class="pk-credit"></div>
+  </div>
+</div>
+
+<div id="compass-wrap">
+  <canvas id="compass" width="132" height="132"></canvas>
+  <div class="cmp-read"><span id="cmp-az">0°</span><span id="cmp-el">0°</span></div>
+</div>
+
+<div id="side-dials">
+  <div class="sd">
+    <button id="btn-camzoom-reset" type="button" class="sd-cap"
+            data-i18n-title="dial.camreset" title="Reset the camera zoom">⌕</button>
+    <div class="sd-slot">
+      <input id="in-camzoom" type="range" min="-1.3" max="1.3" step="0.01" value="0"
+             data-i18n-title="dial.camhelp" title="Camera zoom — mouse wheel"
+             aria-label="Camera zoom">
+    </div>
+    <span class="sd-val" id="lbl-camzoom">1.0×</span>
+  </div>
+  <div class="sd">
+    <button id="btn-charscale-reset" type="button" class="sd-cap"
+            data-i18n-title="dial.sizereset" title="Reset the explorer to 1 : 1">☺</button>
+    <div class="sd-slot">
+      <input id="in-charscale" type="range" min="-4" max="2" step="0.01" value="0"
+             data-i18n-title="dial.sizehelp" title="Explorer's size — ⌘/⊞ or Alt + wheel"
+             aria-label="Explorer size">
+    </div>
+    <span class="sd-val" id="lbl-charscale">1 : 1</span>
+  </div>
+</div>
+
+</div>
+
+<!-- ================================ panel ============================== -->
+<aside id="panel">
+  <header id="panel-head">
+    <h1>Gradient&nbsp;Peaks</h1>
+    <div class="head-tools">
+      <button id="lang-toggle" type="button" aria-label="Language / Idioma"><span id="lang-flag">EN</span></button>
+      <button id="panel-toggle" data-i18n-title="panel.hide" title="Hide panel (Tab)" aria-label="Hide panel">‹</button>
+    </div>
+  </header>
+
+  <div id="panel-body">
+
+    <section>
+      <h2 data-i18n="sec.function">Function</h2>
+      <label class="field"><span data-i18n="surf.kind">Kind of surface</span>
+        <select id="sel-surface" class="preset">
+          <option value="graph" data-i18n="surf.graph">Graph — z = f(x, y)</option>
+          <option value="implicit" data-i18n="surf.implicit">Implicit — F(x, y, z) = 0</option>
+          <option value="parametric" data-i18n="surf.parametric">Parametric — r(u, v)</option>
+        </select>
+      </label>
+
+      <div id="grp-implicit" hidden>
+        <label class="field"><span data-i18n="surf.flabel">F(x, y, z) =</span>
+          <input id="in-implicit" type="text" spellcheck="false" autocomplete="off" value="x^2+y^2+z^2-1"></label>
+        <select id="preset-implicit" class="preset">
+          <option value="" data-i18n="fn.examples">— examples —</option>
+          <option value="x^2+y^2+z^2-1">Sphere  x²+y²+z² = 1</option>
+          <option value="(sqrt(x^2+y^2)-1)^2+z^2-0.16">Torus</option>
+          <option value="x^2+y^2-z^2">Cone  x²+y² = z²</option>
+          <option value="x^2+y^2-z^2-1">Hyperboloid of one sheet</option>
+          <option value="x^2+y^2+z^2-2*(x^2+y^2)">Torus-like quartic</option>
+          <option value="sin(3x)+sin(3y)+sin(3z)">Triply periodic (gyroid-like)</option>
+        </select>
+        <div class="grid4">
+          <label class="field mini"><span>z min</span><input id="in-zmin" type="number" step="any" value="-1.5"></label>
+          <label class="field mini"><span>z max</span><input id="in-zmax" type="number" step="any" value="1.5"></label>
+        </div>
+        <div id="err-implicit" class="err" hidden></div>
+      </div>
+
+      <div id="grp-parametric" hidden>
+        <label class="field"><span data-i18n="shape.named">Named surface</span>
+          <select id="sel-shape" class="preset">
+            <option value="" data-i18n="shape.custom">— custom (type below) —</option>
+            <option value="sphere" data-i18n="shape.sphere">Sphere — radius a</option>
+            <option value="torus" data-i18n="shape.torus">Torus — radii a, b</option>
+            <option value="pseudo" data-i18n="shape.pseudo">Pseudosphere — radius a</option>
+            <option value="hyper1" data-i18n="shape.hyper1">Hyperboloid, one sheet — a, b</option>
+            <option value="catenoid" data-i18n="shape.catenoid">Catenoid — waist a</option>
+            <option value="helicoid" data-i18n="shape.helicoid">Helicoid — radius a, pitch b</option>
+            <option value="mobius" data-i18n="shape.mobius">Möbius strip — radius a, width b</option>
+            <option value="klein" data-i18n="shape.klein">Klein bottle (3D immersion) — a</option>
+            <option value="cross" data-i18n="shape.cross">Cross-cap — a</option>
+          </select>
+        </label>
+        <div id="grp-shapeparams" hidden>
+          <label class="range">
+            <span><span id="lbl-pa-name" data-i18n="shape.pa">a</span> <b id="lbl-pa">1.00</b></span>
+            <input id="in-pa" type="range" min="0.1" max="3" step="0.05" value="1">
+          </label>
+          <label class="range">
+            <span><span id="lbl-pb-name" data-i18n="shape.pb">b</span> <b id="lbl-pb">0.40</b></span>
+            <input id="in-pb" type="range" min="0.05" max="3" step="0.05" value="0.4">
+          </label>
+          <p class="note" id="note-orientable"></p>
+        </div>
+        <label class="field"><span>X(u, v) =</span>
+          <input id="in-px" type="text" spellcheck="false" autocomplete="off" value="cos(u)*sin(v)"></label>
+        <label class="field"><span>Y(u, v) =</span>
+          <input id="in-py" type="text" spellcheck="false" autocomplete="off" value="sin(u)*sin(v)"></label>
+        <label class="field"><span>Z(u, v) =</span>
+          <input id="in-pz" type="text" spellcheck="false" autocomplete="off" value="cos(v)"></label>
+        <select id="preset-param" class="preset">
+          <option value="" data-i18n="fn.examples">— examples —</option>
+          <option value="cos(u)*sin(v)|sin(u)*sin(v)|cos(v)|0|6.2832|0|3.1416">Sphere (polar)</option>
+          <option value="(2+cos(v))*cos(u)|(2+cos(v))*sin(u)|sin(v)|0|6.2832|0|6.2832">Torus</option>
+          <option value="u*cos(v)|u*sin(v)|v/3|0|1.5|0|12.566">Helicoid</option>
+          <option value="cos(u)*(3+cos(u/2)*sin(v)-sin(u/2)*sin(2v))|sin(u)*(3+cos(u/2)*sin(v)-sin(u/2)*sin(2v))|sin(u/2)*sin(v)+cos(u/2)*sin(2v)|0|6.2832|0|6.2832">Klein bottle (figure-8)</option>
+          <option value="u|v|u^2-v^2|-1.5|1.5|-1.5|1.5">Saddle as a patch</option>
+        </select>
+        <div class="grid4">
+          <label class="field mini"><span>u min</span><input id="in-umin" type="number" step="any" value="0"></label>
+          <label class="field mini"><span>u max</span><input id="in-umax" type="number" step="any" value="6.2832"></label>
+          <label class="field mini"><span>v min</span><input id="in-vmin" type="number" step="any" value="0"></label>
+          <label class="field mini"><span>v max</span><input id="in-vmax" type="number" step="any" value="3.1416"></label>
+        </div>
+        <div id="err-param" class="err" hidden></div>
+      </div>
+
+      <div id="grp-graph">
+      <label class="check"><input id="t-consumer" type="checkbox"><span><span data-i18n="cons.mode">Consumer problem</span></span></label>
+
+      <div id="grp-consumer" hidden>
+        <label class="field"><span data-i18n="cons.utility">Utility function</span>
+          <select id="sel-utility" class="preset">
+            <option value="cobb" data-i18n="cons.cobb">Cobb–Douglas  x^a · y^(1−a)</option>
+            <option value="ces" data-i18n="cons.ces">CES  (x^r + y^r)^(1/r)</option>
+            <option value="subs" data-i18n="cons.subs">Perfect substitutes  a·x + (1−a)·y</option>
+            <option value="quasi" data-i18n="cons.quasi">Quasi-linear  a·ln x + y</option>
+          </select>
+        </label>
+        <label class="range">
+          <span><span id="lbl-alpha-name" data-i18n="cons.alpha">Share a</span> <b id="lbl-alpha">0.50</b></span>
+          <input id="in-alpha" type="range" min="0.05" max="0.95" step="0.05" value="0.5">
+        </label>
+        <div class="grid4">
+          <label class="field mini"><span data-i18n="cons.px">price of x</span><input id="in-px2" type="number" step="any" min="0.01" value="1"></label>
+          <label class="field mini"><span data-i18n="cons.py">price of y</span><input id="in-py2" type="number" step="any" min="0.01" value="1"></label>
+          <label class="field mini"><span data-i18n="cons.inc">income</span><input id="in-income" type="number" step="any" min="0.01" value="2"></label>
+        </div>
+        <p class="note" id="note-consumer" data-i18n="cons.note">The feasible set becomes the budget set p<sub>x</sub>·x + p<sub>y</sub>·y ≤ m with x, y ≥ 0, the domain is framed on it, and the vocabulary on screen changes: level curves are indifference curves, and RMS is the marginal rate of substitution. Turn on the optimum to find the consumer's choice.</p>
+      </div>
+
+      <label class="field">
+        <span data-i18n="fn.label">f(x, y) =</span>
+        <input id="in-fn" type="text" spellcheck="false" autocomplete="off" value="(x*y)^0.5">
+      </label>
+      <select id="preset-fn" class="preset">
+        <option value="" data-i18n="fn.examples">— examples —</option>
+        <option value="(x*y)^0.5" data-i18n="fn.cobb05">Cobb–Douglas  (x·y)^0.5</option>
+        <option value="x^0.3*y^0.7" data-i18n="fn.cobb37">Cobb–Douglas  x^0.3·y^0.7</option>
+        <option value="1-x^2-y^2" data-i18n="fn.paraboloid">Paraboloid  1 − x² − y²</option>
+        <option value="x^2-y^2" data-i18n="fn.saddle">Saddle  x² − y²</option>
+        <option value="sin(3x)*cos(3y)/2" data-i18n="fn.eggcarton">Egg carton  sin(3x)·cos(3y)/2</option>
+        <option value="2*gauss(hypot(x-0.4,y-0.4),0,0.5)+1.3*gauss(hypot(x+0.6,y+0.5),0,0.4)" data-i18n="fn.twopeaks">Two peaks (Gaussians)</option>
+        <option value="0.6*sin(2x)+0.4*cos(3y)+0.3*x*y" data-i18n="fn.hills">Rolling hills</option>
+        <option value="-(x^2+y^2)^0.5+1" data-i18n="fn.cone">Cone  1 − √(x²+y²)</option>
+        <option value="(1-x)^2+100*(y-x^2)^2" data-i18n="fn.rosenbrock">Rosenbrock (try maximising!)</option>
+        <option value="x*y*exp(-(x^2+y^2))" data-i18n="fn.xyexp">x·y·e^−(x²+y²)</option>
+        <option value="y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2-hypot(x,y)^2))" data-i18n="fn.crochet">Crochet hyperbolic ball (Nash–Kuiper, C¹)</option>
+        <option value="elias(x, y)" data-i18n="fn.elias">Mount Saint Elias (real terrain, AK/Yukon)</option>
+        <optgroup label="Border mountains — the frontier is the constraint" id="og-borders">
+          <option value="borderpeak(x, y)">American Border Peak  (US / Canada)</option>
+          <option value="natazhat(x, y)">Mount Natazhat  (US / Canada)</option>
+          <option value="richards(x, y)">Mount Richards  (Canada / US)</option>
+          <option value="tecate(x, y)">Tecate Peak (Kuuchamaa)  (US / Mexico)</option>
+          <option value="otay(x, y)">Otay Mountain  (US / Mexico)</option>
+          <option value="larrabee(x, y)">Mount Larrabee  (US / Canada)</option>
+          <option value="ummaddami(x, y)">Jabal Umm ad Dami  (Jordan / Saudi Arabia)</option>
+          <option value="sentinel(x, y)">Sentinel Mountain  (US / Canada)</option>
+          <option value="tomyhoi(x, y)">Tomyhoi Peak  (US / Canada)</option>
+          <option value="castlepeak(x, y)">Castle Peak  (US / Canada)</option>
+          <option value="bikkubitti(x, y)">Bikku Bitti  (Libya / Chad)</option>
+          <option value="kinnerly(x, y)">Kinnerly Peak  (US / Canada)</option>
+        </optgroup>
+      </select>
+      <div id="err-fn" class="err" hidden></div>
+      <p class="note" id="note-crochet" hidden data-i18n="fn.crochetnote">A once-differentiable, nowhere-twice-differentiable embedding of a piece of the hyperbolic disk of radius <code>a = 1/√3</code> — the mathematical model behind a real crochet hyperbolic surface. Hilbert's theorem rules out a <em>smooth</em> (C²) isometric copy of any unbounded piece of the hyperbolic plane in ordinary space; Nash and Kuiper showed C¹ has no such obstruction. This is the single-wave case of their construction: it matches the true metric only to fourth order in the radius, and the mismatch shows as the one ripple you see. The domain and feasible set are set to the disk ρ ≤ a this construction is valid on.</p>
+      <p class="note" id="note-elias" hidden data-i18n="fn.eliasnote">Real elevation data: the 40 km around Mount Saint Elias (Was’eitushaa, Boundary Peak 186, 5 489 m), from the USGS and Canadian national elevation models, sampled every 150 m and carried inside this file. Coordinates are km east and north of the summit; heights are km, so the HUD reads in real kilometres. The feasible set is Alaska: locally the 1903 boundary is a straight line — a linear constraint, exactly like a budget line — and it passes about 470 m north-west of the summit, leaving the peak in Canada. So the highest point of the United States side cannot be the summit: press O and the optimiser finds it, pinned to the line where the level curve is tangent to the frontier — a Lagrange condition you can walk to. The relief is real — 5.4 km over a 40 km window — so the mountain is honestly gentle at true scale; stretch the z-axis dial to exaggerate it the way an atlas does. The window does not follow the explorer here, because the survey has edges. One more honesty: what you walk on is not the raw survey grid but an infinitely differentiable approximation of it — a two-dimensional Fourier (cosine) series fitted to the data, staying within about 90 m of it on average. Interpolating every sample would make hundreds of pixel-sized relative maxima and a function differentiable only once; the smooth fit keeps the massif’s dozen real shoulders and gives every tool an exact object — gradients that vary smoothly, level curves that are differentiable curves, a true tangent plane at every point, geodesics of a smooth metric. The crags, snow and ice you see are decoration standing on the surface: mathematically, this mountain is as smooth as any formula above.</p>
+      <p class="note" id="note-border" hidden></p>
+      </div>
+      <p class="note" id="note-alt" hidden data-i18n="surf.note">This surface is not the graph of a function, so there is no height to read level curves off. Everything else applies, and applies in the surface’s own terms: walk on it, and the Derivatives section gives you the geodesic circle, the coordinate directions of whichever grid is on, your velocity and the tangent plane. Click anywhere on the surface to put the explorer there, then press 1 or 2.</p>
+    </section>
+
+    <section>
+      <h2 data-i18n="sec.domain">Domain</h2>
+      <div class="grid4">
+        <label class="field mini"><span data-i18n="dom.xmin">x min</span><input id="in-xmin" type="number" step="any" value="0"></label>
+        <label class="field mini"><span data-i18n="dom.xmax">x max</span><input id="in-xmax" type="number" step="any" value="2"></label>
+        <label class="field mini"><span data-i18n="dom.ymin">y min</span><input id="in-ymin" type="number" step="any" value="0"></label>
+        <label class="field mini"><span data-i18n="dom.ymax">y max</span><input id="in-ymax" type="number" step="any" value="2"></label>
+      </div>
+      <label class="range">
+        <span><span data-i18n="dom.res">Mesh resolution</span> <b id="lbl-res">300</b></span>
+        <input id="in-res" type="range" min="80" max="600" step="20" value="300">
+      </label>
+      <label class="check"><input id="t-follow" type="checkbox" checked><span data-i18n="dom.follow">The window follows the explorer</span></label>
+      <div class="grid4" id="grp-follow">
+        <label class="field mini"><span data-i18n="dom.followg">step G (x)</span><input id="in-followg" type="number" step="0.05" min="0.05" max="0.95" value="0.2"></label>
+        <label class="field mini"><span data-i18n="dom.followh">step H (y)</span><input id="in-followh" type="number" step="0.05" min="0.05" max="0.95" value="0.2"></label>
+      </div>
+      <p class="note" data-i18n="dom.follownote">Reaching an edge slides that axis along by G (or H) times its own width, in the direction you were walking, and the terrain is rebuilt around the new window. The width never changes, so the scale — and every reading taken against the 1.80 m explorer — survives the move.</p>
+      <h2 style="margin-top:14px" data-i18n="dom.axes">Axis scale</h2>
+      <label class="range">
+        <span><span data-i18n="dom.sx">x axis</span> <b id="lbl-sx">1.00×</b></span>
+        <input id="in-sx" type="range" min="0.1" max="4" step="0.05" value="1">
+      </label>
+      <label class="range">
+        <span><span data-i18n="dom.sy">y axis</span> <b id="lbl-sy">1.00×</b></span>
+        <input id="in-sy" type="range" min="0.1" max="4" step="0.05" value="1">
+      </label>
+      <label class="range">
+        <span><span data-i18n="dom.sz">z axis (steepness)</span> <b id="lbl-sz">1.00×</b></span>
+        <input id="in-sz" type="range" min="0.1" max="10" step="0.05" value="1">
+      </label>
+      <button id="btn-isotropic" class="ghost" data-i18n="dom.isotropic">Reset to equal axes</button>
+      <p class="note" data-i18n="dom.axesnote">All three at 1 is ordinary Cartesian space, where the unit sphere is round. Stretching an axis changes the picture only — every number reported stays the true value.</p>
+      <button id="btn-apply" class="primary" data-i18n="dom.rebuild">Rebuild terrain</button>
+    </section>
+
+    <section id="sec-feasible">
+      <h2 data-i18n="sec.feasible">Feasible set</h2>
+      <label class="field">
+        <span data-i18n="feas.label">constraints</span>
+        <input id="in-feas" type="text" spellcheck="false" autocomplete="off" value="x>=0 &amp;&amp; y>=0 &amp;&amp; x+y<=2">
+      </label>
+      <select id="preset-feas" class="preset">
+        <option value="" data-i18n="feas.examples">— examples —</option>
+        <option value="x>=0 &amp;&amp; y>=0 &amp;&amp; x+y<=2" data-i18n="feas.triangle">Triangle  x,y ≥ 0, x+y ≤ 2</option>
+        <option value="x^2+y^2<=1" data-i18n="feas.disc">Disc  x² + y² ≤ 1</option>
+        <option value="x>=0.2 &amp;&amp; x<=1.4 &amp;&amp; y>=0.2 &amp;&amp; y<=1.4" data-i18n="feas.rect">Rectangle</option>
+        <option value="x+y<=2 &amp;&amp; 2x+y<=3 &amp;&amp; x>=0 &amp;&amp; y>=0" data-i18n="feas.two">Two budget lines</option>
+        <option value="x*y>=0.3 &amp;&amp; x+y<=2.5" data-i18n="feas.curved">x·y ≥ 0.3, x+y ≤ 2.5</option>
+      </select>
+      <div id="err-feas" class="err" hidden></div>
+      <label class="check"><input id="t-feas" type="checkbox"><span><span data-i18n="feas.walls">Show frontier walls</span> <kbd>F</kbd></span></label>
+      <label class="check"><input id="t-isolate" type="checkbox"><span><span data-i18n="feas.isolate">Make the outside translucent</span> <kbd>G</kbd></span></label>
+      <label class="check"><input id="t-rail" type="checkbox"><span><span data-i18n="feas.rail">Walk only along the frontier</span> <kbd>B</kbd></span></label>
+      <p class="note" data-i18n="feas.railnote">Ropes the explorer to the constraint curve itself: every step is projected back onto it, so pushing in any direction slides you along the frontier and pushing straight at it does nothing. Walk it end to end watching the height readout and you have solved the constrained problem on foot — the best point on the line is the one the optimiser marks. Works for a curved constraint as readily as a straight one.</p>
+    </section>
+
+    <section id="sec-map">
+      <h2 data-i18n="sec.map">Map &amp; terrain</h2>
+      <div id="fld-contours">
+        <label class="check"><input id="t-contours" type="checkbox"><span><span data-i18n="map.contours">Level curves</span> <kbd>C</kbd></span></label>
+        <label class="check"><input id="t-curvesin" type="checkbox"><span><span data-i18n="map.inside">Level curves only inside the feasible set</span></span></label>
+        <p class="note" data-i18n="map.insidenote">Stops every level curve exactly at the constraint, which is how an economics textbook draws indifference curves over a budget set: the curves live in the feasible region, and the one that just touches the frontier is the answer.</p>
+        <label class="field mini"><span data-i18n="map.cstep">Contour interval Δz (blank = automatic)</span>
+          <input id="in-cstep" type="number" step="any" min="0" placeholder="auto"></label>
+        <label class="range">
+          <span><span data-i18n="map.cwidth">Path width</span> <b id="lbl-cwidth">2 × 1.8 m</b></span>
+          <input id="in-cwidth" type="range" min="0.25" max="6" step="0.25" value="2">
+        </label>
+        <p class="note" data-i18n="map.cwidthnote">Measured in explorer heights, so the paths stay walkable at every scale: shrink the explorer and the contours narrow with them. Two heights is the same width as a grid square’s side.</p>
+      </div>
+      <label class="check"><input id="t-heightcol" type="checkbox"><span><span data-i18n="map.heightcol">Colour the surface by height</span> <kbd>M</kbd></span></label>
+      <label class="check"><input id="t-worldmap" type="checkbox"><span><span data-i18n="map.world">Paint the world map on it</span></span></label>
+      <p class="note" data-i18n="map.worldnote">Longitude across, latitude up — the flattest map there is — laid on the parameter rectangle, or on the domain of a graph, or on longitude and latitude about the centre of an implicit surface. On the standard sphere it becomes the globe it was traced from and the flat map’s distortion visibly undoes itself. On anything else it distorts in that surface’s own way. No sheet of paper can carry a sphere without stretching it: that is Gauss’s Theorema Egregium, and this is what it looks like.</p>
+      <label class="check"><input id="t-decor" type="checkbox" checked><span><span data-i18n="map.decor">Vegetation, rocks &amp; snow</span></span></label>
+      <label class="check" id="fld-water"><input id="t-water" type="checkbox" checked><span><span data-i18n="map.water">Water in the depressions</span></span></label>
+      <label class="range">
+        <span><span data-i18n="map.density">Decoration density</span> <b id="lbl-den">1.0×</b></span>
+        <input id="in-den" type="range" min="0" max="2" step="0.1" value="1">
+      </label>
+      <label class="range">
+        <span><span data-i18n="map.decorsize">Size of the trees</span> <b id="lbl-decsize">1.0×</b></span>
+        <input id="in-decsize" type="range" min="-1" max="0.7" step="0.05" value="0">
+      </label>
+      <p class="note" data-i18n="map.decorsizenote">At 1× a tree is about four times the explorer’s height, which is what a tree is. On a small sphere that makes for a very tall forest, so this is here to be turned down.</p>
+      <label class="check"><input id="t-shadow" type="checkbox"><span><span data-i18n="map.shadows">Shadows (costs performance)</span></span></label>
+    </section>
+
+    <section id="sec-grid">
+      <h2 data-i18n="sec.grid">Grid on the surface</h2>
+      <label class="check"><input id="t-surfgrid" type="checkbox"><span><span data-i18n="map.grid">Coordinate grid on the surface</span> <kbd>N</kbd></span></label>
+      <label class="check" id="fld-geogrid" hidden><input id="t-geogrid" type="checkbox"><span data-i18n="map.geogrid">Build it from geodesics instead</span></label>
+      <p class="note" id="grid-scale" hidden></p>
+      <p class="note" id="note-grid" data-i18n="map.gridnote">Every square is two explorers on a side, measured along the surface, in all three regimes — so the mesh is a ruler and not decoration. On a graph it is the grid of the (x, y) plane lifted onto the surface; on a parametric surface, its parameter lines; on an implicit one, where the surface cuts the coordinate planes. It is drawn on both sides, so it stays readable from inside.</p>
+      <p class="note" data-i18n="map.geonote">The geodesic grid is built only from straightest paths and arc length, so its squares really are that size wherever they sit — which the other two cannot promise, since their spacing comes from how the surface was written down rather than from the surface. Where the squares stop meeting at right angles, that is the curvature.</p>
+    </section>
+
+    <section id="sec-deriv">
+      <h2 data-i18n="sec.deriv">Derivatives</h2>
+      <label class="check"><input id="t-disc" type="checkbox"><span><span id="lbl-disc" data-i18n="deriv.disc">Highlight neighbourhood</span> <kbd>H</kbd></span></label>
+      <label class="range">
+        <span><span data-i18n="deriv.radius">Radius</span> <b id="lbl-rad">3 m</b></span>
+        <input id="in-rad" type="range" min="0.5" max="12" step="0.5" value="3">
+      </label>
+      <div id="fld-geodisc">
+        <label class="check"><input id="t-geodisc" type="checkbox"><span data-i18n="deriv.geodisc">Measure it with geodesics instead</span></label>
+        <p class="note" data-i18n="deriv.geodiscnote">The rim becomes the set of points a walk of that length away along the straightest path, rather than along a fixed compass bearing. The two agree on a plane and nowhere else.</p>
+      </div>
+      <p class="note" id="note-arcnote" data-i18n="deriv.arcnote">The radius is arc length — the distance actually walked over the surface, not on the flat floor underneath. On a steep slope the patch therefore covers less of the (x, y) plane, and the rim is no longer a circle.</p>
+      <p class="note" id="note-intrinsic" hidden data-i18n="deriv.intrinsic">There is no f here, so there is nothing to take the partial derivative of a function — what is left are the objects of the surface itself. The neighbourhood is the geodesic circle; the two arrows are the coordinate directions of whichever grid is switched on, tangent to the surface; the velocity is the direction you are actually travelling.</p>
+      <label class="check"><input id="t-dx" type="checkbox"><span><i class="sw sw-dx"></i><span id="lbl-dx" data-i18n="deriv.dx">∂f/∂x arrow</span> <kbd>X</kbd></span></label>
+      <label class="check"><input id="t-dy" type="checkbox"><span><i class="sw sw-dy"></i><span id="lbl-dy" data-i18n="deriv.dy">∂f/∂y arrow</span> <kbd>Y</kbd></span></label>
+      <label class="check" id="row-grad"><input id="t-grad" type="checkbox"><span><i class="sw sw-grad"></i><span data-i18n="deriv.grad">Gradient ∇f</span> <kbd>V</kbd></span></label>
+      <label class="check"><input id="t-dir" type="checkbox"><span><i class="sw sw-dir"></i><span id="lbl-dir" data-i18n="deriv.dir">Directional derivative</span> <kbd>B</kbd></span></label>
+      <p class="note" id="note-dir" hidden data-i18n-html="deriv.dirnote">Move the mouse to swing <b>u</b> around the rim; hold the <b>right</b> mouse button to look around instead. Walking stays free.</p>
+    </section>
+
+    <section id="sec-curve">
+      <h2 data-i18n="sec.curve">The curve under your feet</h2>
+      <label class="check"><input id="t-curcurve" type="checkbox"><span><span data-i18n="curve.show">Level curve you are standing on</span> <kbd>J</kbd></span></label>
+      <label class="check"><input id="t-curtan" type="checkbox"><span><span data-i18n="curve.tangent">Tangent line to that curve</span> <kbd>K</kbd></span></label>
+      <p class="note" data-i18n="curve.note">Both are painted on the surface itself and follow the explorer continuously. The tangent is the tangent direction pushed back down onto the surface, so it hugs the ground; it parts from the level curve only at second order, and shrinking the explorer closes the gap. Each curve takes its colour from its own height on the ramp.</p>
+    </section>
+
+    <section id="sec-zoom">
+      <h2 data-i18n="sec.zoom">Tangent plane &amp; scale</h2>
+      <label class="check"><input id="t-tangent" type="checkbox"><span><span id="lbl-tangent" data-i18n="deriv.tangent">Tangent plane</span> <kbd>P</kbd></span></label>
+      <p class="note" data-i18n="zoom.note">Turn this on and take the explorer scale down a decade or two: a differentiable surface becomes indistinguishable from its tangent plane, which is what differentiable means.</p>
+    </section>
+
+    <section id="sec-scale">
+      <h2 data-i18n="sec.scale">Explorer scale</h2>
+      <label class="range">
+        <span><span data-i18n="zoom.scale">Explorer scale</span> <b id="lbl-zoom">1 : 1</b></span>
+        <input id="in-zoom" type="range" min="-2" max="4" step="0.01" value="0">
+      </label>
+      <div id="ruler"></div>
+      <p class="note" data-i18n="zoom.scalenote">Slide right and the explorer shrinks, down to 0.18 mm; slide left and they grow to a hundred times life size. The mouse wheel with ⌘/⊞ or Alt held does the same thing. Everything measured against them — the neighbourhood, the arrows, the grid squares — changes with them, which is what makes this a ruler and not a camera control.</p>
+    </section>
+
+    <section id="sec-opt">
+      <h2 data-i18n="sec.opt">Optimisation</h2>
+      <label class="check"><input id="t-opt" type="checkbox"><span><span data-i18n="opt.show">Show optimum</span> <kbd>O</kbd></span></label>
+      <div id="opt-report" class="report" data-i18n="opt.idle">Maximise f over the feasible set.</div>
+      <button id="btn-goto" class="ghost" disabled data-i18n="opt.goto">Teleport to the optimum</button>
+    </section>
+
+    <section>
+      <h2 data-i18n="sec.view">View</h2>
+      <div class="modes">
+        <button data-mode="first" class="mode"><span data-i18n="view.first">First person</span> <kbd>1</kbd></button>
+        <button data-mode="third" class="mode active"><span data-i18n="view.third">Third person</span> <kbd>2</kbd></button>
+        <button data-mode="drone" class="mode"><span data-i18n="view.drone">Drone</span> <kbd>3</kbd></button>
+      </div>
+      <div id="fld-orient" hidden>
+        <label class="check"><input id="t-inside" type="checkbox"><span><span data-i18n="orient.inside">Walk on the inside</span> <kbd>I</kbd></span></label>
+        <label class="field"><span data-i18n="orient.up">Which way is up</span>
+          <select id="sel-up" class="preset">
+            <option value="normal" data-i18n="orient.normal">Normal to the tangent plane</option>
+            <option value="z" data-i18n="orient.z">World z (the usual vertical)</option>
+            <option value="x" data-i18n="orient.x">World x</option>
+            <option value="y" data-i18n="orient.y">World y</option>
+          </select>
+        </label>
+        <p class="note" data-i18n="orient.note">Click the surface to land the explorer on it. Walking keeps them upright with respect to the surface: on a sphere that is a planet, on a Möbius strip one lap brings them back upside down, which is what non-orientable means. In third person the camera holds a fixed height and circles, so the movement reads in three dimensions.</p>
+      </div>
+
+      <label class="field" id="fld-dronecam" hidden><span data-i18n="view.dronecam">Drone camera</span>
+        <select id="sel-dronecam" class="preset">
+          <option value="first" data-i18n="view.dronefirst">First person — from the drone</option>
+          <option value="third" data-i18n="view.dronethird">Third person — behind the drone</option>
+        </select>
+      </label>
+      <p class="note" data-i18n="view.dronenote">The drone flies level: W A S D move it over the (x, y) plane, Space and Ctrl set its altitude, and the mouse only aims the camera. The beam under it drops straight down to the point of the domain you are above.</p>
+      <p class="note" id="pad-status" data-on="0" data-i18n="view.padoff">No gamepad — press a button on one to wake it up.</p>
+      <label class="check"><input id="t-padinvert" type="checkbox"><span data-i18n="view.padinvert">Invert the right stick's up / down</span></label>
+      <p class="note" data-i18n="view.padnote">An Xbox-layout controller works straight away, including on an iPhone or iPad over Bluetooth — no app to install. Left stick walks and strafes, right stick looks and turns. RT sprints, LB and RB take the drone down and up. A steps through the three views, B the neighbourhood, X the grid, Y the world map, Start hides the panel; the D-pad's up and down change the explorer's scale and its left and right the camera zoom. Browsers keep a gamepad hidden until a button on it is pressed, so if the line above says there is none, press one.</p>
+      <label class="range">
+        <span><span data-i18n="view.speed">Walking speed</span> <b id="lbl-speed">1.0×</b></span>
+        <input id="in-speed" type="range" min="-0.6" max="1.4" step="0.05" value="0">
+      </label>
+      <p class="note" data-i18n="view.speednote">A multiple of the ordinary walking pace, which is already measured in explorer heights per second — so an explorer a tenth the size still crosses the same ground in the same time. Hold Shift to sprint on top of whatever is set here.</p>
+      <label class="field"><span data-i18n="view.style">Explorer's look</span>
+        <select id="sel-style" class="preset">
+          <option value="explorer" data-i18n="style.explorer">Hiker</option>
+          <option value="brick" data-i18n="style.brick">Brick minifigure</option>
+          <option value="blocky" data-i18n="style.blocky">Blocky (pixel style)</option>
+          <option value="buddy" data-i18n="style.buddy">Round buddy</option>
+        </select>
+      </label>
+      <label class="check"><input id="t-compass" type="checkbox" checked><span><span data-i18n="view.compass">Direction indicator</span> <kbd>I</kbd></span></label>
+      <p class="note" data-i18n="view.compassnote">The globe in the top right shows which way you are looking: latitude and longitude around a small figure turned to face the same direction, with the bearing and the elevation underneath. Hold ⌘/⊞ or Alt, or press Esc and move the mouse, and it enlarges.</p>
+      <label class="field"><span data-i18n="view.holdkey">Key to hold for looking</span>
+        <select id="sel-holdkey" class="preset">
+          <option value="either" data-i18n="hold.either">Either — Alt/⌥ or ⌘/⊞</option>
+          <option value="alt" data-i18n="hold.alt">Alt / ⌥ Option only</option>
+          <option value="meta" data-i18n="hold.meta">⌘ Command / ⊞ Windows only</option>
+        </select>
+      </label>
+      <p class="note" id="note-holdkey" data-i18n="hold.note"></p>
+      <button id="btn-top" class="ghost"><span data-i18n="view.top">Look straight down</span> <kbd>T</kbd></button>
+      <button id="btn-reset" class="ghost"><span data-i18n="view.reset">Return to the centre</span> <kbd>R</kbd></button>
+    </section>
+
+    <section>
+      <h2 data-i18n="sec.help">Help</h2>
+      <div class="help">
+        <p><b data-i18n="help.move">Move</b> W A S D · <b data-i18n="help.run">run</b> Shift ·
+        <b data-i18n="help.look">look</b> <span data-i18n="help.mouse">mouse</span><br>
+        <b data-i18n="help.keylook">Look without the mouse</b> Alt (⌥) <span data-i18n="help.orcmd">or ⌘/⊞</span> + W A S D<br>
+        <b data-i18n="help.zoomcam">Camera zoom</b> <span data-i18n="help.wheel">wheel</span> ·
+        <b data-i18n="help.zoomsize">explorer&#8217;s size</b> Alt/⌘ + <span data-i18n="help.wheel">wheel</span><br>
+        <b data-i18n="help.updown">Drone up/down</b> Space / Ctrl<br>
+        <b data-i18n="help.release">Release the mouse</b> Esc · <b data-i18n="help.hide">hide this panel</b> Tab</p>
+        <p class="note" data-i18n-html="help.modnote"></p>
+        <p class="note" data-i18n-html="help.syntax"></p>
+        <p class="note"><a id="other-app" href="lab.html" style="color:var(--accent)" data-i18n="lab.link">Open the Lab — the same program with a flat map panel beside the scene</a></p>
+      </div>
+    </section>
+  </div>
+</aside>
+
+<button id="panel-show" hidden data-i18n-title="panel.show" title="Show panel (Tab)">☰</button>
+
+<div id="click-catch" hidden><div class="cc-inner">
+  <b data-i18n="cc.click">Click to look around</b>
+  <span data-i18n="cc.esc">Esc releases the mouse</span>
+</div></div>
+
+<div id="loading"><div class="spin"></div><span id="loading-msg" data-i18n="loading">Building the terrain…</span></div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

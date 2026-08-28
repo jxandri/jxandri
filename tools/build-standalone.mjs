@@ -27,6 +27,10 @@ const PAGES = [
     link: ['href="lab.html"', 'href="Gradient-Peaks-Lab.html"'] },
   { src: 'lab.html', out: 'Gradient-Peaks-Lab.html', extraCss: 'lab.css',
     link: ['href="index.html"', 'href="Gradient-Peaks.html"'] },
+  // The game. One file a teacher can hand out on a stick, plug a controller
+  // into, and leave running at the back of the room.
+  { src: 'play.html', out: 'Border-Run.html', extraCss: 'game.css',
+    link: ['href="lab.html"', 'href="Gradient-Peaks-Lab.html"'] },
 ];
 
 const result = await build({
@@ -62,6 +66,7 @@ for (const page of PAGES) {
     .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">',
       () => `<link rel="icon" href="${iconData}" type="image/svg+xml">`)
     .replace('<link rel="stylesheet" href="css/lab.css">\n', '')
+    .replace('<link rel="stylesheet" href="css/game.css">\n', '')
     .replace('<link rel="stylesheet" href="css/style.css">',
       () => `<style>\n${css}${extra}\n</style>`)
     .replace(/<script type="importmap">[\s\S]*?<\/script>\n/, '')

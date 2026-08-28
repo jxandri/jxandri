@@ -43,7 +43,7 @@ export const BORDERS = {
       name: "Mount Natazhat", es: "Monte Natazhat",
       countries: ["United States (Alaska)","Canada (Yukon)"], countriesEs: ["Estados Unidos (Alaska)","Canadá (Yukón)"],
       atlasMetres: 4095, grade: "A", biome: "alpine",
-      boundary: "the 141th meridian west", boundaryEs: "el meridiano 141 oeste",
+      boundary: "the 141st meridian west", boundaryEs: "el meridiano 141 oeste",
       credit: "Tok Air Service aerial photograph", ofItself: true,
       blurb: "The Alaska–Yukon frontier is the 141st meridian, surveyed across glacier and snow. Natazhat’s 4 095 m summit lies several kilometres west of it, deep in Alaska, while the mountain’s eastern flank is Canadian.", blurbEs: "La frontera Alaska–Yukón es el meridiano 141, levantado sobre glaciar y nieve. La cima de 4 095 m del Natazhat queda varios kilómetros al oeste, en pleno Alaska, mientras su ladera oriental es canadiense.",
     },

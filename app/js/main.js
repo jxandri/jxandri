@@ -11,7 +11,7 @@ import {
 } from './terrain.js';
 import { ELIAS_INFO } from './elias.js';
 import { BORDERS } from './borders-data.js';
-import { feasibleFor, boundaryOf } from './borders.js';
+import { feasibleFor, boundaryOf, BORDER_IDS } from './borders.js';
 import { photoFor } from './borders-photos.js';
 import { Decorations } from './decor.js';
 import {
@@ -35,6 +35,7 @@ import {
 } from './gridlines.js';
 import { Compass, angles } from './compass.js';
 import { Pad, BTN } from './gamepad.js';
+import { BorderRun } from './game.js';
 import { Projection } from './projection.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
@@ -217,6 +218,9 @@ let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
+let game = null;         // Border Run, on play.html only — declared here rather
+                         // than beside its own setup because the frame loop starts
+                         // before that setup runs and must be able to ask for it
 let stillMemo = null;    // last frame's at-the-feet geometry, kept while the
                          // explorer and the dials hold still
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
@@ -1037,7 +1041,12 @@ function rebuild() {
   water = buildWater(field, grid);
   if (water) { world.add(water); water.visible = state.water; }
 
-  walls = buildFeasibleWalls(field, grid, predicate);
+  // In the game the player stands a few hundred metres from the frontier and
+  // looks straight at it, so the wall is built waist-high rather than at the
+  // sandbox's survey-marker height: tall enough to read as a fence across the
+  // mountain, short enough not to become a white sheet filling the screen.
+  walls = buildFeasibleWalls(field, grid, predicate,
+    game ? field.worldSize * 0.010 : undefined);
   if (walls) { world.add(walls); walls.visible = state.feasible; }
 
   surfaceDetail = new SurfaceDetail(field, { rings: 2, segments: 96, growth: 3.4 });
@@ -1637,7 +1646,7 @@ const touch = { move: null, look: null, mx: 0, my: 0 };
 
 /**
  * An Xbox-layout controller, if there is one. Polled once a frame at the top
- * of animate(); everything downstream reads the snapshot rather than the
+ * of the frame loop, so everything downstream reads the snapshot rather than the
  * hardware, so the sticks behave like a third set of held keys.
  *
  *   left stick    walk and strafe          right stick   look / turn
@@ -3211,6 +3220,7 @@ function animate() {
   pad.poll();
   applyPadButtons();
   updatePadStatus();
+  if (game) game.update();
 
   if (state.surfaceKind !== 'graph') {
     const inp = readInput();
@@ -3442,6 +3452,7 @@ window.__peaks = {
   get optimum() { return optimum; },
   get field() { return field; },
   get grid() { return grid; },
+  get game() { return game; },
 };
 
 state.holdKey = readHoldKey();
@@ -3464,6 +3475,64 @@ withLoading(() => {
   }
 });
 animate();
+
+/* ------------------------------------------------------- Border Run */
+
+/**
+ * The game layer, when the page asks for one.
+ *
+ * Detected from the markup rather than from a flag, exactly as the Lab is
+ * detected from its minimap: play.html carries a #game element, index.html and
+ * lab.html do not, and all three run this same file. Everything the game needs
+ * is handed to it explicitly, so the game can be read without reading the app
+ * and the app has no idea it is being played.
+ */
+if ($('game')) {
+  document.body.dataset.mode = 'play';
+  togglePanel(true);                       // the sandbox is still there under Tab
+  const missions = BORDER_IDS.map((id) => {
+    const b = BORDERS[id];
+    return {
+      id,
+      half: b.half, line: b.line, summit: b.summit, constrained: b.constrained,
+      strip: b.strip,
+      summitMetres: b.summit.metres,
+      photo: photoFor(id),
+      ...b.meta,
+    };
+  });
+  game = new BorderRun({
+    missions,
+    pad,
+    // A getter, not the value: `player` is rebuilt whenever the surface is, so
+    // a reference captured once would go stale the moment a mission loads.
+    get player() { return player; },
+    state,
+    MODE_THIRD,
+    MODE_DRONE,
+    setMode,
+    toggle: toggleCheckbox,
+    /** Load a mountain exactly as choosing it from the examples menu would. */
+    load: (id) => new Promise((resolve) => {
+      const sel = $('preset-fn');
+      sel.value = `${id}(x, y)`;
+      sel.dispatchEvent(new Event('change'));
+      // The rebuild is deferred a couple of frames by withLoading, so wait for
+      // the surface rather than guessing at a delay.
+      const ready = () => {
+        if (field && grid && currentBorder() === id) resolve();
+        else requestAnimationFrame(ready);
+      };
+      requestAnimationFrame(ready);
+    }),
+    /** Mark the true answer — only ever after a flag has been planted. */
+    revealOptimum: () => {
+      const t = $('t-opt');
+      if (t && !t.checked) toggleCheckbox('t-opt');
+      else refreshOptimum();
+    },
+  });
+}
 
 // Offline caching, where the browser allows it. Opened straight off the disk as
 // a file:// page there is no origin to register against and this simply does not

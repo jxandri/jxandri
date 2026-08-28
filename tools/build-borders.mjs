@@ -627,10 +627,15 @@ for (const entry of list) {
   // constraints worth teaching is that they are lines somebody *defined*, so
   // the card names the definition rather than saying "the border".
   const b = entry.boundary;
+  // "the 141th meridian" is not a thing. English ordinals, properly.
+  const ord = (n) => {
+    const t = n % 100, u = n % 10;
+    return `${n}${t >= 11 && t <= 13 ? 'th' : u === 1 ? 'st' : u === 2 ? 'nd' : u === 3 ? 'rd' : 'th'}`;
+  };
   const [boundaryLabel, boundaryLabelEs] = b.parallel !== undefined
-    ? [`the ${b.parallel}th parallel north`, `el paralelo ${b.parallel} norte`]
+    ? [`the ${ord(b.parallel)} parallel north`, `el paralelo ${b.parallel} norte`]
     : b.meridian !== undefined
-      ? [`the ${Math.abs(b.meridian)}th meridian ${b.meridian < 0 ? 'west' : 'east'}`,
+      ? [`the ${ord(Math.abs(b.meridian))} meridian ${b.meridian < 0 ? 'west' : 'east'}`,
         `el meridiano ${Math.abs(b.meridian)} ${b.meridian < 0 ? 'oeste' : 'este'}`]
       : [entry.treaty || 'a straight treaty line', entry.treatyEs || 'una línea recta de tratado'];
 
