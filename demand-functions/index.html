@@ -525,7 +525,7 @@ const st={
      ends up pressed flat along the axis, so the defaults keep the floor at 1
      and the income ceiling near the income in play. */
   minPx:1, minPy:1, maxPx:6, maxPy:4, minI:0, maxI:8,
-  fixedAxis:true,
+  fixedAxis:true, zoomB:1, zoomD:1,
   overlay:true,
   customU:null, customSrc:"x^0.5*y^0.5",
   pts:{px:[],py:[],I:[]},
@@ -716,7 +716,7 @@ function drawBundle(){
      for the same reason the demand panel does */
   const xmax = st.fixedAxis ? boundX() : Math.max(st.I/st.px*1.25,(fin(xs)?xs:0)*1.4,1);
   const ymax = st.fixedAxis ? boundY() : Math.max(st.I/st.py*1.25,(fin(ys)?ys:0)*1.4,1);
-  const {bx,SX,SY}=frame(ctx,{x0:0,y0:0,x1:w,y1:h},xmax,ymax,"x","y");
+  const {bx,SX,SY}=frame(ctx,{x0:0,y0:0,x1:w,y1:h},xmax*st.zoomB,ymax*st.zoomB,"x","y");
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
   if(st.layers.indiff&&fin(xs)&&fin(ys)){
@@ -804,7 +804,11 @@ function drawDemand(){
     if(!(ymax>0)) ymax=1;
     const ylab = rows.length>1 ? "" : rows[0].lab;
     const rect={x0:0,y0:gi*hh,x1:w,y1:(gi+1)*hh};
-    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,gi===groups.length-1?A.lab:"",ylab,true,A.min);
+    /* the swept interval is what the boxes name, so zoom widens it about its
+       middle rather than dragging one end */
+    const mid=(A.min+A.max)/2, half=(A.max-A.min)/2*st.zoomD;
+    const {bx,SX,SY}=frame(ctx,rect,mid+half,ymax*st.zoomD,
+      gi===groups.length-1?A.lab:"",ylab,true,Math.max(0,mid-half));
     ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
     for(const row of rows){
@@ -1117,6 +1121,47 @@ document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventL
     o.setAttribute("aria-pressed",String(o===btn)));
   render();
 }));
+
+/* ==========================================================================
+   Zoom
+   --------------------------------------------------------------------------
+   Wheel over a plot scales its frame. A trackpad pinch arrives as a wheel
+   event with ctrlKey set, so one handler covers both — damped, because a pinch
+   reports far larger deltas than a wheel notch. A two-finger pinch on a
+   touchscreen is a separate pair of events and gets its own path.
+
+   Every plot here has its origin at a corner, so zooming is a multiplier on
+   the maxima and the origin stays where it is. That is the right anchor for a
+   first-quadrant diagram: the reader is looking at the corner, not the middle.
+
+   preventDefault stops the page scrolling under the pointer, which is what
+   makes the gesture feel like it belongs to the plot.
+   ========================================================================== */
+function attachZoom(cv, scale){
+  if(!cv) return;
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    const damp = e.ctrlKey ? 0.35 : 1;          // ctrlKey means a pinch
+    scale(Math.exp(e.deltaY * 0.0022 * damp));
+  }, {passive:false});
+  let d0 = 0;
+  const span = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  cv.addEventListener("touchstart", e => {
+    if(e.touches.length === 2) d0 = span(e.touches);
+  }, {passive:true});
+  cv.addEventListener("touchmove", e => {
+    if(e.touches.length !== 2 || !d0) return;
+    e.preventDefault();
+    const d = span(e.touches);
+    if(d > 0){ scale(d0 / d); d0 = d; }
+  }, {passive:false});
+  const end = () => { d0 = 0; };
+  cv.addEventListener("touchend", end, {passive:true});
+  cv.addEventListener("touchcancel", end, {passive:true});
+}
+
+attachZoom($("cBundle"), f => { st.zoomB = clamp(st.zoomB * f, 0.15, 8); render(); });
+attachZoom($("cDemand"), f => { st.zoomD = clamp(st.zoomD * f, 0.15, 8); render(); });
 new ResizeObserver(()=>render()).observe(document.querySelector(".viewports"));
 
 let lang0="es", theme0="dark";

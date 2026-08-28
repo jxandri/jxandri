@@ -955,7 +955,7 @@ const st = {
   xlow:0.4, yup:16.2, beta:0.815,
   customSrc:"x^0.3*y^0.7", U:null,
   showMap:true, showPath:true, show3d:false,
-  autoAxes:false, xmaxFix:6, ymaxFix:6,
+  autoAxes:false, xmaxFix:6, ymaxFix:6, zoom2:1,
   layers:{contours:true, feasible:true, indiff:true, opt:true,
           kinks:true, cmpSet:true, grid:true}
 };
@@ -1321,7 +1321,10 @@ function drawPath(res){
   if(!(hi>lo)){ lo = (lo||0)-1; hi = (hi||0)+1; }
   const pad = (hi-lo)*0.10; lo -= pad; hi += pad;
 
-  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, F.xmax, lo, hi, "x", "u");
+  /* this panel's range is read off the profile, so zoom is its own multiplier
+     about the middle of the band rather than a corner */
+  if(st.zoom2 !== 1){ const mid=(lo+hi)/2, half=(hi-lo)/2*st.zoom2; lo=mid-half; hi=mid+half; }
+  const {bx,SX,SY} = axes(ctx, {x0:0,y0:0,x1:w,y1:h}, 0, F.xmax*st.zoom2, lo, hi, "x", "u");
   ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
   if(profC) for(const pts of profC)
@@ -1867,6 +1870,61 @@ for(const [id,key] of [["xmaxFix","xmaxFix"],["ymaxFix","ymaxFix"]]){
   });
   el.value = st[key];
 }
+
+/* ==========================================================================
+   Zoom
+   --------------------------------------------------------------------------
+   Wheel over a plot scales its frame. A trackpad pinch arrives as a wheel
+   event with ctrlKey set, so one handler covers both — damped, because a pinch
+   reports far larger deltas than a wheel notch. A two-finger pinch on a
+   touchscreen is a separate pair of events and gets its own path.
+
+   Every plot here has its origin at a corner, so zooming is a multiplier on
+   the maxima and the origin stays where it is. That is the right anchor for a
+   first-quadrant diagram: the reader is looking at the corner, not the middle.
+
+   preventDefault stops the page scrolling under the pointer, which is what
+   makes the gesture feel like it belongs to the plot.
+   ========================================================================== */
+function attachZoom(cv, scale){
+  if(!cv) return;
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    const damp = e.ctrlKey ? 0.35 : 1;          // ctrlKey means a pinch
+    scale(Math.exp(e.deltaY * 0.0022 * damp));
+  }, {passive:false});
+  let d0 = 0;
+  const span = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  cv.addEventListener("touchstart", e => {
+    if(e.touches.length === 2) d0 = span(e.touches);
+  }, {passive:true});
+  cv.addEventListener("touchmove", e => {
+    if(e.touches.length !== 2 || !d0) return;
+    e.preventDefault();
+    const d = span(e.touches);
+    if(d > 0){ scale(d0 / d); d0 = d; }
+  }, {passive:false});
+  const end = () => { d0 = 0; };
+  cv.addEventListener("touchend", end, {passive:true});
+  cv.addEventListener("touchcancel", end, {passive:true});
+}
+
+/* The frame boxes are the frame, so zooming writes to them rather than to a
+   separate multiplier — what you see always matches what they say. Zooming
+   also takes the axes off auto-fit, since asking for a frame and letting the
+   app pick one are different requests. */
+attachZoom($("cPath"), f => { st.zoom2 = clamp(st.zoom2 * f, 0.15, 8); render(); });
+attachZoom($("cPlane"), f => {
+  st.xmaxFix = clamp(st.xmaxFix * f, 0.5, 500);
+  st.ymaxFix = clamp(st.ymaxFix * f, 0.5, 500);
+  $("xmaxFix").value = +st.xmaxFix.toFixed(3);
+  $("ymaxFix").value = +st.ymaxFix.toFixed(3);
+  if(st.autoAxes){
+    st.autoAxes = false; $("auto-axes").checked = false;
+    $("xmaxFix").disabled = false; $("ymaxFix").disabled = false;
+  }
+  render();
+});
 new ResizeObserver(() => render()).observe(document.querySelector(".viewports"));
 
 let lang0="es", theme0="dark";
