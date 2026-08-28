@@ -285,6 +285,338 @@ const { chromium } = require('playwright-core');
   await p.evaluate(() => document.getElementById('mode-explore').click());
   await p.waitForTimeout(300);
 
+
+  // === welfare weights, Negishi, and the second welfare theorem ===========
+  // Identical homothetic tastes give a STRAIGHT utility frontier, against
+  // which the weighted sum is flat and lambda singles nothing out. The tie
+  // must resolve to the middle; the weight tests then use tastes that differ,
+  // where the frontier is curved and lambda is a real coordinate.
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+  const tie = await p.evaluate(() => {
+    const E = window.__edgeworth, q = E.paretoAtWeight(E.st, 0.5);
+    return { x:q.x, y:q.y };
+  });
+  say("a flat weighted sum resolves to the middle of the tie, not a corner",
+      Math.abs(tie.x - 4) < 0.12 && Math.abs(tie.y - 4) < 0.12,
+      `(${tie.x.toFixed(3)}, ${tie.y.toFixed(3)})`);
+
+  await setPrefs(['cd',{a:0.7}], ['cd',{a:0.3}], [6,2,2,6]);
+
+  // lambda has to walk the Pareto set monotonically, and land in the middle
+  // of a symmetric economy at lambda = 1/2
+  const lam = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    const R = st.lamRange;
+    return [0.05,0.3,0.5,0.7,0.95].map(t => {
+      const l = R.lo + t * (R.hi - R.lo);
+      const q = E.paretoAtWeight(st, l);
+      return { l, x:q.x, y:q.y, uA:st.uA(q.x,q.y) };
+    });
+  });
+  const mono = lam.every((v,i) => i === 0 || v.uA > lam[i-1].uA);
+  say("raising lambda walks the Pareto set toward A", mono,
+      lam.map(v => v.uA.toFixed(2)).join(" < ") +
+      `  over lambda in [${lam[0].l.toFixed(3)}, ${lam[4].l.toFixed(3)}]`);
+  say("and every weight lands on the Pareto set itself",
+      await p.evaluate(() => {
+        const E = window.__edgeworth, st = E.st;
+        const sc = Math.hypot(st.Wx, st.Wy);
+        return [0.2,0.4,0.6,0.8].every(l => {
+          const q = E.paretoAtWeight(st, l);
+          return E.nearestOnCurve(st.contract, q.x, q.y).dist < 0.01 * sc;
+        });
+      }));
+
+  // the supporting price is the common MRS, and the transfers net to zero
+  const sup = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    const out = [];
+    const R = st.lamRange;
+    for(const t of [0.3, 0.5, 0.7]){
+      const l = R.lo + t * (R.hi - R.lo);
+      const q = E.paretoAtWeight(st, l);
+      const S = E.supportAt(st, q.x, q.y);
+      out.push({ l, p:S.p, mrsA:S.mrsA, mrsB:S.mrsB, tA:S.tA, tB:S.tB,
+                 onLine: Math.abs(S.p * q.x + q.y - S.incA) });
+    }
+    return out;
+  });
+  say("the supporting price is the marginal rate both share",
+      sup.every(o => Math.abs(o.mrsA - o.mrsB) < 0.01 && Math.abs(o.p - o.mrsA) < 0.01),
+      sup.map(o => `${o.p.toFixed(3)}`).join(", "));
+  say("the transfers net to zero at every weight",
+      sup.every(o => Math.abs(o.tA + o.tB) < 1e-9),
+      sup.map(o => (o.tA + o.tB).toExponential(1)).join(", "));
+  say("and the budget line passes through the allocation it implements",
+      sup.every(o => o.onLine < 1e-9));
+
+  // Negishi against the excess-demand root: two algorithms that share no code
+  const neg = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    const r = E.negishiSolve(st);
+    const q = E.paretoAtWeight(st, r.lam);
+    const S = E.supportAt(st, q.x, q.y);
+    return { lam:r.lam, t:S.tA, p:S.p, x:q.x, y:q.y,
+             walras: st.eq.length ? st.eq[0].p : NaN,
+             walrasX: st.eq.length ? st.eq[0].A[0] : NaN,
+             walrasY: st.eq.length ? st.eq[0].A[1] : NaN };
+  });
+  say("Negishi drives the transfer to zero", Math.abs(neg.t) < 1e-4,
+      `T_A = ${neg.t.toExponential(1)} at lambda = ${neg.lam.toFixed(4)}`);
+  say("and finds the same equilibrium the excess-demand root does",
+      Math.abs(neg.p - neg.walras) < 0.01 &&
+      Math.abs(neg.x - neg.walrasX) < 0.03 && Math.abs(neg.y - neg.walrasY) < 0.03,
+      `Negishi (${neg.x.toFixed(3)}, ${neg.y.toFixed(3)}) at p=${neg.p.toFixed(3)} vs ` +
+      `Walras (${neg.walrasX.toFixed(3)}, ${neg.walrasY.toFixed(3)}) at p=${neg.walras.toFixed(3)}`);
+
+  // the inverse map: which weight would have chosen this allocation
+  const inv = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    const R = st.lamRange, l = R.lo + 0.6 * (R.hi - R.lo);
+    const q = E.paretoAtWeight(st, l);
+    return { want:l, back:E.weightFor(st, q.x, q.y) };
+  });
+  say("and the weight can be read back off the allocation it chose",
+      Math.abs(inv.back - inv.want) < 0.004,
+      `${inv.back.toFixed(4)} vs ${inv.want.toFixed(4)}`);
+
+  // === the firm ===========================================================
+  const setModel = (m, F) => p.evaluate(([m, F]) => {
+    const E = window.__edgeworth, st = E.st;
+    if(F){ st.Fx = F[0]; st.Fy = F[1]; st.Fc = F[2]; }
+    E.setModel(m);
+    return { Wx:st.Wx, Wy:st.Wy, n:st.contract.length };
+  }, [m, F]);
+
+  // Robinson: one consumer, quarter-circle frontier, sqrt(xy).  MRS = y/x and
+  // MRT = x/y, so the optimum is x = y = 8/sqrt(2).
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+  await setModel('robinson', [8, 8, 2]);
+  const rob = await p.evaluate(() => {
+    const st = window.__edgeworth.st;
+    return { n:st.contract.length, x:st.contract[0].x, y:st.contract[0].y };
+  });
+  say("Robinson has a single Pareto point", rob.n === 1, `${rob.n} point(s)`);
+  say("and it sits where MRS meets MRT",
+      Math.abs(rob.x - 8/Math.SQRT2) < 0.01 && Math.abs(rob.y - 8/Math.SQRT2) < 0.01,
+      `(${rob.x.toFixed(3)}, ${rob.y.toFixed(3)}) vs (${(8/Math.SQRT2).toFixed(3)}, ${(8/Math.SQRT2).toFixed(3)})`);
+
+  // asymmetric: u = x^0.7 y^0.3 on the same circle.  7y/(3x) = x/y gives
+  // y = x sqrt(3/7) and x^2 (1 + 3/7) = 64.
+  await p.evaluate(() => {
+    const E = window.__edgeworth;
+    E.setFamily('a','cd',{a:0.7}); E.applyPrefs(); E.recomputeModel(); E.syncState();
+  });
+  const rob2 = await p.evaluate(() => {
+    const c = window.__edgeworth.st.contract[0];
+    return { x:c.x, y:c.y };
+  });
+  const rx = Math.sqrt(64 * 7 / 10), ry = rx * Math.sqrt(3 / 7);
+  say("a lopsided taste tilts it to the analytic place",
+      Math.abs(rob2.x - rx) < 0.02 && Math.abs(rob2.y - ry) < 0.02,
+      `(${rob2.x.toFixed(3)}, ${rob2.y.toFixed(3)}) vs (${rx.toFixed(3)}, ${ry.toFixed(3)})`);
+
+  // Production with two consumers: square the frontier off against the corner
+  // and it has to reproduce the exchange box it is the limit of.
+  await p.evaluate(() => {
+    const E = window.__edgeworth;
+    E.setFamily('a','cd',{a:0.5}); E.applyPrefs();
+  });
+  await setModel('production', [8, 8, 14]);
+  const prod = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    const R = st.lamRange;
+    const q = E.paretoAtWeight(st, (R.lo + R.hi) / 2);
+    const S = E.supportAt(st, q.x, q.y);
+    return { n:st.contract.length, x:q.x, y:q.y, p:S.p, tsum:S.tA + S.tB,
+             prodX:S.Wx, prodY:S.Wy, profit:S.profit };
+  });
+  // the frontier's own symmetric point is 8*(1/2)^(1/c), and two identical
+  // consumers split whatever the firm makes there down the middle
+  const sym = 8 * Math.pow(0.5, 1 / 14);
+  say("the firm produces at the symmetric point of its frontier",
+      Math.abs(prod.prodX - sym) < 0.05 && Math.abs(prod.prodY - sym) < 0.05,
+      `(${prod.prodX.toFixed(3)}, ${prod.prodY.toFixed(3)}) vs (${sym.toFixed(3)}, ${sym.toFixed(3)})`);
+  // With the frontier squared off, the whole model has to reduce to the
+  // exchange box: two identical consumers put the Pareto set on the diagonal,
+  // exactly as they do without a firm. That is the residual field — a
+  // maximisation per grid cell — agreeing with the plain complementary bundle.
+  const prodDiag = await p.evaluate(() => {
+    const st = window.__edgeworth.st;
+    let worst = 0, n = 0;
+    for(const q of st.contract){
+      if(q.x < 0.6 || q.y < 0.6 || q.x > st.Wx - 1.2 || q.y > st.Wy - 1.2) continue;
+      worst = Math.max(worst, Math.abs(q.y - q.x)); n++;
+    }
+    return { worst, n };
+  });
+  say("and its Pareto set is the diagonal, as in the box it reduces to",
+      prodDiag.n > 8 && prodDiag.worst < 0.08,
+      `max |y - x| = ${prodDiag.worst.toFixed(4)} over ${prodDiag.n} interior points`);
+  say("and transfers still net to zero with a firm in the room",
+      Math.abs(prod.tsum) < 1e-9, prod.tsum.toExponential(1));
+
+  // a rounded frontier: at the efficient point both consumers' MRS must equal
+  // the firm's MRT, which is the whole three-way condition
+  await setModel('production', [8, 8, 2]);
+  const three = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    const R = st.lamRange;
+    const q = E.paretoAtWeight(st, (R.lo + R.hi) / 2);
+    const S = E.supportAt(st, q.x, q.y);
+    return { mrsA:S.mrsA, mrsB:S.mrsB, mrt:S.mrt, x:q.x, y:q.y };
+  });
+  say("MRS_A = MRS_B = MRT at a production optimum",
+      Math.abs(three.mrsA - three.mrsB) < 0.03 &&
+      Math.abs(three.mrsA - three.mrt) < 0.05,
+      `${three.mrsA.toFixed(3)} / ${three.mrsB.toFixed(3)} / ${three.mrt.toFixed(3)}`);
+
+  // Negishi with a firm, where income is a share of profit rather than goods
+  const negP = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    st.theta = 0.5;
+    const r = E.negishiSolve(st);
+    const q = r.viaCurve ? { x:r.x, y:r.y } : E.paretoAtWeight(st, r.lam);
+    const S = E.supportAt(st, q.x, q.y);
+    return { lam:r.lam, tA:S.tA, x:q.x, y:q.y, ownA:S.ownA, incA:S.incA };
+  });
+  say("Negishi clears a production economy too, on profit shares",
+      Math.abs(negP.tA) < 1e-3,
+      `T_A = ${negP.tA.toExponential(1)} at lambda = ${negP.lam.toFixed(4)}`);
+  // an equal share of the firm, and identical tastes, has to give each half
+  // of whatever the firm makes
+  const negHalf = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    const r = E.negishiSolve(st);
+    const q = r.viaCurve ? { x:r.x, y:r.y } : E.paretoAtWeight(st, r.lam);
+    const S = E.supportAt(st, q.x, q.y);
+    return { x:q.x, y:q.y, X:S.Wx, Y:S.Wy };
+  });
+  say("with an equal share, each gets half of what the firm makes",
+      Math.abs(negHalf.x - negHalf.X/2) < 0.08 && Math.abs(negHalf.y - negHalf.Y/2) < 0.08,
+      `(${negHalf.x.toFixed(3)}, ${negHalf.y.toFixed(3)}) of (${negHalf.X.toFixed(3)}, ${negHalf.Y.toFixed(3)})`);
+
+  // the frontier really is the edge of the world
+  const edge = await p.evaluate(() => {
+    const st = window.__edgeworth.st;
+    const out = st.fA.g[st.fA.n * st.fA.n - 1];         // the far corner
+    const mid = window.__edgeworth.bUtilAt(st, 1, 1);
+    return { outside:!Number.isFinite(out), inside:Number.isFinite(mid) };
+  });
+  say("outside the frontier there is nothing to have", edge.outside && edge.inside);
+
+  await setModel('exchange');
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+
+
+
+  // === driving the actual controls =======================================
+  // The model API can be right while the buttons are wired to the wrong code,
+  // so these go through the DOM the way a student would.
+  const ui = await p.evaluate(async () => {
+    const $ = id => document.getElementById(id);
+    const out = {};
+    $('mdl-production').click();
+    await new Promise(r => setTimeout(r, 500));
+    out.prodModel   = window.__edgeworth.st.model;
+    out.firmShown   = !$('g-firm').hidden;
+    out.endowHidden = $('g-endow').hidden;
+    out.auctionHidden = $('radio-auction').hidden;
+
+    $('mdl-robinson').click();
+    await new Promise(r => setTimeout(r, 500));
+    out.robModel = window.__edgeworth.st.model;
+    out.bHidden  = document.querySelectorAll('.agent')[1].hidden;
+    out.thetaHidden = $('row-theta').hidden;
+
+    $('mdl-exchange').click();
+    await new Promise(r => setTimeout(r, 500));
+    out.backModel  = window.__edgeworth.st.model;
+    out.firmHidden = $('g-firm').hidden;
+    return out;
+  });
+  say("the model buttons switch the economy",
+      ui.prodModel === 'production' && ui.robModel === 'robinson' && ui.backModel === 'exchange');
+  say("and the rail shows the controls that model has",
+      ui.firmShown && ui.endowHidden && ui.auctionHidden && ui.bHidden &&
+      ui.thetaHidden && ui.firmHidden);
+
+  // the planner scrubber has to move lambda, and say so
+  await setPrefs(['cd',{a:0.7}], ['cd',{a:0.3}], [6,2,2,6]);
+  const plan = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    document.querySelector('input[name="method"][value="planner"]').click();
+    await new Promise(r => setTimeout(r, 300));
+    const read = () => ({ lam:st.lam, shown:document.getElementById('scrub-val').textContent,
+                          x:st.P[0], cells:document.getElementById('readoutAux').textContent });
+    const sc = document.getElementById('scrub');
+    sc.value = 0.15; sc.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 250));
+    const lo = read();
+    sc.value = 0.85; sc.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 250));
+    const hi = read();
+    return { lo, hi, range:st.lamRange };
+  });
+  say("the planner scrubber moves the weight and reports it",
+      plan.hi.lam > plan.lo.lam && plan.hi.x > plan.lo.x &&
+      plan.lo.shown === plan.lo.lam.toFixed(3) && plan.hi.shown === plan.hi.lam.toFixed(3),
+      `lambda ${plan.lo.lam.toFixed(3)} -> ${plan.hi.lam.toFixed(3)}, ` +
+      `x ${plan.lo.x.toFixed(2)} -> ${plan.hi.x.toFixed(2)}`);
+  // the page is still in its default language here, so match either
+  say("and the readout carries the weight, the price and both transfers",
+      /Transf(er)?\.? A/i.test(plan.hi.cells) && /Transf(er)?\.? B/i.test(plan.hi.cells) &&
+      /(Support price|Precio de apoyo)/i.test(plan.hi.cells) &&
+      /(Negishi)/i.test(plan.hi.cells),
+      plan.hi.cells.replace(/\s+/g, " ").slice(0, 90));
+
+  // arrow keys on the box step the weight in planner mode
+  const keys = await p.evaluate(async () => {
+    const st = window.__edgeworth.st, before = st.lam;
+    const cv = document.getElementById('cbox');
+    cv.dispatchEvent(new KeyboardEvent('keydown', { key:'ArrowLeft', bubbles:true }));
+    await new Promise(r => setTimeout(r, 250));
+    return { before, after:st.lam };
+  });
+  say("arrow keys step the weight too", keys.after < keys.before,
+      `${keys.before.toFixed(4)} -> ${keys.after.toFixed(4)}`);
+
+  // the Negishi button lands on the competitive equilibrium
+  const negBtn = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    document.getElementById('btn-negishi').click();
+    await new Promise(r => setTimeout(r, 400));
+    const S = E.supportAt(st, st.PA[0], st.PA[1]);
+    return { lam:st.lam, tA:S.tA, x:st.P[0], y:st.P[1],
+             wx:st.eq.length ? st.eq[0].A[0] : NaN, wy:st.eq.length ? st.eq[0].A[1] : NaN };
+  });
+  say("the Negishi button lands on the competitive equilibrium",
+      Math.abs(negBtn.tA) < 1e-3 && Math.abs(negBtn.x - negBtn.wx) < 0.05 &&
+      Math.abs(negBtn.y - negBtn.wy) < 0.05,
+      `(${negBtn.x.toFixed(3)}, ${negBtn.y.toFixed(3)}) vs Walras (${negBtn.wx.toFixed(3)}, ${negBtn.wy.toFixed(3)})`);
+
+  // the two budget sets have to be painted, in their owners' colours
+  const paint = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    st.layers.swt = true; st.map = "none"; st.layers.lens = false;
+    E.syncState(); E.render();
+    await new Promise(r => setTimeout(r, 350));
+    const cv = document.getElementById('cbox');
+    const g = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    let red = 0, blue = 0;
+    for(let i = 0; i < g.length; i += 4){
+      if(g[i] > g[i+2] + 12 && g[i] > g[i+1] + 12) red++;
+      if(g[i+2] > g[i] + 12 && g[i+2] > g[i+1] + 6) blue++;
+    }
+    return { red, blue };
+  });
+  say("A's budget set is painted red and B's blue",
+      paint.red > 4000 && paint.blue > 4000, `${paint.red} red px, ${paint.blue} blue px`);
+
+  await p.evaluate(() => { const st = window.__edgeworth.st; st.map = "gains"; st.layers.lens = true; });
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+
+
   // --- language ------------------------------------------------------------
   await p.click('#lang-en');
   await p.waitForTimeout(200);

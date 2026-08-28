@@ -68,6 +68,9 @@
 }
 
 *{box-sizing:border-box}
+/* every hidden container here also carries an explicit display, which wins
+   over the attribute's own rule unless this says otherwise */
+[hidden]{display:none !important}
 html,body{height:100%}
 body{
   margin:0; background:var(--paper); color:var(--ink);
@@ -110,6 +113,8 @@ button,input,select,textarea{font:inherit;color:inherit}
   display:inline-flex; background:var(--sunk);
   border:1px solid var(--rule); border-radius:var(--r); padding:2px; gap:2px;
 }
+.seg-wide{display:flex; width:100%}
+.seg-wide button{flex:1; text-align:center; padding:5px 4px}
 .seg button{
   appearance:none; border:0; background:transparent; cursor:pointer;
   padding:5px 11px; border-radius:2px; font-size:12.5px; font-weight:500;
@@ -300,6 +305,8 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
   margin:1px 0 0; font-family:var(--f-mono); font-variant-numeric:tabular-nums;
   font-size:13.5px; font-weight:500;
 }
+/* uppercasing a Greek label turns lambda into a different letter */
+.cell dt.raw{text-transform:none; font-size:11px}
 .cell dd.hl{color:var(--accent-ink)}
 .cell dd.opt{color:var(--optimum)}
 
@@ -386,10 +393,10 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
    side and a B side, so they get their own tokens rather than
    borrowing --accent (which the chrome already uses for state).
    ============================================================ */
-:root{ --agA:#1E6FD9; --agB:#C2410C; --core:#8E2F9E; }
-@media (prefers-color-scheme:dark){ :root{ --agA:#6FB2FF; --agB:#FF9A5C; --core:#DD8BEE; } }
-:root[data-theme="dark"]{ --agA:#6FB2FF; --agB:#FF9A5C; --core:#DD8BEE; }
-:root[data-theme="light"]{ --agA:#1E6FD9; --agB:#C2410C; --core:#8E2F9E; }
+:root{ --agA:#C0322B; --agB:#1E6FD9; --core:#8E2F9E; }
+@media (prefers-color-scheme:dark){ :root{ --agA:#FF8479; --agB:#6FB2FF; --core:#DD8BEE; } }
+:root[data-theme="dark"]{ --agA:#FF8479; --agB:#6FB2FF; --core:#DD8BEE; }
+:root[data-theme="light"]{ --agA:#C0322B; --agB:#1E6FD9; --core:#8E2F9E; }
 
 /* the box is as wide as the total endowment of x and as tall as that of y,
    so its aspect ratio is a property of the model, not of the layout — JS
@@ -509,6 +516,16 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
     <aside class="rail">
 
       <div class="group">
+        <h2 id="t-g-model">Modelo</h2>
+        <div class="seg seg-wide" role="group" aria-label="Modelo">
+          <button type="button" id="mdl-exchange" aria-pressed="true">Intercambio</button>
+          <button type="button" id="mdl-production" aria-pressed="false">Producción</button>
+          <button type="button" id="mdl-robinson" aria-pressed="false">Robinson</button>
+        </div>
+        <p class="note" id="t-model-note">—</p>
+      </div>
+
+      <div class="group">
         <h2 id="t-g-pref">Preferencias</h2>
 
         <div class="agent">
@@ -533,7 +550,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         <div class="chips" id="preset-chips"></div>
       </div>
 
-      <div class="group">
+      <div class="group" id="g-endow">
         <h2 id="t-g-endow">Dotaciones</h2>
         <div class="slider-row">
           <span class="k" style="color:var(--agA)">ω<sub>Ax</sub></span>
@@ -558,6 +575,31 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         <p class="note" id="t-endow-note">—</p>
       </div>
 
+      <div class="group" id="g-firm" hidden>
+        <h2 id="t-g-firm">Empresa</h2>
+        <div class="slider-row">
+          <span class="k">F<sub>x</sub></span>
+          <input type="range" id="fx" min="2" max="20" step="0.5" value="8" aria-label="Máximo de x">
+          <input class="v" id="fx-v" inputmode="decimal" aria-label="Máximo de x (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k">F<sub>y</sub></span>
+          <input type="range" id="fy" min="2" max="20" step="0.5" value="8" aria-label="Máximo de y">
+          <input class="v" id="fy-v" inputmode="decimal" aria-label="Máximo de y (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k">c</span>
+          <input type="range" id="fc" min="1" max="8" step="0.05" value="2" aria-label="Curvatura">
+          <input class="v" id="fc-v" inputmode="decimal" aria-label="Curvatura (valor)">
+        </div>
+        <div class="slider-row" id="row-theta">
+          <span class="k">θ<sub>A</sub></span>
+          <input type="range" id="theta" min="0" max="1" step="0.01" value="0.5" aria-label="Participación de A">
+          <input class="v" id="theta-v" inputmode="decimal" aria-label="Participación de A (valor)">
+        </div>
+        <p class="note" id="t-firm-note">—</p>
+      </div>
+
       <div class="group">
         <h2 id="t-g-method">Mecanismo</h2>
         <div class="radios">
@@ -569,7 +611,11 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
             <input type="radio" name="method" value="trade">
             <span><b id="t-m-trade">Intercambiar desde la dotación</b><span id="t-m-trade-d">Nadie acepta empeorar: el reparto se queda dentro de la lente de ω.</span></span>
           </label>
-          <label class="radio">
+          <label class="radio" id="radio-planner">
+            <input type="radio" name="method" value="planner">
+            <span><b id="t-m-planner">Planificador · peso λ</b><span id="t-m-planner-d">Recorre el conjunto de Pareto maximizando λu<sub>A</sub> + (1−λ)u<sub>B</sub>.</span></span>
+          </label>
+          <label class="radio" id="radio-auction">
             <input type="radio" name="method" value="auction">
             <span><b id="t-m-auction">Subasta walrasiana</b><span id="t-m-auction-d">Anuncia un precio; cada uno pide lo que quiere; busca el que vacía el mercado.</span></span>
           </label>
@@ -578,13 +624,18 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 
       <div class="group">
         <h2 id="t-g-price">Precios</h2>
+        <div id="row-price">
         <div class="slider-row">
           <span class="k">p</span>
           <input type="range" id="pr" min="-2.2" max="2.2" step="0.002" value="0" aria-label="Razón de precios">
           <input class="v" id="pr-v" inputmode="decimal" aria-label="Razón de precios (valor)">
         </div>
         <p class="note" id="t-price-note">p = p<sub>x</sub>/p<sub>y</sub>, con p<sub>y</sub> = 1. La recta de precios pasa siempre por ω.</p>
-        <button type="button" class="btn" id="btn-clear" style="align-self:flex-start">Vaciar el mercado</button>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap">
+          <button type="button" class="btn" id="btn-clear">Vaciar el mercado</button>
+          <button type="button" class="btn" id="btn-negishi">Negishi</button>
+        </div>
       </div>
 
       <div class="group">
@@ -605,7 +656,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
             <span class="vp-title" id="t-vpbox">Caja de Edgeworth</span>
             <div class="keys">
               <span class="key"><span class="dot" style="background:var(--agA)"></span><span id="t-keyA">A</span></span>
-              <span class="key"><span class="dot" style="background:var(--agB)"></span><span id="t-keyB">B</span></span>
+              <span class="key" id="key-b"><span class="dot" style="background:var(--agB)"></span><span id="t-keyB">B</span></span>
               <span class="key"><span class="dot sq" style="background:var(--core)"></span><span id="t-keyC">Curva de contrato</span></span>
             </div>
           </div>
@@ -632,7 +683,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         </section>
       </div>
 
-      <div class="scrub">
+      <div class="scrub" id="row-scrub">
         <div class="scrub-label">
           <b id="scrub-title">Reparto</b>
           <span id="scrub-sub">a lo largo de la curva de contrato</span>
@@ -907,15 +958,23 @@ function buildUtility(src){
 function sampleField(u, xmax, ymax, n){
   const g = new Float64Array(n * n);
   const dx = xmax / (n - 1), dy = ymax / (n - 1);
-  let lo = Infinity, hi = -Infinity;
-  const finite = [];
   for(let j = 0; j < n; j++){
     const y = j * dy;
-    for(let i = 0; i < n; i++){
-      const v = u(i * dx, y);
-      g[j*n + i] = v;
-      if(Number.isFinite(v)){ finite.push(v); if(v < lo) lo = v; if(v > hi) hi = v; }
-    }
+    for(let i = 0; i < n; i++) g[j*n + i] = u(i * dx, y);
+  }
+  return fieldFromGrid(g, n, xmax, ymax);
+}
+
+/* The percentile bookkeeping, split out so a grid built some other way — a
+   residual utility that costs a one-dimensional maximisation per cell, say —
+   gets exactly the same treatment as one built by evaluating a closure. */
+function fieldFromGrid(g, n, xmax, ymax){
+  const dx = xmax / (n - 1), dy = ymax / (n - 1);
+  let lo = Infinity, hi = -Infinity;
+  const finite = [];
+  for(let k = 0; k < g.length; k++){
+    const v = g[k];
+    if(Number.isFinite(v)){ finite.push(v); if(v < lo) lo = v; if(v > hi) hi = v; }
   }
   /* Percentile clipping. ln(x) dives to -inf along the axis, and an edge of the
      Edgeworth box is exactly where one person holds none of a good — so the
@@ -1025,16 +1084,130 @@ const NGRID  = 161;   // sampling resolution of both utility fields
 const NLEVEL = 72;    // indifference curves of A swept for the Pareto set
 const NPRICE = 241;   // price ratios swept for the offer curves and z(p)
 
+
+/* ==========================================================================
+   3a. The firm
+   --------------------------------------------------------------------------
+   One technology, written as a frontier rather than as a production function,
+   because a frontier is what the diagram shows:
+
+       (x/Fx)^c + (y/Fy)^c = 1,     c >= 1
+
+   c = 1 is a straight frontier and a constant opportunity cost; c = 2 is the
+   quarter ellipse of every textbook; and as c grows the frontier squares off
+   against the corner (Fx, Fy) — which is exactly the pure-exchange box. The
+   three models the applet offers are therefore one picture with the corner
+   rounded by different amounts, and the exchange economy is the limit of the
+   production one rather than a separate thing.
+   ========================================================================== */
+
+const hasFirm = st => st.model !== "exchange";
+const hasB    = st => st.model !== "robinson";
+
+/* The frontier, both ways round, and the slack that says which side of it a
+   point is on. */
+function ppfY(st, x){
+  const u = 1 - Math.pow(clamp(x, 0, st.Fx) / st.Fx, st.Fc);
+  return u <= 0 ? 0 : st.Fy * Math.pow(u, 1 / st.Fc);
+}
+function ppfX(st, y){
+  const u = 1 - Math.pow(clamp(y, 0, st.Fy) / st.Fy, st.Fc);
+  return u <= 0 ? 0 : st.Fx * Math.pow(u, 1 / st.Fc);
+}
+const ppfSlack = (st, x, y) =>
+  1 - Math.pow(x / st.Fx, st.Fc) - Math.pow(y / st.Fy, st.Fc);
+const feasible = (st, x, y) => !hasFirm(st) || ppfSlack(st, x, y) >= -1e-12;
+
+/* The marginal rate of transformation on the frontier: how much y the firm
+   gives up for one more x. Differentiating the frontier,
+   |dy/dx| = (Fy/Fx)^c (x/y)^(c-1), which at c = 1 is the constant Fy/Fx. */
+function mrt(st, x, y){
+  if(y <= 1e-12) return Infinity;
+  return Math.pow(st.Fy / st.Fx, st.Fc) * Math.pow(x / y, st.Fc - 1);
+}
+
+/* What the firm produces at an announced price, and what it earns doing it.
+   Profit is maximised where MRT equals the price ratio, and MRT rises along
+   the frontier as x does, so a bisection finds it without a derivative. */
+function firmAt(st, p){
+  if(!hasFirm(st)) return null;
+  let lo = 0, hi = st.Fx;
+  for(let k = 0; k < 60; k++){
+    const mid = (lo + hi) / 2;
+    if(mrt(st, mid, ppfY(st, mid)) < p) lo = mid; else hi = mid;
+  }
+  const X = (lo + hi) / 2, Y = ppfY(st, X);
+  return { X, Y, profit: p * X + Y };
+}
+
+/* B's side of a production economy: given what A takes, the best B can do once
+   the firm has been told to produce whatever suits B best. That is a
+   one-dimensional maximisation along the arc of the frontier that still leaves
+   A its bundle — and writing it as a field over the same box means the level
+   sweep, the contour tracer, the colour ramp and the picker all work on a
+   production economy unchanged. The chosen production point is kept alongside,
+   because the diagram wants to draw it. */
+function residualField(st, n){
+  const g = new Float64Array(n * n), at = new Float64Array(n * n);
+  const dx = st.Wx / (n - 1), dy = st.Wy / (n - 1);
+  const NS = 20;
+  const phi = (Math.sqrt(5) - 1) / 2;
+  for(let j = 0; j < n; j++){
+    const y = j * dy;
+    const Xhi = ppfX(st, y);
+    for(let i = 0; i < n; i++){
+      const x = i * dx, k = j*n + i;
+      if(x > Xhi + 1e-12){ g[k] = NaN; at[k] = NaN; continue; }
+      const val = X => {
+        const v = st.uB(X - x, ppfY(st, X) - y);
+        return Number.isFinite(v) ? v : -Infinity;
+      };
+      let bX = x, bv = val(x);
+      for(let m = 1; m <= NS; m++){
+        const X = x + (Xhi - x) * m / NS, v = val(X);
+        if(v > bv){ bv = v; bX = X; }
+      }
+      let a = Math.max(x, bX - (Xhi - x) / NS), b = Math.min(Xhi, bX + (Xhi - x) / NS);
+      let c = b - phi*(b - a), d = a + phi*(b - a), gc = val(c), gd = val(d);
+      for(let m = 0; m < 16; m++){
+        if(gc > gd){ b = d; d = c; gd = gc; c = b - phi*(b - a); gc = val(c); }
+        else       { a = c; c = d; gc = gd; d = a + phi*(b - a); gd = val(d); }
+      }
+      const mid = (a + b) / 2, vm = val(mid);
+      if(vm > bv){ bv = vm; bX = mid; }
+      g[k] = Number.isFinite(bv) ? bv : NaN;
+      at[k] = bX;
+    }
+  }
+  const f = fieldFromGrid(g, n, st.Wx, st.Wy);
+  f.prodAt = at;
+  return f;
+}
+
 /* ---- the box ------------------------------------------------------------ */
 
-function totals(st){ st.Wx = st.wAx + st.wBx; st.Wy = st.wAy + st.wBy; }
+/* In an exchange economy the box is what the two of them brought. With a firm
+   it is the firm's own maximum of each good, and the frontier inside it is
+   what is really available. */
+function totals(st){
+  if(hasFirm(st)){ st.Wx = st.Fx; st.Wy = st.Fy; }
+  else { st.Wx = st.wAx + st.wBx; st.Wy = st.wAy + st.wBy; }
+}
 
 /* Both utilities as fields over the same box, so that one marching-squares
    routine, one colour ramp and one picker serve both. */
 function sampleBox(st){
   totals(st);
-  st.fA = sampleField((x, y) => st.uA(x, y), st.Wx, st.Wy, NGRID);
-  st.fB = sampleField((x, y) => st.uB(st.Wx - x, st.Wy - y), st.Wx, st.Wy, NGRID);
+  if(!hasFirm(st)){
+    st.fA = sampleField((x, y) => st.uA(x, y), st.Wx, st.Wy, NGRID);
+    st.fB = sampleField((x, y) => st.uB(st.Wx - x, st.Wy - y), st.Wx, st.Wy, NGRID);
+    return;
+  }
+  /* outside the frontier there is nothing to have, so the field simply stops
+     and every layer that reads it stops with it */
+  st.fA = sampleField((x, y) => feasible(st, x, y) ? st.uA(x, y) : NaN,
+                      st.Wx, st.Wy, NGRID);
+  st.fB = hasB(st) ? residualField(st, NGRID) : null;
 }
 
 /* ---- marginal rates of substitution ------------------------------------- */
@@ -1043,6 +1216,281 @@ function mrsA(st, x, y){ return st.uAx(x, y) / st.uAy(x, y); }
 function mrsB(st, x, y){
   const bx = st.Wx - x, by = st.Wy - y;
   return st.uBx(bx, by) / st.uBy(bx, by);
+}
+
+
+/* ==========================================================================
+   3c. Welfare weights, Negishi, and the second welfare theorem
+   --------------------------------------------------------------------------
+   These three are one mechanism, which is why they are written together.
+
+   Give the planner a weight λ and ask for the feasible allocation maximising
+   λ·u_A + (1-λ)·u_B. Sweeping λ from 0 to 1 walks the Pareto set from B's
+   best to A's best, which is the second characterisation of that set: not
+   "where the curves are tangent" but "what a planner with these weights would
+   choose". At the optimum the common tangent line IS the supporting price, so
+   the same computation hands you the prices that decentralise the allocation —
+   the second welfare theorem — and the transfer each person needs to afford
+   their bundle at those prices. Negishi's algorithm is then nothing more than
+   moving λ until that transfer is zero: at that weight nobody needs a gift,
+   and the planner's allocation is the competitive equilibrium.
+
+   One caveat the applet does not hide. λ weights the utility functions as
+   they are typed, and utility is ordinal — rewriting u_A as 2u_A relabels
+   every weight without moving a single indifference curve. λ is a coordinate
+   on the Pareto set, not a measure of how much A matters.
+   ========================================================================== */
+
+/* The planner's choice at weight λ. The Pareto set is already traced, so this
+   is a search along it rather than a fresh two-dimensional optimisation —
+   which also means it inherits the level sweep's robustness at kinks, where a
+   weighted sum has no interior first-order condition to solve. */
+function paretoAtWeight(st, lam){
+  const C = st.contract;
+  if(!C.length) return null;
+  if(C.length === 1 || !hasB(st)) return { ...C[0], lam, i:0 };
+
+  /* Solving this as "maximise λu_A + (1-λ)u_B" is the definition, and it is
+     also numerically the worst way to evaluate it. Two Cobb-Douglas consumers
+     have a straight utility possibility frontier, against which that sum is
+     very nearly flat: the weight that picks the middle and the weight that
+     picks a corner differ in the fourth decimal, and the slider becomes a
+     switch. The supporting weight, on the other hand, is exact — it is a ratio
+     of two marginal utilities — and rises monotonically along the Pareto set,
+     because giving A more lowers A's marginal utility of the numéraire and
+     raises B's. So the map is inverted rather than maximised: find the point
+     whose supporting weight IS λ. Same answer, and it stays continuous where
+     the sum is flat to machine precision. */
+  const w = i => supportWeight(st, C[i].x, C[i].y);
+  const ok = [];
+  for(let i = 0; i < C.length; i++) if(Number.isFinite(w(i))) ok.push(i);
+
+  const wLo = ok.length >= 2 ? w(ok[0]) : NaN;
+  const wHi = ok.length >= 2 ? w(ok[ok.length - 1]) : NaN;
+
+  /* Whether inverting is possible is decided by the band of weights that pick
+     an INTERIOR allocation, not by the weights along the whole curve: at
+     either end one marginal utility runs to zero or infinity and the weight
+     there runs to zero or one, so every economy looks like it spans the whole
+     range if you measure it across the corners. The band excludes them, and
+     when it collapses the weight is constant — the straight-frontier case,
+     which drops through to the tie-break below. Its threshold is a thousandth
+     of the weight scale rather than machine epsilon, because the Pareto set is
+     traced numerically and a weight that is constant in theory still wobbles
+     in the fifth decimal; inverting that wobble picks an allocation out of the
+     noise, and a band narrower than this is not one a slider could resolve. */
+  const R = st.lamRange || weightRange(st);
+  const invertible = ok.length >= 2 && !R.flat;
+
+  if(invertible){
+    if(lam <= wLo) return { ...C[ok[0]], lam, i:ok[0] };
+    if(lam >= wHi) return { ...C[ok[ok.length-1]], lam, i:ok[ok.length-1] };
+    let a = 0, b = ok.length - 1;
+    while(b - a > 1){ const m = (a + b) >> 1; if(w(ok[m]) < lam) a = m; else b = m; }
+    const P = C[ok[a]], Q = C[ok[b]];
+    let s0 = 0, s1 = 1;
+    const at = u => ({ x:P.x + (Q.x - P.x)*u, y:P.y + (Q.y - P.y)*u });
+    for(let k = 0; k < 40; k++){
+      const m = (s0 + s1) / 2, q = at(m);
+      const v = supportWeight(st, q.x, q.y);
+      if(!Number.isFinite(v)) break;
+      if(v < lam) s0 = m; else s1 = m;
+    }
+    const q = at((s0 + s1) / 2);
+    return { x:q.x, y:q.y, uA:st.uA(q.x, q.y), uB:bUtilAt(st, q.x, q.y), lam, i:ok[a] };
+  }
+
+  /* No usable marginal utilities — a kink everywhere along the set, say — so
+     fall back to the definition, with ties broken at the middle of the flat
+     stretch by arc length. */
+  const W = q => {
+    const a = st.uA(q.x, q.y), b = bUtilAt(st, q.x, q.y);
+    if(!Number.isFinite(a) || !Number.isFinite(b)) return -Infinity;
+    return lam * a + (1 - lam) * b;
+  };
+  const vals = C.map(W);
+  let bv = -Infinity;
+  for(const v of vals) if(v > bv) bv = v;
+  const spread = bv - Math.min(...vals.filter(Number.isFinite));
+  const tol = 1e-6 * Math.max(spread, Math.abs(bv), 1e-12);
+  const tied = [];
+  for(let i = 0; i < vals.length; i++) if(vals[i] >= bv - tol) tied.push(i);
+  let bi = tied[0];
+  if(tied.length > 1){
+    const d = [0];
+    for(let k = 1; k < tied.length; k++){
+      const a = C[tied[k-1]], b = C[tied[k]];
+      d.push(d[k-1] + Math.hypot(b.x - a.x, b.y - a.y));
+    }
+    const half = d[d.length - 1] / 2;
+    let k = 0; while(k < d.length - 1 && d[k+1] < half) k++;
+    bi = tied[k];
+  }
+  return { ...C[bi], lam, i:bi };
+}
+
+/* B's utility at an allocation, whichever economy is running: read straight
+   off the complementary bundle in exchange, and off the residual field — the
+   best B can do once the firm has been told what to make — with a firm. */
+function bUtilAt(st, x, y){
+  if(!hasB(st)) return NaN;
+  if(!hasFirm(st)) return st.uB(st.Wx - x, st.Wy - y);
+  return st.fB ? fieldAt(st.fB, x, y) : NaN;
+}
+
+/* Where the firm produces, given what A takes: the point of the frontier the
+   residual field chose. */
+function productionAt(st, x, y){
+  if(!hasFirm(st)) return null;
+  if(!hasB(st)){ return { X:x, Y:y }; }
+  if(!st.fB || !st.fB.prodAt) return null;
+  const f = st.fB, { n, dx, dy } = f;
+  const i = clamp(Math.round(x / dx), 0, n - 1), j = clamp(Math.round(y / dy), 0, n - 1);
+  const X = f.prodAt[j*n + i];
+  return Number.isFinite(X) ? { X, Y: ppfY(st, X) } : null;
+}
+
+/* The full second-welfare-theorem report at an allocation on the Pareto set:
+   the price that supports it, the income each person needs, and the transfer
+   that gets them there from what they own. The transfers net to zero by
+   construction — the two incomes add up to the value of everything there is —
+   which is the check the readout prints rather than asserts. */
+function supportAt(st, x, y){
+  const mA = mrsA(st, x, y);
+  const mB = hasB(st) ? mrsB(st, x, y) : NaN;
+  /* the supporting price is the common marginal rate; away from an efficient
+     allocation the two disagree and the average is the honest thing to show */
+  let p = Number.isFinite(mA) && Number.isFinite(mB) ? (mA + mB) / 2
+        : Number.isFinite(mA) ? mA : mB;
+  if(!(p > 0) || !Number.isFinite(p)) return null;
+
+  const prod = productionAt(st, x, y);
+  const Wx = prod ? prod.X : st.Wx, Wy = prod ? prod.Y : st.Wy;
+  const xA = x, yA = y, xB = Wx - x, yB = Wy - y;
+
+  const incA = p * xA + yA;
+  const incB = p * xB + yB;
+  let ownA, ownB;
+  if(hasFirm(st)){
+    const profit = p * Wx + Wy;              // the firm is producing at (Wx,Wy)
+    ownA = (hasB(st) ? st.theta : 1) * profit;
+    ownB = hasB(st) ? (1 - st.theta) * profit : 0;
+  }else{
+    ownA = p * st.wAx + st.wAy;
+    ownB = p * st.wBx + st.wBy;
+  }
+  return {
+    p, mrsA:mA, mrsB:mB,
+    mrt: hasFirm(st) ? mrt(st, Wx, Wy) : NaN,
+    xA, yA, xB, yB, incA, incB, ownA, ownB,
+    tA: incA - ownA, tB: incB - ownB,
+    profit: hasFirm(st) ? p * Wx + Wy : NaN,
+    Wx, Wy
+  };
+}
+
+/* The weight that supports an allocation, read off the first-order condition
+   rather than searched for. At a Pareto point the planner sets
+   λ·∂u_A/∂y = (1-λ)·∂u_B/∂y, so λ/(1-λ) is the ratio of the two marginal
+   utilities of the numéraire, and λ follows. With a firm the envelope theorem
+   makes this the same expression: moving y between them changes the residual
+   by exactly B's marginal utility, whatever the firm then does about it. */
+function supportWeight(st, x, y){
+  if(!hasB(st)) return NaN;
+  const ay = st.uAy(x, y);
+  const prod = productionAt(st, x, y);
+  const Wx = prod ? prod.X : st.Wx, Wy = prod ? prod.Y : st.Wy;
+  const by = st.uBy(Wx - x, Wy - y);
+  if(!Number.isFinite(ay) || !Number.isFinite(by) || ay <= 0 || by <= 0) return NaN;
+  const r = by / ay;
+  return r / (1 + r);
+}
+
+/* The weights that do anything. λ outside this range picks a corner — for two
+   Cobb-Douglas consumers the whole Pareto set lives in a band about a tenth
+   of a unit wide — so a slider running 0 to 1 would spend nine tenths of its
+   travel on two allocations. The band is measured once per model and the
+   slider is stretched across it, while the readout still shows the real λ. */
+function weightRange(st){
+  let lo = Infinity, hi = -Infinity;
+  const eA = 0.02 * st.Wx, eB = 0.02 * st.Wy;
+  for(const q of st.contract){
+    if(q.x < eA || q.y < eB) continue;
+    const prod = productionAt(st, q.x, q.y);
+    const Wx = prod ? prod.X : st.Wx, Wy = prod ? prod.Y : st.Wy;
+    if(Wx - q.x < eA || Wy - q.y < eB) continue;
+    const w = supportWeight(st, q.x, q.y);
+    if(Number.isFinite(w)){ if(w < lo) lo = w; if(w > hi) hi = w; }
+  }
+  if(!Number.isFinite(lo) || !Number.isFinite(hi)) return { lo:0.5, hi:0.5, flat:true };
+  const pad = Math.max(1e-4, (hi - lo) * 0.04);
+  return { lo:clamp(lo - pad, 1e-4, 1 - 1e-4), hi:clamp(hi + pad, 1e-4, 1 - 1e-4),
+           flat:(hi - lo) < 1e-3 };
+}
+
+/* Negishi. The transfer A needs rises with A's weight — more weight, more
+   goods, a bigger gift to pay for them — so a bisection on λ finds the weight
+   at which the gift is zero, and there the planner's allocation is exactly
+   what the market would have reached on its own. */
+function negishiSolve(st){
+  if(!st.contract.length || !hasB(st)) return null;
+  const T = lam => {
+    const q = paretoAtWeight(st, lam);
+    if(!q) return NaN;
+    const sup = supportAt(st, q.x, q.y);
+    return sup ? sup.tA : NaN;
+  };
+  const R = st.lamRange || weightRange(st);
+  let lo = R.lo, hi = R.hi;
+  const tLo = T(lo), tHi = T(hi);
+  if(!Number.isFinite(tLo) || !Number.isFinite(tHi)) return null;
+  if(tLo > 0 || tHi < 0){
+    /* no interior weight balances the budget: report the end it runs into
+       rather than pretending a root exists */
+    return { lam: tLo > 0 ? lo : hi, bracketed:false, t:tLo > 0 ? tLo : tHi };
+  }
+  for(let k = 0; k < 60; k++){
+    const mid = (lo + hi) / 2;
+    if(T(mid) < 0) lo = mid; else hi = mid;
+  }
+  let lam = (lo + hi) / 2;
+  let t = T(lam);
+
+  /* Against a straight utility frontier the transfer jumps across zero rather
+     than crossing it — every allocation is supported by the same weight, so
+     no weight singles out the equilibrium. Bisecting along the Pareto set
+     itself always bites, and the weight that supports the answer is then read
+     back off it. Same equilibrium, found from the other side. */
+  const scale = Math.max(1e-6, Math.abs(st.Wx) + Math.abs(st.Wy));
+  if(!(Math.abs(t) < 1e-4 * scale)){
+    const C = st.contract;
+    const Ts = i => {
+      const sup = supportAt(st, C[i].x, C[i].y);
+      return sup ? sup.tA : NaN;
+    };
+    let a = -1, b = -1, pi = -1, pv = NaN;
+    for(let i = 0; i < C.length; i++){
+      const v = Ts(i);
+      if(!Number.isFinite(v)) continue;
+      if(pi >= 0 && pv * v <= 0){ a = pi; b = i; break; }
+      pi = i; pv = v;
+    }
+    if(a >= 0){
+      let s0 = 0, s1 = 1;
+      const at = u => ({ x:C[a].x + (C[b].x - C[a].x)*u, y:C[a].y + (C[b].y - C[a].y)*u });
+      const Tu = u => { const q = at(u); const sup = supportAt(st, q.x, q.y); return sup ? sup.tA : NaN; };
+      const rising = Tu(0) <= Tu(1);
+      for(let k = 0; k < 60; k++){
+        const m = (s0 + s1) / 2, v = Tu(m);
+        if(rising ? v < 0 : v > 0) s0 = m; else s1 = m;
+      }
+      const q = at((s0 + s1) / 2);
+      t = Tu((s0 + s1) / 2);
+      lam = weightFor(st, q.x, q.y);
+      return { lam, bracketed:true, t, viaCurve:true, x:q.x, y:q.y };
+    }
+  }
+  return { lam, bracketed:true, t };
 }
 
 /* ---- demand ------------------------------------------------------------- */
@@ -1205,7 +1653,34 @@ function refineOnLevel(st, x, y, lv){
   return { x:best[0], y:best[1], uA:lv, uB:bv };
 }
 
+/* With one consumer there is no distribution problem left: the Pareto set is
+   the single point of the frontier the consumer likes best, where the marginal
+   rate of substitution meets the marginal rate of transformation. Returning it
+   as a one-element curve keeps every caller downstream unchanged. */
+function robinsonOptimum(st){
+  const val = X => {
+    const v = st.uA(X, ppfY(st, X));
+    return Number.isFinite(v) ? v : -Infinity;
+  };
+  const N = 400;
+  let bX = 0, bv = -Infinity;
+  for(let k = 0; k <= N; k++){
+    const X = st.Fx * k / N, v = val(X);
+    if(v > bv){ bv = v; bX = X; }
+  }
+  const h = st.Fx / N, phi = (Math.sqrt(5) - 1) / 2;
+  let a = Math.max(0, bX - h), b = Math.min(st.Fx, bX + h);
+  let c = b - phi*(b-a), d = a + phi*(b-a), gc = val(c), gd = val(d);
+  for(let k = 0; k < 48; k++){
+    if(gc > gd){ b = d; d = c; gd = gc; c = b - phi*(b-a); gc = val(c); }
+    else       { a = c; c = d; gc = gd; d = a + phi*(b-a); gd = val(d); }
+  }
+  const X = val((a+b)/2) > bv ? (a+b)/2 : bX;
+  return [{ x:X, y:ppfY(st, X), uA:st.uA(X, ppfY(st, X)), uB:NaN }];
+}
+
 function paretoSet(st){
+  if(!hasB(st)) return robinsonOptimum(st);
   const fa = st.fA, fb = st.fB, N = fa.sorted.length;
   const raw = [];
   if(N){
@@ -1228,10 +1703,14 @@ function paretoSet(st){
   /* the two corners of the box are efficient whenever both prefer more to
      less, and they are what closes the frontier at either end */
   const corner = (x, y) => {
-    const a = st.uA(x, y), b = st.uB(st.Wx - x, st.Wy - y);
+    const a = st.uA(x, y), b = bUtilAt(st, x, y);
     if(Number.isFinite(a) && Number.isFinite(b)) raw.push({ x, y, uA:a, uB:b });
   };
-  corner(0, 0); corner(st.Wx, st.Wy);
+  corner(0, 0);
+  /* the far corner is only reachable when the box itself is the feasible set;
+     with a firm, A's best is the point of the frontier A likes most */
+  if(hasFirm(st)) raw.push(...robinsonOptimum(st).map(q => ({ ...q, uB:bUtilAt(st, q.x, q.y) })));
+  else corner(st.Wx, st.Wy);
 
   raw.sort((m, n) => m.uA - n.uA);
 
@@ -1252,7 +1731,19 @@ function paretoSet(st){
 
 /* Where the endowment sits, and which stretch of the contract curve neither
    person would refuse: the core. */
+const hasCore = st => !hasFirm(st);
+
 function coreOf(st, curve){
+  if(hasFirm(st)){
+    /* nobody brings goods to a production economy — they bring shares — so
+       the individually rational floor is having nothing at all */
+    /* Individual rationality needs an outside option, and a production
+       economy gives nobody one: shares of a firm are worth nothing until the
+       firm trades. So there is no core to draw here, and the applet says so
+       by not drawing one rather than by drawing the whole set and calling it
+       the core. */
+    return { uAe:NaN, uBe:NaN, from:-1, to:-1, n:0 };
+  }
   const uAe = st.uA(st.wAx, st.wAy);
   const uBe = st.uB(st.wBx, st.wBy);
   const rel = v => 1e-9 * (1 + Math.abs(v));
@@ -1317,7 +1808,10 @@ function classify(st, pa, pb){
   /* A's rate is read at A's allocation and B's at B's. Away from the auction
      those are the same point; under an announced price they are not, and
      reporting both at A's point was quietly claiming B had agreed to it. */
-  const mA = mrsA(st, x, y), mB = mrsB(st, pb[0], pb[1]);
+  const mA = mrsA(st, x, y);
+  /* with one consumer the rate to match is the firm's, not another person's */
+  const mB = hasB(st) ? mrsB(st, pb[0], pb[1])
+                      : mrt(st, x, ppfY(st, x));
   const smooth = Number.isFinite(mA) && Number.isFinite(mB);
   const gap = smooth ? Math.abs(mA - mB) / Math.max(1e-9, Math.abs(mA) + Math.abs(mB)) : NaN;
   let kind = "off";
@@ -1344,9 +1838,10 @@ function classify(st, pa, pb){
    lens is visible as a change of kind rather than only as a curve.
 
    Marks are fixed bright hues with a dark casing rather than theme tokens,
-   because they are drawn on top of saturated ground in both themes. A is blue
-   and B is orange throughout — chrome, canvas and legend — which is also the
-   one pair of hues that survives the common colour deficiencies.
+   because they are drawn on top of saturated ground in both themes. A is red
+   and B is blue throughout — chrome, canvas, legend and budget sets alike —
+   a pair that stays distinguishable under the common colour deficiencies,
+   where red darkens rather than converging on the blue.
    ========================================================================== */
 const TERRAIN = [
   [0.00,  11,  47, 168],
@@ -1381,10 +1876,11 @@ const lensRGB    = t => rampRGB(LENS, t);
 const rgbCSS = c => `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
 
 const MARK = {
-  A:"#3DBBFF",          // A's indifference curves, offer curve and demand
-  B:"#FF7A3D",          // B's, everywhere
+  A:"#FF5A4D",          // A's indifference curves, offer curve and demand
+  B:"#3DBBFF",          // B's, everywhere
   contract:"#C15CFF",   // the Pareto set
   core:"#C15CFF",       // the same path, haloed where neither would refuse
+  frontier:"#66E3A6",   // the firm's production frontier
   price:"#FFFFFF",      // the price line through the endowment
   ink:"#FFFFFF",        // the endowment and the allocation
   casing:"rgba(6,9,14,.62)",
@@ -1551,8 +2047,8 @@ function renderMap(st){
        the same point; under an announced price they are not, and the lens
        between the drawn curves is the one a reader can check by eye. */
     const r0A = rankOf(fA, st.uA(st.PA[0], st.PA[1]));
-    const r0B = rankOf(fB, st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]));
-    const rA = fA.rank, rB = fB.rank;
+    const r0B = fB ? rankOf(fB, bUtilAt(st, st.PB[0], st.PB[1])) : 0;
+    const rA = fA.rank, rB = fB ? fB.rank : null;
     /* the both-gain region is the improving set, and when that layer is on it
        gets painted crisply at display resolution instead of blurred up from
        this grid — so the two never double-paint the same pixels */
@@ -1562,15 +2058,15 @@ function renderMap(st){
        so a lens that is a sliver still shows its own structure */
     let gmax = 1e-6;
     for(let k = 0; k < rA.length; k++){
-      const a = rA[k] - r0A, b = rB[k] - r0B;
+      const a = rA[k] - r0A, b = rB ? rB[k] - r0B : Infinity;
       if(a > 0 && b > 0){ const m = a < b ? a : b; if(m > gmax) gmax = m; }
     }
-    const tintA = [61, 187, 255], tintB = [255, 122, 61];
+    const tintA = [255, 90, 77], tintB = [61, 187, 255];
     for(let j = 0; j < n; j++){
       const row = (n - 1 - j) * n;
       for(let i = 0; i < n; i++){
         const k = row + i, o = (j*n + i) * 4;
-        const a = rA[k] - r0A, b = rB[k] - r0B;
+        const a = rA[k] - r0A, b = rB ? rB[k] - r0B : (Number.isFinite(rA[k]) ? 1 : NaN);
         if(!Number.isFinite(a) || !Number.isFinite(b)){ d[o+3] = 0; continue; }
         if(a >= 0 && b >= 0){
           if(skipLens){ d[o+3] = 0; continue; }
@@ -1603,7 +2099,7 @@ function contourFamilies(st){
     return out;
   };
   st.famA = build(st.fA);
-  st.famB = build(st.fB);
+  st.famB = st.fB ? build(st.fB) : [];
   st.famKey = st.fieldKey;
 }
 
@@ -1635,24 +2131,28 @@ function renderLens(st, px){
 
   const fA = st.fA, fB = st.fB;
   const a0 = st.uA(st.PA[0], st.PA[1]);
-  const b0 = st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]);
-  if(!Number.isFinite(a0) || !Number.isFinite(b0)){ d.fill(0); octx.putImageData(lensImg, 0, 0); return null; }
+  const b0 = hasB(st) ? bUtilAt(st, st.PB[0], st.PB[1]) : -Infinity;
+  if(!Number.isFinite(a0) || (hasB(st) && !Number.isFinite(b0))){
+    d.fill(0); octx.putImageData(lensImg, 0, 0); return null;
+  }
 
   /* Shade by how far inside the lens a point is, in the smaller of the two
      percentile gains, so the deepest part of the lens — where the largest
      joint gain is — reads as the middle of the oval. Two passes: the first
      finds the deepest point, the second paints against it. */
   const dx = st.Wx / (n - 1), dy = st.Wy / (n - 1);
-  const rA0 = rankOf(fA, a0), rB0 = rankOf(fB, b0);
+  const rA0 = rankOf(fA, a0), rB0 = fB ? rankOf(fB, b0) : 0;
   let gmax = 1e-6, inside = 0;
   const gain = new Float32Array(n * n);
   for(let j = 0; j < n; j++){
     const y = (n - 1 - j) * dy;
     for(let i = 0; i < n; i++){
       const k = j*n + i;
-      const va = fieldAt(fA, i * dx, y), vb = fieldAt(fB, i * dx, y);
+      const va = fieldAt(fA, i * dx, y);
+      const vb = fB ? fieldAt(fB, i * dx, y) : Infinity;
       if(!(va > a0) || !(vb > b0)){ gain[k] = -1; continue; }
-      const g = Math.min(rankOf(fA, va) - rA0, rankOf(fB, vb) - rB0);
+      const g = fB ? Math.min(rankOf(fA, va) - rA0, rankOf(fB, vb) - rB0)
+                   : rankOf(fA, va) - rA0;
       gain[k] = g; inside++;
       if(g > gmax) gmax = g;
     }
@@ -1674,11 +2174,11 @@ function renderLens(st, px){
    the one number that says how much is still on the table. */
 function lensShare(st){
   const a0 = st.uA(st.PA[0], st.PA[1]);
-  const b0 = st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]);
-  if(!Number.isFinite(a0) || !Number.isFinite(b0)) return 0;
-  const ga = st.fA.g, gb = st.fB.g;
+  const b0 = hasB(st) ? bUtilAt(st, st.PB[0], st.PB[1]) : -Infinity;
+  if(!Number.isFinite(a0) || (hasB(st) && !Number.isFinite(b0))) return 0;
+  const ga = st.fA.g, gb = st.fB ? st.fB.g : null;
   let inside = 0;
-  for(let k = 0; k < ga.length; k++) if(ga[k] > a0 && gb[k] > b0) inside++;
+  for(let k = 0; k < ga.length; k++) if(ga[k] > a0 && (!gb || gb[k] > b0)) inside++;
   return inside / ga.length;
 }
 
@@ -1705,6 +2205,22 @@ function drawBox(st){
     ctx.drawImage(renderMap(st), r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
   }
 
+  /* --- what the firm cannot make --- */
+  if(hasFirm(st)){
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(SX(st.Wx), SY(st.Wy));
+    for(let k = 0; k <= 160; k++){
+      const x = st.Fx * k / 160;
+      ctx.lineTo(SX(x), SY(ppfY(st, x)));
+    }
+    ctx.lineTo(SX(st.Wx), SY(st.Wy));
+    ctx.closePath();
+    ctx.fillStyle = dark ? "rgba(0,0,0,.42)" : "rgba(20,24,27,.09)";
+    ctx.fill();
+    ctx.restore();
+  }
+
   /* --- background indifference families --- */
   if(L.families){
     contourFamilies(st);
@@ -1714,8 +2230,8 @@ function drawBox(st){
       for(const segs of fam) segsPath(ctx, segs, SX, SY);
       ctx.stroke();
     };
-    paint(st.famA, dark ? "rgba(61,187,255,.26)" : "rgba(30,111,217,.28)");
-    paint(st.famB, dark ? "rgba(255,122,61,.26)" : "rgba(194,65,12,.28)");
+    paint(st.famA, dark ? "rgba(255,90,77,.26)"  : "rgba(192,50,43,.28)");
+    paint(st.famB, dark ? "rgba(61,187,255,.26)" : "rgba(30,111,217,.28)");
   }
 
   /* --- the improving set --- */
@@ -1735,7 +2251,7 @@ function drawBox(st){
         i === from ? ctx.moveTo(SX(p.x), SY(p.y)) : ctx.lineTo(SX(p.x), SY(p.y));
       }
     };
-    if(L.core && st.core.n > 1){
+    if(L.core && hasCore(st) && st.core.n > 1){
       ctx.save();
       ctx.globalAlpha = 0.35; ctx.lineCap = "round"; ctx.lineJoin = "round";
       ctx.beginPath(); path(st.core.from, st.core.to)();
@@ -1772,7 +2288,9 @@ function drawBox(st){
      casing reads as a single line on dark ground and as *two* thin dark lines
      with a gap between them on light ground, which is worse than useless on a
      diagram whose whole subject is where lines cross. So this one flips. */
-  if(L.price){
+  /* the price line is anchored on the endowment, which a production economy
+     does not have — there the supporting line comes from the welfare theorem */
+  if(L.price && !hasFirm(st)){
     const p = st.p, mA = incomeA(st, p);
     cased(ctx, () => { ctx.moveTo(SX(0), SY(mA)); ctx.lineTo(SX(mA / p), SY(0)); },
           dark ? MARK.price : "#14181B", 1.8, dark ? MARK.casing : "rgba(255,255,255,.75)");
@@ -1782,31 +2300,92 @@ function drawBox(st){
   const [px, py] = st.P;
   if(L.curves){
     const lvA = st.uA(st.PA[0], st.PA[1]);
-    const lvB = st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1]);
+    const lvB = hasB(st) ? bUtilAt(st, st.PB[0], st.PB[1]) : NaN;
     if(Number.isFinite(lvA)){
       const segs = marchingSquares(st.fA, lvA);
       cased(ctx, () => segsPath(ctx, segs, SX, SY), MARK.A, 2.4, MARK.casing);
     }
-    if(Number.isFinite(lvB)){
+    if(Number.isFinite(lvB) && st.fB){
       const segs = marchingSquares(st.fB, lvB);
       cased(ctx, () => segsPath(ctx, segs, SX, SY), MARK.B, 2.4, MARK.casing);
     }
   }
 
+  /* --- the frontier itself, and where on it the firm is producing --- */
+  if(hasFirm(st)){
+    cased(ctx, () => {
+      for(let k = 0; k <= 240; k++){
+        const x = st.Fx * k / 240, sx = SX(x), sy = SY(ppfY(st, x));
+        k ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+      }
+    }, MARK.frontier, 2.2, MARK.casing);
+
+    const prod = productionAt(st, st.P[0], st.P[1]);
+    if(prod && L.production){
+      /* the sub-box the two of them are actually dividing: its far corner is
+         the firm's output, and it slides along the frontier as they trade */
+      ctx.save();
+      ctx.setLineDash([4, 4]); ctx.lineWidth = 1.2;
+      ctx.strokeStyle = dark ? "rgba(255,255,255,.5)" : "rgba(20,24,27,.45)";
+      ctx.strokeRect(r.x0, SY(prod.Y), SX(prod.X) - r.x0, r.y1 - SY(prod.Y));
+      ctx.setLineDash([]);
+      ctx.restore();
+      dot(ctx, SX(prod.X), SY(prod.Y), 5, MARK.frontier, MARK.casing);
+    }
+  }
+
+  /* --- the second welfare theorem: one price line, two budget sets --- */
+  if(L.swt && st.swt){
+    const S = st.swt, p = S.p, m = S.incA;
+    const bx = S.Wx, by = S.Wy;
+    /* A's set is everything under the line inside the sub-box, B's is
+       everything over it — the same line, seen from the two origins */
+    const lineY = x => m - p * x;
+    const under = [];
+    under.push([0, 0]);
+    under.push([0, Math.min(by, Math.max(0, m))]);
+    for(let k = 0; k <= 40; k++){
+      const x = bx * k / 40, y = lineY(x);
+      if(y >= 0 && y <= by) under.push([x, y]);
+    }
+    if(lineY(bx) > 0) under.push([bx, Math.min(by, lineY(bx))]);
+    under.push([Math.min(bx, Math.max(0, m / p)), 0]);
+    const poly = pts => { ctx.beginPath();
+      pts.forEach((q, i) => i ? ctx.lineTo(SX(q[0]), SY(q[1])) : ctx.moveTo(SX(q[0]), SY(q[1])));
+      ctx.closePath(); };
+
+    ctx.save();
+    ctx.globalAlpha = 0.20;
+    poly(under); ctx.fillStyle = MARK.A; ctx.fill();
+    /* B's set is the sub-box minus A's */
+    ctx.beginPath();
+    ctx.rect(SX(0), SY(by), SX(bx) - SX(0), SY(0) - SY(by));
+    poly(under);
+    ctx.fillStyle = MARK.B; ctx.fill("evenodd");
+    ctx.restore();
+
+    cased(ctx, () => {
+      ctx.moveTo(SX(Math.max(0, (m - by) / p)), SY(Math.min(by, m)));
+      ctx.lineTo(SX(Math.min(bx, m / p)), SY(Math.max(0, m - p * bx)));
+    }, dark ? MARK.price : "#14181B", 2,
+       dark ? MARK.casing : "rgba(255,255,255,.75)");
+  }
+
   /* --- the endowment, the two demands, the allocation --- */
-  if(L.demands && st.mkt){
+  if(L.demands && st.mkt && !hasFirm(st)){
     const [ax, ay] = st.mkt.A;
     const bx = st.Wx - st.mkt.B[0], by = st.Wy - st.mkt.B[1];
     square(ctx, SX(ax), SY(ay), 5, MARK.A, MARK.casing);
     square(ctx, SX(bx), SY(by), 5, MARK.B, MARK.casing);
   }
 
-  diamond(ctx, SX(st.wAx), SY(st.wAy), 6, MARK.ink, MARK.casing);
+  if(!hasFirm(st)) diamond(ctx, SX(st.wAx), SY(st.wAy), 6, MARK.ink, MARK.casing);
   if(st.method !== "auction") dot(ctx, SX(px), SY(py), 6, MARK.ink, MARK.casing);
   ctx.restore();
 
   /* labels sit outside the clip so they survive at the very edge */
-  haloText(ctx, "\u03c9", SX(st.wAx) + 9, SY(st.wAy) - 9, ink, halo, FONT_UI);
+  if(!hasFirm(st))
+    haloText(ctx, "\u03c9", SX(st.wAx) + 9, SY(st.wAy) - 9, ink, halo, FONT_UI);
   if(st.method !== "auction")
     haloText(ctx, "P", SX(px) + 9, SY(py) + 10, ink, halo, FONT_UI);
   if(L.optimum && st.eq.length){
@@ -1836,12 +2415,16 @@ function drawFrames(st, ctx, r, C){
   const stepX = niceStep(st.Wx, 6), stepY = niceStep(st.Wy, 6);
 
   ctx.fillStyle = C.ink3;
+  /* B's origin is a fixed corner only in an exchange economy; with a firm it
+     slides along the frontier, so a second set of reversed ticks would be a
+     ruler that moves and it is left off */
+  const twoFrames = !hasFirm(st);
   for(let v = 0; v <= st.Wx + 1e-9; v += stepX){
     const x = SX(v);
     ctx.beginPath(); ctx.moveTo(x, r.y1); ctx.lineTo(x, r.y1 + 4); ctx.stroke();
     ctx.textAlign = "center"; ctx.textBaseline = "top";
     ctx.fillText(fmt(v, stepX < 1 ? 1 : 0), x, r.y1 + 6);
-    /* B counts the same axis backwards, from its own origin */
+    if(!twoFrames) continue;
     const xb = SX(st.Wx - v);
     ctx.beginPath(); ctx.moveTo(xb, r.y0); ctx.lineTo(xb, r.y0 - 4); ctx.stroke();
     ctx.textBaseline = "bottom";
@@ -1852,6 +2435,7 @@ function drawFrames(st, ctx, r, C){
     ctx.beginPath(); ctx.moveTo(r.x0, y); ctx.lineTo(r.x0 - 4, y); ctx.stroke();
     ctx.textAlign = "right"; ctx.textBaseline = "middle";
     ctx.fillText(fmt(v, stepY < 1 ? 1 : 0), r.x0 - 6, y);
+    if(!twoFrames) continue;
     const yb = SY(st.Wy - v);
     ctx.beginPath(); ctx.moveTo(r.x1, yb); ctx.lineTo(r.x1 + 4, yb); ctx.stroke();
     ctx.textAlign = "left";
@@ -1861,7 +2445,8 @@ function drawFrames(st, ctx, r, C){
   /* both origins, named, because which corner you are measuring from is the
      one thing the diagram asks you to keep straight */
   haloText(ctx, "O_A", r.x0 + 16, r.y1 - 12, css("--agA"), C.halo, FONT_UI, "center", "middle");
-  haloText(ctx, "O_B", r.x1 - 16, r.y0 + 12, css("--agB"), C.halo, FONT_UI, "center", "middle");
+  if(twoFrames)
+    haloText(ctx, "O_B", r.x1 - 16, r.y0 + 12, css("--agB"), C.halo, FONT_UI, "center", "middle");
   ctx.restore();
 }
 
@@ -1930,12 +2515,60 @@ function drawAux(st){
   };
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = C.surf; ctx.fillRect(0, 0, w, h);
-  if(st.aux === "excess") drawExcess(st, ctx, w, h, C);
+  if(st.aux === "excess" && !hasFirm(st)) drawExcess(st, ctx, w, h, C);
+  else if(st.aux === "excess"){
+    haloText(ctx, T().zOnlyExchange, w/2, h/2, C.ink3, C.halo, FONT_UI, "center");
+  }
   else drawUPF(st, ctx, w, h, C);
 }
 
 /* ---- utility possibility frontier --------------------------------------- */
+/* With one consumer there is no u_A-u_B frontier to draw — but there is a
+   question worth plotting: how well the consumer does at each point of the
+   firm's frontier, and where along it that peaks. */
+function drawRobinsonPanel(st, ctx, w, h, C){
+  const r = plotFrame(w, h, { l:52, r:18, t:18, b:30 });
+  const N = 200, xs = [], vs = [];
+  let lo = Infinity, hi = -Infinity;
+  for(let k = 0; k <= N; k++){
+    const X = st.Fx * k / N, v = st.uA(X, ppfY(st, X));
+    xs.push(X); vs.push(v);
+    if(Number.isFinite(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
+  }
+  if(!(hi > lo)){ hi = lo + 1; }
+  const pad = (hi - lo) * 0.08;
+  lo -= pad; hi += pad;
+  const SX = x => r.x0 + (x / st.Fx) * (r.x1 - r.x0);
+  const SY = v => r.y1 - (v - lo) / (hi - lo) * (r.y1 - r.y0);
+  axes(ctx, r, C,
+    ticksFor(0, st.Fx, 5).map(t => ({ ...t, px:SX(t.v) })),
+    ticksFor(lo, hi, 5).map(t => ({ ...t, py:SY(t.v) })),
+    "x", "u_A");
+  ctx.save();
+  ctx.beginPath(); ctx.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.clip();
+  cased(ctx, () => {
+    let started = false;
+    for(let k = 0; k <= N; k++){
+      if(!Number.isFinite(vs[k])){ started = false; continue; }
+      const sx = SX(xs[k]), sy = SY(vs[k]);
+      started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+      started = true;
+    }
+  }, MARK.A, 2, MARK.casing);
+  const best = st.contract[0];
+  if(best){
+    const v = st.uA(best.x, best.y);
+    ctx.setLineDash([4, 3]); ctx.lineWidth = 1; ctx.strokeStyle = MARK.contract;
+    ctx.beginPath();
+    ctx.moveTo(SX(best.x), r.y0); ctx.lineTo(SX(best.x), r.y1);
+    ctx.stroke(); ctx.setLineDash([]);
+    dot(ctx, SX(best.x), SY(v), 6, MARK.ink, MARK.casing);
+  }
+  ctx.restore();
+}
+
 function drawUPF(st, ctx, w, h, C){
+  if(!hasB(st)) return drawRobinsonPanel(st, ctx, w, h, C);
   const r = plotFrame(w, h, { l:52, r:18, t:18, b:30 });
   const pts = st.contract.filter(p => Number.isFinite(p.uA) && Number.isFinite(p.uB));
   const uAp = st.uP.a, uBp = st.uP.b;
@@ -1965,7 +2598,7 @@ function drawUPF(st, ctx, w, h, C){
 
   /* the individually rational rectangle: nobody accepts less than ω */
   const { uAe, uBe } = st.core;
-  if(st.layers.core && Number.isFinite(uAe) && Number.isFinite(uBe)){
+  if(st.layers.core && hasCore(st) && Number.isFinite(uAe) && Number.isFinite(uBe)){
     ctx.fillStyle = C.dark ? "rgba(193,92,255,.12)" : "rgba(142,47,158,.10)";
     ctx.fillRect(SX(uAe), r.y0, r.x1 - SX(uAe), SY(uBe) - r.y0);
     ctx.setLineDash([4, 3]); ctx.lineWidth = 1; ctx.strokeStyle = MARK.contract;
@@ -1980,7 +2613,7 @@ function drawUPF(st, ctx, w, h, C){
     cased(ctx, () => {
       pts.forEach((p, i) => i ? ctx.lineTo(SX(p.uA), SY(p.uB)) : ctx.moveTo(SX(p.uA), SY(p.uB)));
     }, MARK.contract, 2, MARK.casing);
-    if(st.layers.core && st.core.n > 1){
+    if(st.layers.core && hasCore(st) && st.core.n > 1){
       const seg = st.contract.slice(st.core.from, st.core.to + 1)
         .filter(p => Number.isFinite(p.uA) && Number.isFinite(p.uB));
       if(seg.length > 1){
@@ -2081,7 +2714,9 @@ const LAYER_DEFS = [
   ["price",    "lPrice",    true ],
   ["demands",  "lDemands",  true ],
   ["offer",    "lOffer",    false],
-  ["optimum",  "lOptimum",  false]
+  ["optimum",  "lOptimum",  false],
+  ["production","lProduction", true ],
+  ["swt",      "lSwt",      true ]
 ];
 const MAP_DEFS = [["gains","mapGains"], ["ua","mapUA"], ["ub","mapUB"], ["none","mapNone"]];
 
@@ -2091,6 +2726,24 @@ const STR = {
     sub:"Dos personas, dos bienes, nada que producir: sólo repartir lo que ya hay. La caja mide el total; cada punto es un reparto. El diagrama y el espacio de utilidades son la misma cosa vista de dos maneras.",
     explore:"Explorar", challenge:"Retos",
 
+    gModel:"Modelo", gFirm:"Empresa",
+    mdlExchange:"Intercambio", mdlProduction:"Producción", mdlRobinson:"Robinson",
+    noteExchange:"Dos consumidores reparten dotaciones dadas. La caja es el total y no cambia.",
+    noteProduction:"Dos consumidores y una empresa. La frontera de producción sustituye a la esquina de la caja: el rectángulo que se reparte se desliza sobre ella.",
+    noteRobinson:"Un consumidor y una empresa. No hay reparto que discutir: el óptimo es donde la RMS iguala a la RMT.",
+    firmNote:"(x/F<sub>x</sub>)<sup>c</sup> + (y/F<sub>y</sub>)<sup>c</sup> = 1. Con c = 1 la frontera es recta; al crecer c se cuadra sobre la esquina, que es la caja de intercambio.",
+    mPlanner:"Planificador · peso λ",
+    mPlannerD:"Recorre el conjunto de Pareto maximizando λu_A + (1−λ)u_B.",
+    lProduction:"Punto de producción", lSwt:"Segundo teorema",
+    rProd:"Produce", rLam:"λ", rTA:"Transf. A", rTB:"Transf. B",
+    rNeg:"λ de Negishi", rProfit:"Beneficio", rMRT:"RMT", rPrice:"Precio de apoyo",
+    negishi:"Negishi", zOnlyExchange:"Sólo en intercambio puro",
+    scrubLam:"Peso de Pareto", scrubLamSub:"λ de 0 (todo B) a 1 (todo A)",
+    swtLine:(p, ta, tb, net) =>
+      `Implementado por precios (p_x, p_y) = (${p}, 1)` +
+      (tb === null ? ` con transferencia T_A = ${ta}`
+                   : ` con transferencias T_A = ${ta}, T_B = ${tb}`) +
+      `  ·  suman ${net}`,
     gPref:"Preferencias", gEndow:"Dotaciones", gMethod:"Mecanismo",
     gPrice:"Precios", gMap:"Mapa", gShow:"Capas",
     uaExpr:"Utilidad de A — u", ubExpr:"Utilidad de B — u",
@@ -2135,6 +2788,7 @@ const STR = {
     vTextGain:"Desde este reparto los dos pueden mejorar a la vez: el conjunto coloreado entre las dos curvas no está vacío. Mientras las curvas se crucen en vez de tocarse, hay un intercambio que ninguno rechazaría.",
     vTitleEff:"Reparto eficiente en el sentido de Pareto",
     vTextEff:"Las dos curvas de indiferencia son tangentes: para mejorar a uno hay que empeorar al otro. Éste es un punto de la curva de contrato.",
+    vTextEffFirm:"La curva de indiferencia es tangente a la frontera de producción: la RMS iguala a la RMT. Producir cualquier otra cosa dejaría al consumidor peor.",
     vTitleEffKink:"Eficiente, pero sin tangencia",
     vTextEffKink:"No hay tangencia porque al menos una de las curvas tiene un vértice aquí. La condición de Pareto se cumple igual: ninguna dirección mejora a los dos.",
     vTitleEdge:"Eficiente en el borde de la caja",
@@ -2158,7 +2812,7 @@ const STR = {
     goalPareto:"Coloca el reparto sobre la curva de contrato.",
     goalPrice:"Ajusta p hasta vaciar el mercado.",
     hintCore:"Arrastra hasta donde las dos curvas sean tangentes y ninguno esté peor que en ω.",
-    hintPareto:"Busca la tangencia entre la curva azul y la naranja.",
+    hintPareto:"Busca la tangencia entre la curva roja y la azul.",
     hintPrice:"Mueve p hasta que el exceso de demanda de x sea cero.",
     okCore:"En el núcleo.", okPareto:"Sobre la curva de contrato.", okPrice:"Mercado vaciado.",
     noCore:"Todavía fuera del núcleo.", noPareto:"Todavía fuera de la curva de contrato.",
@@ -2173,6 +2827,24 @@ const STR = {
     sub:"Two people, two goods, nothing to produce: only what is already there to divide. The box measures the total; every point is a complete division of it. The diagram and the utility space are one model seen two ways.",
     explore:"Explore", challenge:"Challenges",
 
+    gModel:"Model", gFirm:"Firm",
+    mdlExchange:"Exchange", mdlProduction:"Production", mdlRobinson:"Robinson",
+    noteExchange:"Two consumers divide given endowments. The box is the total and does not move.",
+    noteProduction:"Two consumers and a firm. The production frontier replaces the corner of the box: the rectangle being divided slides along it.",
+    noteRobinson:"One consumer and a firm. There is no division to argue about: the optimum is where MRS meets MRT.",
+    firmNote:"(x/F<sub>x</sub>)<sup>c</sup> + (y/F<sub>y</sub>)<sup>c</sup> = 1. At c = 1 the frontier is straight; as c grows it squares off against the corner, which is the exchange box.",
+    mPlanner:"Planner · weight λ",
+    mPlannerD:"Walks the Pareto set by maximising λu_A + (1−λ)u_B.",
+    lProduction:"Production point", lSwt:"Second welfare theorem",
+    rProd:"Produces", rLam:"λ", rTA:"Transfer A", rTB:"Transfer B",
+    rNeg:"Negishi λ", rProfit:"Profit", rMRT:"MRT", rPrice:"Support price",
+    negishi:"Negishi", zOnlyExchange:"Pure exchange only",
+    scrubLam:"Pareto weight", scrubLamSub:"λ from 0 (all B) to 1 (all A)",
+    swtLine:(p, ta, tb, net) =>
+      `Implemented by prices (p_x, p_y) = (${p}, 1)` +
+      (tb === null ? ` with transfer T_A = ${ta}`
+                   : ` with transfers T_A = ${ta}, T_B = ${tb}`) +
+      `  ·  netting to ${net}`,
     gPref:"Preferences", gEndow:"Endowments", gMethod:"Mechanism",
     gPrice:"Prices", gMap:"Map", gShow:"Layers",
     uaExpr:"A's utility — u", ubExpr:"B's utility — u",
@@ -2217,6 +2889,7 @@ const STR = {
     vTextGain:"From here both can be made better off at once: the shaded set between the two curves is not empty. As long as the curves cross rather than touch, some trade exists that neither would refuse.",
     vTitleEff:"Pareto efficient",
     vTextEff:"The two indifference curves are tangent: making one better off now requires making the other worse off. This is a point of the contract curve.",
+    vTextEffFirm:"The indifference curve is tangent to the production frontier: MRS equals MRT. Making anything else would leave the consumer worse off.",
     vTitleEffKink:"Efficient, with no tangency",
     vTextEffKink:"There is no tangency because at least one curve has a kink here. Efficiency holds all the same: no direction improves both.",
     vTitleEdge:"Efficient at the edge of the box",
@@ -2240,7 +2913,7 @@ const STR = {
     goalPareto:"Put the allocation on the contract curve.",
     goalPrice:"Set p so that the market clears.",
     hintCore:"Drag to where the two curves are tangent and neither is worse off than at ω.",
-    hintPareto:"Hunt for the tangency between the blue curve and the orange one.",
+    hintPareto:"Hunt for the tangency between the red curve and the blue one.",
     hintPrice:"Move p until the excess demand for x is zero.",
     okCore:"In the core.", okPareto:"On the contract curve.", okPrice:"Market cleared.",
     noCore:"Still outside the core.", noPareto:"Still off the contract curve.",
@@ -2382,6 +3055,8 @@ const st = {
   uB:null, uBx:null, uBy:null, exactB:true,
 
   wAx:6, wAy:2, wBx:2, wBy:6, Wx:8, Wy:8,
+  model:"exchange", Fx:8, Fy:8, Fc:2, theta:0.5,
+  lam:0.5, negishi:null, swt:null,
 
   fA:null, fB:null, fieldKey:"", famA:null, famB:null, famKey:"",
   contract:[], core:{ uAe:NaN, uBe:NaN, from:-1, to:-1, n:0 },
@@ -2430,13 +3105,20 @@ function recomputeUtilities(){
 
 function recomputeModel(){
   sampleBox(st);
-  buildRanks(st.fA); buildRanks(st.fB);
+  buildRanks(st.fA);
+  if(st.fB) buildRanks(st.fB);
   st.fieldKey = [st.srcA, st.srcB, st.wAx, st.wAy, st.wBx, st.wBy].join("|");
   st.famA = null; st.famKey = "";
   st.contract = paretoSet(st);
   st.core = coreOf(st, st.contract);
-  st.sweep = priceSweep(st);
-  st.eq = findEquilibria(st, st.sweep);
+  /* Offer curves and excess demand are an exchange-economy construction: they
+     read demands against fixed endowments. With a firm the equilibrium comes
+     from Negishi instead, which is why that is computed for every model. */
+  st.sweep = hasFirm(st) ? null : priceSweep(st);
+  st.eq = st.sweep ? findEquilibria(st, st.sweep) : [];
+  st.lamRange = weightRange(st);
+  st.lam = clamp(st.lam, st.lamRange.lo, st.lamRange.hi);
+  st.negishi = negishiSolve(st);
 }
 
 /* Everything that depends on where the allocation and the price are now. */
@@ -2445,7 +3127,11 @@ function syncState(){
   st.p = Math.pow(10, st.logp);
   st.mkt = marketAt(st, st.p);
 
-  if(st.method === "auction"){
+  if(st.method === "planner"){
+    if(st.lamPinned){ st.lamPinned = false; }
+    else { const q = paretoAtWeight(st, st.lam); if(q) st.P = [q.x, q.y]; }
+    st.PA = st.P.slice(); st.PB = st.P.slice();
+  }else if(st.method === "auction"){
     st.PA = st.mkt.A.slice();
     st.PB = [st.Wx - st.mkt.B[0], st.Wy - st.mkt.B[1]];
     st.P  = [clamp(st.PA[0], 0, st.Wx), clamp(st.PA[1], 0, st.Wy)];
@@ -2456,9 +3142,11 @@ function syncState(){
   }
   st.uP = {
     a: st.uA(st.PA[0], st.PA[1]),
-    b: st.uB(st.Wx - st.PB[0], st.Wy - st.PB[1])
+    b: hasB(st) ? bUtilAt(st, st.PB[0], st.PB[1]) : NaN
   };
   st.lensArea = st.fA ? lensShare(st) : 0;
+  st.prod = productionAt(st, st.P[0], st.P[1]);
+  st.swt  = st.layers.swt ? supportAt(st, st.PA[0], st.PA[1]) : null;
 }
 
 let rafPending = false;
@@ -2474,6 +3162,7 @@ function render(){
 /* ---- is this allocation in the lens / the core? ------------------------- */
 const relTol = v => 1e-9 * (1 + Math.abs(v));
 function inLens(x, y){
+  if(!hasCore(st)) return true;
   const a = st.uA(x, y), b = st.uB(st.Wx - x, st.Wy - y);
   return Number.isFinite(a) && Number.isFinite(b) &&
          a >= st.core.uAe - relTol(st.core.uAe) && b >= st.core.uBe - relTol(st.core.uBe);
@@ -2513,37 +3202,54 @@ function paintReadouts(){
 
   const cells = (host, rows) => {
     host.innerHTML = rows.map(([k, v, cls]) =>
-      `<div class="cell"><dt>${k}</dt><dd class="${cls || ""}">${v}</dd></div>`).join("");
+      `<div class="cell"><dt${/[λω]/.test(k) ? ' class="raw"' : ""}>${k}</dt>` +
+      `<dd class="${cls || ""}">${v}</dd></div>`).join("");
   };
 
-  cells($("readoutBox"), [
+  const boxRows = [
     [t.rXA, fmt(st.PA[0]), "a"],
-    [t.rYA, fmt(st.PA[1]), "a"],
-    [t.rXB, fmt(xB), "b"],
-    [t.rYB, fmt(yB), "b"],
-    [t.rUA, fmt(st.uP.a, 3), "a"],
-    [t.rUB, fmt(st.uP.b, 3), "b"]
-  ]);
+    [t.rYA, fmt(st.PA[1]), "a"]
+  ];
+  if(hasB(st)) boxRows.push([t.rXB, fmt(xB), "b"], [t.rYB, fmt(yB), "b"]);
+  boxRows.push([t.rUA, fmt(st.uP.a, 3), "a"]);
+  if(hasB(st)) boxRows.push([t.rUB, fmt(st.uP.b, 3), "b"]);
+  if(hasFirm(st) && st.prod)
+    boxRows.push([t.rProd, `${fmt(st.prod.X, 2)}, ${fmt(st.prod.Y, 2)}`]);
+  cells($("readoutBox"), boxRows);
 
   const rows = [
     [t.rMRSA, Number.isFinite(s.mrsA) ? fmt(s.mrsA) : "∞", "a"],
-    [t.rMRSB, Number.isFinite(s.mrsB) ? fmt(s.mrsB) : "∞", "b"],
+    [hasB(st) ? t.rMRSB : t.rMRT, Number.isFinite(s.mrsB) ? fmt(s.mrsB) : "∞", "b"],
     [`${t.rGap} · ${gapState}`, gapTxt, s.gap < 0.01 ? "good" : ""]
   ];
-  if(st.method === "auction" || st.aux === "excess"){
+  if(st.method === "planner"){
+    rows.push([t.rLam, fmt(st.lam, 3), "core"]);
+    if(st.swt){
+      rows.push([t.rPrice, fmt(st.swt.p, 3)]);
+      rows.push([t.rTA, (st.swt.tA >= 0 ? "+" : "") + fmt(st.swt.tA, 2), "a"]);
+      if(hasB(st)) rows.push([t.rTB, (st.swt.tB >= 0 ? "+" : "") + fmt(st.swt.tB, 2), "b"]);
+    }
+    if(st.negishi) rows.push([t.rNeg, fmt(st.negishi.lam, 3), "good"]);
+  }else if(st.method === "auction" || st.aux === "excess"){
     rows.push([t.rP, fmt(st.p, 3)]);
     rows.push([t.rZX, st.mkt ? fmt(st.mkt.zx, 3) : "—", zRel < 0.005 ? "good" : "warn"]);
     rows.push([t.rEq, st.eq.length ? st.eq.map(e => fmt(e.p, 3)).join(", ") : "—", "core"]);
   }else{
     rows.push([t.rState, s.onCurve ? t.stEfficient : t.stInefficient, s.onCurve ? "good" : ""]);
-    rows.push([t.rCore, s.onCurve && s.lens ? t.yes : t.no, s.onCurve && s.lens ? "core" : ""]);
+    if(hasCore(st))
+      rows.push([t.rCore, s.onCurve && s.lens ? t.yes : t.no, s.onCurve && s.lens ? "core" : ""]);
     rows.push([t.rLens, (st.lensArea * 100).toFixed(1) + "%",
                st.lensArea < 1e-9 ? "good" : "warn"]);
+    if(hasFirm(st) && st.swt && Number.isFinite(st.swt.profit))
+      rows.push([t.rProfit, fmt(st.swt.profit, 2)]);
   }
   cells($("readoutAux"), rows);
 
   const sw = $("scrub-swatch");
-  if(st.method === "auction"){
+  if(st.method === "planner"){
+    sw.style.background = css("--core");
+    $("scrub-val").textContent = fmt(st.lam, 3);
+  }else if(st.method === "auction"){
     sw.style.background = css("--ink-2");
     $("scrub-val").textContent = fmt(st.p, 3);
   }else{
@@ -2570,17 +3276,28 @@ function paintVerdict(){
     title = t.vTitleGain; text = t.vTextGain; cls = "";
     math = `RMS_A = ${fmt(s.mrsA)}   RMS_B = ${fmt(s.mrsB)}`;
   }else{
-    const inCore = s.lens;
+    const inCore = hasCore(st) && s.lens;
     if(inCore){ title = t.vTitleCore; text = t.vTextCore; cls = "is-good"; }
     else if(s.kind === "corner"){ title = t.vTitleEdge; text = t.vTextEdge; cls = "is-warn"; }
     else if(s.kind === "kink"){ title = t.vTitleEffKink; text = t.vTextEffKink; cls = "is-good"; }
-    else if(s.kind === "tangency"){ title = t.vTitleEff; text = t.vTextEff; cls = "is-good"; }
+    else if(s.kind === "tangency"){
+      title = t.vTitleEff;
+      text = hasB(st) ? t.vTextEff : t.vTextEffFirm;
+      cls = "is-good";
+    }
     else { title = t.vTitleOutCore; text = t.vTextOutCore; cls = "is-warn"; }
-    if(!inCore && s.kind === "tangency" && (st.uP.a < st.core.uAe || st.uP.b < st.core.uBe)){
+    if(hasCore(st) && !inCore && s.kind === "tangency" &&
+       (st.uP.a < st.core.uAe || st.uP.b < st.core.uBe)){
       title = t.vTitleOutCore; text = t.vTextOutCore; cls = "is-warn";
     }
     math = `RMS_A = ${fmt(s.mrsA)}   RMS_B = ${fmt(s.mrsB)}   ` +
            `u_A = ${fmt(st.uP.a,3)} (ω: ${fmt(st.core.uAe,3)})   u_B = ${fmt(st.uP.b,3)} (ω: ${fmt(st.core.uBe,3)})`;
+  }
+  /* the second welfare theorem, stated for the allocation actually on screen */
+  if(st.layers.swt && st.swt && s.onCurve){
+    const S = st.swt, t2 = T();
+    math = t2.swtLine(fmt(S.p, 3), fmt(S.tA, 2), hasB(st) ? fmt(S.tB, 2) : null,
+                      fmt(S.tA + (hasB(st) ? S.tB : 0), 2));
   }
   box.hidden = false;
   box.className = "verdict " + cls;
@@ -2616,6 +3333,16 @@ function applyLang(){
   $("t-g-pref").textContent   = t.gPref;
   $("t-g-endow").textContent  = t.gEndow;
   $("t-g-method").textContent = t.gMethod;
+  $("t-g-model").textContent  = t.gModel;
+  $("t-g-firm").textContent   = t.gFirm;
+  $("mdl-exchange").textContent   = t.mdlExchange;
+  $("mdl-production").textContent = t.mdlProduction;
+  $("mdl-robinson").textContent   = t.mdlRobinson;
+  $("t-m-planner").textContent    = t.mPlanner;
+  $("t-m-planner-d").textContent  = t.mPlannerD;
+  $("t-firm-note").innerHTML      = t.firmNote;
+  $("btn-negishi").textContent    = t.negishi;
+  paintModelNote();
   $("t-g-price").textContent  = t.gPrice;
   $("t-g-map").textContent    = t.gMap;
   $("t-g-show").textContent   = t.gShow;
@@ -2752,9 +3479,20 @@ function buildMapChips(){
   });
 }
 
+/* Which layers this model has anything to draw for. */
+function layersFor(){
+  return LAYER_DEFS.filter(([k]) => {
+    if(k === "core") return hasCore(st);
+    if(k === "price" || k === "demands" || k === "offer" || k === "optimum") return !hasFirm(st);
+    if(k === "production") return hasFirm(st);
+    if(k === "swt") return hasB(st) || hasFirm(st);
+    return true;
+  });
+}
+
 function buildLayers(){
   const t = T();
-  $("layer-checks").innerHTML = LAYER_DEFS.map(([k, lbl]) =>
+  $("layer-checks").innerHTML = layersFor().map(([k, lbl]) =>
     `<label class="check"><input type="checkbox" data-layer="${k}" ${st.layers[k] ? "checked" : ""}>` +
     `<span>${t[lbl]}</span></label>`).join("");
   $("layer-checks").querySelectorAll("input[data-layer]").forEach(cb => {
@@ -2776,6 +3514,11 @@ function bindNum(sliderId, boxId, key, after){
   b.addEventListener("change", () => set(b.value));
   b.value = st[key]; s.value = st[key];
   return set;
+}
+function pushFirmUI(){
+  for(const [id, key] of [["fx","Fx"],["fy","Fy"],["fc","Fc"],["theta","theta"]]){
+    $(id).value = st[key]; $(id + "-v").value = st[key];
+  }
 }
 function pushEndowUI(){
   for(const [id, key] of [["eax","wAx"],["eay","wAy"],["ebx","wBx"],["eby","wBy"]]){
@@ -2833,11 +3576,29 @@ function onModelChange(){
 function onPointChange(){ syncState(); syncScrubFromState(); render(); }
 
 /* ---- the scrubber ------------------------------------------------------- */
+function paintModelNote(){
+  const t = T();
+  $("t-model-note").textContent =
+    st.model === "production" ? t.noteProduction :
+    st.model === "robinson"   ? t.noteRobinson   : t.noteExchange;
+}
+
 function scrubRange(){
   if(st.method === "trade" && st.core.n > 1) return [st.core.from, st.core.to];
   return [0, Math.max(0, st.contract.length - 1)];
 }
 function applyScrub(v){
+  if(st.method === "planner"){
+    const R = st.lamRange || { lo:0, hi:1, flat:true };
+    if(R.flat){
+      /* every efficient allocation is supported by the same weight, so the
+         weight cannot pick one: walk the set directly and report the weight */
+      const q = curveAt(st.contract, v, 0, st.contract.length - 1);
+      if(q){ st.P = [q.x, q.y]; st.lamPinned = true; st.lam = weightFor(st, q.x, q.y); }
+    }else st.lam = R.lo + clamp(v, 0, 1) * (R.hi - R.lo);
+    syncState(); render();
+    return;
+  }
   if(st.method === "auction"){
     st.logp = LOGP_MIN + v * (LOGP_MAX - LOGP_MIN);
     st.p = Math.pow(10, st.logp);
@@ -2851,6 +3612,14 @@ function applyScrub(v){
 }
 function syncScrubFromState(){
   const s = $("scrub");
+  if(st.method === "planner"){
+    const R = st.lamRange || { lo:0, hi:1, flat:true };
+    if(R.flat && st.contract.length > 1){
+      const q = nearestOnCurve(st.contract, st.P[0], st.P[1]);
+      s.value = clamp(q.i / (st.contract.length - 1), 0, 1);
+    }else s.value = clamp((st.lam - R.lo) / Math.max(1e-12, R.hi - R.lo), 0, 1);
+    return;
+  }
   if(st.method === "auction"){
     s.value = (st.logp - LOGP_MIN) / (LOGP_MAX - LOGP_MIN);
   }else if(st.contract.length > 1){
@@ -2861,7 +3630,9 @@ function syncScrubFromState(){
 }
 function updateScrubLabel(){
   const t = T();
-  const key = st.method === "auction" ? "Price" : st.method === "trade" ? "Core" : "Contract";
+  const key = st.method === "auction" ? "Price"
+            : st.method === "planner" ? "Lam"
+            : st.method === "trade"   ? "Core" : "Contract";
   $("scrub-title").textContent = t["scrub" + key];
   $("scrub-sub").textContent   = t["scrub" + key + "Sub"];
 }
@@ -2893,8 +3664,25 @@ function pointerToModel(ev, cv){
   ];
 }
 function moveAllocation(to){
+  if(st.method === "planner"){
+    /* clicking anywhere in the planner picks the nearest efficient allocation
+       and reports the weight that would have chosen it — which is the second
+       welfare theorem asked from the other end */
+    const q = nearestOnCurve(st.contract, to[0], to[1]);
+    st.P = [q.x, q.y];
+    st.lam = weightFor(st, q.x, q.y);
+    syncScrubFromState();
+    onPointChange();
+    return;
+  }
   st.P = st.method === "trade" ? constrainToLens(st.P, to) : to;
   onPointChange();
+}
+
+/* Which weight would have chosen this allocation. */
+function weightFor(st, x, y){
+  const w = supportWeight(st, x, y);
+  return Number.isFinite(w) ? w : st.lam;
 }
 function bindBox(){
   const cv = $("cbox");
@@ -2913,6 +3701,13 @@ function bindBox(){
 
   cv.addEventListener("keydown", ev => {
     const k = ev.key;
+      if(st.method === "planner"){
+      if(k !== "ArrowLeft" && k !== "ArrowRight") return;
+      const cur = parseFloat($("scrub").value) || 0;
+      applyScrub(clamp(cur + (k === "ArrowRight" ? 1 : -1) * (ev.shiftKey ? 0.05 : 0.01), 0, 1));
+      syncScrubFromState(); ev.preventDefault();
+      return;
+    }
     if(st.method === "auction"){
       if(k !== "ArrowLeft" && k !== "ArrowRight") return;
       st.logp = clamp(st.logp + (k === "ArrowRight" ? 1 : -1) * (ev.shiftKey ? 0.05 : 0.01),
@@ -3082,6 +3877,43 @@ function buildTray(){
   });
 }
 
+/* Which controls belong to the model on screen. Split out from setModel so
+   that booting into a model shows the same rail as switching into one. */
+function applyModelUI(){
+  const m = st.model;
+  for(const [id, k] of [["mdl-exchange","exchange"],["mdl-production","production"],["mdl-robinson","robinson"]])
+    $(id).setAttribute("aria-pressed", m === k);
+  $("g-firm").hidden = !hasFirm(st);
+  $("g-endow").hidden = hasFirm(st);
+  $("row-theta").hidden = !hasB(st);
+  $("radio-auction").hidden = hasFirm(st);
+  $("radio-planner").hidden = !hasB(st);
+  $("btn-clear").hidden = hasFirm(st);
+  $("row-price").hidden = hasFirm(st);
+  document.querySelectorAll(".agent")[1].hidden = !hasB(st);
+  pushFirmUI();
+  buildLayers();
+  /* one consumer, one efficient point: nothing for a scrubber to sweep */
+  $("row-scrub").hidden = !hasB(st);
+  $("key-b").hidden = !hasB(st);
+  paintModelNote();
+}
+
+function setModel(m){
+  st.model = m;
+  applyModelUI();
+
+  /* the auction reads demands against endowments, which a production economy
+     does not have; the planner is the mechanism that survives every model */
+  if(hasFirm(st) && st.method === "auction") setMethod(hasB(st) ? "planner" : "free", true);
+  if(!hasB(st) && st.method === "planner") setMethod("free", true);
+
+  totals(st);
+  st.P = [st.Wx * 0.4, st.Wy * 0.4];
+  if(applyPrefs()) onModelChange();
+  buildChips();
+}
+
 function setMethod(m, quiet){
   st.method = m;
   document.querySelectorAll('input[name="method"]').forEach(r => { r.checked = r.value === m; });
@@ -3110,6 +3942,27 @@ function boot(){
 
   for(const [id, key] of [["eax","wAx"],["eay","wAy"],["ebx","wBx"],["eby","wBy"]])
     bindNum(id, id + "-v", key, onModelChange);
+  for(const [id, key] of [["fx","Fx"],["fy","Fy"],["fc","Fc"]])
+    bindNum(id, id + "-v", key, scheduleModel);
+  /* a share changes who pays, not what is feasible, so it never resamples */
+  bindNum("theta", "theta-v", "theta", () => {
+    st.negishi = negishiSolve(st); syncState(); render();
+  });
+
+  for(const [id, m] of [["mdl-exchange","exchange"],["mdl-production","production"],["mdl-robinson","robinson"]])
+    $(id).addEventListener("click", () => setModel(m));
+
+  $("btn-negishi").addEventListener("click", () => {
+    const r = st.negishi || negishiSolve(st);
+    if(!r) return;
+    st.lam = clamp(r.lam, 0, 1);
+    setMethod("planner");
+    /* on a straight frontier the weight does not single the point out, so the
+       allocation Negishi actually found is used rather than re-derived */
+    if(r.viaCurve && Number.isFinite(r.x)){ st.P = [r.x, r.y]; st.lamPinned = true; }
+    syncScrubFromState();
+    syncState(); render();
+  });
 
   const readExpr = () => {
     st.rawA = $("ua-expr").value.trim();
@@ -3187,6 +4040,7 @@ function boot(){
   st.P = [st.wAx, st.wAy];
   if(applyPrefs()) recomputeModel();
   st.P = [st.Wx * 0.5, st.Wy * 0.5];
+  applyModelUI();
   syncState(); syncScrubFromState();
 
   /* one handle for the checks in tools/, and for anyone who wants to drive the
@@ -3194,7 +4048,9 @@ function boot(){
   window.__edgeworth = {
     st, render, syncState, recomputeModel, recomputeUtilities,
     marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod,
-    setFamily, applyPrefs, applyPreset, exprOf, lensShare, FAMILIES, PRESETS
+    setFamily, applyPrefs, applyPreset, exprOf, lensShare, FAMILIES, PRESETS,
+    setModel, paretoAtWeight, supportAt, negishiSolve, weightFor,
+    ppfY, ppfX, mrt, firmAt, hasFirm, hasB, bUtilAt
   };
   applyLang();
   buildTray();

@@ -25,6 +25,96 @@ is a reconciliation against the original's own choices — its utility
 functions, its slider ranges, its labelling. Paste the graph's expression list
 and those can be matched.
 
+## Three economies
+
+A toggle at the top of the rail switches the model. All three are one picture
+with the corner of the box rounded by different amounts, because the firm's
+technology is written as a frontier rather than as a production function:
+
+    (x/Fx)^c + (y/Fy)^c = 1,     c >= 1
+
+At `c = 1` the frontier is a straight line and the opportunity cost is
+constant; `c = 2` is the quarter ellipse of every textbook; and as `c` grows
+the frontier squares off against the corner `(Fx, Fy)` — which **is** the
+pure-exchange box. The exchange economy is the limit of the production one
+rather than a separate thing, and the checks pin that down: with the frontier
+squared off, the production model's Pareto set is the same diagonal the
+exchange model gives, to one part in ten thousand.
+
+| Model | Who is in it | What the diagram shows |
+|---|---|---|
+| **Exchange** | two consumers, fixed endowments | the box, the contract curve, the core |
+| **Production** | two consumers and a firm | the frontier, with the rectangle being divided sliding along it; efficiency needs `MRS_A = MRS_B = MRT` |
+| **Robinson** | one consumer and a firm | no division to argue about: the optimum is where `MRS = MRT`, and the second panel plots utility along the frontier |
+
+In the production model B's side of the box is a **residual utility**: given
+what A takes, the best B can do once the firm has been told to produce
+whatever suits B best. That is a one-dimensional maximisation along the arc of
+the frontier that still leaves A its bundle, done once per grid cell — and
+writing it as a field over the same box means the level sweep, the contour
+tracer, the colour ramp and the pointer all work on a production economy
+unchanged. The production point the maximisation chose is kept alongside, and
+drawn: it is the far corner of the sub-box, and it moves as the two of them
+trade.
+
+A production economy has no goods endowments — people own shares of the firm
+instead — so it has no core either: individual rationality needs an outside
+option, and a share of a firm is worth nothing until the firm trades. The
+applet says so by not drawing one, rather than by drawing the whole Pareto set
+and calling it the core.
+
+## Welfare weights, Negishi, and the second welfare theorem
+
+These three are one mechanism, which is why they are one section.
+
+Give the planner a weight λ and ask for the feasible allocation maximising
+`λ·u_A + (1−λ)·u_B`. Sweeping λ walks the Pareto set from B's best to A's
+best — the second characterisation of that set: not *where the curves are
+tangent* but *what a planner with these weights would choose*. At the optimum
+the common tangent is the supporting price, so the same computation hands you
+the prices that decentralise the allocation and the transfer each person needs
+to afford their bundle at those prices. **Negishi's algorithm** is then nothing
+more than moving λ until that transfer is zero: at that weight nobody needs a
+gift, and the planner's allocation is the competitive equilibrium. The checks
+confirm it lands on exactly the allocation and price the excess-demand root
+finds by a completely separate route.
+
+The **second welfare theorem** layer draws the consequence. One price line —
+A's budget line and B's are the same line, seen from the two origins — with
+A's budget set filled in red below it and B's in blue above, and a readout that
+states the implementation in words: *implemented by prices (p_x, p_y) = (…, 1)
+with transfers T_A = …, T_B = …*, and the sum, which is zero by construction
+because the two incomes add up to the value of everything there is.
+
+Three things about λ the applet does not hide:
+
+- **λ is a coordinate, not a measure of importance.** It weights the utility
+  functions as they are typed, and utility is ordinal — rewriting `u_A` as
+  `2·u_A` relabels every weight without moving a single indifference curve.
+- **Its useful range is narrow, and measured.** For two Cobb–Douglas consumers
+  the entire Pareto set lives in a band of weights about a tenth of a unit
+  wide; a slider running 0 to 1 would spend nine tenths of its travel on two
+  corner allocations. The band is measured once per model — across the weights
+  that pick an *interior* allocation, since at either end a marginal utility
+  runs to zero or infinity — and the slider is stretched across it, while the
+  readout still shows the real λ.
+- **Sometimes it selects nothing at all.** Two people with the same homothetic
+  preferences have a *straight* utility possibility frontier, and against a
+  straight frontier the weighted sum is flat along the whole Pareto set at the
+  weight matching its slope: every efficient allocation maximises it, and every
+  other weight picks a corner. There the applet walks the set directly and
+  reports the constant weight, and Negishi bisects along the set rather than
+  along λ. Same equilibrium, found from the other side.
+
+The weight is **inverted rather than maximised**. Solving "maximise the
+weighted sum" is the definition and also the worst way to evaluate it: against
+a nearly straight frontier the weight that picks the middle and the weight that
+picks a corner differ in the fourth decimal, and the slider becomes a switch.
+The supporting weight is exact — a ratio of two marginal utilities of the
+numéraire — and rises monotonically along the Pareto set, so the applet finds
+the point whose supporting weight *is* λ. Same answer, continuous where the sum
+is flat to machine precision.
+
 ## Preferences
 
 Each person picks their own family, independently, from a menu that also shows
@@ -166,6 +256,8 @@ Everything is hand-rolled so the page stays self-contained:
 | Equilibrium | Every sign change of excess demand over a logarithmic price sweep, refined by bisection in log price. There can be more than one, and with perfect substitutes excess demand jumps across zero rather than crossing it — that case is reported as a jump rather than rounded to `z = 0`. |
 | The map | Rasterised at the sampling resolution of the fields and blitted with smoothing, not evaluated per screen pixel: the gains map is redrawn on every pointer move, and painting from the same grid the contours are traced from makes the shading and the curves agree exactly rather than nearly. |
 | The improving set | A mask read from both fields by bilinear interpolation at display resolution, shaded by the smaller of the two percentile gains so the deepest part of the region reads as its middle. Its size is counted off the sampling grid instead, cheaply enough to report on every frame. |
+| The firm | The frontier is inverted in closed form both ways; profit maximisation is a bisection on `MRT = p`, since `MRT` rises along the frontier and needs no derivative. |
+| Residual utility | One golden-section maximisation along the frontier per grid cell — about 830 000 utility evaluations, and 47 ms in total, only a third more than the exchange model costs. |
 | Ranks | The percentile rank of every grid cell is computed once per sampling. Doing 26 000 binary searches per frame to shade the lens was the one thing in this applet that could be felt. |
 | Cased curves | A curve is emitted as one batched path and stroked twice. Stroking segment by segment lets each casing overpaint its neighbour's core, and the line comes out beaded. |
 
@@ -179,8 +271,9 @@ Everything is hand-rolled so the page stays self-contained:
   as tall as the total of *y*, letterboxed inside a square panel rather than
   stretched to fill it, so that equal steps in the two goods are equal steps on
   the screen and the diagonal means what it looks like.
-- **A is blue and B is orange** — chrome, canvas and legend alike. It is also
-  the one pair of hues that survives the common colour deficiencies. Marks on
+- **A is red and B is blue** — chrome, canvas, legend and budget sets alike.
+  The pair stays distinguishable under the common colour deficiencies, where
+  red darkens rather than converging on the blue. Marks on
   the canvas are fixed bright values with a dark casing rather than theme
   tokens, because they are drawn over saturated ground in both themes.
 - **The contract curve is found by search, not by solving MRS_A = MRS_B.**
@@ -207,6 +300,19 @@ quasilinear pair `2√x + y` and `ln x + y` gives a vertical contract curve at
 `x_A = ((√33 − 1)/2)² = 5.628`, that both people set their MRS equal to an
 announced price, and that the kinked and linear cases still produce a Pareto
 set.
+
+The new economics is checked against algebra too. Robinson with `sqrt(xy)` on a
+quarter circle of radius 8 puts the optimum at `x = y = 8/sqrt(2)`, and
+`x^0.7 y^0.3` tilts it to `x = sqrt(44.8)`, `y = x·sqrt(3/7)` — both to three
+decimals. Transfers net to zero at every weight and in every model. The
+supporting price equals the marginal rate both consumers share, and with a firm
+it equals the MRT as well. Negishi drives the transfer to zero and lands on the
+allocation and price the excess-demand root finds independently. The weight read
+back off an allocation matches the weight that chose it. And a second group of
+checks drives the actual controls — the model buttons, the family selects, the
+weight scrubber, the arrow keys, the Negishi button — because the model can be
+right while the buttons are wired to the wrong code, which during this build
+they briefly were.
 
 The dials are checked against algebra too: a Cobb–Douglas weight of 0.8 against
 0.5 on an 8×8 box puts the contract curve through `(4, 1.6)`, and two
