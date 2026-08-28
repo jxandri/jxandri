@@ -30,6 +30,7 @@
  */
 
 import { CAMPUS, QUANTUM, COVER_CLASSES } from './campus-data.js';
+import { SAT } from './campus-sat.js';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 const VALUE = (() => {
@@ -172,6 +173,79 @@ export function buildings() {
   return out;
 }
 
+/* ----------------------------------------------------- from orbit */
+
+/**
+ * The satellite image, decoded once and sampled per vertex.
+ *
+ * Google's photorealistic 3D tiles need an API key and a billing account, and
+ * could not be redistributed inside a file a teacher hands out anyway, so the
+ * buildings here are Overture footprints with real heights. This is the other
+ * thing that was asked for instead: Sentinel-2 true colour at ten metres,
+ * painted onto the ground as its albedo and lit by the same sun as everything
+ * else, so the campus reads as the aerial photograph a student recognises.
+ *
+ * Decoding is asynchronous because that is the only way a browser will turn a
+ * JPEG into pixels, and the surface is built synchronously — so the promise is
+ * started at import, long before anyone can choose this example, and the
+ * colouring falls back to the land-cover palette if it is somehow not ready.
+ */
+let satPixels = null;
+const satReady = (async () => {
+  try {
+    const img = new Image();
+    img.decoding = 'async';
+    await new Promise((res, rej) => {
+      img.onload = res; img.onerror = () => rej(new Error('satellite image failed to decode'));
+      img.src = SAT.src;
+    });
+    const c = document.createElement('canvas');
+    c.width = SAT.nx; c.height = SAT.ny;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0);
+    satPixels = g.getImageData(0, 0, SAT.nx, SAT.ny).data;
+  } catch {
+    satPixels = null;                 // the land cover carries on regardless
+  }
+  return !!satPixels;
+})();
+
+/** Resolves true once the image is ready to sample. */
+export function satelliteReady() { return satReady; }
+export function hasSatellite() { return !!satPixels; }
+
+/**
+ * Linear RGB at a point, or null outside the image.
+ *
+ * sRGB in, linear out: the renderer works in linear light and the surface's
+ * vertex colours are multiplied into it, so handing over the stored byte
+ * unchanged would wash the whole image out by roughly a gamma.
+ */
+const S2L = (() => {
+  const t = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const v = i / 255;
+    t[i] = v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  }
+  return t;
+})();
+
+export function satelliteAt(x, y, out) {
+  if (!satPixels) return null;
+  const lon = CAMPUS.lon + x / KX;
+  const lat = CAMPUS.lat + y / KY;
+  const i = Math.floor(((lon - SAT.west) / (SAT.east - SAT.west)) * SAT.nx);
+  const j = Math.floor(((SAT.north - lat) / (SAT.north - SAT.south)) * SAT.ny);
+  if (i < 0 || j < 0 || i >= SAT.nx || j >= SAT.ny) return null;
+  const k = (j * SAT.nx + i) * 4;
+  out[0] = S2L[satPixels[k]];
+  out[1] = S2L[satPixels[k + 1]];
+  out[2] = S2L[satPixels[k + 2]];
+  return out;
+}
+
+export const SAT_INFO = { scene: SAT.scene, cloud: SAT.cloud, credit: SAT.credit };
+
 /**
  * Where to put the explorer when the map opens.
  *
@@ -213,4 +287,6 @@ export const CAMPUS_INFO = {
   count: CAMPUS.buildings,
   lat: CAMPUS.lat, lon: CAMPUS.lon,
   west: CAMPUS.west, east: CAMPUS.east, south: CAMPUS.south, north: CAMPUS.north,
+  // The sliver named in the request, in the same local kilometres.
+  quadrant: CAMPUS.quadrant,
 };

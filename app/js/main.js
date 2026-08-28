@@ -7,15 +7,17 @@ import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
   buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
-  GROUP_OUTSIDE, heightColor, setBiomeProfile, setCoverSource,
+  GROUP_OUTSIDE, heightColor, setBiomeProfile, setCoverSource, setSatelliteSource,
 } from './terrain.js';
 import { ELIAS_INFO } from './elias.js';
 import {
-  CAMPUS_INFO, coverAt, buildings as campusBuildings, startPoint as campusStart,
+  CAMPUS_INFO, SAT_INFO, coverAt, satelliteAt, satelliteReady, hasSatellite,
+  buildings as campusBuildings, startPoint as campusStart,
 } from './campus.js';
 import { buildBuildings } from './buildings.js';
-import { BORDERS } from './borders-data.js';
-import { feasibleFor, boundaryOf, BORDER_IDS } from './borders.js';
+import {
+  BORDERS, feasibleFor, boundaryOf, windowOf, BORDER_IDS, SLOPE_IDS, PEAK_IDS,
+} from './borders.js';
 import { photoFor } from './borders-photos.js';
 import { Decorations } from './decor.js';
 import {
@@ -155,6 +157,9 @@ const state = {
   curCurve: false,
   curTangent: false,
   decor: true,
+  // The campus can be painted with its own satellite image instead of the
+  // land-cover palette. On by default there, meaningless everywhere else.
+  satellite: true,
   rail: false,          // rope the explorer to the constraint curve
   curvesInside: false,  // draw level curves only inside the feasible set
   smoothCurves: true,   // trace them finer than the render mesh
@@ -1071,6 +1076,12 @@ function rebuild() {
   // knows nothing about.
   const onCampus = isCampus();
   setCoverSource(onCampus ? (wx, wz) => coverAt(field.mathX(wx), field.mathY(wz)) : null);
+  // And where there is a photograph of the ground, and the student asked for
+  // it, the photograph wins. Cleared everywhere else, so an image of Santiago
+  // can never end up painted on a mountain in the Yukon.
+  setSatelliteSource(onCampus && state.satellite && hasSatellite()
+    ? (wx, wz, out) => satelliteAt(field.mathX(wx), field.mathY(wz), out)
+    : null);
 
   if (!grid.anyValid) {
     showError('err-fn', localError('err.undefinedEverywhere'));
@@ -2130,7 +2141,7 @@ function eliasFeasible() {
  * single source of truth about what surface is on screen.
  */
 function currentBorder() {
-  const m = /^\s*([a-z]+)\s*\(\s*x\s*,\s*y\s*\)\s*$/.exec(state.fnSrc || '');
+  const m = /^\s*([a-z][a-z0-9]*)\s*\(\s*x\s*,\s*y\s*\)\s*$/.exec(state.fnSrc || '');
   return m && BORDERS[m[1]] ? m[1] : null;
 }
 
@@ -2250,6 +2261,9 @@ function updateCrochetNote() {
   if (elias) elias.hidden = fn !== ELIAS_FN;
   const campus = $('note-campus');
   if (campus) campus.hidden = fn !== CAMPUS_FN;
+  // The satellite image belongs to one surface, so its switch appears with it.
+  const satBox = $('fld-sat');
+  if (satBox) satBox.hidden = fn !== CAMPUS_FN;
   const border = $('note-border');
   const id = currentBorder();
   if (border) {
@@ -2432,10 +2446,33 @@ function wireUI() {
   $('panel-toggle').addEventListener('click', () => togglePanel(true));
   $('panel-show').addEventListener('click', () => togglePanel(false));
 
+  // The frontier slopes are listed from the data rather than written into the
+  // markup: their names are derived from where on the line each window sits,
+  // and a hand-kept list would drift the moment the search was re-run.
+  const slopeGroup = $('og-slopes');
+  if (slopeGroup) {
+    const es = getLanguage() === 'es';
+    for (const id of SLOPE_IDS) {
+      const m = BORDERS[id].meta;
+      const opt = document.createElement('option');
+      opt.value = `${id}(x, y)`;
+      opt.textContent = `${es ? m.es : m.name}  (${(es ? m.countriesEs : m.countries)
+        .map((c) => c.split(' (')[0]).join(' / ')})`;
+      slopeGroup.appendChild(opt);
+    }
+    slopeGroup.hidden = SLOPE_IDS.length === 0;
+  }
+
   $('preset-fn').addEventListener('change', (e) => {
     if (!e.target.value) return;
-    $('in-fn').value = e.target.value;
-    if (e.target.value === ELIAS_FN) {
+    // A preset may name a *view* of a surface as well as the surface: the
+    // campus ships both the block and the sliver the request named, and they
+    // are one function seen through two windows. Everything after the pipe is
+    // the view; the formula is what comes before it.
+    const [fnSrc, view] = e.target.value.split('|');
+    e = { target: { value: fnSrc } };
+    $('in-fn').value = fnSrc;
+    if (fnSrc === ELIAS_FN) {
       // The real mountain: the domain is the survey's own window, the
       // feasible set is Alaska, and the window must not follow the explorer —
       // the data has edges, and panning past them would be panning off the
@@ -2453,7 +2490,7 @@ function wireUI() {
       $('t-decor').checked = true; state.decor = true;
       $('in-res').value = 520;                 // same reason as the border peaks
       $('in-res').dispatchEvent(new Event('input'));
-    } else if (/^([a-z]+)\(x, y\)$/.test(e.target.value)
+    } else if (/^([a-z][a-z0-9]*)\(x, y\)$/.test(e.target.value)
       && BORDERS[e.target.value.replace(/\(.*/, '')]) {
       // A border mountain: the survey window is the domain, and the feasible
       // set is the *other* country — the one that does not own the summit.
@@ -2462,9 +2499,13 @@ function wireUI() {
       // for a problem set.
       const id = e.target.value.replace(/\(.*/, '');
       const s = BORDERS[id];
-      const h = s.half.toFixed(3);
-      $('in-xmin').value = -h; $('in-xmax').value = h;
-      $('in-ymin').value = -h; $('in-ymax').value = h;
+      // Square for a mountain the frontier crosses at its summit; a long, shallow
+      // rectangle for a frontier slope, where the length runs along the border
+      // and costs nothing while every kilometre across it is another chance to
+      // swallow a rival peak. windowOf knows which is which.
+      const w = windowOf(id);
+      $('in-xmin').value = w.xmin.toFixed(3); $('in-xmax').value = w.xmax.toFixed(3);
+      $('in-ymin').value = w.ymin.toFixed(3); $('in-ymax').value = w.ymax.toFixed(3);
       // Open with the z axis stretched, the way a relief model or an atlas
       // does. At true scale two kilometres of mountain across an eighteen
       // kilometre window is a swelling, not a peak — honestly so, but an
@@ -2500,10 +2541,15 @@ function wireUI() {
       // nothing else: it does not follow the explorer, because walking east off
       // the edge would be walking off the survey, and it is not square, because
       // the request was not.
-      $('in-xmin').value = CAMPUS_INFO.xmin.toFixed(4);
-      $('in-xmax').value = CAMPUS_INFO.xmax.toFixed(4);
-      $('in-ymin').value = CAMPUS_INFO.ymin.toFixed(4);
-      $('in-ymax').value = CAMPUS_INFO.ymax.toFixed(4);
+      // The whole block, or the quadrant the request named — one fit, two
+      // windows. The quadrant is a 129 m by 926 m sliver, which is a strip of
+      // hillside rather than a neighbourhood, so it is offered as its own view
+      // rather than as the default.
+      const win = view === 'quadrant' ? CAMPUS_INFO.quadrant : CAMPUS_INFO;
+      $('in-xmin').value = win.xmin.toFixed(4);
+      $('in-xmax').value = win.xmax.toFixed(4);
+      $('in-ymin').value = win.ymin.toFixed(4);
+      $('in-ymax').value = win.ymax.toFixed(4);
       $('t-follow').checked = false; state.follow = false;
       // No constraint here. This one is not a Lagrange problem — it is a place
       // to ask the unconstrained questions in, where the student knows the
@@ -2634,6 +2680,9 @@ function wireUI() {
   bindCheck('t-rail', 'rail', applyRail);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
   bindCheck('t-worldmap', 'worldMap', () => withLoading(applyPalette));
+  // The photograph is the surface's albedo, so switching it changes the mesh
+  // colours rather than a material: the surface has to be rebuilt.
+  bindCheck('t-sat', 'satellite', () => withLoading(() => applyInputs()));
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
   bindCheck('t-geogrid', 'geoGrid', () => withLoading(refreshSurfaceGrid));
 

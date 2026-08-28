@@ -422,7 +422,11 @@ export class Decorations {
       // crown around the summit instead of a carpet over the whole massif.
       // ...and a climate whose cloud band sits above the top of the range has
       // no cloud in it at all, however the ramp happens to interpolate.
-      if (cloudsPossible() && hN > 0.8 && wCloud > 0.02 && r < wCloud * 0.5) {
+      // Sparingly. On a window a few kilometres across a scatter of puffs
+      // crowns the summit; on one thirty kilometres long the same rule lays a
+      // white blanket over the ridge and hides the very terrain the example is
+      // about. Higher up, and a third as often.
+      if (cloudsPossible() && hN > 0.88 && wCloud > 0.02 && r < wCloud * 0.16) {
         const lift = unit * (14 + rnd() * 22);
         posv.set(field.worldX(x), field.worldY(z) + lift, field.worldZ(y));
         q.identity();

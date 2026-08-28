@@ -261,6 +261,22 @@ export function setCoverSource(fn) { coverSource = fn || null; }
 export function hasCoverSource() { return !!coverSource; }
 
 /**
+ * ...and when there is a photograph of the ground, use the photograph.
+ *
+ * A land-cover class is a statement about a ten-metre square: this one is
+ * scrub. A satellite image is the square itself. Where one exists it is the
+ * better albedo, and the only thing worth keeping from the synthetic treatment
+ * is the bare rock that steep ground sheds — the image already contains its own
+ * illumination, and piling the band ramps, the lichen and the snow line on top
+ * of a photograph would be painting over the evidence.
+ *
+ * @param fn (wx, wz, out[3]) -> out in LINEAR rgb, or null if outside the image
+ */
+let satSource = null;
+export function setSatelliteSource(fn) { satSource = fn || null; }
+export function hasSatelliteSource() { return !!satSource; }
+
+/**
  * Whether this climate has cloud in it at all.
  *
  * Cloud is a fact about absolute altitude, not about a fraction of the local
@@ -343,7 +359,15 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // into an interlocking edge of the two classes, which is both prettier and
   // more honest — the boundary between scrub and grass is not a straight line
   // ten metres long.
-  if (coverSource) {
+  const painted = satSource && satSource(wx, wz, out);
+  if (painted) {
+    // A ten-metre pixel is coarser than the mesh, so neighbouring vertices
+    // share one colour and the ground reads as flat facets of photograph. The
+    // finest noise field breaks that up by a couple of per cent — far too
+    // little to invent anything, enough to stop the pixel grid showing.
+    const g = 1 + (fine - 0.5) * 0.06;
+    out[0] *= g; out[1] *= g; out[2] *= g;
+  } else if (coverSource) {
     const cls = coverSource(wx + (fine - 0.5) * 9, wz + (veg - 0.5) * 9);
     const a = COVER_A[cls] || COVER_A[30];
     const b = COVER_B[cls] || COVER_B[30];
@@ -364,19 +388,24 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // Under a survey the class already says what grows here, so the band-derived
   // patchiness would be a second opinion nobody asked for: mottle the class
   // colour instead, which keeps the texture without overruling the data.
-  const vegetated = coverSource ? 0 : bandWeight(2, t) + bandWeight(3, t);
+  const vegetated = (coverSource || painted) ? 0 : bandWeight(2, t) + bandWeight(3, t);
   if (vegetated > 0.01) {
     mixRGB(out, BAND_VEG_LIGHT, smoothstep(0.35, 0.85, veg) * 0.35 * vegetated, out);
     mixRGB(out, BAND_VEG_DEEP, smoothstep(0.55, 0.95, meso) * 0.35 * vegetated, out);
   }
 
-  // Steep ground sheds soil at any height: it goes to bare rock.
-  if (steep > 0.001) {
+  // Steep ground sheds soil at any height: it goes to bare rock. Kept even
+  // under a photograph, but at a third of the strength: the image knows what
+  // colour the crag is, and this only keeps the form readable where the ten
+  // metre pixel cannot resolve the face.
+  if (steep > 0.001 && painted) {
+    mixRGB(out, rockTint(macro, meso, h, rugged, ROCK_TMP), steep * 0.24, out);
+  } else if (steep > 0.001) {
     mixRGB(out, rockTint(macro, meso, h, rugged, ROCK_TMP), steep * 0.72, out);
   }
 
   // Lichen colonises the gentler faces of the arid and volcanic bands.
-  const stony = coverSource ? 0 : bandWeight(4, t) + bandWeight(5, t);
+  const stony = (coverSource || painted) ? 0 : bandWeight(4, t) + bandWeight(5, t);
   const lichen = smoothstep(0.62, 0.92, meso) * (1 - steep * 0.6) * stony * 0.28;
   if (lichen > 0.001) mixRGB(out, LICHEN, lichen, out);
 
@@ -399,12 +428,12 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // hillside in the growing season is nowhere.
   const snowAt = BAND_AT[6];
   const drift = (meso - 0.5) * 0.30 + (macro - 0.5) * 0.20 + (fine - 0.5) * 0.06;
-  const snow = coverSource ? 0 : smoothstep(snowAt - 0.02, snowAt + 0.06,
+  const snow = (coverSource || painted) ? 0 : smoothstep(snowAt - 0.02, snowAt + 0.06,
     t + drift - steep * 0.16);
   if (snow > 0.001) mixRGB(out, BAND_SNOW, snow, out);
 
   // Brightness variation — subtle on gentle ground, strong on tough.
-  const amp = 0.11 + 0.30 * rugged;
+  const amp = painted ? 0.03 : 0.11 + 0.30 * rugged;
   const swing = (fine - 0.5) * 0.40 + (meso - 0.5) * 0.35 + (macro - 0.5) * 0.25;
   const shade = 1 + swing * 2 * amp;
   out[0] *= shade; out[1] *= shade; out[2] *= shade;

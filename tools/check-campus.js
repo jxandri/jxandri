@@ -30,10 +30,10 @@ const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FA
       zmin: a.grid.zmin, zmax: a.grid.zmax, sz: a.state.sz, res: a.state.res };
   });
   check('the window is the rectangle the coordinates name',
-    Math.abs((w.xmax - w.xmin) - 2.194) < 0.01 && Math.abs((w.ymax - w.ymin) - 1.843) < 0.01,
+    Math.abs((w.xmax - w.xmin) - 2.323) < 0.01 && Math.abs((w.ymax - w.ymin) - 1.843) < 0.01,
     `${(w.xmax - w.xmin).toFixed(3)} x ${(w.ymax - w.ymin).toFixed(3)} km`);
   check('the ground is the real ground, in kilometres',
-    w.zmin > 0.86 && w.zmin < 0.90 && w.zmax > 1.34 && w.zmax < 1.40,
+    w.zmin > 0.84 && w.zmin < 0.90 && w.zmax > 1.34 && w.zmax < 1.40,
     `${(w.zmin * 1000).toFixed(0)}–${(w.zmax * 1000).toFixed(0)} m`);
   check('it opens at true vertical scale', w.sz === 1);
 
@@ -170,6 +170,45 @@ const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FA
     return n;
   });
   check('level curves draw on it like any other surface', cont >= 1, `${cont} group(s)`);
+
+  // The satellite image: decoded, aligned, and actually on the ground.
+  const sat = await p.evaluate(async () => {
+    const m = await import('./js/campus.js');
+    await m.satelliteReady();
+    const a = window.__peaks;
+    const out = [0, 0, 0];
+    // Built ground is pale and grey; the scrub slope east of it is not. If the
+    // image were misaligned or upside down these two would not differ this way.
+    const built = m.satelliteAt(-0.72, 0.05, out) ? out.slice() : null;
+    const scrub = m.satelliteAt(0.55, -0.35, out) ? out.slice() : null;
+    const off = m.satelliteAt(9, 9, out);
+    const lum = (c) => 0.21 * c[0] + 0.72 * c[1] + 0.07 * c[2];
+    return {
+      ready: m.hasSatellite(), built, scrub, off,
+      brighter: built && scrub ? lum(built) > lum(scrub) : null,
+      on: a.state.satellite,
+    };
+  });
+  check('the satellite image decodes and is sampled in linear light',
+    sat.ready && sat.built && sat.scrub && sat.off === null,
+    sat.built ? `built ${sat.built.map((v) => v.toFixed(2)).join(',')}` : 'no pixels');
+  check('it is the right way round: the town is paler than the scrub slope',
+    sat.brighter === true);
+
+  // The quadrant the request named, to the metre.
+  await p.evaluate(() => {
+    const s = document.getElementById('preset-fn');
+    s.value = 'uandes(x, y)|quadrant';
+    s.dispatchEvent(new Event('change'));
+  });
+  await p.waitForTimeout(16000);
+  const quad = await p.evaluate(() => {
+    const a = window.__peaks;
+    return { w: (a.state.xmax - a.state.xmin) * 1000, h: (a.state.ymax - a.state.ymin) * 1000 };
+  });
+  check('the named quadrant opens at exactly its stated size',
+    Math.abs(quad.w - 129) < 3 && Math.abs(quad.h - 926) < 6,
+    `${quad.w.toFixed(0)} m x ${quad.h.toFixed(0)} m`);
 
   check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
   console.log(fails === 0 ? '\nTHE CAMPUS IS A SURFACE, AND THE SCENERY IS NOT PART OF IT' : `\n${fails} FAILURE(S)`);

@@ -28,7 +28,29 @@
  * defining endpoints. Nothing here is traced off a small-scale map.
  */
 
-import { BORDERS, QUANTUM } from './borders-data.js';
+import { BORDERS as PEAKS, QUANTUM } from './borders-data.js';
+import { SLOPES } from './slopes-data.js';
+
+/**
+ * Two families of the same lesson, in one table.
+ *
+ * The atlas mountains (borders-data.js) are frontiers that cross a *summit*:
+ * the peak is on the line, the country that does not own it is higher than the
+ * line almost everywhere, and an honest window therefore shows a thin ribbon of
+ * feasible ground. That is a true and vivid picture of one situation.
+ *
+ * The frontier slopes (slopes-data.js) are the other situation, and the more
+ * common one: the line crosses a hillside below a peak. The feasible country
+ * falls away from it for kilometres, so it can be seventy per cent of a window
+ * ten times the area, the peak stands off the line in plain view, and the
+ * highest legal point has to be found by walking the frontier rather than
+ * guessed as the nearest point to the summit.
+ *
+ * Everything downstream — the evaluator, the constraint text, Border Run —
+ * treats them identically, because mathematically they are identical.
+ */
+const BORDERS = { ...SLOPES, ...PEAKS };
+export { BORDERS };
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 const VALUE = (() => {
@@ -70,19 +92,24 @@ function coeffs(id) {
  */
 function makeEvaluator(id) {
   const spec = BORDERS[id];
-  const { M, half } = spec;
+  const { M } = spec;
+  // Square windows write one half-width; the frontier slopes are rectangles,
+  // long along the border and shallow across it, and write two. The index
+  // space the transform lives in is square either way — it is only the map
+  // from kilometres into it that differs per axis.
+  const halfX = spec.halfX ?? spec.half;
+  const halfY = spec.halfY ?? spec.half;
   const c = coeffs(id);
-  const L = 2 * half;
   const CJ = new Float64Array(M);
   const CK = new Float64Array(M);
   const D = new Float64Array(M);
   let cachedY = NaN;
 
   return (x, y) => {
-    if (!(x >= -half && x <= half && y >= -half && y <= half)) return NaN;
+    if (!(x >= -halfX && x <= halfX && y >= -halfY && y <= halfY)) return NaN;
 
     if (y !== cachedY) {
-      const ty = Math.PI * (y + half) / L;
+      const ty = Math.PI * (y + halfY) / (2 * halfY);
       CK[0] = 1;
       if (M > 1) CK[1] = Math.cos(ty);
       for (let k = 2; k < M; k++) CK[k] = 2 * CK[1] * CK[k - 1] - CK[k - 2];
@@ -94,7 +121,7 @@ function makeEvaluator(id) {
       cachedY = y;
     }
 
-    const tx = Math.PI * (x + half) / L;
+    const tx = Math.PI * (x + halfX) / (2 * halfX);
     CJ[0] = 1;
     if (M > 1) CJ[1] = Math.cos(tx);
     for (let j = 2; j < M; j++) CJ[j] = 2 * CJ[1] * CJ[j - 1] - CJ[j - 2];
@@ -123,8 +150,25 @@ export const BORDER_IDS = Object.keys(BORDERS);
 /** Everything the app needs to set a mountain up, without touching the data. */
 export function borderInfo(id) {
   const s = BORDERS[id];
-  return s ? { ...s, d: undefined } : null;
+  if (!s) return null;
+  return {
+    ...s, d: undefined,
+    halfX: s.halfX ?? s.half,
+    halfY: s.halfY ?? s.half,
+  };
 }
+
+/** The window, as the domain boxes want it. */
+export function windowOf(id) {
+  const s = BORDERS[id];
+  if (!s) return null;
+  const hx = s.halfX ?? s.half, hy = s.halfY ?? s.half;
+  return { xmin: -hx, xmax: hx, ymin: -hy, ymax: hy };
+}
+
+/** Which family an example belongs to, for the menu and the notes. */
+export const SLOPE_IDS = Object.keys(BORDERS).filter((id) => BORDERS[id].kind === 'slope');
+export const PEAK_IDS = Object.keys(BORDERS).filter((id) => BORDERS[id].kind !== 'slope');
 
 /**
  * The feasible set — the country that does NOT own the summit — as a formula a

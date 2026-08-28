@@ -117,9 +117,14 @@ const standAt = (p, g) => p.evaluate((g) => {
     photo: (document.getElementById('g-preview').src || '').length > 500,
     blurb: (document.getElementById('g-blurb').textContent || '').length > 40,
     sandboxHidden: getComputedStyle(document.getElementById('hud-top')).display === 'none',
+    examples: window.__peaks.game.ctx.missions.length,
   }));
-  check('the game opens on a mission list of twelve', menu.screen === 'menu' && menu.rows === 12,
-    `${menu.rows} mountains`);
+  // Twelve atlas mountains and the frontier slopes beside them; the list grows
+  // whenever the frontier search finds another honest window, so the check is
+  // that every example is a mission rather than that there are exactly twelve.
+  check('the game opens on a mission list of every border example',
+    menu.screen === 'menu' && menu.rows >= 12 && menu.rows === menu.examples,
+    `${menu.rows} missions for ${menu.examples} examples`);
   check('each mission shows its photograph and description', menu.photo && menu.blurb);
   check('the sandbox chrome stays out of the way', menu.sandboxHidden);
 

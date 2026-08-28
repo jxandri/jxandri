@@ -371,7 +371,7 @@ fronteriza.</p>
 
 <h2>Un lugar real: Universidad de los Andes, Santiago</h2>
 <p>La &#250;ltima entrada de la lista de ejemplos no es un paisaje sino un barrio: el rect&#225;ngulo
-de 70&#176;30&#8242;40&#8243;O a 70&#176;29&#8242;15&#8243;O y de 33&#176;24&#8242;S a
+de 70&#176;30&#8242;45&#8243;O a 70&#176;29&#8242;15&#8243;O y de 33&#176;24&#8242;S a
 33&#176;25&#8242;S, es decir el terreno en torno a la Universidad de los Andes, en San Carlos de
 Apoquindo, sobre el faldeo andino al oriente de Santiago. Son 2,19 km de este a oeste por 1,84 km
 de norte a sur, con 505 m de desnivel, y se abre a escala vertical verdadera porque un cerro as&#237;
@@ -399,6 +399,19 @@ inventados puede pararse en un lugar por el que pasa cada semana y hacerle las m
 hacia d&#243;nde se baja desde aqu&#237;, qu&#233; tan empinada es la subida a la biblioteca,
 c&#243;mo se ve una curva de nivel de altitud cuando cruza un estacionamiento. Encienda las curvas
 de nivel y camine una.</p>
+<p>A este mapa se le añadieron dos cosas más después de la primera versión. El color es ahora el
+lugar mismo: una imagen satelital Sentinel-2 del 17 de enero de 2025, de diez metros por píxel y
+0,3% de nubes, pintada como albedo del suelo e iluminada por el mismo sol que todo lo demás.
+Apáguela en <strong>Mapa y terreno</strong> y el color vuelve a las clases de cobertura del suelo. Y
+una segunda entrada de la lista de ejemplos abre la misma superficie sobre el cuadrante indicado
+aparte —de 70&#176;30&#8242;40&#8243;O a 70&#176;30&#8242;45&#8243;O y de 33&#176;24&#8242;S a
+33&#176;24&#8242;30&#8243;S, una franja de 129 m por 926 m del borde occidental—. Es una sola
+función vista por dos ventanas, y puede escribirse cualquier otra en las casillas del dominio.</p>
+<p>Sobre los edificios: los mosaicos 3D fotorrealistas de Google exigen una clave de API y una cuenta
+de facturación, y no podrían viajar dentro de un archivo que usted reparte en un pendrive, así que
+no son una opción aquí. Overture Maps es la fuente equivalente y de ahí vienen los edificios:
+huellas reales y alturas reales donde la fuente las declara.</p>
+
 
 <h2>Montañas cortadas por una frontera</h2>
 <p>Bajo <strong>Montañas fronterizas</strong>, en el menú de ejemplos, hay doce montañas reales
@@ -428,26 +441,48 @@ segunda cumbre al otro lado, cuya cima no está cerca de la frontera. No existe 
 para «el cuerpo de una montaña», así que la ventana se elige como la más amplia en la que el
 enunciado se cumple, y todo lo que afirma está en pantalla para comprobarlo.</p>
 
-<p>Cómo queda situada la frontera en el cuadro merece un minuto de clase, porque es una
-restricción sobre la imagen y no una cuestión de gusto. La ventana se coloca para dejar en pantalla
-tanto del país <em>factible</em> como la afirmación tolere —idealmente unos dos tercios, de modo
-que se vea sobre todo el terreno por el que sí se puede caminar, con la cima inalcanzable alzándose
-en el tercio restante—. Cuatro de las doce lo consiguen: el cerro Tecate, el Jabal Umm ad Dami y
-el Bikku Bitti al 60%, y el Kinnerly Peak al 55%. Las demás no pueden, y la razón es
-geográfica: en cuanto la ventana alcanza suficiente terreno al otro lado de la línea, recoge una
-segunda cima cuya cumbre no está en ningún punto cercano a la frontera, y la afirmación que el
-ejemplo existe para hacer se vuelve falsa. El American Border Peak es el caso extremo: a trescientos metros al norte del
-paralelo 49 el terreno canadiense ya está 55 m por encima del mejor punto de la línea, y a tres
-kilómetros al norte hay una cumbre de 2 398 m. La ventana honesta muestra allí unos cientos de
-metros de Canadá y nada más. La fracción y el tamaño de la ventana se intercambian exactamente
-—la fracción por el ancho es la distancia que la ventana penetra al otro lado de la línea, y esa
-distancia la fija dónde está la cumbre vecina—, de modo que una montaña más ancha por la que
-caminar se paga con una franja más delgada del país lejano, y la construcción elige la franja. El constructor prueba primero la banda de dos tercios, de la ventana más ancha
-hacia abajo, y baja a fracciones menores solo cuando nada de la banda sobrevive; lo que cada
-montaña logró de verdad queda registrado con ella. Si quiere más del país lejano en cuadro del que
-trae el ejemplo, ensanche usted mismo <strong>y mín</strong> e <strong>y máx</strong>: y observe
-entonces cómo el optimizador se sale de la línea, que es la misma lección enunciada al revés y
-igual de buena.</p>
+<p>Cómo queda situada la frontera en el cuadro merece un minuto de clase, porque es una restricción
+sobre la imagen y no una cuestión de gusto. En estas doce el país factible es una franja estrecha
+junto a la línea —unos pocos cientos de metros en las más ajustadas—, y eso no es una decisión de
+diseño sino aritmética. La cima está <em>sobre</em> la frontera, así que el país que no la posee es
+más alto que la línea casi en todas partes; si la ventana se extiende más al otro lado recoge una
+segunda cumbre cuya cima no está en ningún punto cercano al límite, y la afirmación que el ejemplo
+existe para hacer se vuelve falsa. El American Border Peak es el caso extremo: a trescientos metros
+al norte del paralelo 49 el terreno canadiense ya está 55 m por encima del mejor punto de la línea,
+y a tres kilómetros al norte hay una cumbre de 2 398 m. Ensanche usted mismo <strong>y mín</strong>
+e <strong>y máx</strong> y observe cómo el optimizador se sale de la línea: es la misma lección
+enunciada al revés, e igual de buena.</p>
+
+<h2>Laderas fronterizas: cuando el límite no pasa por la cumbre</h2>
+<p>El siguiente grupo del menú es la otra mitad de la historia, y es donde están de verdad casi
+todas las fronteras del mundo. Un límite no suele cruzar una cumbre: cruza una <em>ladera</em>. Y
+cuando lo hace, la imagen se invierte. El terreno de su lado desciende alejándose de la línea
+durante kilómetros, así que puede ser casi todo lo que se ve; la cumbre queda fuera de la línea,
+dentro del tercio lejano, a la vista y fuera de alcance; y el punto más alto que puede pisar
+legalmente está en algún lugar de veinte o treinta kilómetros de frontera, que hay que recorrer para
+encontrarlo. Esa última diferencia es la pedagógicamente útil: en una montaña del atlas la respuesta
+es simplemente el punto de la línea más cercano a la cima, y un estudiante despierto la adivina sin
+moverse.</p>
+<p>No son montañas catalogadas, así que llevan por nombre el lugar de la línea donde están. Nada se
+eligió a mano: el paralelo 49 y el meridiano 141 están definidos por un número, de modo que una
+ventana puede deslizarse por ellos de extremo a extremo preguntando al modelo de elevación, en cada
+posición y cada tamaño, si se cumplen cuatro cosas a la vez — que el punto más alto del país factible
+esté sobre la frontera, que haya de verdad terreno más alto al otro lado, que la cumbre quede dentro
+del cuadro y no cortada por su borde, y que la ventana sea factible en un 70% de su área. De 563
+posiciones probadas a lo largo de 657 km del paralelo 49 y 1 028 km del meridiano 141, 118 admitían
+una ventana honesta; las cuatro que sobrevivieron al ajuste suave completo son las que se publican.</p>
+<p>Además son mucho mayores. La ventana es un rectángulo, largo a lo largo de la frontera —donde los
+kilómetros salen gratis— y poco profundo al cruzarla, donde cada uno es otra ocasión de tragarse una
+cumbre rival. La mayor mide 32 km por 15 km, es decir 480 km&#178;: cuarenta veces el terreno de la
+montaña del atlas más ajustada y nueve veces más ancha. La más espectacular está en el meridiano 141
+a 60,35°&nbsp;N, en el macizo de San Elías, donde lo más alto que puede pisar son 3 851 m y una
+cumbre de 4 623 m se alza a 1,9 km dentro del Yukón. La frontera le cuesta 773 m de altitud, y puede
+verlos todos.</p>
+<p>Como la frontera es un paralelo o un meridiano, queda alineada con los ejes en kilómetros locales,
+así que la restricción de la casilla es lo más simple que puede ser una desigualdad lineal:
+<code>y &gt;= -3</code>. Encienda <strong>Caminar solo por la frontera</strong> y sígala con la
+lectura de altitud a la vista: habrá hecho la maximización con restricciones a pie, sobre treinta
+kilómetros de terreno.</p>
 <p>Una decisión de presentación más. El eje z se abre <strong>estirado</strong>, de tres a nueve
 veces según la montaña, porque a escala verdadera dos kilómetros de relieve en dieciocho kilómetros
 de terreno son una loma, no un pico. Es solo una escala de visualización: <code>f</code>, sus

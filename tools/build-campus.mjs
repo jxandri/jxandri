@@ -47,8 +47,14 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 /* ------------------------------------------------------------ the window */
 
-// The rectangle the request names, to the second.
-const LON_W = -(70 + 30 / 60 + 40 / 3600);      // 70°30′40″W
+// The rectangle, to the second.
+//
+// The union of the block first asked for — 70°30′40″W to 70°29′15″W by 33°24′S
+// to 33°25′S — and the quadrant named later, which starts five seconds further
+// west. Five seconds of longitude is 129 m here, so extending the west edge
+// costs almost nothing and means one fit and one satellite image serve both
+// windows: the app can open on either without refitting anything.
+const LON_W = -(70 + 30 / 60 + 45 / 3600);      // 70°30′45″W
 const LON_E = -(70 + 29 / 60 + 15 / 3600);      // 70°29′15″W
 const LAT_S = -(33 + 25 / 60);                  // 33°25′S
 const LAT_N = -(33 + 24 / 60);                  // 33°24′S
@@ -531,6 +537,15 @@ export const CAMPUS = {
   west: ${round(LON_W, 6)}, east: ${round(LON_E, 6)},
   south: ${round(LAT_S, 6)}, north: ${round(LAT_N, 6)},
   ground: { low: ${round(lo, 1)}, high: ${round(hi, 1)} },
+  // The quadrant named in the request, in the same local kilometres: from
+  // 70°30′40″W to 70°30′45″W and 33°24′S to 33°24′30″S. It is a sliver — 129 m
+  // by 926 m — so it is offered as its own view rather than as the default.
+  quadrant: {
+    xmin: ${round((-(70 + 30 / 60 + 45 / 3600) - lon0) * KX, 5)},
+    xmax: ${round((-(70 + 30 / 60 + 40 / 3600) - lon0) * KX, 5)},
+    ymin: ${round((-(33 + 24 / 60 + 30 / 3600) - lat0) * KY, 5)},
+    ymax: ${round((-(33 + 24 / 60) - lat0) * KY, 5)},
+  },
   rms: ${round(chosen.rms, 2)},
   cover: { nx: ${cover.nx}, ny: ${cover.ny},
     west: ${round(cover.west, 7)}, north: ${round(cover.north, 7)},

@@ -144,6 +144,11 @@ export function buildBuildings(field, grid, list, predicate) {
     // little below it, which hides the join on a slope.
     let low = Infinity, high = -Infinity, ok = true;
     for (let i = 0; i < n; i++) {
+      // Outside the window is not this picture's business. meshHeight will
+      // happily answer for a point beyond the domain, which put a stray roof
+      // floating half a kilometre off the edge when the campus was opened on
+      // the narrow quadrant.
+      if (!field.inDomain(ring[i * 2], ring[i * 2 + 1])) { ok = false; break; }
       const z = grid.meshHeight(ring[i * 2], ring[i * 2 + 1]);
       if (!isFinite(z)) { ok = false; break; }
       low = Math.min(low, z); high = Math.max(high, z);

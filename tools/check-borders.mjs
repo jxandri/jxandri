@@ -18,8 +18,10 @@
  *   node tools/check-borders.mjs
  */
 
-const { BORDERS } = await import(new URL('../app/js/borders-data.js', import.meta.url));
-const { feasibleFor, boundaryOf, BORDER_IDS } = await import(new URL('../app/js/borders.js', import.meta.url));
+// From borders.js, not borders-data.js: the table there is the union of the
+// atlas mountains and the frontier slopes, and both families have to pass
+// every claim below.
+const { BORDERS, feasibleFor, boundaryOf, BORDER_IDS, SLOPE_IDS } = await import(new URL('../app/js/borders.js', import.meta.url));
 const { compile, compilePredicate } = await import(new URL('../app/js/mathexpr.js', import.meta.url));
 const { photoFor } = await import(new URL('../app/js/borders-photos.js', import.meta.url));
 
@@ -38,28 +40,29 @@ const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FA
  * `depth` inside, and compare. That is the claim itself, and it cannot be
  * passed or failed by luck.
  */
-function bestOnLine(f, L, half, n = 4000) {
+function bestOnLine(f, L, hx, hy, n = 4000) {
   let best = -Infinity, bx = 0, by = 0;
   // The line as point + t·direction: the foot of the perpendicular from the
   // origin is (nx·c, ny·c), and (−ny, nx) runs along it.
   for (let i = 0; i <= n; i++) {
-    const t = -half * 2 + (half * 4 * i) / n;
+    const span = Math.max(hx, hy) * 2;
+    const t = -span + (span * 2 * i) / n;
     const x = L.nx * L.c - L.ny * t;
     const y = L.ny * L.c + L.nx * t;
-    if (Math.abs(x) > half || Math.abs(y) > half) continue;
+    if (Math.abs(x) > hx || Math.abs(y) > hy) continue;
     const v = f(x, y);
     if (isFinite(v) && v > best) { best = v; bx = x; by = y; }
   }
   return { x: bx, y: by, metres: best * 1000 };
 }
 
-function bestInside(f, L, half, depth, n = 260) {
+function bestInside(f, L, hx, hy, depth, n = 260) {
   const side = (x, y) => L.nx * x + L.ny * y - L.c;
   let best = -Infinity, bx = 0, by = 0;
   for (let j = 0; j <= n; j++) {
-    const y = -half + (2 * half * j) / n;
+    const y = -hy + (2 * hy * j) / n;
     for (let i = 0; i <= n; i++) {
-      const x = -half + (2 * half * i) / n;
+      const x = -hx + (2 * hx * i) / n;
       if (side(x, y) > -depth) continue;          // not far enough inside
       const v = f(x, y);
       if (isFinite(v) && v > best) { best = v; bx = x; by = y; }
@@ -68,7 +71,9 @@ function bestInside(f, L, half, depth, n = 260) {
   return { x: bx, y: by, metres: best * 1000 };
 }
 
-check('twelve mountains shipped', BORDER_IDS.length === 12, `${BORDER_IDS.length}`);
+check('the atlas mountains and the frontier slopes are all here',
+  BORDER_IDS.length >= 12 && SLOPE_IDS.length >= 2,
+  `${BORDER_IDS.length} examples, ${SLOPE_IDS.length} of them frontier slopes`);
 
 let worstMargin = Infinity, worstGap = Infinity;
 for (const id of BORDER_IDS) {
@@ -76,17 +81,17 @@ for (const id of BORDER_IDS) {
   const f = compile(`${id}(x, y)`, ['x', 'y']);
   const L = boundaryOf(id);
   const side = (x, y) => L.nx * x + L.ny * y - L.c;
-  const half = s.half;
+  const hx = s.halfX ?? s.half, hy = s.halfY ?? s.half;
 
   // The window is pushed back into the summit's own country so that there is
   // room to walk, so the summit is no longer at the origin — it is wherever
   // the data says.
   const own = side(s.summit.x, s.summit.y);
   const zTop = f(s.summit.x, s.summit.y) * 1000;
-  const line = bestOnLine(f, L, half);
+  const line = bestOnLine(f, L, hx, hy);
   // At least 150 m inside the other country: deep enough that a point there is
   // unambiguously interior rather than a rounding of the frontier itself.
-  const deep = bestInside(f, L, half, 0.15);
+  const deep = bestInside(f, L, hx, hy, 0.15);
   const margin = line.metres - deep.metres;     // > 0 means the line wins
 
   worstMargin = Math.min(worstMargin, margin);
@@ -111,8 +116,8 @@ for (const id of BORDER_IDS) {
   // rounded constants, so a point sitting precisely on the boundary is a
   // coin toss for both of them and tests nothing.
   const off = 0.03;
-  const probes = [[0, 0], [half * 0.5, half * 0.5], [-half * 0.5, -half * 0.5],
-    [half * 0.3, -half * 0.7], [-half * 0.6, half * 0.2],
+  const probes = [[0, 0], [hx * 0.5, hy * 0.5], [-hx * 0.5, -hy * 0.5],
+    [hx * 0.3, -hy * 0.7], [-hx * 0.6, hy * 0.2],
     [line.x - L.nx * off, line.y - L.ny * off],    // just inside the other country
     [line.x + L.nx * off, line.y + L.ny * off]];   // just inside the summit's own
   const agree = probes.every(([x, y]) => pred(x, y) === feasible(x, y));
@@ -120,12 +125,59 @@ for (const id of BORDER_IDS) {
 
   // Off the window, honestly undefined — the survey has edges.
   check(`  ${id}: undefined beyond the window`,
-    Number.isNaN(f(half * 1.2, 0)) && Number.isNaN(f(0, -half * 1.2)));
+    Number.isNaN(f(hx * 1.2, 0)) && Number.isNaN(f(0, -hy * 1.2)));
 
-  // Something to show.
+  // Something to show. The atlas mountains carry a photograph and its credit;
+  // the frontier slopes are stretches of a line rather than catalogued
+  // mountains, so there is no photograph of them to caption honestly and they
+  // are held only to the description.
   const m = s.meta;
-  check(`  ${id}: has a photograph and a description`,
-    !!photoFor(id) && m.blurb.length > 40 && m.blurbEs.length > 40 && !!m.credit);
+  const slope = s.kind === 'slope';
+  check(`  ${id}: ${slope ? 'has a description in both languages' : 'has a photograph and a description'}`,
+    m.blurb.length > 40 && m.blurbEs.length > 40
+    && (slope ? !photoFor(id) : (!!photoFor(id) && !!m.credit)));
+}
+
+// How much of what you can see is yours to walk on.
+//
+// This is the number the frontier slopes exist to fix, so it is asserted rather
+// than described: 70% of the window, by area, on the feasible side. The atlas
+// mountains are reported beside them without a bar to clear, because for a
+// summit that sits *on* the line no honest window can reach two thirds — see
+// the guide for why.
+{
+  const share = (id) => {
+    const sp = BORDERS[id];
+    const hx = sp.halfX ?? sp.half, hy = sp.halfY ?? sp.half;
+    const L = boundaryOf(id);
+    let inside = 0, total = 0;
+    for (let j = 0; j <= 200; j++) {
+      const y = -hy + (2 * hy * j) / 200;
+      for (let i = 0; i <= 200; i++) {
+        const x = -hx + (2 * hx * i) / 200;
+        total++;
+        if (L.nx * x + L.ny * y - L.c <= 0) inside++;
+      }
+    }
+    return inside / total;
+  };
+  const bad = SLOPE_IDS.filter((id) => Math.abs(share(id) - 0.70) > 0.02);
+  check('every frontier slope is a 70/30 split of the window',
+    SLOPE_IDS.length > 0 && bad.length === 0,
+    SLOPE_IDS.map((id) => `${(100 * share(id)).toFixed(0)}%`).join(' '));
+
+  const areas = BORDER_IDS.map((id) => {
+    const sp = BORDERS[id];
+    return 4 * (sp.halfX ?? sp.half) * (sp.halfY ?? sp.half);
+  });
+  const slopeAreas = SLOPE_IDS.map((id) => {
+    const sp = BORDERS[id];
+    return 4 * (sp.halfX ?? sp.half) * (sp.halfY ?? sp.half);
+  });
+  const widest = Math.max(...SLOPE_IDS.map((id) => 2 * Math.max(BORDERS[id].halfX, BORDERS[id].halfY)));
+  check('and shows far more ground than the atlas windows do',
+    Math.max(...slopeAreas) > 2 * Math.min(...areas.filter((a) => a > 0)) && widest > 20,
+    `largest ${Math.max(...slopeAreas).toFixed(0)} km², widest ${widest.toFixed(0)} km across`);
 }
 
 check('on every mountain the frontier beats the interior',
@@ -147,11 +199,12 @@ let worstRel = 0, worstId = '';
 for (const id of BORDER_IDS) {
   const s = BORDERS[id];
   const f = compile(`${id}(x, y)`, ['x', 'y']);
-  const finest = (2 * s.half) / s.M;            // shortest wavelength in the sum
+  const finest = (2 * Math.min(s.halfX ?? s.half, s.halfY ?? s.half)) / s.M;
   const dt = finest / 8;
   const h = dt;
   let prev = null, jump = 0, lo = Infinity, hi = -Infinity;
-  for (let t = -s.half * 0.5; t <= s.half * 0.5; t += dt) {
+  const halfMin = Math.min(s.halfX ?? s.half, s.halfY ?? s.half);
+  for (let t = -halfMin * 0.5; t <= halfMin * 0.5; t += dt) {
     const fxx = (f(t + h, 0) - 2 * f(t, 0) + f(t - h, 0)) / (h * h);
     if (!isFinite(fxx)) continue;
     lo = Math.min(lo, fxx); hi = Math.max(hi, fxx);

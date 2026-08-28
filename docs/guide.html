@@ -390,26 +390,45 @@ Peak less than three kilometres north of it. There is no canonical polygon for "
 mountain", so the window is chosen to be the widest one in which the statement holds, and
 everything it claims is on screen to be checked.</p>
 
-<p>How the frontier is placed in the frame is itself worth a minute in class, because it is a
-constraint on the picture and not a choice of taste. The window is positioned to put as much of the
-<em>feasible</em> country on screen as the claim will bear — ideally about two thirds of it, so a
-student sees mostly the ground they are allowed to walk on with the unreachable summit standing
-over the far third. Four of the twelve manage it — Tecate Peak, Jabal Umm ad Dami and Bikku Bitti
-at 60%, Kinnerly Peak at 55%. The rest cannot, and the reason is geography:
-the moment the window reaches far enough across the line, it collects a second summit over there
-whose top is nowhere near the border, and the statement the example exists to make becomes false.
-American Border Peak is the extreme case: three hundred metres north of the 49th parallel the
-Canadian ground already stands 55 m above the best point on the line, and three kilometres north
-there is a 2 398 m summit. The honest window there shows a few hundred metres of Canada and no
-more. Fraction and window size trade against each other exactly — the fraction times the width is
-the distance the window reaches across the line, and that distance is fixed by where the
-neighbouring peak stands — so a wider mountain to walk on is bought with a thinner strip of the far
-country, and the build chooses the strip. The builder tries the two-thirds band first,
-widest window first, and falls back through smaller fractions only when nothing in the band
-survives; what each mountain actually achieved is recorded with it. If you want more of the far
-country in frame than the example ships with, widen <strong>y min</strong> and <strong>y max</strong>
-yourself — and then watch the optimiser walk off the line, which is the lesson stated backwards and
-just as good.</p>
+<p>How the frontier is placed in the frame is worth a minute in class, because it is a constraint
+on the picture and not a choice of taste. On these twelve the feasible country is a narrow band
+along the line — a few hundred metres on the tightest of them — and that is not a design decision
+but arithmetic. The summit sits <em>on</em> the frontier, so the country that does not own it is
+higher than the line almost everywhere; reach further across and the window collects a second
+summit whose top is nowhere near the border, and the claim the example exists to make becomes
+false. American Border Peak is the extreme case: three hundred metres north of the 49th parallel
+the Canadian ground already stands 55 m above the best point on the line, and three kilometres north
+there is a 2 398 m summit. Widen <strong>y min</strong> and <strong>y max</strong> yourself and
+watch the optimiser walk off the line — that is the same lesson stated backwards, and just as
+good.</p>
+
+<h2>Frontier slopes — when the border misses the peak</h2>
+<p>The next group in the menu is the other half of the story, and it is where most of the world's
+borders actually are. A frontier does not usually cross a summit; it crosses a <em>hillside</em>.
+When it does, the picture inverts. The ground on your side falls away from the line for kilometres,
+so it can be most of what you see; the peak stands off the line inside the far third, in plain view
+and out of reach; and the highest point you may legally stand on is somewhere along twenty or thirty
+kilometres of frontier, which you have to walk to find. That last difference is the pedagogically
+useful one: on an atlas mountain the answer is simply the point of the line nearest the summit, and
+a sharp student guesses it without moving.</p>
+<p>These are not catalogued mountains, so they are named by where on the line they sit. Nothing was
+chosen by hand: the 49th parallel and the 141st meridian are defined by a number, so a window can be
+slid along them from end to end and the elevation model asked, at every position and every size,
+whether four things are true at once — that the highest point of the feasible country lies on the
+frontier, that there is genuinely higher ground across it, that the peak is inside the frame rather
+than cut by its edge, and that the window is 70% feasible by area. Of 563 positions tested along
+657 km of the 49th parallel and 1 028 km of the 141st meridian, 118 carried an honest window; the
+four that survived a full smooth fit are the ones that ship.</p>
+<p>They are also much bigger. The window is a rectangle, long along the frontier — where kilometres
+are free — and shallow across it, where every one is another chance to swallow a rival summit. The
+largest is 32 km by 15 km, which is 480 km&#178;: forty times the ground of the tightest atlas
+mountain and nine times as wide. The most dramatic is on the 141st meridian at 60.35°&nbsp;N, in the
+St Elias massif, where the best you may stand on is 3 851 m and a 4 623 m peak stands 1.9 km inside
+the Yukon. The frontier costs you 773 m of altitude, and you can see every metre of it.</p>
+<p>Because the frontier is a parallel or a meridian, it is axis-aligned in local kilometres, so the
+constraint in the box is as simple as a linear inequality gets: <code>y &gt;= -3</code>. Switch on
+<strong>Walk only along the frontier</strong> and follow it with the altitude readout in view, and
+you have done the constrained maximisation on foot over thirty kilometres of ground.</p>
 <p>One more presentation choice. The z axis opens <strong>stretched</strong>, three to nine
 times depending on the mountain, because at true scale two kilometres of relief across eighteen
 kilometres of ground is a swelling rather than a peak. It is a display scale only: <code>f</code>,
@@ -419,9 +438,9 @@ it back to 1 whenever you want to show the class how gentle a real mountain is.<
 
 <h2>A real place: Universidad de los Andes, Santiago</h2>
 <p>The last entry in the examples list is not a landscape but a neighbourhood: the rectangle from
-70&#176;30&#8242;40&#8243;W to 70&#176;29&#8242;15&#8243;W and from 33&#176;24&#8242;S to
+70&#176;30&#8242;45&#8243;W to 70&#176;29&#8242;15&#8243;W and from 33&#176;24&#8242;S to
 33&#176;25&#8242;S, which is the ground around the Universidad de los Andes in San Carlos de
-Apoquindo, on the Andean foot slope at the eastern edge of Santiago. It is 2.19 km east&#8211;west
+Apoquindo, on the Andean foot slope at the eastern edge of Santiago. It is 2.32 km east&#8211;west
 by 1.84 km north&#8211;south, with 505 m of relief across it, and it opens at true vertical scale
 because a hillside that steep needs no help to read as one.</p>
 <p>Three public sources go into it, and they are kept deliberately apart.</p>
@@ -446,6 +465,19 @@ class that has spent a term maximising invented functions over invented budget s
 place they walk through every week and ask the same questions of it: which way is downhill from
 here, how steep is the walk up to the library, what does a level curve of altitude look like when
 it crosses a car park. Switch the level curves on and walk one.</p>
+<p>Two more things were added to this map after the first version. The colour is now the place
+itself: a Sentinel-2 satellite image from 17 January 2025, ten metres a pixel and 0.3% cloud,
+painted on as the ground's albedo and lit by the same sun as everything else. Switch it off under
+<strong>Map &amp; terrain</strong> and the colouring falls back to the land-cover classes. And a
+second entry in the examples list opens the same surface on the quadrant named separately —
+70&#176;30&#8242;40&#8243;W to 70&#176;30&#8242;45&#8243;W by 33&#176;24&#8242;S to
+33&#176;24&#8242;30&#8243;S, a 129 m by 926 m strip of the western edge. It is one function seen
+through two windows, and any other window can be typed into the domain boxes.</p>
+<p>On the buildings: Google's photorealistic 3D tiles need an API key and a billing account, and
+could not travel inside a file you hand out on a memory stick, so they are not an option here.
+Overture Maps is the equivalent source and is what the buildings come from — real outlines, real
+heights where the source states one.</p>
+
 
 <h2>Walking the frontier</h2>
 <p><strong>Walk only along the frontier</strong> (<kbd>B</kbd>, in the Feasible set section) ropes
