@@ -110,6 +110,38 @@ export function heightColor(h, out) {
 }
 
 /**
+ * The heat map: blue → cyan → green → yellow → red, low to high.
+ *
+ * This is the ramp on every heat map a student has ever met, and it is the one
+ * the level curves are drawn in — everywhere, in the scene and on the flat map
+ * alike. The topographic ramp above is a picture of *ground*, and its whole
+ * point is that it changes slowly: a hillside spanning a hundred metres of a
+ * five-hundred-metre window is one shade of green from bottom to top, so
+ * contours drawn in it come out all the same colour and vanish into the grass.
+ * The heat ramp spends its whole range on whatever range the window has, which
+ * is what makes a set of level curves readable as a set: you can see at a
+ * glance which way is up, and how far apart in height two curves are, without
+ * reading a single label.
+ *
+ * Deliberately not the same ramp as the ground, then. A level curve is a
+ * mathematical object drawn *on* the terrain, not a feature of it, and it
+ * should not be camouflaged by the thing it is drawn on.
+ */
+const HEAT_RAMP = [
+  [0.19, 0.22, 0.62],   // deep blue
+  [0.13, 0.62, 0.75],   // cyan
+  [0.35, 0.76, 0.35],   // green
+  [0.96, 0.85, 0.24],   // yellow
+  [0.85, 0.20, 0.15],   // red
+];
+
+export function heatColor(h, out) {
+  const t = Math.min(1, Math.max(0, h)) * (HEAT_RAMP.length - 1);
+  const i = Math.min(HEAT_RAMP.length - 2, Math.floor(t));
+  return mixRGB(HEAT_RAMP[i], HEAT_RAMP[i + 1], t - i, out);
+}
+
+/**
  * The qualitative gradient: eight terrain characters, low to high.
  *
  *   1 water   2 beach   3 deep vegetation   4 light vegetation
@@ -277,6 +309,32 @@ export function setSatelliteSource(fn) { satSource = fn || null; }
 export function hasSatelliteSource() { return !!satSource; }
 
 /**
+ * ...and when the photograph can be a *texture*, let the graphics card sample
+ * it instead of the CPU.
+ *
+ * Vertex colours are the right tool for everything else here, because
+ * everything else is a function of position that we can evaluate anywhere. A
+ * photograph is not: it is a fixed raster, and painting it through vertex
+ * colours ties how much of it you can see to how many triangles the surface
+ * happens to have. On the campus that is the difference between a picture of a
+ * university and a wash of grey-green — the mesh is three hundred squares
+ * across, the image was ten metres a pixel, and between the two the buildings
+ * disappeared.
+ *
+ * With a texture the drape is resampled per *pixel of the screen*, with
+ * mipmaps and anisotropic filtering, so walking towards a roof shows more of
+ * the roof rather than more of the mesh. The vertex colours are still there and
+ * still multiply in — they carry the shading (the fine ground modulation, the
+ * bare rock on steep faces) — but the photograph itself now comes from the map.
+ *
+ * @param tex a THREE.Texture already set up with the right offset/repeat for
+ *            the current domain window, or null for every other surface
+ */
+let groundTexture = null;
+export function setGroundTexture(tex) { groundTexture = tex || null; }
+export function hasGroundTexture() { return !!groundTexture; }
+
+/**
  * Whether this climate has cloud in it at all.
  *
  * Cloud is a fact about absolute altitude, not about a fraction of the local
@@ -361,6 +419,11 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // ten metres long.
   const painted = satSource && satSource(wx, wz, out);
   if (painted) {
+    // When the photograph is a texture the map carries it, and these vertex
+    // colours are the shading that multiplies into it: start from white and
+    // let the modulation below do its work. Painting the photograph *here* as
+    // well would apply it twice and square the image.
+    if (groundTexture) { out[0] = 1; out[1] = 1; out[2] = 1; }
     // A ten-metre pixel is coarser than the mesh, so neighbouring vertices
     // share one colour and the ground reads as flat facets of photograph. The
     // finest noise field breaks that up by a couple of per cent — far too
@@ -454,6 +517,13 @@ export function buildSurface(field, grid, predicate) {
   const positions = new Float32Array(vcount * 3);
   const normals = new Float32Array(vcount * 3);
   const colors = new Float32Array(vcount * 3);
+  // The domain, mapped to the unit square. Always written, whether or not
+  // anything is textured today: it costs two floats a vertex, it is the only
+  // parameterisation of a graph that means anything, and having it there means
+  // a drape can be hung on the surface without rebuilding it.
+  const uvs = new Float32Array(vcount * 2);
+  const uSpan = (field.xmax - field.xmin) || 1;
+  const vSpan = (field.ymax - field.ymin) || 1;
 
   const nrm = new THREE.Vector3();
   const rgb = [0, 0, 0];
@@ -470,6 +540,8 @@ export function buildSurface(field, grid, predicate) {
       positions[k * 3] = px;
       positions[k * 3 + 1] = field.worldY(z);
       positions[k * 3 + 2] = pz;
+      uvs[k * 2] = (xx - field.xmin) / uSpan;
+      uvs[k * 2 + 1] = (yy - field.ymin) / vSpan;
 
       // One gradient per vertex, reused for both the normal and the slope.
       grid.gradientAt(i, j, grad);
@@ -512,6 +584,7 @@ export function buildSurface(field, grid, predicate) {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geometry.setIndex(new THREE.BufferAttribute(index, 1));
   geometry.addGroup(0, inside.length, GROUP_INSIDE);
   geometry.addGroup(inside.length, outside.length, GROUP_OUTSIDE);
@@ -519,9 +592,11 @@ export function buildSurface(field, grid, predicate) {
 
   const matInside = new THREE.MeshStandardMaterial({
     vertexColors: true, roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide,
+    map: groundTexture,
   });
   const matOutside = new THREE.MeshStandardMaterial({
     vertexColors: true, roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide,
+    map: groundTexture,
   });
 
   const mesh = new THREE.Mesh(geometry, [matInside, matOutside]);
@@ -738,6 +813,10 @@ export class SurfaceDetail {
     geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
     geom.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
     geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
+    // Rewritten every time the ring moves, exactly like the positions: a ring
+    // is a window that slides over the domain, so its parameterisation slides
+    // with it or the drape would swim under the explorer's feet.
+    geom.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(w * w * 2), 2));
 
     const idx = [];
     for (let j = 0; j < seg; j++) {
@@ -753,6 +832,7 @@ export class SurfaceDetail {
       roughness: 0.95,
       metalness: 0.0,
       side: THREE.DoubleSide,
+      map: groundTexture,
       polygonOffset: true,
       // Finer rings win over coarser ones and over the main mesh.
       polygonOffsetFactor: -4 * (count - index),
@@ -822,7 +902,10 @@ export class SurfaceDetail {
     const pos = ring.geometry.getAttribute('position');
     const nor = ring.geometry.getAttribute('normal');
     const colAttr = ring.geometry.getAttribute('color');
-    const P = pos.array, N = nor.array, C = colAttr.array;
+    const uvAttr = ring.geometry.getAttribute('uv');
+    const P = pos.array, N = nor.array, C = colAttr.array, U = uvAttr.array;
+    const uSpan = (field.xmax - field.xmin) || 1;
+    const vSpan = (field.ymax - field.ymin) || 1;
     const Z = ring.z;
 
     // Pass 1: sample f once per vertex.
@@ -831,7 +914,13 @@ export class SurfaceDetail {
       const yy = cy + (j - seg / 2) * step;
       for (let i = 0; i < w; i++) {
         const xx = cx + (i - seg / 2) * step;
-        const z = field.height(xx, yy);
+        // The window is the window. f may well be defined past the edge of it —
+        // the campus is one fit seen through two rectangles, and the narrow
+        // quadrant sits inside a survey two kilometres across — but a detail
+        // ring that answers anyway drew a stray patch of hillside floating in
+        // the air beside the strip, ground that the student had explicitly not
+        // asked to see.
+        const z = field.inDomain(xx, yy) ? field.height(xx, yy) : NaN;
         if (isFinite(z)) { Z[j * w + i] = z; anyValid = true; }
         else Z[j * w + i] = NaN;
       }
@@ -854,6 +943,8 @@ export class SurfaceDetail {
         P[k * 3] = px;
         P[k * 3 + 1] = field.worldY(zz);
         P[k * 3 + 2] = pz;
+        U[k * 2] = (xx - field.xmin) / uSpan;
+        U[k * 2 + 1] = (yy - field.ymin) / vSpan;
 
         let gx, gy;
         const l = i > 0 && isFinite(Z[k - 1]), r = i < seg && isFinite(Z[k + 1]);
@@ -887,6 +978,7 @@ export class SurfaceDetail {
     pos.needsUpdate = true;
     nor.needsUpdate = true;
     colAttr.needsUpdate = true;
+    uvAttr.needsUpdate = true;
     ring.geometry.computeBoundingSphere();
     ring.mesh.visible = anyValid;
 

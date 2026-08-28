@@ -254,11 +254,22 @@ export function setMapMaterial(material, on) {
     if (!m) continue;
     if (on) {
       if (m.userData.vertexColors === undefined) m.userData.vertexColors = m.vertexColors;
+      // Put back whatever was on the material, not nothing.
+      //
+      // The world map is a *borrowed* slot: a surface may already carry a map
+      // of its own — the campus does, a Sentinel-2 photograph of the ground —
+      // and hanging the atlas on it and then clearing the slot on the way out
+      // threw that away. It looked like the satellite drape had failed, when
+      // in fact it had been unhooked by a feature that was switched off.
+      if (m.userData.baseMap === undefined) m.userData.baseMap = m.map || null;
       m.map = worldTexture();
       m.vertexColors = false;
       m.color.setRGB(1, 1, 1);
     } else {
-      m.map = null;
+      if (m.userData.baseMap !== undefined) {
+        m.map = m.userData.baseMap;
+        delete m.userData.baseMap;
+      }
       if (m.userData.vertexColors !== undefined) m.vertexColors = m.userData.vertexColors;
     }
     m.needsUpdate = true;

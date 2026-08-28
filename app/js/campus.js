@@ -191,6 +191,7 @@ export function buildings() {
  * colouring falls back to the land-cover palette if it is somehow not ready.
  */
 let satPixels = null;
+let satCanvas = null;
 const satReady = (async () => {
   try {
     const img = new Image();
@@ -204,11 +205,32 @@ const satReady = (async () => {
     const g = c.getContext('2d', { willReadFrequently: true });
     g.drawImage(img, 0, 0);
     satPixels = g.getImageData(0, 0, SAT.nx, SAT.ny).data;
+    satCanvas = c;
   } catch {
     satPixels = null;                 // the land cover carries on regardless
+    satCanvas = null;
   }
   return !!satPixels;
 })();
+
+/**
+ * The decoded image itself, for whoever wants to hand it to the graphics card
+ * or draw it into a corner of the screen.
+ *
+ * Kept as a canvas rather than the Image, because the same pixels are wanted
+ * three ways — read back one at a time for the flat map, uploaded as a texture
+ * for the ground, and blitted into the inset — and a canvas is the one form all
+ * three accept.
+ */
+export function satelliteCanvas() { return satCanvas; }
+
+/** The image's geographic extent, in the domain's own kilometres. */
+export function satelliteWindow() {
+  return {
+    xmin: (SAT.west - CAMPUS.lon) * KX, xmax: (SAT.east - CAMPUS.lon) * KX,
+    ymin: (SAT.south - CAMPUS.lat) * KY, ymax: (SAT.north - CAMPUS.lat) * KY,
+  };
+}
 
 /** Resolves true once the image is ready to sample. */
 export function satelliteReady() { return satReady; }
@@ -230,17 +252,51 @@ const S2L = (() => {
   return t;
 })();
 
+/**
+ * Bilinear, not nearest.
+ *
+ * This is sampled once per mesh vertex, and on the named quadrant the mesh is
+ * finer than a metre while the image is ten metres a pixel. Taking the nearest
+ * pixel therefore painted the ground as a mosaic of ten-metre squares of flat
+ * colour — the image was all there, and unreadable, because the eye sees the
+ * grid instead of the place. Interpolating between the four surrounding pixels
+ * adds nothing that is not in the data (it is the same information, resampled)
+ * and removes the one artefact that was hiding it.
+ *
+ * A photograph is not a step function of position, so bilinear is also simply
+ * the more honest reading of what the sensor recorded: the value stored for a
+ * pixel is an average over its footprint, and the best estimate between two
+ * footprints is between the two values.
+ */
 export function satelliteAt(x, y, out) {
   if (!satPixels) return null;
   const lon = CAMPUS.lon + x / KX;
   const lat = CAMPUS.lat + y / KY;
-  const i = Math.floor(((lon - SAT.west) / (SAT.east - SAT.west)) * SAT.nx);
-  const j = Math.floor(((SAT.north - lat) / (SAT.north - SAT.south)) * SAT.ny);
-  if (i < 0 || j < 0 || i >= SAT.nx || j >= SAT.ny) return null;
-  const k = (j * SAT.nx + i) * 4;
-  out[0] = S2L[satPixels[k]];
-  out[1] = S2L[satPixels[k + 1]];
-  out[2] = S2L[satPixels[k + 2]];
+  // Continuous pixel coordinates, measured from pixel centres.
+  const fx = ((lon - SAT.west) / (SAT.east - SAT.west)) * SAT.nx - 0.5;
+  const fy = ((SAT.north - lat) / (SAT.north - SAT.south)) * SAT.ny - 0.5;
+  if (!(fx > -1 && fy > -1 && fx < SAT.nx && fy < SAT.ny)) return null;
+
+  const i0 = Math.floor(fx), j0 = Math.floor(fy);
+  const tx = fx - i0, ty = fy - j0;
+  // Clamp at the edges rather than dropping out of the image: the last half
+  // pixel of the window is still inside the survey.
+  const cx0 = Math.max(0, Math.min(SAT.nx - 1, i0)), cx1 = Math.max(0, Math.min(SAT.nx - 1, i0 + 1));
+  const cy0 = Math.max(0, Math.min(SAT.ny - 1, j0)), cy1 = Math.max(0, Math.min(SAT.ny - 1, j0 + 1));
+
+  const a = (cy0 * SAT.nx + cx0) * 4, b = (cy0 * SAT.nx + cx1) * 4;
+  const c = (cy1 * SAT.nx + cx0) * 4, d = (cy1 * SAT.nx + cx1) * 4;
+  const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty);
+  const w01 = (1 - tx) * ty, w11 = tx * ty;
+
+  // Interpolate in linear light, not in stored bytes: the transfer curve is a
+  // 2.4 power, and mixing two sRGB codes then converting is not the same as
+  // converting then mixing. On a bright roof beside dark ground the difference
+  // is visible as a dark fringe.
+  for (let ch = 0; ch < 3; ch++) {
+    out[ch] = S2L[satPixels[a + ch]] * w00 + S2L[satPixels[b + ch]] * w10
+      + S2L[satPixels[c + ch]] * w01 + S2L[satPixels[d + ch]] * w11;
+  }
   return out;
 }
 

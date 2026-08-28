@@ -13,7 +13,7 @@
  */
 
 import * as THREE from '../vendor/three.module.js';
-import { heightColor } from './terrain.js';
+import { heatColor } from './terrain.js';
 
 export const COLOR_DX = 0x2f7bff;      // blue   — ∂f/∂x
 export const COLOR_DY = 0xff3b30;      // red    — ∂f/∂y
@@ -170,8 +170,11 @@ export function buildContours(field, grid, levels, options) {
   // up into samples we already hold, and it costs nothing per corner.
   const sampleZ = (x, y) => grid.meshHeight(x, y);
 
+  // Every level curve in the heat ramp, blue at the bottom of the window to
+  // red at the top — the same ramp the flat map's contours use, so a curve in
+  // the scene and the same curve on the map are the same colour.
   for (const level of levels) {
-    heightColor(grid.norm(level), rgb);
+    heatColor(grid.norm(level), rgb);
 
     let zA = rowZ(0), okA = rowOk(0, zA);
     for (let j = 0; j < n; j++) {

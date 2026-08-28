@@ -780,8 +780,27 @@ export class Player {
     // whatever the surface underneath happens to be doing.
     const drop = Math.max(this.dronePos.y - groundY, 0);
     const thick = Math.max(f.worldSize * 0.0016, 0.05);
+
+    // Stop the beam short of the aircraft when the camera *is* the aircraft.
+    //
+    // The tube's top end used to sit exactly at dronePos, which is exactly
+    // where the cockpit camera sits, on its axis — so the lens was inside an
+    // open, double-sided, fog-exempt cylinder and its inner wall was painted
+    // over most of the frame at 0.42 opacity. On the 220-unit sandbox that
+    // read as a faint cyan cast nobody questioned. On the campus, where a
+    // world unit is a real metre and the tube is three metres across, it
+    // turned a sharp aerial photograph of Santiago into flat teal: the drape
+    // was correct the whole time and was being looked at through a filter.
+    //
+    // What is left below the clearance subtends a couple of degrees around
+    // straight down, which is where a plumb line belongs anyway.
+    const clearance = this.droneView === MODE_FIRST
+      ? Math.min(drop * 0.9, Math.max(thick * 24, drop * 0.06))
+      : 0;
+    const shown = Math.max(drop - clearance, 0);
     beam.position.set(this.dronePos.x, groundY, this.dronePos.z);
-    beam.scale.set(thick, drop, thick);
+    beam.scale.set(thick, shown, thick);
+    beam.visible = shown > thick * 0.5;
 
     const rad = Math.max(f.worldSize * 0.016, 0.6);
     const n = f.worldNormal(gx, gy, new THREE.Vector3());

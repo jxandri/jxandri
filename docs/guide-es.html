@@ -407,6 +407,15 @@ una segunda entrada de la lista de ejemplos abre la misma superficie sobre el cu
 aparte —de 70&#176;30&#8242;40&#8243;O a 70&#176;30&#8242;45&#8243;O y de 33&#176;24&#8242;S a
 33&#176;24&#8242;30&#8243;S, una franja de 129 m por 926 m del borde occidental—. Es una sola
 función vista por dos ventanas, y puede escribirse cualquier otra en las casillas del dominio.</p>
+<p>La fotografía se cuelga del suelo como <em>textura</em> y no se muestrea una vez por vértice de
+la malla, de modo que la tarjeta gráfica la remuestrea por píxel de pantalla, con mipmaps y
+filtrado anisotrópico. Diez metros por píxel es el límite propio de Sentinel-2 y ningún código lo
+va a superar; lo que esto sí corrige es el artefacto que escondía la imagen: que al acercarse, el
+manto se rompía en cuadrados planos de diez metros. Y en la esquina inferior derecha reaparece la
+misma imagen, ahora con la rampa de altura superpuesta, pálida y translúcida: la fotografía aérea y
+el mapa de altura del mismo suelo, uno sobre otro, con su posición marcada en ambos y la curva de
+nivel que usted pisa trazada encima. Es la traducción de la que trata todo este programa, en una
+sola imagen pequeña: el lugar que el estudiante reconoce, y el campo matemático sobre él.</p>
 <p>Sobre los edificios: los mosaicos 3D fotorrealistas de Google exigen una clave de API y una cuenta
 de facturación, y no podrían viajar dentro de un archivo que usted reparte en un pendrive, así que
 no son una opción aquí. Overture Maps es la fuente equivalente y de ahí vienen los edificios:
@@ -544,8 +553,14 @@ supuesta la idea particular de «abajo» de una gráfica.</p>
 como caminos anchos y transitables, no como hilos, y las <em>tiende sobre el terreno</em>: el
 centro de cada camino está a altura constante, como debe estarlo una curva de nivel, pero la
 banda misma sigue la ladera que atraviesa en lugar de quedar colgada en el aire como un anillo
-plano. Cada camino se colorea según su propia altura en la rampa de diez colores, de modo que el
-color dice la altitud, esté o no coloreada la superficie.</p>
+plano. Cada camino se colorea según su propia altura en la rampa <em>de calor</em> —azul en el
+fondo de la ventana, luego cian, verde y amarillo, y rojo arriba—, de modo que el color dice la
+altitud, esté o no coloreada la superficie, y un conjunto de curvas se lee como conjunto: hacia
+dónde se sube, y cuánta altura separa a dos vecinas, de un vistazo y sin una sola etiqueta. A
+propósito no es la rampa del terreno: una curva de nivel es un objeto matemático dibujado
+<em>sobre</em> el suelo y no un rasgo suyo, y en una ladera real —cien metros de desnivel dentro de
+una ventana de quinientos— la rampa del terreno daba a todas las curvas el mismo verde y las perdía
+en el pasto.</p>
 <p><strong>Intervalo entre curvas Δz</strong> — déjelo en blanco y el programa elige un intervalo
 redondo y le dice cuál. Escriba un número y ese es el intervalo, que es lo que hace falta cuando
 el intervalo es justamente lo que se está enseñando. Si pide uno tan pequeño que harían falta
@@ -556,8 +571,7 @@ convertirse en una autopista al encogerlo para la demostración de linealidad lo
 defecto, dos alturas, es un sendero visible desde el aire y aun así transitable: la misma longitud
 que el lado de un cuadrado de la rejilla.</p>
 <p><strong>Colorear la superficie por altura</strong> <kbd>M</kbd> — repinta toda la superficie
-con la misma rampa de diez colores que usan las curvas de nivel, de modo que la superficie y sus
-curvas concuerdan — en cualquier tipo de superficie, no solo en una gráfica. Apáguelo y la
+con la rampa topográfica de diez colores, en cualquier tipo de superficie, no solo en una gráfica. Apáguelo y la
 superficie vuelve a las ocho bandas de terreno —agua, playa, vegetación profunda, vegetación más
 clara, árido, roca volcánica, nieve, nube—, que dicen lo mismo en el idioma de un paisaje. En una
 gráfica, combine cualquiera de las dos con <kbd>T</kbd> (mirar desde arriba) y la escena 3D se

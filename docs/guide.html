@@ -473,6 +473,16 @@ second entry in the examples list opens the same surface on the quadrant named s
 70&#176;30&#8242;40&#8243;W to 70&#176;30&#8242;45&#8243;W by 33&#176;24&#8242;S to
 33&#176;24&#8242;30&#8243;S, a 129 m by 926 m strip of the western edge. It is one function seen
 through two windows, and any other window can be typed into the domain boxes.</p>
+<p>The photograph is hung on the ground as a <em>texture</em> rather than sampled once per mesh
+vertex, so the graphics card resamples it per pixel of the screen, with mipmaps and anisotropic
+filtering. Ten metres a pixel is Sentinel-2's own limit and no amount of code will beat it; what
+this does fix is the artefact that was hiding the image, which was that the drape broke into
+ten-metre squares of flat colour as soon as you walked up to it. And in the bottom-right corner the
+same image appears again, this time with the height ramp washed pale and translucent over it: the
+aerial photograph and the height map of the same ground, one on top of the other, with your own
+position marked on both and the level curve you are standing on drawn through it. It is the
+translation this whole program is about, in one small picture &#8212; the place a student
+recognises, and the mathematical field over it.</p>
 <p>On the buildings: Google's photorealistic 3D tiles need an API key and a billing account, and
 could not travel inside a file you hand out on a memory stick, so they are not an option here.
 Overture Maps is the equivalent source and is what the buildings come from — real outlines, real
@@ -532,8 +542,13 @@ particular idea of "down".</p>
 walkable paths rather than hairlines, and <em>drapes them over the ground</em>: the centre of each
 path is at constant height, as a level curve must be, but the band itself follows the hillside it
 crosses instead of hanging in the air as a flat ring. Each path is coloured by its own height on
-the ten-colour ramp, so the colour states the altitude whether or not the surface itself is
-coloured.</p>
+the <em>heat</em> ramp — blue at the bottom of the window through cyan, green and yellow to red at
+the top — so the colour states the altitude whether or not the surface itself is coloured, and a
+set of curves reads as a set: which way is up, and how far apart in height two neighbours are, at a
+glance and without a single label. Deliberately not the terrain ramp: a level curve is a
+mathematical object drawn <em>on</em> the ground, not a feature of it, and on a real hillside — a
+hundred metres of relief inside a five-hundred-metre window — the terrain ramp gave every contour
+the same shade of green and lost them in the grass.</p>
 <p><strong>Contour interval Δz</strong> — leave it blank and the program picks a round interval
 and shows you which one. Type a number and that is the interval, which is the point when the
 interval is the thing being taught. Ask for one so small that thousands of paths would be needed
@@ -543,8 +558,7 @@ and it is widened, with a note saying so.</p>
 you shrink for the local-linearity demonstration. The default, two heights, is a footpath you can
 see from the air and still walk along — the same length a grid square's side is.</p>
 <p><strong>Colour the surface by height</strong> <kbd>M</kbd> — repaints the whole surface on the
-same ten-colour ramp the contours use, so the surface and its level curves agree — on every kind of
-surface, not only a graph. Turn it off and the surface goes back to the eight terrain bands —
+ten-colour topographic ramp, on every kind of surface, not only a graph. Turn it off and the surface goes back to the eight terrain bands —
 water, beach, deep vegetation, lighter vegetation, arid, volcanic rock, snow, cloud — which say the
 same thing in the language of a landscape. On a graph, combine either with <kbd>T</kbd> (look
 straight down) to turn the 3D scene into the flat map students already know.</p>

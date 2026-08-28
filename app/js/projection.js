@@ -18,25 +18,9 @@
  * mirror the map against the terrain, which is worse than not drawing it.
  */
 
-import { heightColor } from './terrain.js';
-
-/** A conventional heat map, for when the topographic ramp is not wanted. */
-function heatColor(h, out) {
-  // Blue → cyan → green → yellow → red: the palette a student will have seen
-  // on every other heat map, deliberately different from the height ramp so
-  // the two modes cannot be confused with each other.
-  const stops = [
-    [0.19, 0.22, 0.62], [0.13, 0.62, 0.75], [0.35, 0.76, 0.35],
-    [0.96, 0.85, 0.24], [0.85, 0.20, 0.15],
-  ];
-  const t = Math.min(1, Math.max(0, h)) * (stops.length - 1);
-  const i = Math.min(stops.length - 2, Math.floor(t));
-  const f = t - i, a = stops[i], b = stops[i + 1];
-  out[0] = a[0] + (b[0] - a[0]) * f;
-  out[1] = a[1] + (b[1] - a[1]) * f;
-  out[2] = a[2] + (b[2] - a[2]) * f;
-  return out;
-}
+// Both ramps live in terrain.js, so that the level curves drawn here and the
+// ribbons draped over the terrain in the scene cannot drift apart.
+import { heightColor, heatColor } from './terrain.js';
 
 export class Projection {
   constructor(canvas) {
@@ -130,7 +114,7 @@ export class Projection {
     ctx.lineCap = 'round';
 
     for (const level of this.levels) {
-      heightColor(grid.norm(level), rgb);
+      heatColor(grid.norm(level), rgb);
       ctx.beginPath();
       for (let j = 0; j < n; j++) {
         for (let i = 0; i < n; i++) {
@@ -156,12 +140,12 @@ export class Projection {
           }
         }
       }
-      // Twice: a dark halo, then the height colour on top.
+      // Twice: a dark halo, then the heat colour on top.
       //
-      // The contour's colour and the heat map's colour come from the same ramp
-      // at the same height, so on the ramp background a plain stroke is drawn
-      // in exactly the colour it is standing on and disappears. The halo is
-      // what makes a level curve visible against its own level.
+      // In heat mode the contour's colour and the background's colour are the
+      // same ramp at the same height, so a plain stroke would be drawn in
+      // exactly the colour it is standing on and disappear. The halo is what
+      // makes a level curve visible against its own level.
       ctx.strokeStyle = 'rgba(8, 12, 18, .55)';
       ctx.lineWidth = lineWidth * 2.6;
       ctx.stroke();

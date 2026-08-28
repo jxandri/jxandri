@@ -25,6 +25,17 @@
    and the student should be looking at it, not at a dialogue box in front of
    it. It sits clear of the panel on the left and the rail on the right. */
 #game[data-screen="offer"] { align-items: flex-end; justify-content: center; }
+
+/* The card is a notice, not a shutter.
+ *
+ * It is four hundred pixels tall on a laptop and it sits over the middle of
+ * the scene, and while its whole box accepted clicks it swallowed every one of
+ * them — including the click on the mountain that asks for the mouse. The
+ * symptom was that mouse-look simply did not work on the real-terrain maps, and
+ * only on those, because they are the only ones that raise the card. Pass
+ * everything through except the three buttons, exactly as the run screen does. */
+#game[data-screen="offer"] > section { pointer-events: none; }
+#game[data-screen="offer"] .g-btn { pointer-events: auto; }
 #g-offer {
   width: min(430px, 92vw);
   margin-bottom: max(96px, calc(env(safe-area-inset-bottom) + 92px));

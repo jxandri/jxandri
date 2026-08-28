@@ -7,11 +7,12 @@ import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
   buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
-  GROUP_OUTSIDE, heightColor, setBiomeProfile, setCoverSource, setSatelliteSource,
+  GROUP_OUTSIDE, heatColor, setBiomeProfile, setCoverSource, setSatelliteSource, setGroundTexture, hasGroundTexture,
 } from './terrain.js';
 import { ELIAS_INFO } from './elias.js';
 import {
   CAMPUS_INFO, SAT_INFO, coverAt, satelliteAt, satelliteReady, hasSatellite,
+  satelliteCanvas, satelliteWindow,
   buildings as campusBuildings, startPoint as campusStart,
 } from './campus.js';
 import { buildBuildings } from './buildings.js';
@@ -43,6 +44,7 @@ import { Compass, angles } from './compass.js';
 import { Pad, BTN } from './gamepad.js';
 import { BorderRun } from './game.js';
 import { Projection } from './projection.js';
+import { SatelliteInset } from './satinset.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
 } from './i18n.js';
@@ -263,6 +265,19 @@ const altView = {
  * ends from one program.
  */
 const projection = $('minimap') ? new Projection($('minimap')) : null;
+
+/**
+ * The campus card. Its source is the decoded Sentinel image and the rectangle
+ * it covers, both in the domain's own kilometres; null everywhere the
+ * photograph does not apply, which is everywhere but the campus.
+ */
+const satInset = $('sat-inset')
+  ? new SatelliteInset($('sat-inset'), () => {
+    if (!isCampus() || !hasSatellite()) return null;
+    const w = satelliteWindow();
+    return { image: satelliteCanvas(), west: w.xmin, east: w.xmax, south: w.ymin, north: w.ymax };
+  })
+  : null;
 const projState = { mode: 'ramp', opacity: 0.88, size: 1 };
 let topCam = null;
 
@@ -1082,6 +1097,13 @@ function rebuild() {
   setSatelliteSource(onCampus && state.satellite && hasSatellite()
     ? (wx, wz, out) => satelliteAt(field.mathX(wx), field.mathY(wz), out)
     : null);
+  // The same photograph again, this time as a texture the card samples per
+  // screen pixel. The CPU sampler above still exists and still matters — it
+  // feeds the flat map and the corner inset, neither of which has a mesh —
+  // but the *ground* takes the map, so how much of the image you can see stops
+  // depending on how many triangles the surface was built with.
+  setGroundTexture(onCampus && state.satellite && hasSatellite()
+    ? satelliteTexture(field) : null);
 
   if (!grid.anyValid) {
     showError('err-fn', localError('err.undefinedEverywhere'));
@@ -1152,7 +1174,11 @@ function rebuild() {
   // 1.1 put the far half of every surface into haze before the student had
   // looked at it — which on the border mountains, whose relief is the thing
   // being shown, read as a washed-out sky-blue film over the peaks.
-  scene.fog = new THREE.Fog(0xa9c3d8, field.worldSize * 2.1, field.worldSize * 9);
+  // ...and a photographed ground gets more room still. Haze over a rendered
+  // hillside is atmosphere; haze over an aerial photograph is a blue film
+  // between the student and the only thing on screen they came to recognise.
+  const fogNear = hasGroundTexture() ? 3.4 : 2.1;
+  scene.fog = new THREE.Fog(0xa9c3d8, field.worldSize * fogNear, field.worldSize * 11);
 
   const sunDist = field.worldSize * 2;
   sun.position.set(sunDist * 0.6, sunDist * 0.9, sunDist * 0.45);
@@ -1183,6 +1209,7 @@ function rebuild() {
   refreshContours();
   refreshSurfaceGrid();
   refreshProjection();
+  refreshSatInset();
   refreshOptimum();
   reportStats();
   return true;
@@ -1309,15 +1336,25 @@ function applyPalette() {
   else if (rocky) { hemi.intensity = 1.55; sun.intensity = 2.25; }
   // A city hillside sits between the two. Rock and snow are bright enough that
   // the sandbox's exposure clips them to white, which is why the mountains are
-  // lit down; scrub, dry grass and tarmac are much darker, and the same
-  // exposure leaves a suburb looking like dusk. Santiago is not a dark place.
-  // A city hillside sits between the two. Rock and snow are bright enough that
-  // the sandbox's exposure clips them to white, which is why the mountains are
   // lit down; dry scrub, tarmac and roofs are darker, but they also take the
   // sky's blue readily, and a strong hemisphere light floods a whole suburb
   // pale teal. Less sky, more sun.
-  else if (isCampus()) { hemi.intensity = 1.75; sun.intensity = 3.4; }
+  else if (isCampus()) { hemi.intensity = 2.3; sun.intensity = 3.4; }
   else { hemi.intensity = 3.1; sun.intensity = 3.4; }
+
+  // Under a photograph, light white.
+  //
+  // The sky light is pale blue because that is what a sky is, and on an
+  // invented albedo it reads as air. On a *photograph* it is a lie told twice:
+  // the image already contains the sky that lit the ground the morning it was
+  // taken, and tinting it again turned a warm brown hillside — which is what
+  // the Sentinel pixel actually says, mean colour (151, 122, 92) — into olive
+  // teal. The whole point of painting the real image on is that the ground
+  // comes out the colour the ground is, so when it is in play the hemisphere
+  // goes neutral and only the sun keeps its warmth.
+  const photo = hasGroundTexture();
+  hemi.color.setHex(photo ? 0xf4f6f8 : 0xcfe4ff);
+  hemi.groundColor.setHex(photo ? 0x9c968a : 0x8a7f6a);
   if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
   }
@@ -1393,6 +1430,7 @@ function refreshContours() {
   if (contourLines) world.add(contourLines);
   updateContourNote();
   refreshProjection();
+  refreshSatInset();
 }
 
 function updateContourNote() {
@@ -1581,6 +1619,12 @@ canvas.addEventListener('mousedown', (e) => {
   // not "give me the mouse". Taking the pointer as well would hide the cursor
   // the moment you tried to aim the next one.
   const placing = state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE;
+  // Reaching for the scene while the Border Run card is up *is* the answer to
+  // the card: they would rather look at the mountain. Take it down, so the
+  // mouse is not captured behind a dialogue whose buttons it can no longer
+  // reach. (The card itself lets clicks through — see game.css — so this
+  // fires wherever on the scene they clicked.)
+  if (game && game.screen === 'offer') game.dismiss();
   if (!pointerLocked && !(placing && e.button === 0)) canvas.requestPointerLock();
 });
 window.addEventListener('mouseup', (e) => { if (e.button === 2) rightDown = false; });
@@ -2154,6 +2198,43 @@ function currentBorder() {
  * about.
  */
 function isCampus() { return /\buandes\s*\(/.test(state.fnSrc || ''); }
+
+/**
+ * The satellite image as a texture, framed on the window currently open.
+ *
+ * Built once and kept: the pixels never change, only which part of them the
+ * domain is looking at, and that is an offset and a scale on the texture's own
+ * transform rather than a new upload. So switching between the whole campus and
+ * the 129 m quadrant re-frames the photograph without touching the card.
+ *
+ * The filtering is the point of the whole exercise. Nearest-neighbour is what
+ * made the drape a mosaic of ten-metre squares; linear magnification with
+ * mipmaps and anisotropy is what a photograph on a receding hillside needs, and
+ * it is the graphics card's own hardware doing it, so it costs nothing.
+ */
+let satTexture = null;
+function satelliteTexture(f) {
+  const canvas = satelliteCanvas();
+  if (!canvas) return null;
+  if (!satTexture) {
+    satTexture = new THREE.CanvasTexture(canvas);
+    // The stored bytes are sRGB, and the renderer works in linear light.
+    satTexture.colorSpace = THREE.SRGBColorSpace;
+    satTexture.wrapS = THREE.ClampToEdgeWrapping;
+    satTexture.wrapT = THREE.ClampToEdgeWrapping;
+    satTexture.magFilter = THREE.LinearFilter;
+    satTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    satTexture.generateMipmaps = true;
+    satTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  }
+  // uv runs 0..1 across the domain; the image covers a bigger rectangle. One
+  // affine map takes one to the other.
+  const w = satelliteWindow();
+  const wx = (w.xmax - w.xmin) || 1, wy = (w.ymax - w.ymin) || 1;
+  satTexture.repeat.set((f.xmax - f.xmin) / wx, (f.ymax - f.ymin) / wy);
+  satTexture.offset.set((f.xmin - w.xmin) / wx, (f.ymin - w.ymin) / wy);
+  return satTexture;
+}
 
 /**
  * Wait for the chosen mountain to actually exist, then let the game offer it.
@@ -3240,6 +3321,38 @@ function updateHUD(readout) {
 const projRGB = [0, 0, 0];
 
 /** Point the panel at the current field, and rebuild its baked layer. */
+/**
+ * Point the campus card at the surface, and show or hide it.
+ *
+ * Bottom right is where it was asked for, and on the Lab the flat map is
+ * already there — so the card is lifted clear of it by measurement rather than
+ * by a guess in the stylesheet, which a resizable panel would falsify.
+ */
+function refreshSatInset() {
+  const card = $('sat-card');
+  if (!satInset || !card) return;
+  const on = isCampus() && state.satellite && hasSatellite() && !!field && !!grid;
+  card.hidden = !on;
+  if (!on) return;
+  satInset.setField(field, grid);
+
+  const wrap = $('proj-wrap');
+  const clash = wrap && !wrap.hidden;
+  card.style.bottom = clash ? `${Math.round(wrap.getBoundingClientRect().height) + 24}px` : '';
+
+  // Clear of the dials, measured rather than assumed: the rail's width depends
+  // on the safe-area inset, which is a property of the device.
+  const rail = $('right-rail');
+  if (rail) {
+    const r = rail.getBoundingClientRect();
+    card.style.right = `${Math.max(14, Math.round(window.innerWidth - r.left) + 12)}px`;
+  }
+
+  const box = Math.min(240, window.innerWidth * 0.24);
+  const tall = Math.min(260, window.innerHeight * (clash ? 0.28 : 0.42));
+  satInset.resize(box, tall);
+}
+
 function refreshProjection() {
   if (!projection || !field || !grid) return;
   const { levels } = chooseLevels(grid.zmin, grid.zmax, {
@@ -3260,6 +3373,7 @@ function applyProjectionStyle() {
   // canvas is left empty and the WebGL pass fills the same rectangle.
   wrap.hidden = projState.mode === 'off' || state.surfaceKind !== 'graph';
   wrap.classList.toggle('down', projState.mode === 'down');
+  refreshSatInset();
 }
 
 function drawProjection() {
@@ -3281,7 +3395,7 @@ function drawProjection() {
   let curve = null;
   if (state.curCurve && isFinite(z)) {
     curve = traceLevelCurve(field, player.x, player.y);
-    heightColor(grid.norm(z), projRGB);
+    heatColor(grid.norm(z), projRGB);
   }
 
   let tangent = null;
@@ -3296,6 +3410,17 @@ function drawProjection() {
     curve, curveRGB: projRGB, tangent,
     player: { x: player.x, y: player.y },
     feasible: predicate, showFeasible: state.feasible || state.isolate,
+  });
+}
+
+/** The campus card, once a frame: the marker and the contour move, the rest is baked. */
+function drawSatInset() {
+  const card = $('sat-card');
+  if (!satInset || !card || card.hidden || !field || !grid || !player) return;
+  const z = player.height();
+  satInset.draw({
+    player: { x: player.x, y: player.y },
+    contour: state.curCurve && isFinite(z) ? traceLevelCurve(field, player.x, player.y) : null,
   });
 }
 
@@ -3615,7 +3740,7 @@ function animate() {
   const onGround = isFinite(player.height());
   if (state.curCurve && onGround) {
     if (!still) {
-      heightColor(grid.norm(player.height()), curveRGB);
+      heatColor(grid.norm(player.height()), curveRGB);
       curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
     }
   } else {
@@ -3636,6 +3761,7 @@ function animate() {
   updateHUD(readout);
   renderer.render(scene, camera);
   drawProjection();
+  drawSatInset();
 }
 
 /* ---------------------------------------------------------------- start */
@@ -3646,6 +3772,7 @@ function onResize() {
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  refreshSatInset();
 }
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
@@ -3690,6 +3817,19 @@ withLoading(() => {
   }
 });
 animate();
+
+// A JPEG cannot be decoded synchronously, and the surface is built
+// synchronously. Almost always the image wins the race — it is a data URI, and
+// the decode starts when the module is imported, long before anyone can choose
+// the campus — but "almost always" is not a guarantee, and losing it means a
+// student sees the land-cover fallback with no way to tell why. So when the
+// image lands, if the campus is what is on screen and it went up without the
+// photograph, build it again.
+satelliteReady().then((ok) => {
+  if (ok && isCampus() && state.satellite && !hasGroundTexture()) {
+    withLoading(() => applyInputs());
+  }
+});
 
 /* ------------------------------------------------------- Border Run */
 
