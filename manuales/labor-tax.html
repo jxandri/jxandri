@@ -218,9 +218,13 @@ document.querySelectorAll("#lang button").forEach(function(b){
 document.querySelectorAll("#theme button").forEach(function(b){
   b.addEventListener("click", function(){ setTheme(b.dataset.th); });
 });
-var l0 = "es", t0 = "dark";
-try{ l0 = localStorage.getItem("manual.lang") || "es";
-     t0 = localStorage.getItem("manual.theme") || "dark"; }catch(e){}
+/* The toggle always stamps data-theme, so the media query never gets a say —
+   which is why the first visit takes its cue from the reader's system setting
+   instead of assuming dark. After that their own choice sticks. */
+var sysLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+var l0 = "es", t0 = sysLight ? "light" : "dark";
+try{ l0 = localStorage.getItem("manual.lang") || l0;
+     t0 = localStorage.getItem("manual.theme") || t0; }catch(e){}
 setLang(l0); setTheme(t0);
 </script>
 </body>
