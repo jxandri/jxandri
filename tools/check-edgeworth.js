@@ -21,8 +21,21 @@ const { chromium } = require('playwright-core');
   say('boots without a page error', errs.length === 0, errs.slice(0,2).join(' | '));
   say('exposes the model', await p.evaluate(() => !!window.__edgeworth));
 
+  // Preferences and endowments, set through the model the way a preset does.
+  const setPrefs = (A, B, w) => p.evaluate(([A, B, w]) => {
+    const E = window.__edgeworth, st = E.st;
+    E.setFamily('a', A[0], A[1]);
+    E.setFamily('b', B[0], B[1]);
+    if(w){ [st.wAx, st.wAy, st.wBx, st.wBy] = w; }
+    E.applyPrefs(); E.recomputeModel(); E.syncState(); E.render();
+    return { srcA:st.srcA, srcB:st.srcB };
+  }, [A, B, w]);
+
   // --- symmetric Cobb-Douglas ---------------------------------------------
   // u = sqrt(xy) for both, total (8,8): the contract curve is the diagonal.
+  // Set explicitly: the applet's default is deliberately NOT symmetric, so
+  // that its weight slider bites out of the box.
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
   const diag = await p.evaluate(() => {
     const { st } = window.__edgeworth;
     let worst = 0;
@@ -66,15 +79,6 @@ const { chromium } = require('playwright-core');
       await p.evaluate(() => window.__edgeworth.inLens(4, 4)));
 
   // --- families are chosen per agent, and driven by their dials -----------
-  const setPrefs = (A, B, w) => p.evaluate(([A, B, w]) => {
-    const E = window.__edgeworth, st = E.st;
-    E.setFamily('a', A[0], A[1]);
-    E.setFamily('b', B[0], B[1]);
-    if(w){ [st.wAx, st.wAy, st.wBx, st.wBy] = w; }
-    E.applyPrefs(); E.recomputeModel(); E.syncState(); E.render();
-    return { srcA:st.srcA, srcB:st.srcB };
-  }, [A, B, w]);
-
   // Cobb-Douglas with a = 0.8 against a = 0.5 on an 8x8 box. Tangency is
   // (a/(1-a))(y/x) = (y_B/x_B), i.e. 4y(8-x) = x(8-y), so y = 8x/(32-3x) and
   // the curve passes through (4, 1.6).
@@ -548,7 +552,7 @@ const { chromium } = require('playwright-core');
     document.querySelector('input[name="method"][value="planner"]').click();
     await new Promise(r => setTimeout(r, 300));
     const read = () => ({ lam:st.lam, shown:document.getElementById('scrub-val').textContent,
-                          x:st.P[0], cells:document.getElementById('readoutAux').textContent });
+                          x:st.P[0], cells:document.getElementById('readoutBox').textContent });
     const sc = document.getElementById('scrub');
     sc.value = 0.15; sc.dispatchEvent(new Event('input'));
     await new Promise(r => setTimeout(r, 250));
@@ -715,6 +719,68 @@ const { chromium } = require('playwright-core');
   await p.evaluate(() => { const E = window.__edgeworth; E.moveEndowment([6, 2]); });
 
 
+
+  // === the weight moves the allocation, along the set ====================
+  await setPrefs(['cd',{a:0.7}], ['cd',{a:0.3}], [6,2,2,6]);
+  const walk = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    document.querySelector('input[name="method"][value="planner"]').click();
+    await new Promise(r => setTimeout(r, 300));
+    const sc = document.getElementById('scrub');
+    const out = [];
+    for(const v of [0.05, 0.35, 0.65, 0.95]){
+      sc.value = v; sc.dispatchEvent(new Event('input'));
+      await new Promise(r => setTimeout(r, 180));
+      out.push({ lam:st.lam, x:st.P[0], y:st.P[1],
+                 off:E.nearestOnCurve(st.contract, st.P[0], st.P[1]).dist,
+                 shown:document.getElementById('scrub-val').textContent });
+    }
+    return { out, flat:st.lamRange.flat };
+  });
+  say("every weight puts the allocation ON the Pareto set",
+      walk.out.every(o => o.off < 1e-6),
+      `max off-curve ${Math.max(...walk.out.map(o => o.off)).toExponential(1)}`);
+  say("and raising it walks the allocation up A's side",
+      walk.out.every((o, i) => i === 0 || o.x > walk.out[i-1].x),
+      walk.out.map(o => o.x.toFixed(2)).join(" < "));
+  say("with the weight itself moving, not just the point",
+      !walk.flat && walk.out.every((o, i) => i === 0 || o.lam > walk.out[i-1].lam) &&
+      walk.out.every(o => o.shown === o.lam.toFixed(3)),
+      walk.out.map(o => o.lam.toFixed(3)).join(" < "));
+
+
+  // and the degenerate case must SAY it is degenerate rather than freeze mutely
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+  const flatCase = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    E.setMethod('planner');
+    await new Promise(r => setTimeout(r, 250));
+    const sc = document.getElementById('scrub');
+    sc.value = 0.2; sc.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 200));
+    const lo = { lam:st.lam, x:st.P[0] };
+    sc.value = 0.8; sc.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 200));
+    return { flat:st.lamRange.flat, lo, hi:{ lam:st.lam, x:st.P[0] },
+             sub:document.getElementById('scrub-sub').textContent,
+             cells:document.getElementById('readoutBox').textContent };
+  });
+  // the reported weight is read off the point, so it wobbles by about 5e-5
+  // across the set — which is exactly the noise floor the flat test uses
+  say("identical tastes give a straight frontier, where one weight supports everything",
+      flatCase.flat && Math.abs(flatCase.hi.lam - flatCase.lo.lam) < 1e-3,
+      `lambda ${flatCase.lo.lam.toFixed(5)} -> ${flatCase.hi.lam.toFixed(5)} across the whole set`);
+  say("the allocation still walks the set there",
+      flatCase.hi.x > flatCase.lo.x + 1,
+      `x ${flatCase.lo.x.toFixed(2)} -> ${flatCase.hi.x.toFixed(2)}`);
+  say("and the applet says so rather than freezing the number mutely",
+      /(recta|straight)/i.test(flatCase.sub) &&
+      /(constante|constant)/i.test(flatCase.cells),
+      flatCase.sub);
+
+  await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
+
+
   // --- language ------------------------------------------------------------
   await p.click('#lang-en');
   await p.waitForTimeout(200);
@@ -722,16 +788,6 @@ const { chromium } = require('playwright-core');
       (await p.textContent('#t-title')).indexOf('Edgeworth Box') >= 0,
       await p.textContent('#t-title'));
 
-  // --- excess demand panel draws -------------------------------------------
-  await p.click('.tool[data-aux="excess"]');
-  await p.waitForTimeout(300);
-  say('the excess demand panel draws', (await p.evaluate(() => {
-    const cv = document.getElementById('caux');
-    const g = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
-    let n = 0;
-    for(let i = 0; i < g.length; i += 4000) if(g[i+3] > 0) n++;
-    return n;
-  })) > 10);
 
   say('no page errors at the end', errs.length === 0, errs.slice(0,3).join(' | '));
   await b.close();

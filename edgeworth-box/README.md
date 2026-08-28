@@ -45,7 +45,7 @@ exchange model gives, to one part in ten thousand.
 |---|---|---|
 | **Exchange** | two consumers, fixed endowments | the box, the contract curve, the core |
 | **Production** | two consumers and a firm | the frontier, with the rectangle being divided sliding along it; efficiency needs `MRS_A = MRS_B = MRT` |
-| **Robinson** | one consumer and a firm | no division to argue about: the optimum is where `MRS = MRT`, and the second panel plots utility along the frontier |
+| **Robinson** | one consumer and a firm | no division to argue about: the optimum is where `MRS = MRT` |
 
 In the production model B's side of the box is a **residual utility**: given
 what A takes, the best B can do once the firm has been told to produce
@@ -104,6 +104,16 @@ Three things about λ the applet does not hide:
 - **λ is a coordinate, not a measure of importance.** It weights the utility
   functions as they are typed, and utility is ordinal — rewriting `u_A` as
   `2·u_A` relabels every weight without moving a single indifference curve.
+- **It cannot always index the set at all.** Two people with the same
+  homothetic preferences have a *straight* utility possibility frontier, and
+  against a straight one every efficient allocation is supported by the same
+  weight: λ is genuinely constant along the whole set. The slider still walks
+  the set, and the applet says so — the readout marks λ *constant* and the
+  scrubber's caption names the reason — rather than freezing the number with
+  no explanation. It is also why the applet no longer **boots** into that case:
+  two identical Cobb–Douglas consumers are the canonical first picture, but
+  they are the one economy where the weight slider cannot demonstrate anything,
+  so the default is now the asymmetric pair and the symmetric one is a preset.
 - **Its useful range is narrow, and measured.** For two Cobb–Douglas consumers
   the entire Pareto set lives in a band of weights about a tenth of a unit
   wide; a slider running 0 to 1 would spend nine tenths of its travel on two
@@ -111,13 +121,9 @@ Three things about λ the applet does not hide:
   that pick an *interior* allocation, since at either end a marginal utility
   runs to zero or infinity — and the slider is stretched across it, while the
   readout still shows the real λ.
-- **Sometimes it selects nothing at all.** Two people with the same homothetic
-  preferences have a *straight* utility possibility frontier, and against a
-  straight frontier the weighted sum is flat along the whole Pareto set at the
-  weight matching its slope: every efficient allocation maximises it, and every
-  other weight picks a corner. There the applet walks the set directly and
-  reports the constant weight, and Negishi bisects along the set rather than
-  along λ. Same equilibrium, found from the other side.
+- **Where λ is constant, Negishi bisects along the set** rather than along λ,
+  since no weight singles the equilibrium out. Same equilibrium, found from the
+  other side.
 
 The weight is **inverted rather than maximised**. Solving "maximise the
 weighted sum" is the definition and also the worst way to evaluate it: against
@@ -203,21 +209,17 @@ still the one between the curves you can see.
 
 Both drags work with the mouse, with a finger, and with the arrow keys.
 
-## The second panel
+## One diagram
 
-| Button | Shows |
-|---|---|
-| `u_A–u_B` | the utility possibility frontier, the individually-rational rectangle, and the core as their intersection |
-| `z(p)` | excess demand for *x* against the announced price ratio, on a logarithmic price axis, with every equilibrium marked |
+The applet is the box and nothing else. It had a second panel — the utility
+possibility frontier, and excess demand against the price ratio — and both were
+removed on request: everything they showed is either in the box already or in
+the readout under it. They are in the git history if they are ever wanted back.
 
-The frontier is not a second computation. The sweep that traces the contract
-curve across the box records (*u_A*, *u_B*) at every step; plotting those pairs
-instead of those points **is** the frontier, so the core highlighted on one is
-the core highlighted on the other by construction rather than by agreement.
-
-`z(p)` is the honest way to show that the number of equilibria is a question
-and not a given: its zeros are the Walrasian prices, and you can watch them
-appear, move and merge as the endowments change.
+The numbers that were split across two strips are now one: each person's
+bundle and utility, both marginal rates and the gap between them, and, under
+the planner, the weight, the supporting price, both transfers and the Negishi
+weight.
 
 ## Layers
 

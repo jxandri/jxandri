@@ -256,8 +256,10 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 
 /* ---- stage ---- */
 .stage{display:flex; flex-direction:column; gap:var(--s3); min-width:0}
-.viewports{display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); min-width:0}
-@media (max-width:900px){ .viewports{grid-template-columns:1fr} }
+.viewports{display:grid; grid-template-columns:1fr; gap:var(--s3); min-width:0}
+/* the box is letterboxed to the shape of the economy, so a full-width panel
+   would only add margin; it is capped and centred instead */
+.viewports > .viewport{max-width:900px; width:100%; margin:0 auto}
 
 .viewport{
   display:flex; flex-direction:column; min-width:0;
@@ -402,7 +404,6 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
    so its aspect ratio is a property of the model, not of the layout — JS
    writes it onto the wrapper */
 #wrapBox{aspect-ratio:1/1}
-#wrapAux{aspect-ratio:1/1}
 
 .cell dd.a{color:var(--agA)}
 .cell dd.b{color:var(--agB)}
@@ -476,7 +477,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
   <header class="masthead">
     <div>
       <h1 id="t-title">La Caja de Edgeworth</h1>
-      <p id="t-sub">Dos personas, dos bienes, nada que producir: sólo repartir lo que ya hay. La caja mide el total; cada punto es un reparto. El diagrama y el espacio de utilidades son la misma cosa vista de dos maneras.</p>
+      <p id="t-sub">Dos personas, dos bienes, nada que producir: sólo repartir lo que ya hay. La caja mide el total y cada punto es un reparto completo de él: quién tiene qué, y qué podrían hacer al respecto.</p>
     </div>
     <div class="masthead-actions">
       <div class="seg" role="group" aria-label="Modo">
@@ -667,20 +668,6 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
           <dl class="readout" id="readoutBox"></dl>
         </section>
 
-        <section class="viewport">
-          <div class="vp-bar">
-            <span class="vp-title" id="t-vpaux">Espacio de utilidades</span>
-            <div class="vp-tools" role="group" aria-label="Panel">
-              <button type="button" class="tool" data-aux="upf" aria-pressed="true">u<sub>A</sub>–u<sub>B</sub></button>
-              <button type="button" class="tool" data-aux="excess" aria-pressed="false">z(p)</button>
-            </div>
-          </div>
-          <div class="canvas-wrap" id="wrapAux">
-            <canvas id="caux" tabindex="0" role="application"
-              aria-label="Frontera de posibilidades de utilidad y exceso de demanda."></canvas>
-          </div>
-          <dl class="readout" id="readoutAux"></dl>
-        </section>
       </div>
 
       <div class="scrub" id="row-scrub">
@@ -2481,256 +2468,6 @@ function drawFrames(st, ctx, r, C){
 }
 
 /* ==========================================================================
-   7. The second panel
-   --------------------------------------------------------------------------
-   Two views, both of them the same model seen without the box.
-
-   u_A-u_B is the utility possibility frontier. It is not a second computation:
-   the sweep that traces the contract curve across the box records (u_A, u_B)
-   at every step, and plotting those pairs instead of those points IS the
-   frontier. The rectangle of allocations neither person would refuse is drawn
-   on it, and its intersection with the frontier is the core — the same set
-   highlighted on the contract curve next door.
-
-   z(p) is the excess demand for x as the announced price ratio varies. Its
-   zeros are the Walrasian equilibria. Drawing it is the honest way to show
-   that there can be none in range, one, or three.
-   ========================================================================== */
-
-function plotFrame(w, h, pad){
-  return { x0:pad.l, y0:pad.t, x1:w - pad.r, y1:h - pad.b };
-}
-
-function axes(ctx, r, C, xTicks, yTicks, xLabel, yLabel){
-  ctx.save();
-  ctx.strokeStyle = C.rule; ctx.lineWidth = 1;
-  ctx.strokeRect(r.x0 + .5, r.y0 + .5, r.x1 - r.x0 - 1, r.y1 - r.y0 - 1);
-  ctx.font = FONT_MONO; ctx.fillStyle = C.ink3;
-  ctx.strokeStyle = C.rule2 || C.rule;
-  for(const t of xTicks){
-    ctx.beginPath(); ctx.moveTo(t.px, r.y0); ctx.lineTo(t.px, r.y1); ctx.stroke();
-    ctx.textAlign = "center"; ctx.textBaseline = "top";
-    ctx.fillText(t.label, t.px, r.y1 + 5);
-  }
-  for(const t of yTicks){
-    ctx.beginPath(); ctx.moveTo(r.x0, t.py); ctx.lineTo(r.x1, t.py); ctx.stroke();
-    ctx.textAlign = "right"; ctx.textBaseline = "middle";
-    ctx.fillText(t.label, r.x0 - 5, t.py);
-  }
-  ctx.font = FONT_UI; ctx.fillStyle = C.ink3;
-  if(xLabel){ ctx.textAlign = "right"; ctx.textBaseline = "bottom"; ctx.fillText(xLabel, r.x1, r.y1 - 5); }
-  if(yLabel){ ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(yLabel, r.x0 + 4, r.y0 - 4); }
-  ctx.restore();
-}
-
-/* Tick values only; the caller knows whether they are an x or a y. */
-function ticksFor(lo, hi, n){
-  const step = niceStep(hi - lo, n);
-  const out = [];
-  for(let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step){
-    out.push({ v, label:fmt(v, step < 1 ? 2 : step < 10 ? 1 : 0) });
-  }
-  return out;
-}
-
-function drawAux(st){
-  const cv = document.getElementById("caux");
-  const { ctx, w, h } = setupCanvas(cv);
-  const dark = isDark();
-  const C = {
-    ink:css("--ink"), ink2:css("--ink-2"), ink3:css("--ink-3"),
-    rule:css("--rule"), rule2:css("--rule-2"), surf:css("--surface"),
-    halo: dark ? "rgba(10,16,19,.78)" : "rgba(255,255,255,.85)",
-    dark
-  };
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = C.surf; ctx.fillRect(0, 0, w, h);
-  if(st.aux === "excess" && !hasFirm(st)) drawExcess(st, ctx, w, h, C);
-  else if(st.aux === "excess"){
-    haloText(ctx, T().zOnlyExchange, w/2, h/2, C.ink3, C.halo, FONT_UI, "center");
-  }
-  else drawUPF(st, ctx, w, h, C);
-}
-
-/* ---- utility possibility frontier --------------------------------------- */
-/* With one consumer there is no u_A-u_B frontier to draw — but there is a
-   question worth plotting: how well the consumer does at each point of the
-   firm's frontier, and where along it that peaks. */
-function drawRobinsonPanel(st, ctx, w, h, C){
-  const r = plotFrame(w, h, { l:52, r:18, t:18, b:30 });
-  const N = 200, xs = [], vs = [];
-  let lo = Infinity, hi = -Infinity;
-  for(let k = 0; k <= N; k++){
-    const X = st.Fx * k / N, v = st.uA(X, ppfY(st, X));
-    xs.push(X); vs.push(v);
-    if(Number.isFinite(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
-  }
-  if(!(hi > lo)){ hi = lo + 1; }
-  const pad = (hi - lo) * 0.08;
-  lo -= pad; hi += pad;
-  const SX = x => r.x0 + (x / st.Fx) * (r.x1 - r.x0);
-  const SY = v => r.y1 - (v - lo) / (hi - lo) * (r.y1 - r.y0);
-  axes(ctx, r, C,
-    ticksFor(0, st.Fx, 5).map(t => ({ ...t, px:SX(t.v) })),
-    ticksFor(lo, hi, 5).map(t => ({ ...t, py:SY(t.v) })),
-    "x", "u_A");
-  ctx.save();
-  ctx.beginPath(); ctx.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.clip();
-  cased(ctx, () => {
-    let started = false;
-    for(let k = 0; k <= N; k++){
-      if(!Number.isFinite(vs[k])){ started = false; continue; }
-      const sx = SX(xs[k]), sy = SY(vs[k]);
-      started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
-      started = true;
-    }
-  }, MARK.A, 2, MARK.casing);
-  const best = st.contract[0];
-  if(best){
-    const v = st.uA(best.x, best.y);
-    ctx.setLineDash([4, 3]); ctx.lineWidth = 1; ctx.strokeStyle = MARK.contract;
-    ctx.beginPath();
-    ctx.moveTo(SX(best.x), r.y0); ctx.lineTo(SX(best.x), r.y1);
-    ctx.stroke(); ctx.setLineDash([]);
-    dot(ctx, SX(best.x), SY(v), 6, MARK.ink, MARK.casing);
-  }
-  ctx.restore();
-}
-
-function drawUPF(st, ctx, w, h, C){
-  if(!hasB(st)) return drawRobinsonPanel(st, ctx, w, h, C);
-  const r = plotFrame(w, h, { l:52, r:18, t:18, b:30 });
-  const pts = st.contract.filter(p => Number.isFinite(p.uA) && Number.isFinite(p.uB));
-  const uAp = st.uP.a, uBp = st.uP.b;
-  const cand = pts.slice();
-  for(const v of [{ uA:st.core.uAe, uB:st.core.uBe }, { uA:uAp, uB:uBp }]){
-    if(Number.isFinite(v.uA) && Number.isFinite(v.uB)) cand.push(v);
-  }
-  if(!cand.length){ haloText(ctx, "—", (r.x0+r.x1)/2, (r.y0+r.y1)/2, C.ink3, C.halo, FONT_UI, "center"); return; }
-
-  let aLo = Infinity, aHi = -Infinity, bLo = Infinity, bHi = -Infinity;
-  for(const p of cand){
-    if(p.uA < aLo) aLo = p.uA; if(p.uA > aHi) aHi = p.uA;
-    if(p.uB < bLo) bLo = p.uB; if(p.uB > bHi) bHi = p.uB;
-  }
-  const padA = (aHi - aLo || 1) * 0.07, padB = (bHi - bLo || 1) * 0.07;
-  aLo -= padA; aHi += padA; bLo -= padB; bHi += padB;
-  const SX = v => r.x0 + (v - aLo) / (aHi - aLo) * (r.x1 - r.x0);
-  const SY = v => r.y1 - (v - bLo) / (bHi - bLo) * (r.y1 - r.y0);
-
-  axes(ctx, r, C,
-    ticksFor(aLo, aHi, 5).map(t => ({ ...t, px:SX(t.v) })),
-    ticksFor(bLo, bHi, 5).map(t => ({ ...t, py:SY(t.v) })),
-    "u_A", "u_B");
-
-  ctx.save();
-  ctx.beginPath(); ctx.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.clip();
-
-  /* the individually rational rectangle: nobody accepts less than ω */
-  const { uAe, uBe } = st.core;
-  if(st.layers.core && hasCore(st) && Number.isFinite(uAe) && Number.isFinite(uBe)){
-    ctx.fillStyle = C.dark ? "rgba(193,92,255,.12)" : "rgba(142,47,158,.10)";
-    ctx.fillRect(SX(uAe), r.y0, r.x1 - SX(uAe), SY(uBe) - r.y0);
-    ctx.setLineDash([4, 3]); ctx.lineWidth = 1; ctx.strokeStyle = MARK.contract;
-    ctx.beginPath();
-    ctx.moveTo(SX(uAe), r.y0); ctx.lineTo(SX(uAe), r.y1);
-    ctx.moveTo(r.x0, SY(uBe)); ctx.lineTo(r.x1, SY(uBe));
-    ctx.stroke(); ctx.setLineDash([]);
-  }
-
-  /* the frontier, with the core drawn over it */
-  if(pts.length > 1){
-    cased(ctx, () => {
-      pts.forEach((p, i) => i ? ctx.lineTo(SX(p.uA), SY(p.uB)) : ctx.moveTo(SX(p.uA), SY(p.uB)));
-    }, MARK.contract, 2, MARK.casing);
-    if(st.layers.core && hasCore(st) && st.core.n > 1){
-      const seg = st.contract.slice(st.core.from, st.core.to + 1)
-        .filter(p => Number.isFinite(p.uA) && Number.isFinite(p.uB));
-      if(seg.length > 1){
-        ctx.save();
-        ctx.globalAlpha = 0.4; ctx.lineCap = "round";
-        ctx.beginPath();
-        seg.forEach((p, i) => i ? ctx.lineTo(SX(p.uA), SY(p.uB)) : ctx.moveTo(SX(p.uA), SY(p.uB)));
-        ctx.strokeStyle = MARK.core; ctx.lineWidth = 9; ctx.stroke();
-        ctx.restore();
-      }
-    }
-  }
-
-  /* equilibria land on the frontier — that is the first welfare theorem, drawn */
-  if(st.layers.optimum){
-    for(const e of st.eq){
-      const a = st.uA(e.A[0], e.A[1]), b = st.uB(e.B[0], e.B[1]);
-      if(Number.isFinite(a) && Number.isFinite(b))
-        square(ctx, SX(a), SY(b), 5, C.dark ? MARK.price : "#14181B",
-               C.dark ? MARK.casing : "rgba(255,255,255,.75)");
-    }
-  }
-
-  if(Number.isFinite(uAe) && Number.isFinite(uBe)) diamond(ctx, SX(uAe), SY(uBe), 6, MARK.ink, MARK.casing);
-  if(Number.isFinite(uAp) && Number.isFinite(uBp)) dot(ctx, SX(uAp), SY(uBp), 6, MARK.ink, MARK.casing);
-  ctx.restore();
-}
-
-/* ---- excess demand ------------------------------------------------------ */
-function drawExcess(st, ctx, w, h, C){
-  const r = plotFrame(w, h, { l:52, r:18, t:18, b:30 });
-  const sw = st.sweep;
-  if(!sw){ return; }
-
-  /* z_x runs to infinity as p goes to zero — A wants an unbounded amount of a
-     free good — so the vertical range is set by the size of the box rather
-     than by the data, and the curve is clipped. Two units of box width shows
-     the crossing at a useful slope in every case tried; scaling to the data
-     instead flattened the interesting part into the axis. */
-  const zHi = 2 * Math.max(st.Wx, 1e-6);
-
-  const SX = s => r.x0 + (s - LOGP_MIN) / (LOGP_MAX - LOGP_MIN) * (r.x1 - r.x0);
-  const SY = z => r.y1 - (z + zHi) / (2 * zHi) * (r.y1 - r.y0);
-
-  const xT = [];
-  for(let s = Math.ceil(LOGP_MIN); s <= LOGP_MAX; s++){
-    xT.push({ px:SX(s), label: s === 0 ? "1" : "1e" + s });
-  }
-  axes(ctx, r, C, xT, ticksFor(-zHi, zHi, 5).map(t => ({ ...t, py:SY(t.v) })),
-    "p = p_x/p_y", "z_x");
-
-  ctx.save();
-  ctx.beginPath(); ctx.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.clip();
-
-  /* the zero line is the whole point of the plot */
-  ctx.strokeStyle = C.ink3; ctx.lineWidth = 1.2; ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(r.x0, SY(0)); ctx.lineTo(r.x1, SY(0)); ctx.stroke();
-
-  cased(ctx, () => {
-    let started = false;
-    for(let k = 0; k < sw.p.length; k++){
-      const z = sw.z[k];
-      if(!Number.isFinite(z)){ started = false; continue; }
-      const x = SX(Math.log10(sw.p[k])), y = SY(clamp(z, -zHi*1.4, zHi*1.4));
-      started ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-      started = true;
-    }
-  }, MARK.A, 2, MARK.casing);
-
-  for(const e of st.eq){
-    const x = SX(Math.log10(e.p));
-    ctx.setLineDash([3, 3]); ctx.strokeStyle = MARK.contract; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x, r.y0); ctx.lineTo(x, r.y1); ctx.stroke();
-    ctx.setLineDash([]);
-    dot(ctx, x, SY(0), 5, MARK.contract, MARK.casing);
-  }
-
-  /* where the announced price currently sits */
-  const xs = SX(Math.log10(st.p));
-  ctx.setLineDash([5, 4]); ctx.strokeStyle = C.dark ? MARK.price : C.ink; ctx.lineWidth = 1.4;
-  ctx.beginPath(); ctx.moveTo(xs, r.y0); ctx.lineTo(xs, r.y1); ctx.stroke();
-  ctx.setLineDash([]);
-  if(st.mkt) dot(ctx, xs, SY(clamp(st.mkt.zx, -zHi*1.4, zHi*1.4)), 5, MARK.ink, MARK.casing);
-  ctx.restore();
-}
-
-/* ==========================================================================
    8. Copy, in both languages the applet is likely to be used in
    ========================================================================== */
 
@@ -2755,7 +2492,7 @@ const MAP_DEFS = [["gains","mapGains"], ["ua","mapUA"], ["ub","mapUB"], ["none",
 const STR = {
   es:{
     title:"La Caja de Edgeworth",
-    sub:"Dos personas, dos bienes, nada que producir: sólo repartir lo que ya hay. La caja mide el total; cada punto es un reparto. El diagrama y el espacio de utilidades son la misma cosa vista de dos maneras.",
+    sub:"Dos personas, dos bienes, nada que producir: sólo repartir lo que ya hay. La caja mide el total y cada punto es un reparto completo de él: quién tiene qué, y qué podrían hacer al respecto.",
     explore:"Explorar", challenge:"Retos",
 
     gModel:"Modelo", gFirm:"Empresa",
@@ -2770,8 +2507,10 @@ const STR = {
     lBudgetA:"Conjunto de A", lBudgetB:"Conjunto de B",
     rProd:"Produce", rLam:"λ", rTA:"Transf. A", rTB:"Transf. B",
     rNeg:"λ de Negishi", rProfit:"Beneficio", rMRT:"RMT", rPrice:"Precio de apoyo",
-    negishi:"Negishi", zOnlyExchange:"Sólo en intercambio puro",
-    scrubLam:"Peso de Pareto", scrubLamSub:"λ de 0 (todo B) a 1 (todo A)",
+    negishi:"Negishi",
+    scrubLam:"Peso de Pareto", scrubLamSub:"λ recorre el conjunto de Pareto",
+    lamFlat:"constante",
+    scrubLamFlat:"la frontera es recta: un solo λ sostiene todo el conjunto",
     swtLine:(p, ta, tb, net) =>
       `Implementado por precios (p_x, p_y) = (${p}, 1)` +
       (tb === null ? ` con transferencia T_A = ${ta}`
@@ -2799,7 +2538,7 @@ const STR = {
     mapGains:"Ganancias", mapUA:"u de A", mapUB:"u de B", mapNone:"Ninguno",
     bar:"bajo → alto", lock:"bloqueado",
 
-    vpBox:"Caja de Edgeworth", vpUPF:"Espacio de utilidades", vpZ:"Exceso de demanda",
+    vpBox:"Caja de Edgeworth",
     keyA:"A", keyB:"B", keyC:"Curva de contrato",
 
     rXA:"x de A", rYA:"y de A", rXB:"x de B", rYB:"y de B",
@@ -2857,7 +2596,7 @@ const STR = {
 
   en:{
     title:"The Edgeworth Box",
-    sub:"Two people, two goods, nothing to produce: only what is already there to divide. The box measures the total; every point is a complete division of it. The diagram and the utility space are one model seen two ways.",
+    sub:"Two people, two goods, nothing to produce: only what is already there to divide. The box measures the total and every point is a complete division of it: who has what, and what they could do about it.",
     explore:"Explore", challenge:"Challenges",
 
     gModel:"Model", gFirm:"Firm",
@@ -2872,8 +2611,10 @@ const STR = {
     lBudgetA:"A's budget set", lBudgetB:"B's budget set",
     rProd:"Produces", rLam:"λ", rTA:"Transfer A", rTB:"Transfer B",
     rNeg:"Negishi λ", rProfit:"Profit", rMRT:"MRT", rPrice:"Support price",
-    negishi:"Negishi", zOnlyExchange:"Pure exchange only",
-    scrubLam:"Pareto weight", scrubLamSub:"λ from 0 (all B) to 1 (all A)",
+    negishi:"Negishi",
+    scrubLam:"Pareto weight", scrubLamSub:"λ walks the Pareto set",
+    lamFlat:"constant",
+    scrubLamFlat:"the frontier is straight: one weight supports the whole set",
     swtLine:(p, ta, tb, net) =>
       `Implemented by prices (p_x, p_y) = (${p}, 1)` +
       (tb === null ? ` with transfer T_A = ${ta}`
@@ -2901,7 +2642,7 @@ const STR = {
     mapGains:"Gains", mapUA:"A's u", mapUB:"B's u", mapNone:"None",
     bar:"low → high", lock:"locked",
 
-    vpBox:"Edgeworth box", vpUPF:"Utility space", vpZ:"Excess demand",
+    vpBox:"Edgeworth box",
     keyA:"A", keyB:"B", keyC:"Contract curve",
 
     rXA:"A's x", rYA:"A's y", rXB:"B's x", rYB:"B's y",
@@ -3083,8 +2824,8 @@ const LEVELS = [
    10. State
    ========================================================================== */
 const st = {
-  kindA:"cd", parA:{ a:0.5 }, rawA:"x^0.5*y^0.5", srcA:"x^(0.5)*y^(0.5)",
-  kindB:"cd", parB:{ a:0.5 }, rawB:"x^0.5*y^0.5", srcB:"x^(0.5)*y^(0.5)",
+  kindA:"cd", parA:{ a:0.75 }, rawA:"x^0.5*y^0.5", srcA:"x^(0.75)*y^(0.25)",
+  kindB:"cd", parB:{ a:0.25 }, rawB:"x^0.5*y^0.5", srcB:"x^(0.25)*y^(0.75)",
   uA:null, uAx:null, uAy:null, exactA:true,
   uB:null, uBx:null, uBy:null, exactB:true,
 
@@ -3100,7 +2841,7 @@ const st = {
   uP:{ a:NaN, b:NaN },
   logp:0, p:1,
 
-  map:"gains", aux:"upf", method:"free", mode:"explore",
+  map:"gains", method:"free", mode:"explore",
   layers:Object.fromEntries(LAYER_DEFS.map(([k,,d]) => [k, d])),
 
   levelIdx:0, unlocked:1, score:0, bests:{}, checked:false, playing:false
@@ -3151,6 +2892,7 @@ function recomputeModel(){
   st.sweep = hasFirm(st) ? null : priceSweep(st);
   st.eq = st.sweep ? findEquilibria(st, st.sweep) : [];
   st.lamRange = weightRange(st);
+  if(st.method === "planner") updateScrubLabel();
   st.lam = clamp(st.lam, st.lamRange.lo, st.lamRange.hi);
   st.negishi = negishiSolve(st);
 }
@@ -3189,7 +2931,7 @@ function render(){
   rafPending = true;
   requestAnimationFrame(() => {
     rafPending = false;
-    drawBox(st); drawAux(st); paintReadouts(); paintVerdict(); paintColorbar();
+    drawBox(st); paintReadouts(); paintVerdict(); paintColorbar();
   });
 }
 
@@ -3249,22 +2991,23 @@ function paintReadouts(){
   if(hasB(st)) boxRows.push([t.rUB, fmt(st.uP.b, 3), "b"]);
   if(hasFirm(st) && st.prod)
     boxRows.push([t.rProd, `${fmt(st.prod.X, 2)}, ${fmt(st.prod.Y, 2)}`]);
-  cells($("readoutBox"), boxRows);
+  /* everything in one strip now that there is one panel */
+  boxRows.push([t.rMRSA, Number.isFinite(s.mrsA) ? fmt(s.mrsA) : "∞", "a"]);
+  boxRows.push([hasB(st) ? t.rMRSB : t.rMRT, Number.isFinite(s.mrsB) ? fmt(s.mrsB) : "∞", "b"]);
+  boxRows.push([`${t.rGap} · ${gapState}`, gapTxt, s.gap < 0.01 ? "good" : ""]);
 
-  const rows = [
-    [t.rMRSA, Number.isFinite(s.mrsA) ? fmt(s.mrsA) : "∞", "a"],
-    [hasB(st) ? t.rMRSB : t.rMRT, Number.isFinite(s.mrsB) ? fmt(s.mrsB) : "∞", "b"],
-    [`${t.rGap} · ${gapState}`, gapTxt, s.gap < 0.01 ? "good" : ""]
-  ];
+  const rows = boxRows;
   if(st.method === "planner"){
-    rows.push([t.rLam, fmt(st.lam, 3), "core"]);
+    const flat = st.lamRange && st.lamRange.flat;
+    rows.push([flat ? `${t.rLam} · ${t.lamFlat}` : t.rLam, fmt(st.lam, 3),
+               flat ? "warn" : "core"]);
     if(st.swt){
       rows.push([t.rPrice, fmt(st.swt.p, 3)]);
       rows.push([t.rTA, (st.swt.tA >= 0 ? "+" : "") + fmt(st.swt.tA, 2), "a"]);
       if(hasB(st)) rows.push([t.rTB, (st.swt.tB >= 0 ? "+" : "") + fmt(st.swt.tB, 2), "b"]);
     }
     if(st.negishi) rows.push([t.rNeg, fmt(st.negishi.lam, 3), "good"]);
-  }else if(st.method === "auction" || st.aux === "excess"){
+  }else if(st.method === "auction"){
     rows.push([t.rP, fmt(st.p, 3)]);
     rows.push([t.rZX, st.mkt ? fmt(st.mkt.zx, 3) : "—", zRel < 0.005 ? "good" : "warn"]);
     rows.push([t.rEq, st.eq.length ? st.eq.map(e => fmt(e.p, 3)).join(", ") : "—", "core"]);
@@ -3277,7 +3020,7 @@ function paintReadouts(){
     if(hasFirm(st) && st.swt && Number.isFinite(st.swt.profit))
       rows.push([t.rProfit, fmt(st.swt.profit, 2)]);
   }
-  cells($("readoutAux"), rows);
+  cells($("readoutBox"), rows);
 
   const sw = $("scrub-swatch");
   if(st.method === "planner"){
@@ -3394,7 +3137,6 @@ function applyLang(){
   $("t-m-auction-d").textContent = t.mAuctionD;
 
   $("t-vpbox").textContent = t.vpBox;
-  $("t-vpaux").textContent = st.aux === "excess" ? t.vpZ : t.vpUPF;
   $("t-keyA").textContent = t.keyA;
   $("t-keyB").textContent = t.keyB;
   $("t-keyC").textContent = t.keyC;
@@ -3669,7 +3411,9 @@ function updateScrubLabel(){
             : st.method === "planner" ? "Lam"
             : st.method === "trade"   ? "Core" : "Contract";
   $("scrub-title").textContent = t["scrub" + key];
-  $("scrub-sub").textContent   = t["scrub" + key + "Sub"];
+  $("scrub-sub").textContent =
+    (key === "Lam" && st.lamRange && st.lamRange.flat) ? t.scrubLamFlat
+                                                       : t["scrub" + key + "Sub"];
 }
 
 let playRAF = 0, playDir = 1;
@@ -4054,16 +3798,6 @@ function boot(){
     r.addEventListener("change", () => { if(r.checked) setMethod(r.value); });
   });
 
-  document.querySelectorAll(".tool[data-aux]").forEach(b => {
-    b.addEventListener("click", () => {
-      st.aux = b.dataset.aux;
-      document.querySelectorAll(".tool[data-aux]").forEach(o =>
-        o.setAttribute("aria-pressed", o.dataset.aux === st.aux));
-      $("t-vpaux").textContent = st.aux === "excess" ? T().vpZ : T().vpUPF;
-      render();
-    });
-  });
-
   $("scrub").addEventListener("input", e => applyScrub(parseFloat(e.target.value)));
   $("btn-play").addEventListener("click", togglePlay);
   $("btn-clear").addEventListener("click", () => {
@@ -4097,7 +3831,7 @@ function boot(){
   /* the canvases are sized by CSS, so redraw whenever the layout moves them */
   if(window.ResizeObserver){
     const ro = new ResizeObserver(() => render());
-    ro.observe($("wrapBox")); ro.observe($("wrapAux"));
+    ro.observe($("wrapBox"));
   }else window.addEventListener("resize", render);
 
   /* the palette is read from the stylesheet on every frame, so a theme change
