@@ -172,7 +172,7 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
 .eff .hd{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
 .eff .g{color:var(--ink-2)}
 .eff .n{text-align:right}
-.eff .sub{color:#FF3B30} .eff .inc{color:#3D9BFF} .eff .tot{color:#C15CFF}
+.eff .sub{color:#FF3B30} .eff .inc{color:#FF6A00} .eff .tot{color:#C15CFF}
 </style>
 <div class="shell">
 
@@ -884,8 +884,12 @@ const MK = {
   A:"#FFFFFF", B:"#FF9E2C", C:"#C15CFF",
   ordinary:"#00D5F0", compensated:"#FF9E2C",
   /* the three effects, named by what they are rather than by which bundle they
-     touch: red substitutes, blue is the income change, violet is the sum */
-  sub:"#FF3B30", inc:"#3D9BFF", tot:"#C15CFF",
+     touch: red substitutes, orange is the income change, violet is the sum.
+     Orange has to hold its own between the red arrow beside it and the amber
+     of the compensated constraint it starts from, so it is picked to sit
+     equidistant from both: about 27 in CIELAB from each, and the same
+     contrast against either ground as the blue it replaces. */
+  sub:"#FF3B30", inc:"#FF6A00", tot:"#C15CFF",
   casing:"rgba(6,9,14,.62)", white:"#FFFFFF"
 };
 function f3(v){ return (Math.round(v*1e4)/1e4).toString(); }

@@ -79,6 +79,13 @@ ol.steps>li>.body{display:flex; flex-direction:column; gap:6px; min-width:0}
 .warn{background:var(--warn-soft); border-color:var(--warn-rule); border-left-color:var(--warn); color:var(--warn)}
 .res{background:var(--good-soft); border:1px solid var(--good); border-radius:3px;
   padding:8px 12px; font-family:var(--f-mono); font-size:13px; color:var(--good); max-width:66ch}
+/* The applet draws its arrows in fixed hues that hold on either ground, so a
+   colour named in the text gets the hue itself beside it rather than being
+   set in it: a swatch has no contrast floor to clear, and the reader can hold
+   it against the screen. */
+.sw{display:inline-block; width:.62em; height:.62em; border-radius:2px;
+  margin-right:.28em; vertical-align:baseline;
+  box-shadow:0 0 0 1px rgba(128,128,128,.45)}
 footer{border-top:1px solid var(--rule); padding-top:18px; color:var(--ink-3); font-size:13.5px;
   display:flex; flex-direction:column; gap:8px}
 [data-l]{display:none}
