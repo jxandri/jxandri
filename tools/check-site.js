@@ -31,6 +31,8 @@ const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FA
     ['/demand-functions/', 'Demand Functions'],
     ['/nonlinear-budget/', 'Non-linear Budget'],
     ['/labor-tax/', 'Labour Income Tax'],
+    ['/edgeworth-box/', 'The Edgeworth Box'],
+    ['/manuales/', 'the applet manuals'],
   ];
 
   for (const [path, name] of pages) {
@@ -44,6 +46,22 @@ const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FA
     check(name, bad.length === 0 && errs.length === 0 && title.length > 0,
       `${title || '(no title)'}${bad.length ? ' | missing: ' + bad.slice(0, 3).join(', ') : ''}`
       + `${errs.length ? ' | ' + errs.slice(0, 2).join(' ') : ''}`);
+    await p.close();
+  }
+
+  // The manuals are the one place the site links to a file rather than a page,
+  // and a PDF that did not get uploaded still gives a hub that looks perfect.
+  {
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/manuales/`, { waitUntil: 'load' });
+    const hrefs = await p.$$eval('a[href$=".pdf"]', (as) => as.map((a) => a.getAttribute('href')));
+    const codes = [];
+    for (const h of hrefs) {
+      const r = await p.request.get(new URL(h, `${BASE}/manuales/`).href);
+      codes.push(`${h} ${r.status()}`);
+    }
+    check('both manuals download', hrefs.length === 2 && codes.every((c) => c.endsWith(' 200')),
+      codes.join(', ') || 'no PDF links on the hub');
     await p.close();
   }
 
