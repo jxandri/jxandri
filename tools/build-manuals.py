@@ -1344,13 +1344,15 @@ M5 = dict(
          "Los vectores. Sin descomposición sale sólo el efecto total, de B₀ a B₁. Con "
          "descomposición aparecen dos: uno <b>" + SW_SUB + "magenta</b> de B₀ a B<sub>S</sub> rotulado "
          "«E. Sustitución» y uno <b>" + SW_INC + "verde menta</b> de B<sub>S</sub> a B₁ rotulado "
-         "«E. Ingreso». Los mismos colores marcan los tramos sobre "
-         "el eje x y sobre el eje y.",
+         "«E. Ingreso». Los mismos colores miden los tramos al margen de cada eje, "
+         "fuera del recuadro: a la izquierda de x = 0 y por debajo de y = 0, para no "
+         "amontonarse con las canastas.",
          "The vectors. Without the decomposition you get only the total effect, B₀ to B₁. With it, "
          "two more appear: a <b>" + SW_SUB + "magenta</b> one from B₀ to B<sub>S</sub> labelled "
          "“Subst. effect” and a <b>" + SW_INC + "mint green</b> one from B<sub>S</sub> to B₁ labelled "
-         "“Income effect”. The same colours mark the "
-         "stretches on the x axis and on the y axis."),
+         "“Income effect”. The same colours measure the stretches in the margin beside "
+         "each axis, outside the frame — left of x = 0 and below y = 0, so they do not "
+         "crowd the bundles."),
         ("Curvas de indiferencia", "Las que pasan por las canastas.", "The ones through the bundles."),
         ("Curvas de fondo", "El resto del mapa, a niveles regulares.",
                             "The rest of the map, at regular levels."),
@@ -1402,11 +1404,13 @@ M5 = dict(
          "so attributes less to the substitution effect.", None),
         ("Enciende <b>Flechas de los efectos</b> y mira los ejes: los tramos <b>" + SW_SUB +
          "magenta</b> y <b>" + SW_INC + "verde menta</b> del eje x "
-         "suman el desplazamiento total, y en el eje y aparecen los mismos dos tramos, porque y "
+         "—dibujados en el margen, por debajo del recuadro— suman el desplazamiento total, y al "
+         "margen del eje y aparecen los mismos dos tramos, porque y "
          "también se mueve entre B₀ y B<sub>S</sub> aunque acabe donde empezó.",
          "Switch on <b>Effect arrows</b> and look at the axes: the <b>" + SW_SUB + "magenta</b> and <b>" +
          SW_INC + "mint green</b> stretches on the x "
-         "axis add up to the total move, and the same two stretches appear on the y axis, because y "
+         "axis — drawn in the margin below the frame — add up to the total move, and the same two "
+         "appear beside the y axis, because y "
          "moves between B₀ and B<sub>S</sub> even though it ends where it started.", None),
       ]),
     ]),

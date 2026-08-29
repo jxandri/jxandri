@@ -1058,8 +1058,13 @@ function setup(cv){
   const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
   return {ctx,w,h};
 }
-function axes(ctx, rect, xmin, xmax, ymin, ymax, xlab, ylab){
-  const P = {l:48, r:20, t:16, b:34};
+/* How much of the margin the tick labels themselves claim, measured from the
+   plot edge outward. Anything drawn in the margin has to start beyond this. */
+const AXLAB = {l:32, b:20};
+
+function axes(ctx, rect, xmin, xmax, ymin, ymax, xlab, ylab, gut){
+  const g = gut || {l:0, b:0};
+  const P = {l:48 + g.l, r:20, t:16, b:34 + g.b};
   const bx = {x0:rect.x0+P.l, y0:rect.y0+P.t, x1:rect.x1-P.r, y1:rect.y1-P.b};
   const sx = (xmax-xmin)||1, sy = (ymax-ymin)||1;
   const SX = x => bx.x0 + ((x-xmin)/sx)*(bx.x1-bx.x0);
@@ -1117,8 +1122,8 @@ function dot(ctx, X, Y, col, r){
    shared primitive. The height colour never switches off: with the map on it
    agrees with the ground underneath, with the map off it is the only reading
    of height left. */
-function axesBox(ctx, rect, xmax, ymax, xlab, ylab){
-  return axes(ctx, rect, 0, xmax, 0, ymax, xlab, ylab);
+function axesBox(ctx, rect, xmax, ymax, xlab, ylab, gut){
+  return axes(ctx, rect, 0, xmax, 0, ymax, xlab, ylab, gut);
 }
 function levelColour(v){
   if(!FIELD) return "#fff";
@@ -1133,11 +1138,15 @@ function drawIndiff(ctx, v, SX, SY, wd){
    the side the arrow is not pointing, and is dropped when the vector is too
    short to carry it. */
 const VEC_CASING = "rgba(6,9,14,.88)";
-function vec(ctx, x0, y0, x1, y1, col, label, at, side){
+/* Gutter geometry for the axis shadows: LANE0 clears the tick labels, LANE is
+   the pitch between one arrow lane and the next. */
+const LANE0 = 8, LANE = 15;
+function vec(ctx, x0, y0, x1, y1, col, label, at, side, casing){
   const dx = x1-x0, dy = y1-y0, len = Math.hypot(dx, dy);
   if(len < 5) return;
   const ux = dx/len, uy = dy/len, head = Math.min(11, len*0.34);
   const px = -uy, py = ux;
+  const CASE = casing || VEC_CASING;
   ctx.save();
   ctx.lineCap = "butt"; ctx.lineJoin = "round";
   /* The effect arrows are the only marks that have to be read across the whole
@@ -1145,7 +1154,7 @@ function vec(ctx, x0, y0, x1, y1, col, label, at, side){
      opaque casing than the shared one: the arrow then reads as bright-on-dark
      wherever it happens to lie, and its hue only has to separate it from the
      other two arrows rather than from every colour in the ramp. */
-  for(const [c,w] of [[VEC_CASING, 5.4],[col, 2.4]]){
+  for(const [c,w] of [[CASE, 5.4],[col, 2.4]]){
     ctx.strokeStyle = c; ctx.lineWidth = w;
     ctx.beginPath(); ctx.moveTo(x0, y0);
     ctx.lineTo(x1 - ux*head*0.85, y1 - uy*head*0.85); ctx.stroke();
@@ -1158,7 +1167,7 @@ function vec(ctx, x0, y0, x1, y1, col, label, at, side){
     ctx.lineTo(x1 - ux*head - px*head*0.46 + px*grow, y1 - uy*head - py*head*0.46 + py*grow);
     ctx.closePath(); ctx.fill();
   };
-  headAt(2.2, VEC_CASING);
+  headAt(2.2, CASE);
   headAt(0, col);
   if(label && len > 30){
     /* The total vector and the income vector often end at the same bundle and
@@ -1169,7 +1178,7 @@ function vec(ctx, x0, y0, x1, y1, col, label, at, side){
     const mx = x0 + dx*f + px*12*sg, my = y0 + dy*f + py*12*sg;
     ctx.font = `600 9.5px ${css("--f-ui")}`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.lineJoin = "round"; ctx.lineWidth = 3.4; ctx.strokeStyle = VEC_CASING;
+    ctx.lineJoin = "round"; ctx.lineWidth = 3.4; ctx.strokeStyle = CASE;
     ctx.strokeText(label, mx, my);
     ctx.fillStyle = col; ctx.fillText(label, mx, my);
   }
@@ -1201,7 +1210,13 @@ function drawPlane(D){
   ctx.clearRect(0,0,w,h); ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
   if(!st.U || !D) return null;
   const V = viewFrame(D);
-  const {bx,SX,SY} = axesBox(ctx, {x0:0,y0:0,x1:w,y1:h}, V.xmax, V.ymax, "x", "y");
+  /* The axis shadows live outside the plot, in a gutter reserved for them
+     beyond the tick labels: inside, they crowded the bundles and the three
+     constraints they are drawn from. One lane when only the total effect
+     shows, two when the decomposition splits it. */
+  const lanes = st.layers.arrows ? (st.layers.decomp ? 2 : 1) : 0;
+  const gutter = lanes ? {l:LANE0 + LANE*lanes, b:LANE0 + LANE*lanes} : {l:0, b:0};
+  const {bx,SX,SY} = axesBox(ctx, {x0:0,y0:0,x1:w,y1:h}, V.xmax, V.ymax, "x", "y", gutter);
 
   const key = [st.U.src, V.xmax, V.ymax].join("|");
   if(FIELD_KEY !== key){
@@ -1249,28 +1264,7 @@ function drawPlane(D){
   const showS = st.layers.decomp;
   const t2 = T();
   if(st.layers.arrows){
-    const pts = showS ? [[D.A,MK.A],[D.B,MK.B],[D.C,MK.C]] : [[D.A,MK.A],[D.C,MK.C]];
-    ctx.save(); ctx.setLineDash([2,3]);
-    for(const [q,c] of pts){
-      poly(ctx, [[SX(q.x),SY(q.y)],[SX(q.x),bx.y1]], c, 1, false);   // down to x
-      poly(ctx, [[SX(q.x),SY(q.y)],[bx.x0,SY(q.y)]], c, 1, false);   // across to y
-    }
-    ctx.restore();
-
-    /* the axis shadows: x along the bottom, y up the left margin */
-    const xr1 = bx.y1 - 13, xr2 = bx.y1 - 29;
-    const yr1 = bx.x0 + 13, yr2 = bx.x0 + 29;
-    if(showS){
-      vec(ctx, SX(D.A.x), xr1, SX(D.B.x), xr1, MK.sub, null);
-      vec(ctx, SX(D.B.x), xr2, SX(D.C.x), xr2, MK.inc, null);
-      vec(ctx, yr1, SY(D.A.y), yr1, SY(D.B.y), MK.sub, null);
-      vec(ctx, yr2, SY(D.B.y), yr2, SY(D.C.y), MK.inc, null);
-    } else {
-      vec(ctx, SX(D.A.x), xr1, SX(D.C.x), xr1, MK.tot, null);
-      vec(ctx, yr1, SY(D.A.y), yr1, SY(D.C.y), MK.tot, null);
-    }
-
-    /* and the moves themselves, in the plane */
+    /* the moves themselves, in the plane */
     vec(ctx, SX(D.A.x), SY(D.A.y), SX(D.C.x), SY(D.C.y), MK.tot, t2.vecTot, 0.72, -1);
     if(showS){
       vec(ctx, SX(D.A.x), SY(D.A.y), SX(D.B.x), SY(D.B.y), MK.sub, t2.vecSub, 0.55, 1);
@@ -1287,7 +1281,50 @@ function drawPlane(D){
     for(const [p,l] of marks) ctx.fillText(l, SX(p.x)+9, SY(p.y)-7);
   }
   ctx.restore();
+  if(st.layers.arrows) axisShadows(ctx, D, bx, SX, SY, showS);
   return V;
+}
+
+/* The same three effects again, projected onto each axis — drawn last, after
+   the frame clip is released, because they belong in the gutter outside the
+   plot rather than inside it. Keeping them off the plotting area is the point:
+   out there, read against the tick numbers, they are measurements; inside they
+   crowded the bundles and the three constraints they are taken from. */
+function axisShadows(ctx, D, bx, SX, SY, showS){
+  /* lane 1 is the outer one. With the decomposition on, substitution sits
+     furthest from the plot and income between it and the frame. */
+  const lane = k => LANE0 + LANE * (showS && k === 1 ? 2 : 1);
+  const xr1 = bx.y1 + AXLAB.b + lane(1), xr2 = bx.y1 + AXLAB.b + lane(2);
+  const yr1 = bx.x0 - AXLAB.l - lane(1), yr2 = bx.x0 - AXLAB.l - lane(2);
+  const outX = Math.max(xr1, xr2), outY = Math.min(yr1, yr2);
+
+  /* a dotted leader from each bundle out to the lanes, so which arrow measures
+     which bundle is not left to be inferred from position alone */
+  const pts = showS ? [[D.A,MK.A],[D.B,MK.B],[D.C,MK.C]] : [[D.A,MK.A],[D.C,MK.C]];
+  ctx.save(); ctx.setLineDash([2,3]);
+  for(const [q,c] of pts){
+    poly(ctx, [[SX(q.x),SY(q.y)],[SX(q.x),outX]], c, 1, false);
+    poly(ctx, [[SX(q.x),SY(q.y)],[outY,SY(q.y)]], c, 1, false);
+  }
+  ctx.restore();
+
+  /* Out here the ground is the panel surface, not the heat map, so the canvas
+     hues are the wrong ones: a mint bright enough to hold its own over the map
+     is 1.3 contrast on a white surface. The shadows take the same theme-aware
+     colours the readout uses, and a casing the colour of the ground, which
+     separates them from the leaders they cross without drawing a black tube
+     around every arrow. */
+  const SUB = css("--eff-sub"), INC = css("--eff-inc"), TOT = css("--eff-tot");
+  const CASE = css("--surface");
+  if(showS){
+    vec(ctx, SX(D.A.x), xr1, SX(D.B.x), xr1, SUB, null, null, null, CASE);
+    vec(ctx, SX(D.B.x), xr2, SX(D.C.x), xr2, INC, null, null, null, CASE);
+    vec(ctx, yr1, SY(D.A.y), yr1, SY(D.B.y), SUB, null, null, null, CASE);
+    vec(ctx, yr2, SY(D.B.y), yr2, SY(D.C.y), INC, null, null, null, CASE);
+  } else {
+    vec(ctx, SX(D.A.x), xr1, SX(D.C.x), xr1, TOT, null, null, null, CASE);
+    vec(ctx, yr1, SY(D.A.y), yr1, SY(D.C.y), TOT, null, null, null, CASE);
+  }
 }
 
 /* The demand panel: ordinary demand against p_x, and beside it the compensated
