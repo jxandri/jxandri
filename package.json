@@ -6,7 +6,9 @@
   "license": "MIT",
   "scripts": {
     "start": "cd app && python3 -m http.server 8000",
-    "build:standalone": "node tools/build-standalone.mjs"
+    "build:standalone": "node tools/build-standalone.mjs",
+    "build:manual-figs": "node tools/build-manual-figs.mjs",
+    "build:manuals": "node tools/build-manuals.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",

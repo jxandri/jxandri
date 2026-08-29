@@ -71,6 +71,23 @@ jobs:
           mkdir -p _site/firm-supply
           cp firm-supply/index.html _site/firm-supply/index.html
 
+          # each applet's manual, in both languages, next to the applet
+          for pdf in Consumer-Optimum-Guia.pdf Consumer-Optimum-Guide.pdf; do
+            if [ -f "dist/$pdf" ]; then cp "dist/$pdf" "_site/consumer-optimum/$pdf"; fi
+          done
+          for pdf in Demand-Functions-Guia.pdf Demand-Functions-Guide.pdf; do
+            if [ -f "dist/$pdf" ]; then cp "dist/$pdf" "_site/demand-functions/$pdf"; fi
+          done
+          for pdf in Nonlinear-Budget-Guia.pdf Nonlinear-Budget-Guide.pdf; do
+            if [ -f "dist/$pdf" ]; then cp "dist/$pdf" "_site/nonlinear-budget/$pdf"; fi
+          done
+          for pdf in Labour-Tax-Guia.pdf Labour-Tax-Guide.pdf; do
+            if [ -f "dist/$pdf" ]; then cp "dist/$pdf" "_site/labor-tax/$pdf"; fi
+          done
+          for pdf in Firm-Supply-Guia.pdf Firm-Supply-Guide.pdf; do
+            if [ -f "dist/$pdf" ]; then cp "dist/$pdf" "_site/firm-supply/$pdf"; fi
+          done
+
           # keep the PDF guides reachable if they were committed, in both
           # languages — the Spanish edition is screenshotted in Spanish, so it
           # is a different document, not a translated copy of the English one

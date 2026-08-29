@@ -1,0 +1,382 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[spanish,es-noquoting,es-nodecimaldot]{babel}
+\manuallang{es}
+
+\appletname{Restricciones No Lineales}
+\appletsub{Siete esquemas de subsidio doblan la recta de presupuesto en sitios
+distintos. La pregunta es siempre la misma: dónde cae la mejor canasta
+asequible, y si cae justo en el pliegue.}
+\appletdir{nonlinear-budget}
+
+\begin{document}
+\manualtitlepage{Manual del applet · Microeconomía I · Universidad de los Andes\\
+Traducido del applet de GeoGebra «Max. Utilidad — Rest. Presupuestaria No Lineal».\\
+Código MIT. Se abre en el navegador; no hay nada que instalar.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{Qué es esto}
+
+La restricción presupuestaria de un manual es una recta. Casi ningún programa
+público deja una recta. Un cupo de leche gratis, un descuento sobre las
+primeras unidades, una plaza en un colegio público que se pierde si se compra
+una privada: cada uno dobla la frontera en un sitio distinto, y el óptimo puede
+caer exactamente en el pliegue.
+
+Este applet trae siete esquemas, la posibilidad de comparar dos a la vez, y un
+óptimo calculado de manera que sí encuentra los pliegues.
+
+\figher[1.0]{kink}{Subsidio en especie no excluyente. Las primeras $x_s$
+unidades son gratis, y a partir de ahí se paga el precio de mercado: la
+frontera tiene un tramo horizontal y luego un quiebre.}
+
+\begin{amkey}
+La comparación que importa es entre un subsidio en especie y la transferencia
+en efectivo que cuesta lo mismo a quien la financia. Si el cupo no restringe,
+las dos empatan. Si restringe, el efectivo gana, y el applet mide por cuánto.
+\end{amkey}
+
+\subsection{Para quién}
+
+Para el tema de restricciones presupuestarias, y para cualquier clase de
+economía pública donde se discuta transferencias en especie frente a efectivo.
+Supone curvas de indiferencia y la idea de óptimo; no supone cálculo.
+
+\input{open-es}
+
+% ==========================================================================
+\section{Los siete esquemas}
+
+Con precio $p_x$, renta $m$, cupo $x_s$ y tasa de subsidio $s$:
+
+\begin{ctrltable}{Núm. y nombre & Frontera}
+0 · Restricción simple & La recta de siempre. \\
+1 · Subsidio en especie, no excluyente & Plana hasta $x_s$, y luego al precio
+  de mercado: un quiebre. \\
+2 · Subsidio parcial, no excluyente & Precio $(1-s)p_x$ hasta $x_s$, luego
+  $p_x$: un quiebre más suave. \\
+3 · Subsidio excluyente (colegios públicos) & O se toman $x_s$ gratis, o se
+  compra al precio $p_x$: una caída vertical. \\
+4 · Subsidio parcial excluyente & Descuento sobre las primeras $x_s$ unidades,
+  que se pierde entero si se pasa del cupo. \\
+5 · Equivalente en efectivo (total) & Renta $m + p_x x_s$, recta. \\
+6 · Equivalente en efectivo (parcial) & Renta $m + s\,p_x x_s$, recta. \\
+\end{ctrltable}
+
+El 1 se empareja con el 5, y el 2 con el 6: el mismo coste para quien financia
+el programa, sin condiciones. Poner uno frente al otro es para lo que sirve el
+control \ui{Comparar con}, y es el asunto del applet.
+
+\begin{amnote}
+Con $s < 0$ el subsidio se convierte en un impuesto de tipo $\tau = -s$ sobre
+las primeras $x_s$ unidades. El deslizador llega hasta $-1$, así que los siete
+esquemas sirven también para hablar de impuestos selectivos.
+\end{amnote}
+
+\subsection{Quiebre contra salto}
+
+Los esquemas 1 y 2 producen un \textbf{quiebre}: la frontera cambia de
+pendiente pero no se corta. Los esquemas 3 y 4 producen un \textbf{salto}: pasar
+del cupo hace perder el subsidio entero, así que la frontera cae en vertical y
+hay canastas que ningún gasto alcanza.
+
+\fig[1.0]{drop}{Subsidio excluyente. La frontera cae en vertical en $x_s$: una
+unidad más de $x$ cuesta perder el cupo entero.}
+
+% ==========================================================================
+\section{La pantalla}
+
+\fig[1.0]{interface}{La pantalla completa.}
+
+\begin{description}
+\item[Esquema.] Los siete, numerados de 0 a 6.
+\item[Comparar con.] Dibuja un segundo esquema detrás del primero, y activa la
+  lectura \ui{Ventaja del efectivo}.
+\item[Preferencias.] Siete familias, la última escribible.
+\item[Precios y renta.] $p_x$, $p_y$, $m$.
+\item[El programa.] El cupo $x_s$ y la tasa $s$.
+\item[Vista.] Degradado de calor, panel de sustitución, ejes.
+\item[Capas.] Qué se dibuja.
+\end{description}
+
+\subsection{Los dos paneles}
+
+\begin{description}
+\item[Plano $(x, y)$.] El mapa de utilidad bajo una rampa topográfica, lo
+  inasequible velado, la frontera del esquema elegido, la del comparado detrás,
+  la curva de indiferencia por el óptimo y los vértices.
+\item[Utilidad sobre la restricción.] $u(x, f(x))$ conforme $x$ recorre la
+  frontera. Su punto más alto \emph{es} el óptimo, así que «encontrar la mejor
+  canasta asequible» se convierte en «encontrar la cima de esta curva». En los
+  esquemas 3 y 4 la curva se parte visiblemente en dos: ese hueco es el
+  subsidio que se pierde.
+\end{description}
+
+\fig[0.62]{drop-path}{La utilidad sobre la restricción en un esquema
+excluyente. El hueco entre los dos arcos es exactamente el subsidio perdido.}
+
+\subsection{El tema oscuro}
+
+\fig[0.95]{dark}{El plano y el panel de sustitución en el tema oscuro.}
+
+% ==========================================================================
+\section{Cómo se encuentra el óptimo}
+
+Una condición de primer orden es el instrumento equivocado aquí. En estas
+fronteras la mejor canasta está muy a menudo en un vértice, donde la pendiente
+no está definida y no hay tangencia que resolver; y en los esquemas excluyentes
+está en el extremo derecho de la primera pieza, con un punto estrictamente peor
+inmediatamente a su derecha.
+
+\begin{enumerate}
+\item Cada pieza de la frontera se barre densamente.
+\item La mejor muestra interior de cada pieza se refina por sección áurea.
+\item Se prueba \emph{cada vértice explícitamente}, por los dos lados de cada
+  unión.
+\item Gana el mejor de todos. De dónde salió es lo que lo clasifica en
+  tangencia, vértice, esquina o borde del salto.
+\end{enumerate}
+
+\begin{ctrltable}{Tipo de óptimo & Qué significa}
+Tangencia & Interior a un tramo: la RMS iguala al precio relativo vigente ahí.
+  El pliegue no muerde. \\
+Vértice & Justo en el codo. A la izquierda la restricción es demasiado plana y
+  a la derecha demasiado inclinada: lo mejor es quedarse en el pliegue. El
+  consumidor agota el cupo exacto. \\
+Esquina & Sobre un eje: conviene gastarlo todo en un bien. \\
+Borde del salto & En un esquema excluyente, pegado al borde. Una unidad más
+  dejaría al consumidor estrictamente peor. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Las preferencias}
+
+\begin{ctrltable}{Familia & Forma}
+Cobb--Douglas & $x^{a} y^{1-a}$ \\
+Sustitutos perfectos & $a x + (1-a) y$ \\
+Complementarios perfectos & $\min(a x, (1-a) y)$ \\
+Cuasilineal & $8a\ln x + y$ \\
+CES generalizada & $\bigl[\tfrac{1}{2a} + \tfrac{1}{2(1-a)}\bigr]^{-1}
+   (a x^{\rho} + (1-a) y^{\rho})^{1/\rho}$ \\
+X inferior & $\ln(x - \underline{x}) - \tfrac{1}{1-\beta}\ln(\bar y - y)$ \\
+Personalizada & Lo que escriba \\
+\end{ctrltable}
+
+Un solo peso $a$ recorre todas: el exponente en la Cobb--Douglas, el valor
+relativo en el caso lineal y en el de Leontief, la participación en la CES.
+
+\begin{amnote}
+Dos notas sobre la CES generalizada. Su factor de cabecera se escribe
+internamente como $2a(1-a)$, que es idénticamente igual: el literal
+$1/(2a) + 1/(2(1-a))$ divide por cero en los dos extremos del deslizador,
+mientras que $2a(1-a)$ simplemente tiende a cero ahí. Siendo una constante
+positiva, reescala la utilidad sin tocar las preferencias ni el óptimo. Y en
+$\rho = 0$ la CES no está definida aunque su límite sea la Cobb--Douglas, así
+que un deslizador parado en cero emite ese límite en vez de dividir por él.
+\end{amnote}
+
+\fig[1.0]{complements}{Complementarios perfectos sobre un subsidio en especie.
+Con preferencias de Leontief el óptimo está siempre en el codo de la curva de
+indiferencia, y aquí además compite con el codo de la frontera.}
+
+% ==========================================================================
+\section{Los controles}
+
+\begin{ctrltable}{Deslizador & Qué es}
+$p_x$, $p_y$ & Precios, acotados por debajo en $0{,}2$. \\
+$m$ & Renta. \\
+$x_s$ & El cupo del programa. Se recorta a lo que la renta puede comprar de
+  verdad, para que el subsidio nunca supere al presupuesto. \\
+$s$ & La tasa de subsidio, de $-1$ a $1$. Negativa es un impuesto. \\
+$a$, $\rho$, $\beta$, $\underline{x}$, $\bar y$ & Parámetros de la familia de
+  preferencias elegida; solo aparecen los que esa familia usa. \\
+\end{ctrltable}
+
+\subsection{Vista}
+
+\begin{description}
+\item[Degradado de calor.] Apagado, el fondo queda liso. Las curvas de
+  indiferencia conservan su color de altura en todo momento: con el mapa puesto
+  concuerda con el suelo, y con el mapa quitado es la única lectura de altura
+  que queda.
+\item[Panel de sustitución.] La lectura de utilidad sobre la restricción es una
+  vista de apoyo, así que ocupa menos ancho y se puede quitar del todo para
+  dejarle el marco entero al plano.
+\item[Ejes.] Fijos por defecto, puestos con las casillas $x \le$ e $y \le$. Un
+  eje que se reajusta en cada movimiento renumera mientras se arrastra, y
+  entonces dos ajustes no se pueden comparar a ojo —que es justo el objetivo de
+  poner un esquema y su equivalente en efectivo en el mismo dibujo. El ajuste
+  automático sigue disponible, y si una frontera se sale del marco fijo aparece
+  un aviso en vez de recortarla en silencio.
+\end{description}
+
+\subsection{Capas}
+
+\begin{ctrltable}{Capa & Qué dibuja}
+Curvas de fondo & Curvas de nivel de la utilidad. \\
+Conjunto factible & Vela lo inasequible. \\
+Curva por el óptimo & La curva de indiferencia que pasa por él. \\
+Óptimo & El punto elegido. \\
+Vértices & Los codos y bordes de la frontera. \\
+Conjunto comparado & La frontera del esquema con el que se compara. \\
+Retícula & La cuadrícula de fondo. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Actividades para clase}
+
+\begin{activity}{La recta de siempre}
+\amset Esquema \ui{0 · Restricción simple}, valores de partida.
+\amexp $x^\ast = 0{,}69$, $y^\ast = 2{,}18$, utilidad $1{,}539$, coste $0{,}00$.
+El tipo de óptimo es \ui{Tangencia}: el caso del manual.
+\par\smallskip
+Es la línea de base contra la que se leen los seis esquemas siguientes.
+Anótela en la pizarra antes de seguir.
+\end{activity}
+
+\begin{activity}{Cuando el cupo no muerde}
+\amset Esquema \ui{1 · Subsidio en especie, no excluyente}, valores de partida.
+Ponga \ui{Comparar con} en \ui{5 · Equivalente en efectivo (total)}.
+\amexp $x^\ast = 0{,}96$, $y^\ast = 3{,}05$, utilidad $2{,}158$, coste
+$3{,}50$. La \ui{Ventaja del efectivo} da $0{,}000$ y el veredicto dice
+«Efectivo y especie empatan».
+\par\smallskip
+Mire por qué: el óptimo cae en el tramo donde las dos fronteras coinciden. El
+cupo $x_s = 0{,}92$ es más pequeño de lo que este consumidor iba a comprar de
+todas formas, así que el programa le da dinero y nada más. Un subsidio en
+especie que no restringe \emph{es} una transferencia en efectivo.
+\end{activity}
+
+\begin{activity}{Cuando el cupo sí muerde}
+\amset Igual que la anterior, pero suba $x_s$ a $2{,}20$.
+\amexp $x^\ast = 2{,}20$ exactamente —el cupo entero, ni una unidad más—,
+$y^\ast = 3{,}11$, utilidad $2{,}801$, coste $8{,}36$. El tipo de óptimo pasa a
+\ui{Vértice} y la \ui{Ventaja del efectivo} sube a $+0{,}217$.
+\par\smallskip
+Con el mismo coste de $8{,}36$, el efectivo alcanza una curva de indiferencia
+más alta. Pregunte por qué un gobierno elegiría entonces la especie. Las
+respuestas —paternalismo, focalización, externalidades del bien subsidiado— son
+justo las que no aparecen en este modelo, y por eso conviene sacarlas aquí.
+\end{activity}
+
+\begin{activity}{Un salto en lugar de un quiebre}
+\amset Esquema \ui{3 · Subsidio excluyente (colegios públicos)}, valores de
+partida.
+\amexp La frontera cae en vertical en $x_s$: la lectura \ui{Salto en $x_s$} da
+$-1{,}25$. El tipo de óptimo es \ui{Borde del salto}.
+\par\smallskip
+Encienda el \ui{Panel de sustitución}. La curva de utilidad sobre la
+restricción se parte en dos arcos que no se tocan, y el hueco entre ellos es
+exactamente el subsidio que se pierde al cruzar. Pregunte qué le pasa a una
+familia que necesita apenas una unidad más que el cupo.
+\end{activity}
+
+\begin{activity}{Impuesto en vez de subsidio}
+\amset Esquema \ui{2 · Subsidio parcial, no excluyente}. Baje $s$ hasta $-0{,}6$.
+\amexp El pliegue cambia de sentido: ahora las primeras $x_s$ unidades cuestan
+más caras y la frontera es \emph{cóncava} en lugar de convexa. El óptimo se
+aleja de $x$.
+\par\smallskip
+Es un impuesto selectivo sobre las primeras unidades, y el mismo dibujo sirve
+para explicarlo. Pregunte qué esquema fiscal real se parece a esto.
+\end{activity}
+
+\begin{activity}{Preferencias que siempre acaban en el codo}
+\amset Preferencias \ui{Complementarios perfectos}, esquema
+\ui{1 · Subsidio en especie}.
+\amexp Con Leontief el óptimo está siempre en el codo de la curva de
+indiferencia. Mueva $x_s$: mientras el codo del consumidor esté a la derecha
+del cupo, el subsidio se aprovecha entero y luego se sigue comprando.
+\par\smallskip
+Compárelo con \ui{Sustitutos perfectos}, donde el óptimo salta de un eje al
+otro en cuanto el precio relativo cruza la relación marginal de sustitución.
+Los dos casos extremos hacen de tope a la intuición.
+\end{activity}
+
+\begin{activity}{Los ejes fijos no son un capricho}
+\amset Cualquier esquema con \ui{Comparar con} activo. Marque y desmarque
+\ui{Ajustar los ejes solos} mientras mueve $m$.
+\amexp Con los ejes automáticos, los números del eje cambian a cada paso y las
+dos fronteras parecen quedarse quietas. Con los ejes fijos se ve cuál se mueve
+y cuánto.
+\par\smallskip
+Es el motivo de que los ejes vengan fijos por defecto: la comparación es el
+objeto del applet, y una comparación cuya escala cambia sola no es una
+comparación.
+\end{activity}
+
+\begin{activity}{Construir el caso en que la especie gana}
+\amset Libre.
+\amexp No se puede, y ese es el ejercicio. Con las preferencias que sean, el
+efectivo del mismo coste alcanza siempre una curva de indiferencia igual o más
+alta, porque el conjunto factible del efectivo contiene al de la especie.
+\par\smallskip
+Lo más que se consigue es empatar, y se empata exactamente cuando el cupo no
+restringe. Que la clase lo intente durante cinco minutos vale más que
+enunciarlo.
+\end{activity}
+
+% ==========================================================================
+\section{Sintaxis de expresiones}
+
+\begin{ctrltable}{Elemento & Qué se admite}
+Operadores & \code{+ - * / \^{} ( )} \\
+Funciones & \code{sqrt ln log log10 exp abs sin cos tan min max} \\
+Constantes & \code{e}, \code{pi} \\
+Multiplicación implícita & \code{2xy} es \code{2*x*y} \\
+Asociatividad & \code{\^{}} liga por la derecha y más fuerte que el menos
+  unario: \code{-x\^{}2} es $-(x^2)$ \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Diferencias con el original de GeoGebra}
+
+\begin{description}
+\item[Las discontinuidades están modeladas, no aproximadas.] El original
+  escribía los esquemas 3 y 4 como una sola función \code{If[...]}, que GeoGebra
+  dibuja con un segmento que une los dos lados del salto. Aquí cada esquema es
+  una lista de piezas separadas, así que la caída sigue siendo una caída y el
+  perfil de utilidad se parte donde debe.
+\item[Rango de color.] \code{uMIN := U(0.001, 0.001)} no está definida para la
+  utilidad de Stone-Geary, cuyo dominio exige $x > \underline{x}$; la rampa se
+  quedaba en un solo color para todo el ejemplo de «x inferior». La reescritura
+  toma el percentil 2 del campo muestreado.
+\item[\code{uMAX}] usaba el mismo valor derivado de $x$ para las dos
+  coordenadas, y superaba $\bar y$ lo bastante a menudo como para devolver
+  \code{NaN}. Misma corrección.
+\item[Precios.] $p_X$ y $p_Y$ empezaban en 0, con lo que $I/p_Y$ y toda la
+  construcción dividían por cero. Los dos están acotados por debajo en $0{,}2$.
+\item[$x_s$ y $\underline{x}$] se recortan a lo que la renta puede comprar, así
+  que el cupo nunca supera al presupuesto y la utilidad de Stone-Geary sigue
+  definida.
+\item[Objetos muertos.] \code{pXlow} y \code{pXhigh} se calculaban con una
+  fórmula que devuelve números negativos grandes para todos los ajustes que
+  permiten los deslizadores, y no se mostraban en ninguna parte. No se
+  trasladaron.
+\item[La comparación con efectivo se calcula], no se deja para que la estime el
+  lector: el coste de cada esquema y la diferencia de utilidad contra la
+  transferencia en efectivo del mismo coste son lecturas.
+\end{description}
+
+% ==========================================================================
+\section{Problemas frecuentes}
+
+\begin{ctrltable}{Síntoma & Qué pasa}
+Aviso de que la frontera se sale & Los ejes están fijos y el dibujo no cabe.
+  Suba $x \le$ o $y \le$, o marque el ajuste automático. \\
+El plano sale liso & El \ui{Degradado de calor} está apagado. Las curvas
+  conservan su color de altura igualmente. \\
+La ventaja del efectivo dice «---» & No hay esquema en \ui{Comparar con}. \\
+El óptimo no se mueve al cambiar $s$ & El cupo no está restringiendo: el óptimo
+  cae fuera del tramo subsidiado. Suba $x_s$. \\
+La utilidad sale \code{NaN} & En la familia «X inferior» el dominio exige
+  $x > \underline{x}$ e $y < \bar y$. Ajuste esos dos deslizadores. \\
+\end{ctrltable}
+
+\input{tail-es}
+
+\end{document}

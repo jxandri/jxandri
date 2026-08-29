@@ -3,6 +3,8 @@
 A standalone rewrite of the GeoGebra applet *Beneficios y Costos* as a single
 self-contained HTML file. No build step, no dependencies, no network at runtime.
 
+**Manual:** [`dist/Firm-Supply-Guia.pdf`](../dist/Firm-Supply-Guia.pdf) (español) · [`dist/Firm-Supply-Guide.pdf`](../dist/Firm-Supply-Guide.pdf) (English)
+
 The competitive firm in the short run: capital is fixed, the price is given, and
 the only choice is how much to produce. The original applet drew that problem.
 This one draws it **twice, side by side**, because the answer to it — repeated at

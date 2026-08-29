@@ -6,6 +6,8 @@ as a single self-contained HTML file — no build step, no dependencies, no netw
 access at runtime. Open `index.html` in any browser, or serve the folder anywhere
 static.
 
+**Manual:** [`dist/Consumer-Optimum-Guia.pdf`](../dist/Consumer-Optimum-Guia.pdf) (español) · [`dist/Consumer-Optimum-Guide.pdf`](../dist/Consumer-Optimum-Guide.pdf) (English)
+
 Two goods, monotone preferences, a differentiable utility function, parametrised
 linear prices and income. The 2D textbook diagram and the 3D utility surface are
 two views of one model: move the bundle or the level curve in either panel and

@@ -1,0 +1,41 @@
+%% Secciones comunes a todos los manuales, edición española.
+%% Se incluyen con \input{common-es}. Lo único que cambia entre applets es
+%% \appletfolder, que es también el nombre de la carpeta y de la ruta en el sitio.
+
+\section{Publicarlo para una clase}
+
+Sirve cualquier alojamiento estático: GitHub Pages, Netlify, un directorio web
+de la universidad, o incluso una carpeta compartida servida por HTTP. Lo único
+que hay que subir es el archivo \code{index.html} dentro de una carpeta con el
+nombre que quiera que aparezca en la dirección.
+
+El repositorio trae un flujo de trabajo de GitHub Actions
+(\code{.github/workflows/pages.yml}) que publica todos los applets a la vez en
+cada empuje a la rama principal. Para activarlo, en el repositorio:
+\emph{Settings\,$\rightarrow$\,Pages\,$\rightarrow$\,Source: GitHub Actions}.
+Es lo único que no puede hacer el propio flujo, porque crear un sitio de Pages
+requiere permisos de administración que un \code{GITHUB\_TOKEN} nunca recibe.
+
+\begin{amnote}
+Para repartir el applet a estudiantes sin conexión fiable, mándeles el archivo
+\code{index.html} directamente. Pesa menos que una fotografía y se abre con
+doble clic.
+\end{amnote}
+
+\section{Licencia y procedencia}
+
+El código de la aplicación es MIT. Puede usarlo, modificarlo y repartirlo, en
+clase o fuera de ella, citando la procedencia.
+
+Este applet es una reescritura autónoma de un applet original de GeoGebra. La
+reescritura no es una traducción literal: donde el original tenía un error de
+construcción, una división por cero alcanzable con los deslizadores, o un objeto
+muerto heredado del applet del que se copió, esta versión lo corrige y lo
+documenta. La sección \emph{Diferencias con el original de GeoGebra} enumera
+esos cambios uno por uno.
+
+Todo está escrito a mano y sin dependencias: el analizador de expresiones, la
+derivación simbólica, el trazado de curvas de nivel y el dibujo. En particular
+no se usa \code{eval}, de modo que lo que escribe un estudiante en una casilla
+de texto no puede convertirse en código, y una política de seguridad de
+contenidos estricta no rompe la página.
