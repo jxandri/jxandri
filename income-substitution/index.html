@@ -13,7 +13,8 @@
   --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
   --rule:#2A353B; --rule-2:#212B30;
   --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
-  --btn-ink:#08171A; --crit:#E4705C; --good:#6FD3A0;
+  --btn-ink:#08171A;
+  --eff-sub:#FF3C87; --eff-inc:#5CFFB0; --eff-tot:#C15CFF; --crit:#E4705C; --good:#6FD3A0;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
   --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
   --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -26,6 +27,7 @@
   --rule:#CBD4D8; --rule-2:#E1E7EA;
   --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
   --btn-ink:#FFFFFF; --crit:#A93726; --good:#1B6E48;
+  --eff-sub:#E60058; --eff-inc:#008544; --eff-tot:#AF2EFF;
   --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
 }
 *{box-sizing:border-box}
@@ -172,7 +174,7 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
 .eff .hd{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
 .eff .g{color:var(--ink-2)}
 .eff .n{text-align:right}
-.eff .sub{color:#FF3B30} .eff .inc{color:#FF6A00} .eff .tot{color:#C15CFF}
+.eff .sub{color:var(--eff-sub)} .eff .inc{color:var(--eff-inc)} .eff .tot{color:var(--eff-tot)}
 </style>
 <div class="shell">
 
@@ -883,13 +885,18 @@ const MK = {
   b0:"#7A8B95", bComp:"#FF9E2C", b1:"#00D5F0",
   A:"#FFFFFF", B:"#FF9E2C", C:"#C15CFF",
   ordinary:"#00D5F0", compensated:"#FF9E2C",
-  /* the three effects, named by what they are rather than by which bundle they
-     touch: red substitutes, orange is the income change, violet is the sum.
-     Orange has to hold its own between the red arrow beside it and the amber
-     of the compensated constraint it starts from, so it is picked to sit
-     equidistant from both: about 27 in CIELAB from each, and the same
-     contrast against either ground as the blue it replaces. */
-  sub:"#FF3B30", inc:"#FF6A00", tot:"#C15CFF",
+  /* The three effects. Picking these is not a matter of taste: the heat map
+     behind them sweeps the whole ramp — blue, green, yellow, orange, red — so
+     an arrow drawn in a warm hue disappears wherever the map happens to be
+     warm, which is exactly where the optimum sits. The two survivors are the
+     stretch of the wheel the ramp never visits (magenta) and a mint far
+     lighter than the ramp's own greens: 88 apart from each other in CIEDE2000,
+     and no closer than 20 to anything else on the plane — including the
+     indifference curves, which are coloured by height and so wear the ramp's
+     greens exactly where the arrows are drawn. Cyan is unavailable — it
+     is the final constraint, and a cyan arrow would land 4 from the line it
+     ends on. */
+  sub:"#FF3C87", inc:"#5CFFB0", tot:"#C15CFF",
   casing:"rgba(6,9,14,.62)", white:"#FFFFFF"
 };
 function f3(v){ return (Math.round(v*1e4)/1e4).toString(); }
@@ -1125,6 +1132,7 @@ function drawIndiff(ctx, v, SX, SY, wd){
    legible over a saturated utility map. The label sits just off the midpoint on
    the side the arrow is not pointing, and is dropped when the vector is too
    short to carry it. */
+const VEC_CASING = "rgba(6,9,14,.88)";
 function vec(ctx, x0, y0, x1, y1, col, label, at, side){
   const dx = x1-x0, dy = y1-y0, len = Math.hypot(dx, dy);
   if(len < 5) return;
@@ -1132,7 +1140,12 @@ function vec(ctx, x0, y0, x1, y1, col, label, at, side){
   const px = -uy, py = ux;
   ctx.save();
   ctx.lineCap = "butt"; ctx.lineJoin = "round";
-  for(const [c,w] of [[MK.casing, 5],[col, 2.4]]){
+  /* The effect arrows are the only marks that have to be read across the whole
+     heat map rather than over one patch of it, so they get a heavier, near
+     opaque casing than the shared one: the arrow then reads as bright-on-dark
+     wherever it happens to lie, and its hue only has to separate it from the
+     other two arrows rather than from every colour in the ramp. */
+  for(const [c,w] of [[VEC_CASING, 5.4],[col, 2.4]]){
     ctx.strokeStyle = c; ctx.lineWidth = w;
     ctx.beginPath(); ctx.moveTo(x0, y0);
     ctx.lineTo(x1 - ux*head*0.85, y1 - uy*head*0.85); ctx.stroke();
@@ -1145,7 +1158,7 @@ function vec(ctx, x0, y0, x1, y1, col, label, at, side){
     ctx.lineTo(x1 - ux*head - px*head*0.46 + px*grow, y1 - uy*head - py*head*0.46 + py*grow);
     ctx.closePath(); ctx.fill();
   };
-  headAt(2, MK.casing);
+  headAt(2.2, VEC_CASING);
   headAt(0, col);
   if(label && len > 30){
     /* The total vector and the income vector often end at the same bundle and
@@ -1156,7 +1169,7 @@ function vec(ctx, x0, y0, x1, y1, col, label, at, side){
     const mx = x0 + dx*f + px*12*sg, my = y0 + dy*f + py*12*sg;
     ctx.font = `600 9.5px ${css("--f-ui")}`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.lineJoin = "round"; ctx.lineWidth = 3.2; ctx.strokeStyle = MK.casing;
+    ctx.lineJoin = "round"; ctx.lineWidth = 3.4; ctx.strokeStyle = VEC_CASING;
     ctx.strokeText(label, mx, my);
     ctx.fillStyle = col; ctx.fillText(label, mx, my);
   }

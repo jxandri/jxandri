@@ -46,7 +46,7 @@ os.makedirs(OUT, exist_ok=True)
 # into it: a swatch has no contrast floor to clear, and the reader can hold it
 # against the screen. Keep these in step with MK.sub and MK.inc in the applet.
 SW_SUB = '<span class="sw" style="background:#FF3B30"></span>'
-SW_INC = '<span class="sw" style="background:#FF6A00"></span>'
+SW_INC = '<span class="sw" style="background:#5CFFB0"></span>'
 
 HEAD_CTRL   = (["Control", "Qué hace"], ["Control", "What it does"])
 HEAD_LAYER  = (["Capa", "Qué dibuja"], ["Layer", "What it draws"])
@@ -1342,13 +1342,13 @@ M5 = dict(
          "before."),
         ("Flechas de los efectos",
          "Los vectores. Sin descomposición sale sólo el efecto total, de B₀ a B₁. Con "
-         "descomposición aparecen dos: uno <b>" + SW_SUB + "rojo</b> de B₀ a B<sub>S</sub> rotulado "
-         "«E. Sustitución» y uno <b>" + SW_INC + "naranja</b> de B<sub>S</sub> a B₁ rotulado "
+         "descomposición aparecen dos: uno <b>" + SW_SUB + "magenta</b> de B₀ a B<sub>S</sub> rotulado "
+         "«E. Sustitución» y uno <b>" + SW_INC + "verde menta</b> de B<sub>S</sub> a B₁ rotulado "
          "«E. Ingreso». Los mismos colores marcan los tramos sobre "
          "el eje x y sobre el eje y.",
          "The vectors. Without the decomposition you get only the total effect, B₀ to B₁. With it, "
-         "two more appear: a <b>" + SW_SUB + "red</b> one from B₀ to B<sub>S</sub> labelled "
-         "“Subst. effect” and an <b>" + SW_INC + "orange</b> one from B<sub>S</sub> to B₁ labelled "
+         "two more appear: a <b>" + SW_SUB + "magenta</b> one from B₀ to B<sub>S</sub> labelled "
+         "“Subst. effect” and a <b>" + SW_INC + "mint green</b> one from B<sub>S</sub> to B₁ labelled "
          "“Income effect”. The same colours mark the "
          "stretches on the x axis and on the y axis."),
         ("Curvas de indiferencia", "Las que pasan por las canastas.", "The ones through the bundles."),
@@ -1401,11 +1401,11 @@ M5 = dict(
          "Slutsky over-compensates — it leaves the consumer at u = 4.243, above the original — and "
          "so attributes less to the substitution effect.", None),
         ("Enciende <b>Flechas de los efectos</b> y mira los ejes: los tramos <b>" + SW_SUB +
-         "rojo</b> y <b>" + SW_INC + "naranja</b> del eje x "
+         "magenta</b> y <b>" + SW_INC + "verde menta</b> del eje x "
          "suman el desplazamiento total, y en el eje y aparecen los mismos dos tramos, porque y "
          "también se mueve entre B₀ y B<sub>S</sub> aunque acabe donde empezó.",
-         "Switch on <b>Effect arrows</b> and look at the axes: the <b>" + SW_SUB + "red</b> and <b>" +
-         SW_INC + "orange</b> stretches on the x "
+         "Switch on <b>Effect arrows</b> and look at the axes: the <b>" + SW_SUB + "magenta</b> and <b>" +
+         SW_INC + "mint green</b> stretches on the x "
          "axis add up to the total move, and the same two stretches appear on the y axis, because y "
          "moves between B₀ and B<sub>S</sub> even though it ends where it started.", None),
       ]),
