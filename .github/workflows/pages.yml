@@ -9,6 +9,7 @@ name: Deploy applets to GitHub Pages
 #   /demand-functions/   the demand-curve applet      (demand-functions/)
 #   /nonlinear-budget/   the kinked-constraint applet (nonlinear-budget/)
 #   /labor-tax/          the income-tax applet        (labor-tax/)
+#   /firm-supply/        the firm-and-supply applet   (firm-supply/)
 #
 # ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
 # "GitHub Actions". Until that is done every run fails at configure-pages.
@@ -67,6 +68,9 @@ jobs:
           mkdir -p _site/labor-tax
           cp labor-tax/index.html _site/labor-tax/index.html
 
+          mkdir -p _site/firm-supply
+          cp firm-supply/index.html _site/firm-supply/index.html
+
           # keep the PDF guides reachable if they were committed, in both
           # languages — the Spanish edition is screenshotted in Spanish, so it
           # is a different document, not a translated copy of the English one
@@ -99,7 +103,8 @@ jobs:
             _site/consumer-optimum/index.html \
             _site/demand-functions/index.html \
             _site/nonlinear-budget/index.html \
-            _site/labor-tax/index.html
+            _site/labor-tax/index.html \
+            _site/firm-supply/index.html
           do
             if [ ! -s "$f" ]; then
               echo "::error::missing or empty: $f"

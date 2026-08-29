@@ -54,7 +54,7 @@ await mkdir(site, { recursive: true });
  *   /                       the landing page
  *   /gradient-peaks/        the calculus sandbox, Border Run and the campus
  *   /gradient-peaks/guide/  the illustrated manual, English and Spanish
- *   /consumer-optimum/      …and the four GeoGebra applets
+ *   /consumer-optimum/      …and the five GeoGebra applets
  */
 const copies = [
   ['landing/index.html', 'index.html'],
@@ -64,6 +64,7 @@ const copies = [
   ['demand-functions/index.html', 'demand-functions/index.html'],
   ['nonlinear-budget/index.html', 'nonlinear-budget/index.html'],
   ['labor-tax/index.html', 'labor-tax/index.html'],
+  ['firm-supply/index.html', 'firm-supply/index.html'],
   // The one-file builds, offered as downloads: a student can keep a copy that
   // opens off a memory stick with no connection at all.
   ['dist/Gradient-Peaks.html', 'gradient-peaks/Gradient-Peaks-offline.html'],
