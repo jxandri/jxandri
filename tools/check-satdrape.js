@@ -164,6 +164,49 @@ const CAMPUS = 'uandes(x, y)';
   });
   say('and no other surface does', elsewhere === true, `hidden: ${elsewhere}`);
 
+  /* --- the Lab: one map, on the left, carrying the photograph ------------ */
+
+  await p.goto('http://127.0.0.1:8125/lab.html', { waitUntil: 'load' });
+  await p.waitForFunction(() => window.__peaks && window.__peaks.player, null, { timeout: 30000 });
+  await p.selectOption('#preset-fn', CAMPUS);
+  await p.waitForTimeout(8000);
+
+  const lab = await p.evaluate(() => {
+    const w = document.getElementById('proj-wrap');
+    const c = document.getElementById('sat-card');
+    const panel = document.getElementById('panel');
+    const cv = document.getElementById('minimap');
+    const r = w.getBoundingClientRect();
+    const g = cv.getContext('2d');
+    // Sample the flat map's own pixels. A photograph of a dry hillside has a
+    // warm mean; the height ramp alone, pale-washed or not, does not.
+    const d = g.getImageData(0, 0, cv.width, cv.height).data;
+    let s = [0, 0, 0], n = 0;
+    for (let i = 0; i < d.length; i += 4) { if (d[i + 3] < 8) continue; s[0] += d[i]; s[1] += d[i + 1]; s[2] += d[i + 2]; n++; }
+    return {
+      projShown: !w.hidden,
+      cardHidden: c.hidden,
+      left: Math.round(r.left),
+      right: Math.round(r.right),
+      panelRight: Math.round(panel.getBoundingClientRect().right),
+      width: window.innerWidth,
+      mean: n ? s.map((v) => Math.round(v / n)) : null,
+    };
+  });
+  say('the Lab shows one map and only one', lab && lab.projShown && lab.cardHidden);
+  say('it is on the left, clear of the panel',
+    lab && lab.left >= lab.panelRight && lab.right < lab.width / 2,
+    lab && `panel ends ${lab.panelRight}, map ${lab.left}–${lab.right} of ${lab.width}`);
+  say('and it is the photograph, not the ramp alone',
+    lab && lab.mean && lab.mean[0] > lab.mean[2] + 12, lab && `mean rgb ${lab.mean.join(',')}`);
+
+  const collapsed = await p.evaluate(async () => {
+    document.getElementById('panel-toggle').click();
+    await new Promise((r) => setTimeout(r, 700));
+    return Math.round(document.getElementById('proj-wrap').getBoundingClientRect().left);
+  });
+  say('and it follows the panel when the panel folds away', collapsed < 40, `left ${collapsed}px`);
+
   say('no page errors', errs.length === 0, errs.join(' | '));
   console.log(ok ? '\nTHE PLACE IS THE PLACE, AND THE MOUSE TURNS THE HEAD' : '\nPROBLEMS');
   await b.close();

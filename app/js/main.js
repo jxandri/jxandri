@@ -271,13 +271,13 @@ const projection = $('minimap') ? new Projection($('minimap')) : null;
  * it covers, both in the domain's own kilometres; null everywhere the
  * photograph does not apply, which is everywhere but the campus.
  */
-const satInset = $('sat-inset')
-  ? new SatelliteInset($('sat-inset'), () => {
-    if (!isCampus() || !hasSatellite()) return null;
-    const w = satelliteWindow();
-    return { image: satelliteCanvas(), west: w.xmin, east: w.xmax, south: w.ymin, north: w.ymax };
-  })
-  : null;
+function photoSource() {
+  if (!isCampus() || !state.satellite || !hasSatellite()) return null;
+  const w = satelliteWindow();
+  return { image: satelliteCanvas(), west: w.xmin, east: w.xmax, south: w.ymin, north: w.ymax };
+}
+const satInset = $('sat-inset') ? new SatelliteInset($('sat-inset'), photoSource) : null;
+if (projection) projection.setPhoto(photoSource);
 const projState = { mode: 'ramp', opacity: 0.88, size: 1 };
 let topCam = null;
 
@@ -2030,6 +2030,7 @@ function togglePanel(force) {
   const hidden = force !== undefined ? force : !p.classList.contains('hidden');
   p.classList.toggle('hidden', hidden);
   $('panel-show').hidden = !hidden;
+  placeProjection();
 }
 
 /** Show only the inputs that belong to the chosen kind of surface. */
@@ -3331,14 +3332,15 @@ const projRGB = [0, 0, 0];
 function refreshSatInset() {
   const card = $('sat-card');
   if (!satInset || !card) return;
-  const on = isCampus() && state.satellite && hasSatellite() && !!field && !!grid;
+  // One map, never two. Where there is a flat map panel — the Lab — it is the
+  // map, and it now carries the photograph itself; the card is for the pages
+  // that have no panel, and for a panel the student has switched off.
+  const wrap = $('proj-wrap');
+  const on = isCampus() && state.satellite && hasSatellite() && !!field && !!grid
+    && !(wrap && !wrap.hidden);
   card.hidden = !on;
   if (!on) return;
   satInset.setField(field, grid);
-
-  const wrap = $('proj-wrap');
-  const clash = wrap && !wrap.hidden;
-  card.style.bottom = clash ? `${Math.round(wrap.getBoundingClientRect().height) + 24}px` : '';
 
   // Clear of the dials, measured rather than assumed: the rail's width depends
   // on the safe-area inset, which is a property of the device.
@@ -3348,9 +3350,26 @@ function refreshSatInset() {
     card.style.right = `${Math.max(14, Math.round(window.innerWidth - r.left) + 12)}px`;
   }
 
-  const box = Math.min(240, window.innerWidth * 0.24);
-  const tall = Math.min(260, window.innerHeight * (clash ? 0.28 : 0.42));
-  satInset.resize(box, tall);
+  satInset.resize(Math.min(240, window.innerWidth * 0.24), Math.min(260, window.innerHeight * 0.42));
+}
+
+/**
+ * The flat map keeps clear of the control panel.
+ *
+ * It used to live in the bottom-right corner, opposite the panel, which is
+ * where a second card could not go without one of them covering the other. It
+ * is now bottom left, beside the panel rather than across the room from it —
+ * and since the panel collapses, where "beside" is has to be measured, not
+ * written into the stylesheet.
+ */
+function placeProjection() {
+  const wrap = $('proj-wrap');
+  if (!wrap) return;
+  const panel = $('panel');
+  const clear = panel && !panel.classList.contains('hidden')
+    ? Math.round(panel.getBoundingClientRect().right) + 14
+    : 14;
+  wrap.style.left = `${Math.max(14, clear)}px`;
 }
 
 function refreshProjection() {
@@ -3373,6 +3392,7 @@ function applyProjectionStyle() {
   // canvas is left empty and the WebGL pass fills the same rectangle.
   wrap.hidden = projState.mode === 'off' || state.surfaceKind !== 'graph';
   wrap.classList.toggle('down', projState.mode === 'down');
+  placeProjection();
   refreshSatInset();
 }
 
@@ -3772,6 +3792,7 @@ function onResize() {
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  placeProjection();
   refreshSatInset();
 }
 window.addEventListener('resize', onResize);
