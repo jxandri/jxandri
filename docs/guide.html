@@ -390,14 +390,108 @@ Peak less than three kilometres north of it. There is no canonical polygon for "
 mountain", so the window is chosen to be the widest one in which the statement holds, and
 everything it claims is on screen to be checked.</p>
 
-<p>Two presentation choices are worth naming to a class. The window is pushed back into the
-summit's own country rather than centred on the peak, so there is a proper mountain to walk on
-while only a narrow strip of the other country is in frame — that strip is what keeps the
-constrained maximum on the frontier. And the z axis opens <strong>stretched</strong>, three to nine
+<p>How the frontier is placed in the frame is worth a minute in class, because it is a constraint
+on the picture and not a choice of taste. On these twelve the feasible country is a narrow band
+along the line — a few hundred metres on the tightest of them — and that is not a design decision
+but arithmetic. The summit sits <em>on</em> the frontier, so the country that does not own it is
+higher than the line almost everywhere; reach further across and the window collects a second
+summit whose top is nowhere near the border, and the claim the example exists to make becomes
+false. American Border Peak is the extreme case: three hundred metres north of the 49th parallel
+the Canadian ground already stands 55 m above the best point on the line, and three kilometres north
+there is a 2 398 m summit. Widen <strong>y min</strong> and <strong>y max</strong> yourself and
+watch the optimiser walk off the line — that is the same lesson stated backwards, and just as
+good.</p>
+
+<h2>Frontier slopes — when the border misses the peak</h2>
+<p>The next group in the menu is the other half of the story, and it is where most of the world's
+borders actually are. A frontier does not usually cross a summit; it crosses a <em>hillside</em>.
+When it does, the picture inverts. The ground on your side falls away from the line for kilometres,
+so it can be most of what you see; the peak stands off the line inside the far third, in plain view
+and out of reach; and the highest point you may legally stand on is somewhere along twenty or thirty
+kilometres of frontier, which you have to walk to find. That last difference is the pedagogically
+useful one: on an atlas mountain the answer is simply the point of the line nearest the summit, and
+a sharp student guesses it without moving.</p>
+<p>These are not catalogued mountains, so they are named by where on the line they sit. Nothing was
+chosen by hand: the 49th parallel and the 141st meridian are defined by a number, so a window can be
+slid along them from end to end and the elevation model asked, at every position and every size,
+whether four things are true at once — that the highest point of the feasible country lies on the
+frontier, that there is genuinely higher ground across it, that the peak is inside the frame rather
+than cut by its edge, and that the window is 70% feasible by area. Of 563 positions tested along
+657 km of the 49th parallel and 1 028 km of the 141st meridian, 118 carried an honest window; the
+four that survived a full smooth fit are the ones that ship.</p>
+<p>They are also much bigger. The window is a rectangle, long along the frontier — where kilometres
+are free — and shallow across it, where every one is another chance to swallow a rival summit. The
+largest is 32 km by 15 km, which is 480 km&#178;: forty times the ground of the tightest atlas
+mountain and nine times as wide. The most dramatic is on the 141st meridian at 60.35°&nbsp;N, in the
+St Elias massif, where the best you may stand on is 3 851 m and a 4 623 m peak stands 1.9 km inside
+the Yukon. The frontier costs you 773 m of altitude, and you can see every metre of it.</p>
+<p>Because the frontier is a parallel or a meridian, it is axis-aligned in local kilometres, so the
+constraint in the box is as simple as a linear inequality gets: <code>y &gt;= -3</code>. Switch on
+<strong>Walk only along the frontier</strong> and follow it with the altitude readout in view, and
+you have done the constrained maximisation on foot over thirty kilometres of ground.</p>
+<p>One more presentation choice. The z axis opens <strong>stretched</strong>, three to nine
 times depending on the mountain, because at true scale two kilometres of relief across eighteen
 kilometres of ground is a swelling rather than a peak. It is a display scale only: <code>f</code>,
 its gradients, the level curves and every readout stay in real kilometres, and the z-axis dial puts
 it back to 1 whenever you want to show the class how gentle a real mountain is.</p>
+
+
+<h2>A real place: Universidad de los Andes, Santiago</h2>
+<p>The last entry in the examples list is not a landscape but a neighbourhood: the rectangle from
+70&#176;30&#8242;45&#8243;W to 70&#176;29&#8242;15&#8243;W and from 33&#176;24&#8242;S to
+33&#176;25&#8242;S, which is the ground around the Universidad de los Andes in San Carlos de
+Apoquindo, on the Andean foot slope at the eastern edge of Santiago. It is 2.32 km east&#8211;west
+by 1.84 km north&#8211;south, with 505 m of relief across it, and it opens at true vertical scale
+because a hillside that steep needs no help to read as one.</p>
+<p>Three public sources go into it, and they are kept deliberately apart.</p>
+<ul>
+  <li><strong>The ground is the function, and nothing else.</strong> A finite cosine series fitted
+      to the public elevation model, within about 5 m of it, and therefore infinitely
+      differentiable &#8212; the same treatment Mount Saint Elias and the border peaks get, for the
+      same reason.</li>
+  <li><strong>The vegetation is surveyed, not inferred.</strong> Everywhere else in this program
+      what grows on a surface is deduced from height: this fraction of the relief is forest, that
+      fraction is scree. Here ESA WorldCover records at 10 m whether each patch is tree cover,
+      matorral scrub, dry grass, bare ground or built, and both the colour and the planting read
+      that instead. The trees are where the trees are.</li>
+  <li><strong>The buildings are real outlines.</strong> 1 493 of them from Overture Maps, with real
+      heights where the source states one &#8212; it states twelve &#8212; and a height inferred
+      from the plan area where it does not.</li>
+</ul>
+<p>None of the scenery is part of <code>f</code>, and that is the point of the example rather than
+a caveat about it. Walking into a lecture theatre does not change the altitude. A roof is not a
+local maximum. The gradient at a doorway is the slope of the hillside the doorway was cut into. A
+class that has spent a term maximising invented functions over invented budget sets can stand in a
+place they walk through every week and ask the same questions of it: which way is downhill from
+here, how steep is the walk up to the library, what does a level curve of altitude look like when
+it crosses a car park. Switch the level curves on and walk one.</p>
+<p>Two more things were added to this map after the first version. The colour is now the place
+itself: a Sentinel-2 satellite image from 17 January 2025, ten metres a pixel and 0.3% cloud,
+painted on as the ground's albedo and lit by the same sun as everything else. Switch it off under
+<strong>Map &amp; terrain</strong> and the colouring falls back to the land-cover classes. And a
+second entry in the examples list opens the same surface on the quadrant named separately —
+70&#176;30&#8242;40&#8243;W to 70&#176;30&#8242;45&#8243;W by 33&#176;24&#8242;S to
+33&#176;24&#8242;30&#8243;S, a 129 m by 926 m strip of the western edge. It is one function seen
+through two windows, and any other window can be typed into the domain boxes.</p>
+<p>The photograph is hung on the ground as a <em>texture</em> rather than sampled once per mesh
+vertex, so the graphics card resamples it per pixel of the screen, with mipmaps and anisotropic
+filtering. Ten metres a pixel is Sentinel-2's own limit and no amount of code will beat it; what
+this does fix is the artefact that was hiding the image, which was that the drape broke into
+ten-metre squares of flat colour as soon as you walked up to it. And the same image appears again
+in a corner card, this time with the height ramp washed pale and translucent over it: the aerial
+photograph and the height map of the same ground, one on top of the other, with your own position
+marked on both and the level curve you are standing on drawn through it. In the Lab the
+<em>flat map panel itself</em> carries that picture &#8212; there is one map, not two, and it has
+moved to the bottom left beside the control panel &#8212; so the same rectangle that shows a heat
+map of x&#178;+y&#178; shows an aerial photograph of San Carlos de Apoquindo with its heights on
+it, and the change of example is the only thing that changed. It is the
+translation this whole program is about, in one small picture &#8212; the place a student
+recognises, and the mathematical field over it.</p>
+<p>On the buildings: Google's photorealistic 3D tiles need an API key and a billing account, and
+could not travel inside a file you hand out on a memory stick, so they are not an option here.
+Overture Maps is the equivalent source and is what the buildings come from — real outlines, real
+heights where the source states one.</p>
+
 
 <h2>Walking the frontier</h2>
 <p><strong>Walk only along the frontier</strong> (<kbd>B</kbd>, in the Feasible set section) ropes
@@ -452,8 +546,13 @@ particular idea of "down".</p>
 walkable paths rather than hairlines, and <em>drapes them over the ground</em>: the centre of each
 path is at constant height, as a level curve must be, but the band itself follows the hillside it
 crosses instead of hanging in the air as a flat ring. Each path is coloured by its own height on
-the ten-colour ramp, so the colour states the altitude whether or not the surface itself is
-coloured.</p>
+the <em>heat</em> ramp — blue at the bottom of the window through cyan, green and yellow to red at
+the top — so the colour states the altitude whether or not the surface itself is coloured, and a
+set of curves reads as a set: which way is up, and how far apart in height two neighbours are, at a
+glance and without a single label. Deliberately not the terrain ramp: a level curve is a
+mathematical object drawn <em>on</em> the ground, not a feature of it, and on a real hillside — a
+hundred metres of relief inside a five-hundred-metre window — the terrain ramp gave every contour
+the same shade of green and lost them in the grass.</p>
 <p><strong>Contour interval Δz</strong> — leave it blank and the program picks a round interval
 and shows you which one. Type a number and that is the interval, which is the point when the
 interval is the thing being taught. Ask for one so small that thousands of paths would be needed
@@ -463,8 +562,7 @@ and it is widened, with a note saying so.</p>
 you shrink for the local-linearity demonstration. The default, two heights, is a footpath you can
 see from the air and still walk along — the same length a grid square's side is.</p>
 <p><strong>Colour the surface by height</strong> <kbd>M</kbd> — repaints the whole surface on the
-same ten-colour ramp the contours use, so the surface and its level curves agree — on every kind of
-surface, not only a graph. Turn it off and the surface goes back to the eight terrain bands —
+ten-colour topographic ramp, on every kind of surface, not only a graph. Turn it off and the surface goes back to the eight terrain bands —
 water, beach, deep vegetation, lighter vegetation, arid, volcanic rock, snow, cloud — which say the
 same thing in the language of a landscape. On a graph, combine either with <kbd>T</kbd> (look
 straight down) to turn the 3D scene into the flat map students already know.</p>
@@ -737,10 +835,19 @@ is what keeps forward from collapsing into the frame.</p>
 
 <!-- =========================================================== PART 5 -->
 <h2>Border Run — the game</h2>
-<p><strong>play.html</strong> is the same program with an objective. It is built for a controller:
-plug an Xbox-layout gamepad into a laptop, or pair one with a phone or tablet, and it plays
-without touching a keyboard. Everything also works from the keyboard, because one pad between four
-students is normal.</p>
+<p>Border Run is not a separate program, and there is nothing to install or open: it lives inside
+the app you already have. Choose any of the border mountains from the examples list and, once the
+ground exists to stand on, a card appears in the lower middle of the screen offering the run. Press
+<b>A</b> (or click <em>Play it</em>) to take it, <b>B</b> for <em>Just explore</em> if you only
+wanted to look at the mountain — the sandbox is untouched either way — or <b>Y</b> for the full
+list of missions. From anywhere in the sandbox, <b>Start</b> on a controller opens that list too.</p>
+<p>It is built for a controller: plug an Xbox-layout gamepad into a laptop, or pair one with a phone
+or tablet, and it plays without touching a keyboard. Everything also works from the keyboard,
+because one pad between four students is normal.</p>
+<p>Being one program is the point of it. A student who has just walked the frontier and planted a
+flag presses <b>A</b> on the result card and is standing on the same mountain in the sandbox, with
+the answer now marked, the level curves one key away and — in the Lab — the flat heat map beside
+the scene showing exactly where the curve they were walking runs tangent to the line.</p>
 <p>Every mission has the same shape, because it is the shape of the mathematics. You are dropped in
 the country that does <em>not</em> own the summit. The peak is in plain sight across the frontier
 and it is not yours. Somewhere along the line there is a highest point you are allowed to stand on

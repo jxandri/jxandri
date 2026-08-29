@@ -110,6 +110,38 @@ export function heightColor(h, out) {
 }
 
 /**
+ * The heat map: blue → cyan → green → yellow → red, low to high.
+ *
+ * This is the ramp on every heat map a student has ever met, and it is the one
+ * the level curves are drawn in — everywhere, in the scene and on the flat map
+ * alike. The topographic ramp above is a picture of *ground*, and its whole
+ * point is that it changes slowly: a hillside spanning a hundred metres of a
+ * five-hundred-metre window is one shade of green from bottom to top, so
+ * contours drawn in it come out all the same colour and vanish into the grass.
+ * The heat ramp spends its whole range on whatever range the window has, which
+ * is what makes a set of level curves readable as a set: you can see at a
+ * glance which way is up, and how far apart in height two curves are, without
+ * reading a single label.
+ *
+ * Deliberately not the same ramp as the ground, then. A level curve is a
+ * mathematical object drawn *on* the terrain, not a feature of it, and it
+ * should not be camouflaged by the thing it is drawn on.
+ */
+const HEAT_RAMP = [
+  [0.19, 0.22, 0.62],   // deep blue
+  [0.13, 0.62, 0.75],   // cyan
+  [0.35, 0.76, 0.35],   // green
+  [0.96, 0.85, 0.24],   // yellow
+  [0.85, 0.20, 0.15],   // red
+];
+
+export function heatColor(h, out) {
+  const t = Math.min(1, Math.max(0, h)) * (HEAT_RAMP.length - 1);
+  const i = Math.min(HEAT_RAMP.length - 2, Math.floor(t));
+  return mixRGB(HEAT_RAMP[i], HEAT_RAMP[i + 1], t - i, out);
+}
+
+/**
  * The qualitative gradient: eight terrain characters, low to high.
  *
  *   1 water   2 beach   3 deep vegetation   4 light vegetation
@@ -197,6 +229,111 @@ export function setBiomeProfile(name) {
   BAND_RGB = tint ? BANDS.map((b, i) => tint[i] || b) : BANDS;
 }
 
+/* ------------------------------------------------- surveyed land cover */
+
+/**
+ * When the ground is a real place, stop guessing what grows on it.
+ *
+ * Everything above infers vegetation from height: a band ramp says this
+ * fraction of the relief is forest, that fraction is scree. For an invented
+ * function that is the only thing available and it is a good story. For a
+ * surveyed square kilometre it is a worse story than the survey, which knows
+ * at ten metres whether a patch is trees, scrub, dry grass, bare or paved.
+ *
+ * So a surface may hand in a land-cover source — a function of *world*
+ * coordinates returning an ESA WorldCover class — and the colour comes from
+ * that instead of from the height bands. The height-driven texture stays:
+ * noise, mottling and the bare rock that steep ground sheds are all still
+ * true, and are what stop the result looking like a classified raster.
+ *
+ * COVER_RGB is keyed by the ESA class code, so the numbers here are the
+ * numbers in the published legend and can be checked against it.
+ */
+// Two tones a class, not one.
+//
+// A single colour per class paints the hillside in flat blocks, and under a
+// strong sky light flat blocks read as a milky wash rather than as ground —
+// which is what made a perfectly smooth surface look like a haze with nothing
+// in it. Every class therefore carries its dry, pale extreme and its lush,
+// dark one, and the vegetation noise field mixes between them. That is not
+// invention on top of the survey: the survey says "this ten metres is
+// matorral", and matorral in a Santiago summer really is straw-gold on the
+// sun-facing ribs and dark green in the gullies. The class is data; where
+// within the class a patch sits is texture.
+const COVER_A = {                            // dry, pale, sun-facing
+  10: [0.24, 0.34, 0.16],   // tree cover
+  20: [0.56, 0.47, 0.27],   // shrubland — matorral, straw-gold in late summer
+  30: [0.64, 0.56, 0.31],   // grassland, dry for most of the year here
+  40: [0.50, 0.51, 0.24],   // cropland
+  50: [0.58, 0.55, 0.50],   // built-up: roofs, tarmac and courtyards
+  60: [0.62, 0.53, 0.40],   // bare / sparse vegetation
+  70: [0.96, 0.97, 0.99],   // snow and ice
+  80: [0.21, 0.40, 0.50],   // permanent water
+  90: [0.38, 0.46, 0.30],   // herbaceous wetland
+  95: [0.26, 0.38, 0.24],   // mangroves
+  100: [0.62, 0.63, 0.47],  // moss and lichen
+};
+const COVER_B = {                            // lush, dark, shaded
+  10: [0.09, 0.19, 0.08],
+  20: [0.28, 0.31, 0.17],
+  30: [0.41, 0.42, 0.22],
+  40: [0.24, 0.36, 0.14],
+  50: [0.33, 0.31, 0.30],
+  60: [0.40, 0.34, 0.27],
+  70: [0.84, 0.87, 0.93],
+  80: [0.09, 0.22, 0.32],
+  90: [0.22, 0.33, 0.22],
+  95: [0.15, 0.27, 0.18],
+  100: [0.44, 0.48, 0.34],
+};
+
+let coverSource = null;
+/** @param fn (wx, wz) -> ESA class code, or null to go back to the bands. */
+export function setCoverSource(fn) { coverSource = fn || null; }
+export function hasCoverSource() { return !!coverSource; }
+
+/**
+ * ...and when there is a photograph of the ground, use the photograph.
+ *
+ * A land-cover class is a statement about a ten-metre square: this one is
+ * scrub. A satellite image is the square itself. Where one exists it is the
+ * better albedo, and the only thing worth keeping from the synthetic treatment
+ * is the bare rock that steep ground sheds — the image already contains its own
+ * illumination, and piling the band ramps, the lichen and the snow line on top
+ * of a photograph would be painting over the evidence.
+ *
+ * @param fn (wx, wz, out[3]) -> out in LINEAR rgb, or null if outside the image
+ */
+let satSource = null;
+export function setSatelliteSource(fn) { satSource = fn || null; }
+export function hasSatelliteSource() { return !!satSource; }
+
+/**
+ * ...and when the photograph can be a *texture*, let the graphics card sample
+ * it instead of the CPU.
+ *
+ * Vertex colours are the right tool for everything else here, because
+ * everything else is a function of position that we can evaluate anywhere. A
+ * photograph is not: it is a fixed raster, and painting it through vertex
+ * colours ties how much of it you can see to how many triangles the surface
+ * happens to have. On the campus that is the difference between a picture of a
+ * university and a wash of grey-green — the mesh is three hundred squares
+ * across, the image was ten metres a pixel, and between the two the buildings
+ * disappeared.
+ *
+ * With a texture the drape is resampled per *pixel of the screen*, with
+ * mipmaps and anisotropic filtering, so walking towards a roof shows more of
+ * the roof rather than more of the mesh. The vertex colours are still there and
+ * still multiply in — they carry the shading (the fine ground modulation, the
+ * bare rock on steep faces) — but the photograph itself now comes from the map.
+ *
+ * @param tex a THREE.Texture already set up with the right offset/repeat for
+ *            the current domain window, or null for every other surface
+ */
+let groundTexture = null;
+export function setGroundTexture(tex) { groundTexture = tex || null; }
+export function hasGroundTexture() { return !!groundTexture; }
+
 /**
  * Whether this climate has cloud in it at all.
  *
@@ -270,29 +407,68 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // does is the giveaway that you are looking at a plot rather than a place.
   const t = Math.min(1, Math.max(0, h + (macro - 0.5) * 0.11 + (meso - 0.5) * 0.045));
 
-  // Blend the two bands `t` falls between.
-  let i = 0;
-  while (i < BAND_AT.length - 2 && t > BAND_AT[i + 1]) i++;
-  const span = BAND_AT[i + 1] - BAND_AT[i] || 1e-6;
-  mixRGB(BAND_RGB[i], BAND_RGB[i + 1], (t - BAND_AT[i]) / span, out);
+  // Blend the two bands `t` falls between — unless the ground was surveyed,
+  // in which case take the class the survey recorded.
+  //
+  // The lookup is jittered by the finest noise field before it is taken. That
+  // is not decoration: the raster is ten metres a cell and the mesh is finer
+  // than that, so an unjittered read would draw the cell boundaries as a
+  // staircase across the hillside. Dithering the sample turns the staircase
+  // into an interlocking edge of the two classes, which is both prettier and
+  // more honest — the boundary between scrub and grass is not a straight line
+  // ten metres long.
+  const painted = satSource && satSource(wx, wz, out);
+  if (painted) {
+    // When the photograph is a texture the map carries it, and these vertex
+    // colours are the shading that multiplies into it: start from white and
+    // let the modulation below do its work. Painting the photograph *here* as
+    // well would apply it twice and square the image.
+    if (groundTexture) { out[0] = 1; out[1] = 1; out[2] = 1; }
+    // A ten-metre pixel is coarser than the mesh, so neighbouring vertices
+    // share one colour and the ground reads as flat facets of photograph. The
+    // finest noise field breaks that up by a couple of per cent — far too
+    // little to invent anything, enough to stop the pixel grid showing.
+    const g = 1 + (fine - 0.5) * 0.06;
+    out[0] *= g; out[1] *= g; out[2] *= g;
+  } else if (coverSource) {
+    const cls = coverSource(wx + (fine - 0.5) * 9, wz + (veg - 0.5) * 9);
+    const a = COVER_A[cls] || COVER_A[30];
+    const b = COVER_B[cls] || COVER_B[30];
+    // Where within the class this patch sits: the vegetation field for the
+    // large pattern, the fine field to break its edges.
+    mixRGB(a, b, smoothstep(0.22, 0.78, veg * 0.72 + fine * 0.28), out);
+  } else {
+    let i = 0;
+    while (i < BAND_AT.length - 2 && t > BAND_AT[i + 1]) i++;
+    const span = BAND_AT[i + 1] - BAND_AT[i] || 1e-6;
+    mixRGB(BAND_RGB[i], BAND_RGB[i + 1], (t - BAND_AT[i]) / span, out);
+  }
 
   // Anything actually below the waterline is lake bed, whatever the band says.
   if (z < 0) mixRGB(out, BAND_WATER, 0.75, out);
 
   // The vegetation bands break into patches of lighter and darker growth.
-  const vegetated = bandWeight(2, t) + bandWeight(3, t);
+  // Under a survey the class already says what grows here, so the band-derived
+  // patchiness would be a second opinion nobody asked for: mottle the class
+  // colour instead, which keeps the texture without overruling the data.
+  const vegetated = (coverSource || painted) ? 0 : bandWeight(2, t) + bandWeight(3, t);
   if (vegetated > 0.01) {
     mixRGB(out, BAND_VEG_LIGHT, smoothstep(0.35, 0.85, veg) * 0.35 * vegetated, out);
     mixRGB(out, BAND_VEG_DEEP, smoothstep(0.55, 0.95, meso) * 0.35 * vegetated, out);
   }
 
-  // Steep ground sheds soil at any height: it goes to bare rock.
-  if (steep > 0.001) {
+  // Steep ground sheds soil at any height: it goes to bare rock. Kept even
+  // under a photograph, but at a third of the strength: the image knows what
+  // colour the crag is, and this only keeps the form readable where the ten
+  // metre pixel cannot resolve the face.
+  if (steep > 0.001 && painted) {
+    mixRGB(out, rockTint(macro, meso, h, rugged, ROCK_TMP), steep * 0.24, out);
+  } else if (steep > 0.001) {
     mixRGB(out, rockTint(macro, meso, h, rugged, ROCK_TMP), steep * 0.72, out);
   }
 
   // Lichen colonises the gentler faces of the arid and volcanic bands.
-  const stony = bandWeight(4, t) + bandWeight(5, t);
+  const stony = (coverSource || painted) ? 0 : bandWeight(4, t) + bandWeight(5, t);
   const lichen = smoothstep(0.62, 0.92, meso) * (1 - steep * 0.6) * stony * 0.28;
   if (lichen > 0.001) mixRGB(out, LICHEN, lichen, out);
 
@@ -310,14 +486,17 @@ export function biomeColor(h, z, slope, wx, wz, out) {
   // looks like — fingers of snow reaching down the gullies, bare rock standing
   // out of it on the ribs, and the two interleaved for hundreds of metres
   // rather than a line drawn round the peak. Steep ground sheds it.
+  // ...and where the ground was surveyed, snow is not a matter of opinion
+  // either: the class raster puts it where it was, which on a Santiago
+  // hillside in the growing season is nowhere.
   const snowAt = BAND_AT[6];
   const drift = (meso - 0.5) * 0.30 + (macro - 0.5) * 0.20 + (fine - 0.5) * 0.06;
-  const snow = smoothstep(snowAt - 0.02, snowAt + 0.06,
+  const snow = (coverSource || painted) ? 0 : smoothstep(snowAt - 0.02, snowAt + 0.06,
     t + drift - steep * 0.16);
   if (snow > 0.001) mixRGB(out, BAND_SNOW, snow, out);
 
   // Brightness variation — subtle on gentle ground, strong on tough.
-  const amp = 0.11 + 0.30 * rugged;
+  const amp = painted ? 0.03 : 0.11 + 0.30 * rugged;
   const swing = (fine - 0.5) * 0.40 + (meso - 0.5) * 0.35 + (macro - 0.5) * 0.25;
   const shade = 1 + swing * 2 * amp;
   out[0] *= shade; out[1] *= shade; out[2] *= shade;
@@ -338,6 +517,13 @@ export function buildSurface(field, grid, predicate) {
   const positions = new Float32Array(vcount * 3);
   const normals = new Float32Array(vcount * 3);
   const colors = new Float32Array(vcount * 3);
+  // The domain, mapped to the unit square. Always written, whether or not
+  // anything is textured today: it costs two floats a vertex, it is the only
+  // parameterisation of a graph that means anything, and having it there means
+  // a drape can be hung on the surface without rebuilding it.
+  const uvs = new Float32Array(vcount * 2);
+  const uSpan = (field.xmax - field.xmin) || 1;
+  const vSpan = (field.ymax - field.ymin) || 1;
 
   const nrm = new THREE.Vector3();
   const rgb = [0, 0, 0];
@@ -354,6 +540,8 @@ export function buildSurface(field, grid, predicate) {
       positions[k * 3] = px;
       positions[k * 3 + 1] = field.worldY(z);
       positions[k * 3 + 2] = pz;
+      uvs[k * 2] = (xx - field.xmin) / uSpan;
+      uvs[k * 2 + 1] = (yy - field.ymin) / vSpan;
 
       // One gradient per vertex, reused for both the normal and the slope.
       grid.gradientAt(i, j, grad);
@@ -396,6 +584,7 @@ export function buildSurface(field, grid, predicate) {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geometry.setIndex(new THREE.BufferAttribute(index, 1));
   geometry.addGroup(0, inside.length, GROUP_INSIDE);
   geometry.addGroup(inside.length, outside.length, GROUP_OUTSIDE);
@@ -403,9 +592,11 @@ export function buildSurface(field, grid, predicate) {
 
   const matInside = new THREE.MeshStandardMaterial({
     vertexColors: true, roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide,
+    map: groundTexture,
   });
   const matOutside = new THREE.MeshStandardMaterial({
     vertexColors: true, roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide,
+    map: groundTexture,
   });
 
   const mesh = new THREE.Mesh(geometry, [matInside, matOutside]);
@@ -622,6 +813,10 @@ export class SurfaceDetail {
     geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
     geom.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
     geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
+    // Rewritten every time the ring moves, exactly like the positions: a ring
+    // is a window that slides over the domain, so its parameterisation slides
+    // with it or the drape would swim under the explorer's feet.
+    geom.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(w * w * 2), 2));
 
     const idx = [];
     for (let j = 0; j < seg; j++) {
@@ -637,6 +832,7 @@ export class SurfaceDetail {
       roughness: 0.95,
       metalness: 0.0,
       side: THREE.DoubleSide,
+      map: groundTexture,
       polygonOffset: true,
       // Finer rings win over coarser ones and over the main mesh.
       polygonOffsetFactor: -4 * (count - index),
@@ -706,7 +902,10 @@ export class SurfaceDetail {
     const pos = ring.geometry.getAttribute('position');
     const nor = ring.geometry.getAttribute('normal');
     const colAttr = ring.geometry.getAttribute('color');
-    const P = pos.array, N = nor.array, C = colAttr.array;
+    const uvAttr = ring.geometry.getAttribute('uv');
+    const P = pos.array, N = nor.array, C = colAttr.array, U = uvAttr.array;
+    const uSpan = (field.xmax - field.xmin) || 1;
+    const vSpan = (field.ymax - field.ymin) || 1;
     const Z = ring.z;
 
     // Pass 1: sample f once per vertex.
@@ -715,7 +914,13 @@ export class SurfaceDetail {
       const yy = cy + (j - seg / 2) * step;
       for (let i = 0; i < w; i++) {
         const xx = cx + (i - seg / 2) * step;
-        const z = field.height(xx, yy);
+        // The window is the window. f may well be defined past the edge of it —
+        // the campus is one fit seen through two rectangles, and the narrow
+        // quadrant sits inside a survey two kilometres across — but a detail
+        // ring that answers anyway drew a stray patch of hillside floating in
+        // the air beside the strip, ground that the student had explicitly not
+        // asked to see.
+        const z = field.inDomain(xx, yy) ? field.height(xx, yy) : NaN;
         if (isFinite(z)) { Z[j * w + i] = z; anyValid = true; }
         else Z[j * w + i] = NaN;
       }
@@ -738,6 +943,8 @@ export class SurfaceDetail {
         P[k * 3] = px;
         P[k * 3 + 1] = field.worldY(zz);
         P[k * 3 + 2] = pz;
+        U[k * 2] = (xx - field.xmin) / uSpan;
+        U[k * 2 + 1] = (yy - field.ymin) / vSpan;
 
         let gx, gy;
         const l = i > 0 && isFinite(Z[k - 1]), r = i < seg && isFinite(Z[k + 1]);
@@ -771,6 +978,7 @@ export class SurfaceDetail {
     pos.needsUpdate = true;
     nor.needsUpdate = true;
     colAttr.needsUpdate = true;
+    uvAttr.needsUpdate = true;
     ring.geometry.computeBoundingSphere();
     ring.mesh.visible = anyValid;
 

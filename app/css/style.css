@@ -473,3 +473,42 @@ button:disabled { opacity: .45; cursor: default; }
 }
 @media (max-height: 700px) { #peak-photo { height: 88px; } }
 @media (max-height: 560px) { #peak-photo { display: none; } #peak-card { width: 200px; } }
+
+/* ------------------------------------------------- the campus from orbit -- */
+
+/*
+ * A corner card, only on the surveyed campus.
+ *
+ * It sits bottom right because that is where it was asked for and because the
+ * bottom of the screen is where a map belongs; where the Lab already keeps its
+ * flat map in that corner, main.js lifts this one clear of it at run time
+ * rather than guessing at a height in CSS that a resizable panel would make
+ * wrong five seconds later.
+ */
+#sat-card {
+  /* Clear of the right rail, whose dials live in the same corner. */
+  position: fixed; right: 68px; bottom: 14px; z-index: 6;
+  display: flex; flex-direction: column; align-items: center;
+  width: max-content; min-width: 136px; padding: 6px 6px 4px;
+  border-radius: var(--radius);
+  background: rgba(16, 21, 28, .72);
+  border: 1px solid rgba(255, 255, 255, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .35);
+  pointer-events: none;
+}
+#sat-inset { display: block; border-radius: 8px; }
+/*
+ * The caption must not decide how wide the card is. The named quadrant is a
+ * ribbon 129 m by 926 m, so its canvas is forty pixels across, and a caption
+ * that contributed its own width left a slab of empty card beside the picture.
+ * Zero width with a full-width minimum takes it out of the intrinsic sizing
+ * and lets it wrap under whatever the canvas turned out to be.
+ */
+#sat-cap {
+  width: 0; min-width: 100%;
+  margin-top: 4px; text-align: center; overflow-wrap: anywhere;
+  font-size: 9px; letter-spacing: .3px; color: var(--ink-dim);
+}
+/* On a short screen it is the first thing to go: the scene is the lesson. */
+@media (max-height: 520px) { #sat-card { display: none; } }

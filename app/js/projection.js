@@ -18,25 +18,13 @@
  * mirror the map against the terrain, which is worse than not drawing it.
  */
 
-import { heightColor } from './terrain.js';
+// Both ramps live in terrain.js, so that the level curves drawn here and the
+// ribbons draped over the terrain in the scene cannot drift apart.
+import { heightColor, heatColor } from './terrain.js';
 
-/** A conventional heat map, for when the topographic ramp is not wanted. */
-function heatColor(h, out) {
-  // Blue → cyan → green → yellow → red: the palette a student will have seen
-  // on every other heat map, deliberately different from the height ramp so
-  // the two modes cannot be confused with each other.
-  const stops = [
-    [0.19, 0.22, 0.62], [0.13, 0.62, 0.75], [0.35, 0.76, 0.35],
-    [0.96, 0.85, 0.24], [0.85, 0.20, 0.15],
-  ];
-  const t = Math.min(1, Math.max(0, h)) * (stops.length - 1);
-  const i = Math.min(stops.length - 2, Math.floor(t));
-  const f = t - i, a = stops[i], b = stops[i + 1];
-  out[0] = a[0] + (b[0] - a[0]) * f;
-  out[1] = a[1] + (b[1] - a[1]) * f;
-  out[2] = a[2] + (b[2] - a[2]) * f;
-  return out;
-}
+/** How much of the height ramp shows through a photograph, and how pale it is. */
+const WASH = 0.42;
+const PALE = 0.34;
 
 export class Projection {
   constructor(canvas) {
@@ -48,6 +36,26 @@ export class Projection {
     this.grid = null;
     this.levels = [];
     this.mode = 'ramp';        // 'off' | 'heat' | 'ramp' | 'down'
+    // Where there is a photograph of the ground, the flat map is that
+    // photograph with the colour washed over it rather than the colour alone.
+    // A function () => ({ image, west, east, south, north }) in the domain's
+    // own units, or null. See setPhoto.
+    this.photo = null;
+    this.wash = document.createElement('canvas');
+    this.washCtx = this.wash.getContext('2d');
+    this.dirty = true;
+  }
+
+  /**
+   * Hand over the aerial photograph, or take it away.
+   *
+   * This is what makes the panel a *map* of a place rather than a plot of a
+   * function: on the surveyed campus the two are the same ground, and putting
+   * them in one rectangle is the whole translation the program is about. Every
+   * other surface has no photograph and the panel is unchanged.
+   */
+  setPhoto(source) {
+    this.photo = source || null;
     this.dirty = true;
   }
 
@@ -94,6 +102,26 @@ export class Projection {
     ctx.clearRect(0, 0, W, H);
     if (!grid || !field || this.mode === 'off' || this.mode === 'down') { this.dirty = false; return; }
 
+    // --- the photograph, if this ground has one --------------------------
+    //
+    // Cropped with drawImage rather than sampled pixel by pixel, so the
+    // browser's own resampler does the work: the window can be a fraction of a
+    // source pixel across and it still comes out smooth.
+    const src = this.photo && this.photo();
+    const over = !!(src && src.image);
+    if (over) {
+      const iw = src.image.width, ih = src.image.height;
+      const ex = (src.east - src.west) || 1, ey = (src.north - src.south) || 1;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(
+        src.image,
+        ((field.xmin - src.west) / ex) * iw, ((src.north - field.ymax) / ey) * ih,
+        ((field.xmax - field.xmin) / ex) * iw, ((field.ymax - field.ymin) / ey) * ih,
+        0, 0, W, H,
+      );
+    }
+
     // --- the heat map, one pixel at a time -------------------------------
     const img = ctx.createImageData(W, H);
     const d = img.data;
@@ -107,13 +135,29 @@ export class Projection {
         const k = (j * W + i) * 4;
         if (!isFinite(z)) { d[k + 3] = 0; continue; }   // outside the domain of f
         paint(grid.norm(z), rgb);
-        d[k] = Math.round(rgb[0] * 255);
-        d[k + 1] = Math.round(rgb[1] * 255);
-        d[k + 2] = Math.round(rgb[2] * 255);
+        // Over a photograph the ramp is pulled a third of the way to white
+        // before it is laid on, and then laid on at less than half strength.
+        // At full strength it reads as a heat map with something behind it;
+        // pale and translucent it reads as a photograph with the height
+        // written on it, which is the picture worth having.
+        d[k] = Math.round((over ? rgb[0] + (1 - rgb[0]) * PALE : rgb[0]) * 255);
+        d[k + 1] = Math.round((over ? rgb[1] + (1 - rgb[1]) * PALE : rgb[1]) * 255);
+        d[k + 2] = Math.round((over ? rgb[2] + (1 - rgb[2]) * PALE : rgb[2]) * 255);
         d[k + 3] = 255;
       }
     }
-    ctx.putImageData(img, 0, 0);
+    if (over) {
+      // putImageData ignores globalAlpha and replaces what is under it, so the
+      // wash goes through a scratch canvas to get composited instead.
+      this.wash.width = W; this.wash.height = H;
+      this.washCtx.putImageData(img, 0, 0);
+      ctx.save();
+      ctx.globalAlpha = WASH;
+      ctx.drawImage(this.wash, 0, 0);
+      ctx.restore();
+    } else {
+      ctx.putImageData(img, 0, 0);
+    }
     this.dirty = false;
   }
 
@@ -130,7 +174,7 @@ export class Projection {
     ctx.lineCap = 'round';
 
     for (const level of this.levels) {
-      heightColor(grid.norm(level), rgb);
+      heatColor(grid.norm(level), rgb);
       ctx.beginPath();
       for (let j = 0; j < n; j++) {
         for (let i = 0; i < n; i++) {
@@ -156,12 +200,12 @@ export class Projection {
           }
         }
       }
-      // Twice: a dark halo, then the height colour on top.
+      // Twice: a dark halo, then the heat colour on top.
       //
-      // The contour's colour and the heat map's colour come from the same ramp
-      // at the same height, so on the ramp background a plain stroke is drawn
-      // in exactly the colour it is standing on and disappears. The halo is
-      // what makes a level curve visible against its own level.
+      // In heat mode the contour's colour and the background's colour are the
+      // same ramp at the same height, so a plain stroke would be drawn in
+      // exactly the colour it is standing on and disappear. The halo is what
+      // makes a level curve visible against its own level.
       ctx.strokeStyle = 'rgba(8, 12, 18, .55)';
       ctx.lineWidth = lineWidth * 2.6;
       ctx.stroke();

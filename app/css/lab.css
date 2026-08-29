@@ -49,9 +49,20 @@ kbd { font-size: 9px; padding: 1px 3px; }
  * which on any ordinary screen is a panel you can read a contour off without
  * it taking the scene over. The dial scales both together.
  */
+/*
+ * Bottom left, beside the control panel rather than across the room from it.
+ *
+ * It sat in the bottom-right corner for as long as it was the only card on
+ * screen. On the surveyed campus it is now the *only* map — it carries the
+ * aerial photograph with the height ramp washed over it, so a second card
+ * would be the same picture twice — and the left is where it belongs: the
+ * right-hand corner is the rail's, and the panel it now sits beside is the
+ * thing whose settings it is showing the result of. `left` is set from
+ * main.js, because the panel collapses and the gap has to be measured.
+ */
 #proj-wrap {
   position: fixed;
-  right: 14px; bottom: 14px;
+  left: 350px; bottom: 14px;
   z-index: 5;
   width: calc(20vw * var(--proj-scale, 1));
   height: calc(33.33vh * var(--proj-scale, 1));
@@ -69,24 +80,26 @@ kbd { font-size: 9px; padding: 1px 3px; }
 #minimap { display: block; width: 100%; height: 100%; }
 
 /*
- * The right-hand rail has to stop above the flat map, which claims that corner.
- * Both are driven by the same --proj-scale, so the rail follows the dial rather
- * than being told a height that stops being true the moment the panel is
- * resized.
+ * The rail keeps the right-hand corner to itself now that the flat map has
+ * moved to the left, so it no longer has to stop short of it. It still starts
+ * at the top rather than centring, because the Lab has more dials than the
+ * sandbox and they read better as a column from the top down.
  */
-#right-rail {
-  bottom: calc(33.33vh * var(--proj-scale, 1) + 26px);
-  justify-content: flex-start;
-}
-@media (max-height: 620px) {
-  #right-rail { bottom: calc(33.33vh * var(--proj-scale, 1) + 22px); }
-}
+#right-rail { justify-content: flex-start; }
 
+/*
+ * The label sits on its own dark patch rather than relying on a shadow. A
+ * shadow is enough over a heat map, whose bottom-left corner is the low ground
+ * and therefore dark; it is not enough over an aerial photograph, where that
+ * corner can be a white roof.
+ */
 #proj-label {
-  position: absolute; left: 7px; bottom: 5px;
+  position: absolute; left: 6px; bottom: 5px;
+  padding: 2px 6px; border-radius: 5px;
+  background: rgba(9, 13, 19, .55);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase;
-  color: rgba(231, 237, 245, .72);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
+  color: rgba(231, 237, 245, .86);
 }
 
 /* The bottom pills would sit under the map on a narrow window. */

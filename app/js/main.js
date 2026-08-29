@@ -7,11 +7,18 @@ import { compile, compilePredicate, MathExprError } from './mathexpr.js';
 import { Field, FieldGrid } from './field.js';
 import {
   buildSurface, buildWater, buildFeasibleWalls, recolorSurface, SurfaceDetail,
-  GROUP_OUTSIDE, heightColor, setBiomeProfile,
+  GROUP_OUTSIDE, heatColor, setBiomeProfile, setCoverSource, setSatelliteSource, setGroundTexture, hasGroundTexture,
 } from './terrain.js';
 import { ELIAS_INFO } from './elias.js';
-import { BORDERS } from './borders-data.js';
-import { feasibleFor, boundaryOf, BORDER_IDS } from './borders.js';
+import {
+  CAMPUS_INFO, SAT_INFO, coverAt, satelliteAt, satelliteReady, hasSatellite,
+  satelliteCanvas, satelliteWindow,
+  buildings as campusBuildings, startPoint as campusStart,
+} from './campus.js';
+import { buildBuildings } from './buildings.js';
+import {
+  BORDERS, feasibleFor, boundaryOf, windowOf, BORDER_IDS, SLOPE_IDS, PEAK_IDS,
+} from './borders.js';
 import { photoFor } from './borders-photos.js';
 import { Decorations } from './decor.js';
 import {
@@ -37,6 +44,7 @@ import { Compass, angles } from './compass.js';
 import { Pad, BTN } from './gamepad.js';
 import { BorderRun } from './game.js';
 import { Projection } from './projection.js';
+import { SatelliteInset } from './satinset.js';
 import {
   LANGUAGES, detectLanguage, setLanguage, getLanguage, onLanguageChange, applyStatic, t,
 } from './i18n.js';
@@ -151,6 +159,9 @@ const state = {
   curCurve: false,
   curTangent: false,
   decor: true,
+  // The campus can be painted with its own satellite image instead of the
+  // land-cover palette. On by default there, meaningless everywhere else.
+  satellite: true,
   rail: false,          // rope the explorer to the constraint curve
   curvesInside: false,  // draw level curves only inside the feasible set
   smoothCurves: true,   // trace them finer than the render mesh
@@ -218,9 +229,10 @@ let graphGeo = null;     // a walker over z = f(x,y), for its geodesics
 let graphDisc = null;    // ...and the geodesic circle drawn from it
 let altSurface = null;   // the implicit or parametric mesh, when one is shown
 let mobiusFlag = null;   // the two-faced golf flag at the Möbius strip's start
-let game = null;         // Border Run, on play.html only — declared here rather
-                         // than beside its own setup because the frame loop starts
-                         // before that setup runs and must be able to ask for it
+let townscape = null;    // the real buildings, when the surface is a real place
+let game = null;         // Border Run — declared here rather than beside its own
+                         // setup because the frame loop starts before that setup
+                         // runs and must be able to ask for it
 let stillMemo = null;    // last frame's at-the-feet geometry, kept while the
                          // explorer and the dials hold still
 let surfGrid = null;     // the coordinate grid drawn on whichever surface it is
@@ -253,6 +265,19 @@ const altView = {
  * ends from one program.
  */
 const projection = $('minimap') ? new Projection($('minimap')) : null;
+
+/**
+ * The campus card. Its source is the decoded Sentinel image and the rectangle
+ * it covers, both in the domain's own kilometres; null everywhere the
+ * photograph does not apply, which is everywhere but the campus.
+ */
+function photoSource() {
+  if (!isCampus() || !state.satellite || !hasSatellite()) return null;
+  const w = satelliteWindow();
+  return { image: satelliteCanvas(), west: w.xmin, east: w.xmax, south: w.ymin, north: w.ymax };
+}
+const satInset = $('sat-inset') ? new SatelliteInset($('sat-inset'), photoSource) : null;
+if (projection) projection.setPhoto(photoSource);
 const projState = { mode: 'ramp', opacity: 0.88, size: 1 };
 let topCam = null;
 
@@ -295,6 +320,7 @@ function clearGraphWorld() {
   if (optMarker) { disposeTree(optMarker.group); optMarker.dispose(); }
   if (curveGizmo) { disposeTree(curveGizmo.mesh); curveGizmo.dispose(); }
   if (tangentLine) { disposeTree(tangentLine.mesh); tangentLine.dispose(); }
+  if (townscape) { world.remove(townscape.group); townscape.dispose(); townscape = null; }
   decorations.clear();
   surface = water = walls = contourLines = null;
   surfaceDetail = gizmo = tangentPlane = optMarker = curveGizmo = tangentLine = null;
@@ -618,7 +644,11 @@ function decorScaleFactor() {
 }
 
 function decorOptions() {
-  return { density: state.density, shadows: state.shadows, scale: decorScaleFactor() };
+  return {
+    density: state.density, shadows: state.shadows, scale: decorScaleFactor(),
+    // On a surveyed square kilometre the forest is not guessed from height.
+    cover: isCampus() ? coverAt : null,
+  };
 }
 
 /** Rebuild whichever forest is on screen — a graph's or a curved surface's. */
@@ -988,6 +1018,8 @@ function rebuild() {
     : borderId ? BORDERS[borderId].meta.biome
       : 'temperate');
 
+
+
   // --- parse first, so a typo never destroys a working scene -------------
   let fn, pred;
   try {
@@ -1018,15 +1050,60 @@ function rebuild() {
   clearGraphWorld();
 
   // --- sample -----------------------------------------------------------
+  //
+  // How big the world is, in the metres a world unit stands for.
+  //
+  // Everywhere else this is a fixed 220: the domain has no units — the graph of
+  // x² + y² is not a number of kilometres wide — so the program declares that
+  // whatever is on screen is 220 m across, and draws a 1.8 m explorer against
+  // it. That is the only sensible convention for a formula, and it is why the
+  // explorer on Mount Saint Elias is, strictly, a giant.
+  //
+  // On the campus it is the wrong convention, and visibly so, because the
+  // buildings are real. A 2.19 km window squeezed into 220 m is the place at
+  // one tenth scale, and a real five-metre house drawn on it comes out
+  // knee-high beside an explorer the program insists is 1.8 m — a scatter of
+  // pale slabs lying almost flat on the ground, which is what made the
+  // close-up look faceted when the surface underneath it is smooth to a fifth
+  // of a degree of normal per mesh step. Saying the world is 2 194 m across
+  // makes one world unit one real metre: the explorer is 1.8 m, the houses are
+  // four to fourteen, the trees stand over both, and every number the readouts
+  // print becomes true rather than nominal. Camera distance, fog and the sun
+  // are all proportional to this, so the framing is unchanged.
+  const worldSize = isCampus()
+    ? Math.max(state.xmax - state.xmin, state.ymax - state.ymin) * 1000
+    : state.worldSize;
   field = new Field({
     fn,
     xmin: state.xmin, xmax: state.xmax, ymin: state.ymin, ymax: state.ymax,
-    worldSize: state.worldSize,
+    worldSize,
     sx: state.sx, sy: state.sy, sz: state.sz,
   });
   grid = new FieldGrid(field, state.res);
   field.zTop = grid.zmax;
   field.zBottom = grid.zmin;
+
+  // Where the ground was actually surveyed, hand the survey over and stop
+  // inferring what grows on it. The lookup is given in world coordinates
+  // because that is what the colouring already has; the campus module wants
+  // kilometres, so the field's own inverse does the conversion. Cleared for
+  // every other surface, so a stale raster can never colour a hillside it
+  // knows nothing about.
+  const onCampus = isCampus();
+  setCoverSource(onCampus ? (wx, wz) => coverAt(field.mathX(wx), field.mathY(wz)) : null);
+  // And where there is a photograph of the ground, and the student asked for
+  // it, the photograph wins. Cleared everywhere else, so an image of Santiago
+  // can never end up painted on a mountain in the Yukon.
+  setSatelliteSource(onCampus && state.satellite && hasSatellite()
+    ? (wx, wz, out) => satelliteAt(field.mathX(wx), field.mathY(wz), out)
+    : null);
+  // The same photograph again, this time as a texture the card samples per
+  // screen pixel. The CPU sampler above still exists and still matters — it
+  // feeds the flat map and the corner inset, neither of which has a mesh —
+  // but the *ground* takes the map, so how much of the image you can see stops
+  // depending on how many triangles the surface was built with.
+  setGroundTexture(onCampus && state.satellite && hasSatellite()
+    ? satelliteTexture(field) : null);
 
   if (!grid.anyValid) {
     showError('err-fn', localError('err.undefinedEverywhere'));
@@ -1040,6 +1117,16 @@ function rebuild() {
 
   water = buildWater(field, grid);
   if (water) { world.add(water); water.visible = state.water; }
+
+  // The buildings, where there are real ones. They are scenery, not geometry:
+  // f is still the altitude of the ground, and a roof is not a maximum of it.
+  townscape = onCampus ? buildBuildings(field, grid, campusBuildings(), predicate) : null;
+  if (townscape) {
+    world.add(townscape.group);
+    townscape.group.visible = state.decor;
+    townscape.mesh.castShadow = state.shadows;
+    townscape.setIsolate(state.isolate && hasConstraint());
+  }
 
   // In the game the player stands a few hundred metres from the frontier and
   // looks straight at it, so the wall is built waist-high rather than at the
@@ -1087,7 +1174,11 @@ function rebuild() {
   // 1.1 put the far half of every surface into haze before the student had
   // looked at it — which on the border mountains, whose relief is the thing
   // being shown, read as a washed-out sky-blue film over the peaks.
-  scene.fog = new THREE.Fog(0xa9c3d8, field.worldSize * 2.1, field.worldSize * 9);
+  // ...and a photographed ground gets more room still. Haze over a rendered
+  // hillside is atmosphere; haze over an aerial photograph is a blue film
+  // between the student and the only thing on screen they came to recognise.
+  const fogNear = hasGroundTexture() ? 3.4 : 2.1;
+  scene.fog = new THREE.Fog(0xa9c3d8, field.worldSize * fogNear, field.worldSize * 11);
 
   const sunDist = field.worldSize * 2;
   sun.position.set(sunDist * 0.6, sunDist * 0.9, sunDist * 0.45);
@@ -1102,6 +1193,14 @@ function rebuild() {
     player.field = field;
     player.resetToDomainCentre();
   }
+  // The centre of the campus window is a patch of hillside scrub; the
+  // university is towards its western edge. Open on the built ground, so the
+  // first thing a student sees is the place they recognise.
+  if (onCampus) {
+    const s0 = campusStart();
+    player.x = s0.x; player.y = s0.y;
+    if (!isFinite(player.height())) player.resetToDomainCentre();
+  }
   player.setZoom(state.zoom);
   player.speedScale = state.walkSpeed;
 
@@ -1110,6 +1209,7 @@ function rebuild() {
   refreshContours();
   refreshSurfaceGrid();
   refreshProjection();
+  refreshSatInset();
   refreshOptimum();
   reportStats();
   return true;
@@ -1158,15 +1258,17 @@ function configureShadows() {
   renderer.shadowMap.enabled = state.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   sun.castShadow = state.shadows;
-  // state.worldSize rather than field.worldSize: the same number sizes
-  // whichever kind of surface is actually on screen, and field is null on a
-  // parametric or implicit one.
+  // The field's own world size where there is a field, because a surface that
+  // declares its metres — the campus does — is not 220 units across and a
+  // shadow camera built for 220 would cover a tenth of it. Falls back to the
+  // state's number for a parametric or implicit surface, where field is null.
+  const ws = (state.surfaceKind === 'graph' && field) ? field.worldSize : state.worldSize;
   if (state.shadows) {
-    const r = state.worldSize * 0.75;
+    const r = ws * 0.75;
     const c = sun.shadow.camera;
     c.left = -r; c.right = r; c.top = r; c.bottom = -r;
-    c.near = state.worldSize * 0.5;
-    c.far = state.worldSize * 6;
+    c.near = ws * 0.5;
+    c.far = ws * 6;
     c.updateProjectionMatrix();
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.bias = -0.0012;
@@ -1232,7 +1334,27 @@ function applyPalette() {
   const rocky = /\belias\s*\(/.test(state.fnSrc || '') || !!currentBorder();
   if (state.heightColors) { hemi.intensity = 4.2; sun.intensity = 1.1; }
   else if (rocky) { hemi.intensity = 1.55; sun.intensity = 2.25; }
+  // A city hillside sits between the two. Rock and snow are bright enough that
+  // the sandbox's exposure clips them to white, which is why the mountains are
+  // lit down; dry scrub, tarmac and roofs are darker, but they also take the
+  // sky's blue readily, and a strong hemisphere light floods a whole suburb
+  // pale teal. Less sky, more sun.
+  else if (isCampus()) { hemi.intensity = 2.3; sun.intensity = 3.4; }
   else { hemi.intensity = 3.1; sun.intensity = 3.4; }
+
+  // Under a photograph, light white.
+  //
+  // The sky light is pale blue because that is what a sky is, and on an
+  // invented albedo it reads as air. On a *photograph* it is a lie told twice:
+  // the image already contains the sky that lit the ground the morning it was
+  // taken, and tinting it again turned a warm brown hillside — which is what
+  // the Sentinel pixel actually says, mean colour (151, 122, 92) — into olive
+  // teal. The whole point of painting the real image on is that the ground
+  // comes out the colour the ground is, so when it is in play the hemisphere
+  // goes neutral and only the sun keeps its warmth.
+  const photo = hasGroundTexture();
+  hemi.color.setHex(photo ? 0xf4f6f8 : 0xcfe4ff);
+  hemi.groundColor.setHex(photo ? 0x9c968a : 0x8a7f6a);
   if (surfaceDetail && player && state.surfaceKind === 'graph') {
     surfaceDetail.update(player.x, player.y, detailExtent(), grid, paletteMode(), true);
   }
@@ -1279,6 +1401,7 @@ function applyIsolation() {
   out.depthWrite = !on;
   out.needsUpdate = true;
   decorations.setIsolate(on);
+  if (townscape) townscape.setIsolate(on);
   if (water) water.visible = state.water && !on;
 }
 
@@ -1307,6 +1430,7 @@ function refreshContours() {
   if (contourLines) world.add(contourLines);
   updateContourNote();
   refreshProjection();
+  refreshSatInset();
 }
 
 function updateContourNote() {
@@ -1495,6 +1619,12 @@ canvas.addEventListener('mousedown', (e) => {
   // not "give me the mouse". Taking the pointer as well would hide the cursor
   // the moment you tried to aim the next one.
   const placing = state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE;
+  // Reaching for the scene while the Border Run card is up *is* the answer to
+  // the card: they would rather look at the mountain. Take it down, so the
+  // mouse is not captured behind a dialogue whose buttons it can no longer
+  // reach. (The card itself lets clicks through — see game.css — so this
+  // fires wherever on the scene they clicked.)
+  if (game && game.screen === 'offer') game.dismiss();
   if (!pointerLocked && !(placing && e.button === 0)) canvas.requestPointerLock();
 });
 window.addEventListener('mouseup', (e) => { if (e.button === 2) rightDown = false; });
@@ -1900,6 +2030,7 @@ function togglePanel(force) {
   const hidden = force !== undefined ? force : !p.classList.contains('hidden');
   p.classList.toggle('hidden', hidden);
   $('panel-show').hidden = !hidden;
+  placeProjection();
 }
 
 /** Show only the inputs that belong to the chosen kind of surface. */
@@ -2025,6 +2156,7 @@ const CROCHET_FN = 'y/(hypot(x,y)+1e-9)*sqrt(2*((1/3)*sinh(hypot(x,y)*sqrt(3))^2
 
 /** Mount Saint Elias: the baked elevation model, as a formula. */
 const ELIAS_FN = 'elias(x, y)';
+const CAMPUS_FN = 'uandes(x, y)';
 
 /**
  * The Alaska side of the frontier, as one linear inequality.
@@ -2054,8 +2186,74 @@ function eliasFeasible() {
  * single source of truth about what surface is on screen.
  */
 function currentBorder() {
-  const m = /^\s*([a-z]+)\s*\(\s*x\s*,\s*y\s*\)\s*$/.exec(state.fnSrc || '');
+  const m = /^\s*([a-z][a-z0-9]*)\s*\(\s*x\s*,\s*y\s*\)\s*$/.exec(state.fnSrc || '');
   return m && BORDERS[m[1]] ? m[1] : null;
+}
+
+/**
+ * Is the surface on screen the surveyed campus?
+ *
+ * Read off the formula, like everything else here, so typing `uandes(x, y)`
+ * into the box is exactly as good as choosing it from the list — and so the
+ * scenery can never be left switched on over a surface it has nothing to say
+ * about.
+ */
+function isCampus() { return /\buandes\s*\(/.test(state.fnSrc || ''); }
+
+/**
+ * The satellite image as a texture, framed on the window currently open.
+ *
+ * Built once and kept: the pixels never change, only which part of them the
+ * domain is looking at, and that is an offset and a scale on the texture's own
+ * transform rather than a new upload. So switching between the whole campus and
+ * the 129 m quadrant re-frames the photograph without touching the card.
+ *
+ * The filtering is the point of the whole exercise. Nearest-neighbour is what
+ * made the drape a mosaic of ten-metre squares; linear magnification with
+ * mipmaps and anisotropy is what a photograph on a receding hillside needs, and
+ * it is the graphics card's own hardware doing it, so it costs nothing.
+ */
+let satTexture = null;
+function satelliteTexture(f) {
+  const canvas = satelliteCanvas();
+  if (!canvas) return null;
+  if (!satTexture) {
+    satTexture = new THREE.CanvasTexture(canvas);
+    // The stored bytes are sRGB, and the renderer works in linear light.
+    satTexture.colorSpace = THREE.SRGBColorSpace;
+    satTexture.wrapS = THREE.ClampToEdgeWrapping;
+    satTexture.wrapT = THREE.ClampToEdgeWrapping;
+    satTexture.magFilter = THREE.LinearFilter;
+    satTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    satTexture.generateMipmaps = true;
+    satTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  }
+  // uv runs 0..1 across the domain; the image covers a bigger rectangle. One
+  // affine map takes one to the other.
+  const w = satelliteWindow();
+  const wx = (w.xmax - w.xmin) || 1, wy = (w.ymax - w.ymin) || 1;
+  satTexture.repeat.set((f.xmax - f.xmin) / wx, (f.ymax - f.ymin) / wy);
+  satTexture.offset.set((f.xmin - w.xmin) / wx, (f.ymin - w.ymin) / wy);
+  return satTexture;
+}
+
+/**
+ * Wait for the chosen mountain to actually exist, then let the game offer it.
+ *
+ * The preset handler only fills in the boxes; the mesh is built a couple of
+ * frames later by withLoading. Offering a run before there is ground to stand
+ * on would put a card over a blank scene, so this watches for the surface
+ * instead of guessing at a delay, and gives up if the student has moved on to
+ * something else in the meantime.
+ */
+function offerGameFor(id) {
+  if (!game) return;
+  const ready = () => {
+    if (currentBorder() !== id) return;        // they chose something else
+    if (field && grid) game.offer(id);
+    else requestAnimationFrame(ready);
+  };
+  requestAnimationFrame(ready);
 }
 
 /**
@@ -2143,6 +2341,11 @@ function updateCrochetNote() {
   if (crochet) crochet.hidden = fn !== CROCHET_FN;
   const elias = $('note-elias');
   if (elias) elias.hidden = fn !== ELIAS_FN;
+  const campus = $('note-campus');
+  if (campus) campus.hidden = fn !== CAMPUS_FN;
+  // The satellite image belongs to one surface, so its switch appears with it.
+  const satBox = $('fld-sat');
+  if (satBox) satBox.hidden = fn !== CAMPUS_FN;
   const border = $('note-border');
   const id = currentBorder();
   if (border) {
@@ -2325,10 +2528,33 @@ function wireUI() {
   $('panel-toggle').addEventListener('click', () => togglePanel(true));
   $('panel-show').addEventListener('click', () => togglePanel(false));
 
+  // The frontier slopes are listed from the data rather than written into the
+  // markup: their names are derived from where on the line each window sits,
+  // and a hand-kept list would drift the moment the search was re-run.
+  const slopeGroup = $('og-slopes');
+  if (slopeGroup) {
+    const es = getLanguage() === 'es';
+    for (const id of SLOPE_IDS) {
+      const m = BORDERS[id].meta;
+      const opt = document.createElement('option');
+      opt.value = `${id}(x, y)`;
+      opt.textContent = `${es ? m.es : m.name}  (${(es ? m.countriesEs : m.countries)
+        .map((c) => c.split(' (')[0]).join(' / ')})`;
+      slopeGroup.appendChild(opt);
+    }
+    slopeGroup.hidden = SLOPE_IDS.length === 0;
+  }
+
   $('preset-fn').addEventListener('change', (e) => {
     if (!e.target.value) return;
-    $('in-fn').value = e.target.value;
-    if (e.target.value === ELIAS_FN) {
+    // A preset may name a *view* of a surface as well as the surface: the
+    // campus ships both the block and the sliver the request named, and they
+    // are one function seen through two windows. Everything after the pipe is
+    // the view; the formula is what comes before it.
+    const [fnSrc, view] = e.target.value.split('|');
+    e = { target: { value: fnSrc } };
+    $('in-fn').value = fnSrc;
+    if (fnSrc === ELIAS_FN) {
       // The real mountain: the domain is the survey's own window, the
       // feasible set is Alaska, and the window must not follow the explorer —
       // the data has edges, and panning past them would be panning off the
@@ -2344,7 +2570,9 @@ function wireUI() {
       // The surface itself is a smooth Fourier fit; the crags are costume.
       // The preset insists on the costume, so the smoothing stays invisible.
       $('t-decor').checked = true; state.decor = true;
-    } else if (/^([a-z]+)\(x, y\)$/.test(e.target.value)
+      $('in-res').value = 520;                 // same reason as the border peaks
+      $('in-res').dispatchEvent(new Event('input'));
+    } else if (/^([a-z][a-z0-9]*)\(x, y\)$/.test(e.target.value)
       && BORDERS[e.target.value.replace(/\(.*/, '')]) {
       // A border mountain: the survey window is the domain, and the feasible
       // set is the *other* country — the one that does not own the summit.
@@ -2353,15 +2581,31 @@ function wireUI() {
       // for a problem set.
       const id = e.target.value.replace(/\(.*/, '');
       const s = BORDERS[id];
-      const h = s.half.toFixed(3);
-      $('in-xmin').value = -h; $('in-xmax').value = h;
-      $('in-ymin').value = -h; $('in-ymax').value = h;
+      // Square for a mountain the frontier crosses at its summit; a long, shallow
+      // rectangle for a frontier slope, where the length runs along the border
+      // and costs nothing while every kilometre across it is another chance to
+      // swallow a rival peak. windowOf knows which is which.
+      const w = windowOf(id);
+      $('in-xmin').value = w.xmin.toFixed(3); $('in-xmax').value = w.xmax.toFixed(3);
+      $('in-ymin').value = w.ymin.toFixed(3); $('in-ymax').value = w.ymax.toFixed(3);
       // Open with the z axis stretched, the way a relief model or an atlas
       // does. At true scale two kilometres of mountain across an eighteen
       // kilometre window is a swelling, not a peak — honestly so, but an
       // example nobody recognises as a mountain teaches nothing. This is a
       // display scale only: f, its gradients and every readout stay in real
       // kilometres, and the dial is right there to put it back to 1.
+      // A finer mesh, because the z axis is stretched.
+      //
+      // Exaggerating the height multiplies every slope, and a triangle that was
+      // acceptably flat at true scale becomes a visible facet at six times the
+      // relief. These windows are also tens of kilometres across, where the
+      // default 300 samples put a triangle edge 90 m apart. Going to 520 brings
+      // that under 55 m, which at this exaggeration is below what the eye
+      // resolves at any distance the camera actually sits — and the surface
+      // underneath is infinitely differentiable, so there is nothing to lose by
+      // asking it for more points.
+      $('in-res').value = 520;
+      $('in-res').dispatchEvent(new Event('input'));
       $('in-sz').value = s.exaggeration;
       $('in-sz').dispatchEvent(new Event('input'));
       $('in-feas').value = feasibleFor(id);
@@ -2370,6 +2614,53 @@ function wireUI() {
       $('t-isolate').checked = false; state.isolate = false;
       $('t-follow').checked = false; state.follow = false;   // the survey has edges
       $('t-decor').checked = true; state.decor = true;
+      // Every border mountain is also a Border Run mission. Offer it once the
+      // ground exists to stand on — the card names the objective and goes away
+      // on one key, so choosing the mountain to look at it costs nothing.
+      offerGameFor(id);
+    } else if (e.target.value === CAMPUS_FN) {
+      // A surveyed place. The window is the rectangle the coordinates name and
+      // nothing else: it does not follow the explorer, because walking east off
+      // the edge would be walking off the survey, and it is not square, because
+      // the request was not.
+      // The whole block, or the quadrant the request named — one fit, two
+      // windows. The quadrant is a 129 m by 926 m sliver, which is a strip of
+      // hillside rather than a neighbourhood, so it is offered as its own view
+      // rather than as the default.
+      const win = view === 'quadrant' ? CAMPUS_INFO.quadrant : CAMPUS_INFO;
+      $('in-xmin').value = win.xmin.toFixed(4);
+      $('in-xmax').value = win.xmax.toFixed(4);
+      $('in-ymin').value = win.ymin.toFixed(4);
+      $('in-ymax').value = win.ymax.toFixed(4);
+      $('t-follow').checked = false; state.follow = false;
+      // No constraint here. This one is not a Lagrange problem — it is a place
+      // to ask the unconstrained questions in, where the student knows the
+      // ground: which way is downhill from the lecture theatre, how steep is
+      // the walk up to the library, what does a level curve of altitude look
+      // like when it crosses a car park.
+      $('t-feas').checked = false; state.feasible = false;
+      $('t-isolate').checked = false; state.isolate = false;
+      $('t-decor').checked = true; state.decor = true;
+      // Vegetation at its real size too.
+      //
+      // The scenery is normally sized against the world rather than against
+      // the ground — a "tree" is a fixed fraction of the frame — which on a
+      // window this wide would put 72 m trees over 5 m houses. Here the world
+      // unit is a real metre, so the dial is set to make a tree about nine of
+      // them, a boulder under one, and the grass ankle-high, which is what
+      // they are. Everything in the scene is then at one scale: the explorer
+      // 1.8 m, the houses four to fourteen, the trees over both.
+      $('in-decsize').value = -0.9;
+      $('in-decsize').dispatchEvent(new Event('input'));
+      // Two kilometres across with half a kilometre of relief is already a
+      // steep hillside; it needs no help from the exaggeration dial to read as
+      // one, and at 1 the buildings are their real heights beside it.
+      $('in-sz').value = 1;
+      $('in-sz').dispatchEvent(new Event('input'));
+      // Fine enough that the mesh resolves single buildings rather than the
+      // block they stand in: 520 samples across 2.19 km is a node every 4 m.
+      $('in-res').value = 520;
+      $('in-res').dispatchEvent(new Event('input'));
     } else if (e.target.value === CROCHET_FN) {
       // The construction is only claimed valid out to ρ = a = 1/√3; beyond
       // that the single-wave amplitude keeps growing and stops being the
@@ -2471,6 +2762,9 @@ function wireUI() {
   bindCheck('t-rail', 'rail', applyRail);
   bindCheck('t-heightcol', 'heightColors', applyPalette);
   bindCheck('t-worldmap', 'worldMap', () => withLoading(applyPalette));
+  // The photograph is the surface's albedo, so switching it changes the mesh
+  // colours rather than a material: the surface has to be rebuilt.
+  bindCheck('t-sat', 'satellite', () => withLoading(() => applyInputs()));
   bindCheck('t-surfgrid', 'surfGrid', () => withLoading(refreshSurfaceGrid));
   bindCheck('t-geogrid', 'geoGrid', () => withLoading(refreshSurfaceGrid));
 
@@ -2521,6 +2815,8 @@ function wireUI() {
   });
   bindCheck('t-decor', 'decor', () => {
     decorations.setVisible(state.decor);
+    // The buildings are scenery too, and go with the rest of it.
+    if (townscape) townscape.group.visible = state.decor;
     // On a curved surface the forest is not built until it is asked for, so
     // the first tick has to build it rather than just unhide nothing.
     if (state.decor && state.surfaceKind !== 'graph' && !decorations.layers.length) {
@@ -2530,6 +2826,7 @@ function wireUI() {
   bindCheck('t-water', 'water', () => { if (water) water.visible = state.water && !(state.feasible && state.isolate); });
   bindCheck('t-shadow', 'shadows', () => {
     configureShadows();
+    if (townscape) townscape.mesh.castShadow = state.shadows;
     withLoading(rebuildDecor);
   });
 
@@ -3025,6 +3322,56 @@ function updateHUD(readout) {
 const projRGB = [0, 0, 0];
 
 /** Point the panel at the current field, and rebuild its baked layer. */
+/**
+ * Point the campus card at the surface, and show or hide it.
+ *
+ * Bottom right is where it was asked for, and on the Lab the flat map is
+ * already there — so the card is lifted clear of it by measurement rather than
+ * by a guess in the stylesheet, which a resizable panel would falsify.
+ */
+function refreshSatInset() {
+  const card = $('sat-card');
+  if (!satInset || !card) return;
+  // One map, never two. Where there is a flat map panel — the Lab — it is the
+  // map, and it now carries the photograph itself; the card is for the pages
+  // that have no panel, and for a panel the student has switched off.
+  const wrap = $('proj-wrap');
+  const on = isCampus() && state.satellite && hasSatellite() && !!field && !!grid
+    && !(wrap && !wrap.hidden);
+  card.hidden = !on;
+  if (!on) return;
+  satInset.setField(field, grid);
+
+  // Clear of the dials, measured rather than assumed: the rail's width depends
+  // on the safe-area inset, which is a property of the device.
+  const rail = $('right-rail');
+  if (rail) {
+    const r = rail.getBoundingClientRect();
+    card.style.right = `${Math.max(14, Math.round(window.innerWidth - r.left) + 12)}px`;
+  }
+
+  satInset.resize(Math.min(240, window.innerWidth * 0.24), Math.min(260, window.innerHeight * 0.42));
+}
+
+/**
+ * The flat map keeps clear of the control panel.
+ *
+ * It used to live in the bottom-right corner, opposite the panel, which is
+ * where a second card could not go without one of them covering the other. It
+ * is now bottom left, beside the panel rather than across the room from it —
+ * and since the panel collapses, where "beside" is has to be measured, not
+ * written into the stylesheet.
+ */
+function placeProjection() {
+  const wrap = $('proj-wrap');
+  if (!wrap) return;
+  const panel = $('panel');
+  const clear = panel && !panel.classList.contains('hidden')
+    ? Math.round(panel.getBoundingClientRect().right) + 14
+    : 14;
+  wrap.style.left = `${Math.max(14, clear)}px`;
+}
+
 function refreshProjection() {
   if (!projection || !field || !grid) return;
   const { levels } = chooseLevels(grid.zmin, grid.zmax, {
@@ -3045,6 +3392,8 @@ function applyProjectionStyle() {
   // canvas is left empty and the WebGL pass fills the same rectangle.
   wrap.hidden = projState.mode === 'off' || state.surfaceKind !== 'graph';
   wrap.classList.toggle('down', projState.mode === 'down');
+  placeProjection();
+  refreshSatInset();
 }
 
 function drawProjection() {
@@ -3066,7 +3415,7 @@ function drawProjection() {
   let curve = null;
   if (state.curCurve && isFinite(z)) {
     curve = traceLevelCurve(field, player.x, player.y);
-    heightColor(grid.norm(z), projRGB);
+    heatColor(grid.norm(z), projRGB);
   }
 
   let tangent = null;
@@ -3081,6 +3430,17 @@ function drawProjection() {
     curve, curveRGB: projRGB, tangent,
     player: { x: player.x, y: player.y },
     feasible: predicate, showFeasible: state.feasible || state.isolate,
+  });
+}
+
+/** The campus card, once a frame: the marker and the contour move, the rest is baked. */
+function drawSatInset() {
+  const card = $('sat-card');
+  if (!satInset || !card || card.hidden || !field || !grid || !player) return;
+  const z = player.height();
+  satInset.draw({
+    player: { x: player.x, y: player.y },
+    contour: state.curCurve && isFinite(z) ? traceLevelCurve(field, player.x, player.y) : null,
   });
 }
 
@@ -3400,7 +3760,7 @@ function animate() {
   const onGround = isFinite(player.height());
   if (state.curCurve && onGround) {
     if (!still) {
-      heightColor(grid.norm(player.height()), curveRGB);
+      heatColor(grid.norm(player.height()), curveRGB);
       curveGizmo.update(player.x, player.y, pathWidth() * 1.35, curveRGB);
     }
   } else {
@@ -3421,6 +3781,7 @@ function animate() {
   updateHUD(readout);
   renderer.render(scene, camera);
   drawProjection();
+  drawSatInset();
 }
 
 /* ---------------------------------------------------------------- start */
@@ -3431,6 +3792,8 @@ function onResize() {
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  placeProjection();
+  refreshSatInset();
 }
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
@@ -3476,20 +3839,34 @@ withLoading(() => {
 });
 animate();
 
+// A JPEG cannot be decoded synchronously, and the surface is built
+// synchronously. Almost always the image wins the race — it is a data URI, and
+// the decode starts when the module is imported, long before anyone can choose
+// the campus — but "almost always" is not a guarantee, and losing it means a
+// student sees the land-cover fallback with no way to tell why. So when the
+// image lands, if the campus is what is on screen and it went up without the
+// photograph, build it again.
+satelliteReady().then((ok) => {
+  if (ok && isCampus() && state.satellite && !hasGroundTexture()) {
+    withLoading(() => applyInputs());
+  }
+});
+
 /* ------------------------------------------------------- Border Run */
 
 /**
- * The game layer, when the page asks for one.
+ * The game layer.
  *
- * Detected from the markup rather than from a flag, exactly as the Lab is
- * detected from its minimap: play.html carries a #game element, index.html and
- * lab.html do not, and all three run this same file. Everything the game needs
- * is handed to it explicitly, so the game can be read without reading the app
- * and the app has no idea it is being played.
+ * One program: the game is built here on every page that carries the markup for
+ * it, and then does nothing at all until a border mountain is loaded, at which
+ * point it offers the run in a corner card. Until then — and after the student
+ * waves it away — the sandbox is untouched: every control, the flat map panel,
+ * the level curves and the optimiser are exactly where they were.
+ *
+ * Everything the game needs is handed to it explicitly, so the game can be read
+ * without reading the app, and the app has no idea it is being played.
  */
 if ($('game')) {
-  document.body.dataset.mode = 'play';
-  togglePanel(true);                       // the sandbox is still there under Tab
   const missions = BORDER_IDS.map((id) => {
     const b = BORDERS[id];
     return {

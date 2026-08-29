@@ -368,6 +368,64 @@ rugosidad aparente —riscos, campos de nieve, roca dispersa y hielo— es decor
 <em>sobre</em> la superficie. Matemáticamente, la montaña que se pisa es tan suave como cualquier
 fórmula de la lista de ejemplos, y el máximo restringido sigue exactamente sobre la línea
 fronteriza.</p>
+
+<h2>Un lugar real: Universidad de los Andes, Santiago</h2>
+<p>La &#250;ltima entrada de la lista de ejemplos no es un paisaje sino un barrio: el rect&#225;ngulo
+de 70&#176;30&#8242;45&#8243;O a 70&#176;29&#8242;15&#8243;O y de 33&#176;24&#8242;S a
+33&#176;25&#8242;S, es decir el terreno en torno a la Universidad de los Andes, en San Carlos de
+Apoquindo, sobre el faldeo andino al oriente de Santiago. Son 2,19 km de este a oeste por 1,84 km
+de norte a sur, con 505 m de desnivel, y se abre a escala vertical verdadera porque un cerro as&#237;
+de empinado no necesita ayuda para parecerlo.</p>
+<p>Entran tres fuentes p&#250;blicas, y se mantienen a prop&#243;sito separadas.</p>
+<ul>
+  <li><strong>El suelo es la funci&#243;n, y nada m&#225;s.</strong> Una serie finita de cosenos
+      ajustada al modelo p&#250;blico de elevaci&#243;n, a unos 5 m de &#233;l, y por tanto
+      infinitamente diferenciable &#8212; el mismo tratamiento que reciben el Monte San El&#237;as y
+      los picos fronterizos, por la misma raz&#243;n.</li>
+  <li><strong>La vegetaci&#243;n est&#225; levantada, no inferida.</strong> En todo el resto del
+      programa lo que crece sobre una superficie se deduce de la altura: esta fracci&#243;n del
+      relieve es bosque, aquella es pedrero. Aqu&#237; ESA WorldCover registra cada 10 m si el trozo
+      de suelo es arbolado, matorral, pasto seco, suelo desnudo o construido, y tanto el color como
+      la plantaci&#243;n leen eso. Los &#225;rboles est&#225;n donde est&#225;n los &#225;rboles.</li>
+  <li><strong>Los edificios son huellas reales.</strong> 1 493 de Overture Maps, con alturas reales
+      donde la fuente las declara &#8212;declara doce&#8212; y una altura inferida del &#225;rea en
+      planta donde no.</li>
+</ul>
+<p>Nada de la escenograf&#237;a forma parte de <code>f</code>, y eso es el sentido del ejemplo y no
+una salvedad sobre &#233;l. Entrar a una sala no cambia la altitud. Un techo no es un m&#225;ximo
+local. El gradiente en una puerta es la pendiente del cerro en que se excav&#243; esa puerta. Un
+curso que lleva un semestre maximizando funciones inventadas sobre conjuntos presupuestarios
+inventados puede pararse en un lugar por el que pasa cada semana y hacerle las mismas preguntas:
+hacia d&#243;nde se baja desde aqu&#237;, qu&#233; tan empinada es la subida a la biblioteca,
+c&#243;mo se ve una curva de nivel de altitud cuando cruza un estacionamiento. Encienda las curvas
+de nivel y camine una.</p>
+<p>A este mapa se le añadieron dos cosas más después de la primera versión. El color es ahora el
+lugar mismo: una imagen satelital Sentinel-2 del 17 de enero de 2025, de diez metros por píxel y
+0,3% de nubes, pintada como albedo del suelo e iluminada por el mismo sol que todo lo demás.
+Apáguela en <strong>Mapa y terreno</strong> y el color vuelve a las clases de cobertura del suelo. Y
+una segunda entrada de la lista de ejemplos abre la misma superficie sobre el cuadrante indicado
+aparte —de 70&#176;30&#8242;40&#8243;O a 70&#176;30&#8242;45&#8243;O y de 33&#176;24&#8242;S a
+33&#176;24&#8242;30&#8243;S, una franja de 129 m por 926 m del borde occidental—. Es una sola
+función vista por dos ventanas, y puede escribirse cualquier otra en las casillas del dominio.</p>
+<p>La fotografía se cuelga del suelo como <em>textura</em> y no se muestrea una vez por vértice de
+la malla, de modo que la tarjeta gráfica la remuestrea por píxel de pantalla, con mipmaps y
+filtrado anisotrópico. Diez metros por píxel es el límite propio de Sentinel-2 y ningún código lo
+va a superar; lo que esto sí corrige es el artefacto que escondía la imagen: que al acercarse, el
+manto se rompía en cuadrados planos de diez metros. Y la misma imagen reaparece en una tarjeta de
+esquina, ahora con la rampa de altura superpuesta, pálida y translúcida: la fotografía aérea y el
+mapa de altura del mismo suelo, uno sobre otro, con su posición marcada en ambos y la curva de
+nivel que usted pisa trazada encima. En el Laboratorio es <em>el propio panel del mapa plano</em>
+el que lleva esa imagen &#8212;hay un mapa, no dos, y se ha movido abajo a la izquierda, junto al
+panel de controles&#8212;, de modo que el mismo rectángulo que muestra un mapa de calor de
+x&#178;+y&#178; muestra una fotografía aérea de San Carlos de Apoquindo con sus alturas encima, y
+lo único que cambió fue el ejemplo. Es la traducción de la que trata todo este programa, en una
+sola imagen pequeña: el lugar que el estudiante reconoce, y el campo matemático sobre él.</p>
+<p>Sobre los edificios: los mosaicos 3D fotorrealistas de Google exigen una clave de API y una cuenta
+de facturación, y no podrían viajar dentro de un archivo que usted reparte en un pendrive, así que
+no son una opción aquí. Overture Maps es la fuente equivalente y de ahí vienen los edificios:
+huellas reales y alturas reales donde la fuente las declara.</p>
+
+
 <h2>Montañas cortadas por una frontera</h2>
 <p>Bajo <strong>Montañas fronterizas</strong>, en el menú de ejemplos, hay doce montañas reales
 que una frontera cruza por debajo de la cima. Proceden de un atlas de esa configuración rara: una
@@ -396,10 +454,49 @@ segunda cumbre al otro lado, cuya cima no está cerca de la frontera. No existe 
 para «el cuerpo de una montaña», así que la ventana se elige como la más amplia en la que el
 enunciado se cumple, y todo lo que afirma está en pantalla para comprobarlo.</p>
 
-<p>Vale la pena nombrar en clase dos decisiones de presentación. La ventana está desplazada hacia
-el país de la cima en lugar de centrada en el pico, de modo que haya una montaña de verdad por la
-que caminar y solo una franja estrecha del otro país en cuadro: esa franja es lo que mantiene el
-máximo restringido sobre la frontera. Y el eje z se abre <strong>estirado</strong>, de tres a nueve
+<p>Cómo queda situada la frontera en el cuadro merece un minuto de clase, porque es una restricción
+sobre la imagen y no una cuestión de gusto. En estas doce el país factible es una franja estrecha
+junto a la línea —unos pocos cientos de metros en las más ajustadas—, y eso no es una decisión de
+diseño sino aritmética. La cima está <em>sobre</em> la frontera, así que el país que no la posee es
+más alto que la línea casi en todas partes; si la ventana se extiende más al otro lado recoge una
+segunda cumbre cuya cima no está en ningún punto cercano al límite, y la afirmación que el ejemplo
+existe para hacer se vuelve falsa. El American Border Peak es el caso extremo: a trescientos metros
+al norte del paralelo 49 el terreno canadiense ya está 55 m por encima del mejor punto de la línea,
+y a tres kilómetros al norte hay una cumbre de 2 398 m. Ensanche usted mismo <strong>y mín</strong>
+e <strong>y máx</strong> y observe cómo el optimizador se sale de la línea: es la misma lección
+enunciada al revés, e igual de buena.</p>
+
+<h2>Laderas fronterizas: cuando el límite no pasa por la cumbre</h2>
+<p>El siguiente grupo del menú es la otra mitad de la historia, y es donde están de verdad casi
+todas las fronteras del mundo. Un límite no suele cruzar una cumbre: cruza una <em>ladera</em>. Y
+cuando lo hace, la imagen se invierte. El terreno de su lado desciende alejándose de la línea
+durante kilómetros, así que puede ser casi todo lo que se ve; la cumbre queda fuera de la línea,
+dentro del tercio lejano, a la vista y fuera de alcance; y el punto más alto que puede pisar
+legalmente está en algún lugar de veinte o treinta kilómetros de frontera, que hay que recorrer para
+encontrarlo. Esa última diferencia es la pedagógicamente útil: en una montaña del atlas la respuesta
+es simplemente el punto de la línea más cercano a la cima, y un estudiante despierto la adivina sin
+moverse.</p>
+<p>No son montañas catalogadas, así que llevan por nombre el lugar de la línea donde están. Nada se
+eligió a mano: el paralelo 49 y el meridiano 141 están definidos por un número, de modo que una
+ventana puede deslizarse por ellos de extremo a extremo preguntando al modelo de elevación, en cada
+posición y cada tamaño, si se cumplen cuatro cosas a la vez — que el punto más alto del país factible
+esté sobre la frontera, que haya de verdad terreno más alto al otro lado, que la cumbre quede dentro
+del cuadro y no cortada por su borde, y que la ventana sea factible en un 70% de su área. De 563
+posiciones probadas a lo largo de 657 km del paralelo 49 y 1 028 km del meridiano 141, 118 admitían
+una ventana honesta; las cuatro que sobrevivieron al ajuste suave completo son las que se publican.</p>
+<p>Además son mucho mayores. La ventana es un rectángulo, largo a lo largo de la frontera —donde los
+kilómetros salen gratis— y poco profundo al cruzarla, donde cada uno es otra ocasión de tragarse una
+cumbre rival. La mayor mide 32 km por 15 km, es decir 480 km&#178;: cuarenta veces el terreno de la
+montaña del atlas más ajustada y nueve veces más ancha. La más espectacular está en el meridiano 141
+a 60,35°&nbsp;N, en el macizo de San Elías, donde lo más alto que puede pisar son 3 851 m y una
+cumbre de 4 623 m se alza a 1,9 km dentro del Yukón. La frontera le cuesta 773 m de altitud, y puede
+verlos todos.</p>
+<p>Como la frontera es un paralelo o un meridiano, queda alineada con los ejes en kilómetros locales,
+así que la restricción de la casilla es lo más simple que puede ser una desigualdad lineal:
+<code>y &gt;= -3</code>. Encienda <strong>Caminar solo por la frontera</strong> y sígala con la
+lectura de altitud a la vista: habrá hecho la maximización con restricciones a pie, sobre treinta
+kilómetros de terreno.</p>
+<p>Una decisión de presentación más. El eje z se abre <strong>estirado</strong>, de tres a nueve
 veces según la montaña, porque a escala verdadera dos kilómetros de relieve en dieciocho kilómetros
 de terreno son una loma, no un pico. Es solo una escala de visualización: <code>f</code>, sus
 gradientes, las curvas de nivel y todas las lecturas siguen en kilómetros reales, y el mando del
@@ -460,8 +557,14 @@ supuesta la idea particular de «abajo» de una gráfica.</p>
 como caminos anchos y transitables, no como hilos, y las <em>tiende sobre el terreno</em>: el
 centro de cada camino está a altura constante, como debe estarlo una curva de nivel, pero la
 banda misma sigue la ladera que atraviesa en lugar de quedar colgada en el aire como un anillo
-plano. Cada camino se colorea según su propia altura en la rampa de diez colores, de modo que el
-color dice la altitud, esté o no coloreada la superficie.</p>
+plano. Cada camino se colorea según su propia altura en la rampa <em>de calor</em> —azul en el
+fondo de la ventana, luego cian, verde y amarillo, y rojo arriba—, de modo que el color dice la
+altitud, esté o no coloreada la superficie, y un conjunto de curvas se lee como conjunto: hacia
+dónde se sube, y cuánta altura separa a dos vecinas, de un vistazo y sin una sola etiqueta. A
+propósito no es la rampa del terreno: una curva de nivel es un objeto matemático dibujado
+<em>sobre</em> el suelo y no un rasgo suyo, y en una ladera real —cien metros de desnivel dentro de
+una ventana de quinientos— la rampa del terreno daba a todas las curvas el mismo verde y las perdía
+en el pasto.</p>
 <p><strong>Intervalo entre curvas Δz</strong> — déjelo en blanco y el programa elige un intervalo
 redondo y le dice cuál. Escriba un número y ese es el intervalo, que es lo que hace falta cuando
 el intervalo es justamente lo que se está enseñando. Si pide uno tan pequeño que harían falta
@@ -472,8 +575,7 @@ convertirse en una autopista al encogerlo para la demostración de linealidad lo
 defecto, dos alturas, es un sendero visible desde el aire y aun así transitable: la misma longitud
 que el lado de un cuadrado de la rejilla.</p>
 <p><strong>Colorear la superficie por altura</strong> <kbd>M</kbd> — repinta toda la superficie
-con la misma rampa de diez colores que usan las curvas de nivel, de modo que la superficie y sus
-curvas concuerdan — en cualquier tipo de superficie, no solo en una gráfica. Apáguelo y la
+con la rampa topográfica de diez colores, en cualquier tipo de superficie, no solo en una gráfica. Apáguelo y la
 superficie vuelve a las ocho bandas de terreno —agua, playa, vegetación profunda, vegetación más
 clara, árido, roca volcánica, nieve, nube—, que dicen lo mismo en el idioma de un paisaje. En una
 gráfica, combine cualquiera de las dos con <kbd>T</kbd> (mirar desde arriba) y la escena 3D se
@@ -763,10 +865,21 @@ marco.</p>
 
 <!-- =========================================================== PARTE 5 -->
 <h2>Border Run — el juego</h2>
-<p><strong>play.html</strong> es el mismo programa con un objetivo. Está pensado para mando: conecte
-un gamepad de tipo Xbox a un portátil, o empareje uno con un móvil o tableta, y se juega sin tocar
-el teclado. Todo funciona también con teclado, porque un mando para cuatro estudiantes es lo
-normal.</p>
+<p>Border Run no es un programa aparte, y no hay nada que instalar ni que abrir: vive dentro de la
+misma aplicación. Elija cualquiera de las montañas fronterizas en la lista de ejemplos y, en cuanto
+haya terreno donde pisar, aparece una tarjeta en la parte inferior de la pantalla que ofrece la
+partida. Pulse <b>A</b> (o <em>Jugarla</em>) para aceptarla, <b>B</b> para <em>Solo explorar</em> si
+únicamente quería ver la montaña —el laboratorio queda intacto en cualquiera de los dos casos— o
+<b>Y</b> para la lista completa de misiones. Desde cualquier punto del laboratorio, <b>Start</b> en
+el mando abre también esa lista.</p>
+<p>Está pensado para mando: conecte un gamepad de tipo Xbox a un portátil, o empareje uno con un
+móvil o tableta, y se juega sin tocar el teclado. Todo funciona también con teclado, porque un mando
+para cuatro estudiantes es lo normal.</p>
+<p>Que sea un solo programa es justamente el propósito. Quien acaba de recorrer la frontera y
+plantar su bandera pulsa <b>A</b> en la tarjeta de resultado y queda de pie en la misma montaña
+dentro del laboratorio, con la respuesta ya marcada, las curvas de nivel a una tecla y —en el
+Laboratorio— el mapa de calor plano al lado de la escena, mostrando exactamente dónde la curva que
+iba pisando es tangente a la línea.</p>
 <p>Cada misión tiene la misma forma, porque es la forma de la matemática. Le dejan en el país que
 <em>no</em> posee la cima. El pico está a la vista al otro lado de la frontera y no es suyo. En
 algún punto de la línea hay un lugar más alto donde sí puede estar —eso es <code>argmax f</code>

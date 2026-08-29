@@ -57,10 +57,58 @@ const standAt = (p, g) => p.evaluate((g) => {
   p.on('pageerror', (e) => errs.push('JS: ' + e.message));
   p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 
-  await p.goto('http://127.0.0.1:8125/play.html', { waitUntil: 'load' });
+  await p.goto('http://127.0.0.1:8125/index.html', { waitUntil: 'load' });
   await p.waitForTimeout(3000);
 
+  /* ------------------------------------------- one program, not two pages */
+
+  // The game ships inside the sandbox and stays out of its way until asked.
+  const idle = await p.evaluate(() => ({
+    screen: document.body.dataset.screen,
+    overlay: getComputedStyle(document.getElementById('game')).display,
+    panel: getComputedStyle(document.getElementById('panel')).display,
+    hud: getComputedStyle(document.getElementById('hud-top')).display,
+  }));
+  check('the sandbox opens as the sandbox, with the game dormant',
+    idle.screen === 'off' && idle.overlay === 'none'
+      && idle.panel !== 'none' && idle.hud !== 'none',
+    `${idle.screen}, overlay ${idle.overlay}`);
+
+  // Choosing a border mountain from the ordinary examples list is what wakes
+  // it: no separate page, no mode switch the student has to know about.
+  await p.evaluate(() => {
+    const sel = document.getElementById('preset-fn');
+    sel.value = 'tomyhoi(x, y)';
+    sel.dispatchEvent(new Event('change'));
+  });
+  await p.waitForTimeout(6000);
+  const offered = await p.evaluate(() => ({
+    screen: document.body.dataset.screen,
+    name: document.getElementById('g-offer-name').textContent,
+    text: document.getElementById('g-offer-text').textContent,
+    panel: getComputedStyle(document.getElementById('panel')).display,
+  }));
+  check('choosing a mountain offers the run, without taking the sandbox away',
+    offered.screen === 'offer' && /Tomyhoi/.test(offered.name) && offered.panel !== 'none',
+    offered.name);
+
+  // ...and declining it leaves the sandbox exactly as it was, on the mountain.
+  await tap(p, BTN.B);
+  const declined = await p.evaluate(() => ({
+    screen: document.body.dataset.screen,
+    fn: document.getElementById('in-fn').value,
+    panel: getComputedStyle(document.getElementById('panel')).display,
+    contours: !!document.getElementById('t-contours'),
+  }));
+  check('declining leaves the mountain loaded and every control in place',
+    declined.screen === 'off' && declined.fn === 'tomyhoi(x, y)'
+      && declined.panel !== 'none' && declined.contours,
+    declined.fn);
+
   /* ------------------------------------------------------------- the menu */
+
+  await tap(p, BTN.START);            // the pad route into the mission list
+  await p.waitForTimeout(300);
 
   const menu = await p.evaluate(() => ({
     screen: document.body.dataset.screen,
@@ -69,9 +117,14 @@ const standAt = (p, g) => p.evaluate((g) => {
     photo: (document.getElementById('g-preview').src || '').length > 500,
     blurb: (document.getElementById('g-blurb').textContent || '').length > 40,
     sandboxHidden: getComputedStyle(document.getElementById('hud-top')).display === 'none',
+    examples: window.__peaks.game.ctx.missions.length,
   }));
-  check('the game opens on a mission list of twelve', menu.screen === 'menu' && menu.rows === 12,
-    `${menu.rows} mountains`);
+  // Twelve atlas mountains and the frontier slopes beside them; the list grows
+  // whenever the frontier search finds another honest window, so the check is
+  // that every example is a mission rather than that there are exactly twelve.
+  check('the game opens on a mission list of every border example',
+    menu.screen === 'menu' && menu.rows >= 12 && menu.rows === menu.examples,
+    `${menu.rows} missions for ${menu.examples} examples`);
   check('each mission shows its photograph and description', menu.photo && menu.blurb);
   check('the sandbox chrome stays out of the way', menu.sandboxHidden);
 
@@ -185,14 +238,28 @@ const standAt = (p, g) => p.evaluate((g) => {
 
   /* ----------------------------------------------------------- and around */
 
-  await tap(p, BTN.A);
+  await tap(p, BTN.X);
   await p.waitForTimeout(500);
   const home = await p.evaluate(() => ({
     screen: document.body.dataset.screen,
     stars: document.querySelector('.g-row.on .g-stars')?.textContent,
   }));
-  check('A returns to the mission list, with the medal shown',
+  check('X returns to the mission list, with the medal shown',
     home.screen === 'menu' && home.stars === '★★★', home.stars);
+
+  // And out again: the run is over, the answer is marked, and the mountain is
+  // handed back to the sandbox with all of its instruments.
+  await tap(p, BTN.B);
+  await p.waitForTimeout(400);
+  const backToLab = await p.evaluate(() => ({
+    screen: document.body.dataset.screen,
+    panel: getComputedStyle(document.getElementById('panel')).display,
+    hud: getComputedStyle(document.getElementById('hud-top')).display,
+    optimum: !!window.__peaks.optimum,
+  }));
+  check('leaving the game gives the sandbox back, answer and all',
+    backToLab.screen === 'off' && backToLab.panel !== 'none'
+      && backToLab.hud !== 'none' && backToLab.optimum);
 
   check('no page errors anywhere in a full round', errs.length === 0, errs.slice(0, 2).join(' | '));
 
