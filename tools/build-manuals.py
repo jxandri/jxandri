@@ -45,7 +45,7 @@ os.makedirs(OUT, exist_ok=True)
 # Where the text names one, the hue itself goes beside the word rather than
 # into it: a swatch has no contrast floor to clear, and the reader can hold it
 # against the screen. Keep these in step with MK.sub and MK.inc in the applet.
-SW_SUB = '<span class="sw" style="background:#FF3B30"></span>'
+SW_SUB = '<span class="sw" style="background:#FF3C87"></span>'
 SW_INC = '<span class="sw" style="background:#5CFFB0"></span>'
 
 HEAD_CTRL   = (["Control", "Qué hace"], ["Control", "What it does"])
@@ -1693,7 +1693,25 @@ def build_index():
     return path
 
 # ===========================================================================
+def check_swatches():
+    """The guide's swatches are the applet's arrow colours, copied. Copies drift —
+    this one already did once — so the build reads the applet and refuses to
+    write a guide that names a colour the applet no longer draws."""
+    import re
+    app = os.path.join(os.path.dirname(_here), "income-substitution", "index.html")
+    src = open(app, encoding="utf-8").read()
+    m = re.search(r'sub:"(#\w{6})", inc:"(#\w{6})"', src)
+    if not m:
+        raise SystemExit("cannot find MK.sub/MK.inc in " + app)
+    mine = (re.search(r'background:(#\w{6})', SW_SUB).group(1),
+            re.search(r'background:(#\w{6})', SW_INC).group(1))
+    if mine != m.groups():
+        raise SystemExit("swatches drifted: guide has %s/%s, applet draws %s/%s"
+                         % (mine + m.groups()))
+
+
 if __name__ == "__main__":
+    check_swatches()
     specs = [("consumer-optimum", M1), ("demand-functions", M2),
              ("nonlinear-budget", M3), ("labor-tax", M4), ("income-substitution", M5)]
     for name, spec in specs:
