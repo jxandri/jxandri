@@ -155,8 +155,8 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
   <header class="masthead">
     <div>
       <h1 id="h-title">Beneficios, Costos y Oferta</h1>
-      <p id="h-sub">El problema de la empresa competitiva en el corto plazo. El panel derecho es el
-         problema; el izquierdo es su respuesta a cada precio. Dibujados a la misma escala, porque
+      <p id="h-sub">El problema de la empresa competitiva en el corto plazo. El panel izquierdo es el
+         problema; el derecho es su respuesta a cada precio. Dibujados a la misma escala, porque
          son la misma curva.</p>
     </div>
     <div class="head-actions">
@@ -234,22 +234,22 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
       <div class="viewports">
         <section class="vp">
           <div class="vp-head">
-            <h2 id="vp1-title">Oferta de la empresa</h2>
-            <span class="pill on" id="pill1">q ↔ p</span>
+            <h2 id="vp-firm-title">El problema de la empresa</h2>
+            <span class="pill" id="pill-firm">—</span>
           </div>
-          <canvas id="cSupply" aria-label="Curva de oferta inversa"></canvas>
-          <div class="legend" id="legend1"></div>
-          <div class="readouts" id="ro1"></div>
+          <canvas id="cFirm" aria-label="Problema de la empresa"></canvas>
+          <div class="legend" id="legend-firm"></div>
+          <div class="readouts" id="ro-firm"></div>
         </section>
 
         <section class="vp">
           <div class="vp-head">
-            <h2 id="vp2-title">El problema de la empresa</h2>
-            <span class="pill" id="pill2">—</span>
+            <h2 id="vp-supply-title">Oferta de la empresa</h2>
+            <span class="pill on" id="pill-supply">q ↔ p</span>
           </div>
-          <canvas id="cFirm" aria-label="Problema de la empresa"></canvas>
-          <div class="legend" id="legend2"></div>
-          <div class="readouts" id="ro2"></div>
+          <canvas id="cSupply" aria-label="Curva de oferta inversa"></canvas>
+          <div class="legend" id="legend-supply"></div>
+          <div class="readouts" id="ro-supply"></div>
         </section>
       </div>
     </div>
@@ -632,7 +632,7 @@ function solve(M, p){
 }
 
 /* Point elasticity of supply, by a central difference in the price. It is the
-   number that says how vertical the left panel has gone. */
+   number that says how vertical the supply panel has gone. */
 function supplyElasticity(M, p, q){
   if(!(q > 0) || !(p > 0)) return NaN;
   const h = p*0.01;
@@ -743,7 +743,7 @@ const STR = {
 es:{
   docTitle:"Beneficios, Costos y Oferta",
   title:"Beneficios, Costos y Oferta",
-  sub:"El problema de la empresa competitiva en el corto plazo. El panel derecho es el problema; el izquierdo es su respuesta a cada precio. Dibujados a la misma escala, porque son la misma curva.",
+  sub:"El problema de la empresa competitiva en el corto plazo. El panel izquierdo es el problema; el derecho es su respuesta a cada precio. Dibujados a la misma escala, porque son la misma curva.",
   gFam:"Función de costos", gCustom:"Expresión", gParams:"Parámetros", gPrice:"Precio",
   gView:"Panel de la empresa", gLayers:"Capas",
   customHint:"Costo total c(q). La variable es q. El costo fijo se lee como c(0).",
@@ -798,7 +798,7 @@ es:{
 en:{
   docTitle:"Profit, Costs and Supply",
   title:"Profit, Costs and Supply",
-  sub:"The competitive firm's short-run problem. The right panel is the problem; the left one is its answer at every price. Drawn to the same scale, because they are the same curve.",
+  sub:"The competitive firm's short-run problem. The left panel is the problem; the right one is its answer at every price. Drawn to the same scale, because they are the same curve.",
   gFam:"Cost function", gCustom:"Expression", gParams:"Parameters", gPrice:"Price",
   gView:"Firm panel", gLayers:"Layers",
   customHint:"Total cost c(q). The variable is q. Fixed cost is read off as c(0).",
@@ -1203,12 +1203,12 @@ function verdictOf(R){
 function paint(R){
   const t = T(), M = MODEL;
   const ps = shutPrice(), pbe = bePrice();
-  if(!M || !R){ rows($("ro1"),[]); rows($("ro2"),[]); }
+  if(!M || !R){ rows($("ro-supply"),[]); rows($("ro-firm"),[]); }
   else{
     const q = R.shut ? 0 : R.q;
     const rev = R.shut ? 0 : st.p*q, cost = R.shut ? M.F : M.c(q);
     const PS = R.shut ? 0 : R.pi + M.F;
-    rows($("ro1"), [
+    rows($("ro-supply"), [
       [t.roP, fmt(st.p,2)],
       [t.roQ, R.unbounded ? "∞" : fmt(q,3), R.shut ? "is-crit" : ""],
       [t.roShut, R.unbounded ? "—" : ps > 1e-7 ? fmt(ps,3) : "0"],
@@ -1216,7 +1216,7 @@ function paint(R){
       [t.roPS, R.unbounded ? "∞" : fmt(PS,3)],
       [t.roEl, R.unbounded ? "—" : fmt(supplyElasticity(M, st.p, q), 2)]
     ]);
-    rows($("ro2"), [
+    rows($("ro-firm"), [
       [t.roCost, R.unbounded ? "∞" : fmt(cost,2)],
       [t.roRev,  R.unbounded ? "∞" : fmt(rev,2)],
       [t.roProf, R.unbounded ? "∞" : fmt(R.pi,3), R.pi > 1e-7 ? "is-good" : R.pi < -1e-7 ? "is-crit" : ""],
@@ -1244,9 +1244,9 @@ function paint(R){
   $("view-hint").textContent = t.viewHint[st.view];
   $("fam-hint").textContent  = t.famHint[st.fam];
   $("fam-formula").textContent = formulaOf();
-  $("pill2").textContent = st.view === "marg" ? t.pillLinked : t.pillOwn;
-  $("pill2").className = "pill" + (st.view === "marg" ? " on" : "");
-  $("vp2-title").textContent = t.vp2;
+  $("pill-firm").textContent = st.view === "marg" ? t.pillLinked : t.pillOwn;
+  $("pill-firm").className = "pill" + (st.view === "marg" ? " on" : "");
+  $("vp-firm-title").textContent = t.vp2;
 }
 function render(){
   ensureModel();
@@ -1310,10 +1310,10 @@ function buildLayers(){
 function buildLegends(){
   const t = T();
   const leg = (c,l) => '<span><i style="background:'+c+'"></i>'+l+'</span>';
-  $("legend1").innerHTML = leg(MK.supply, t.legSupply) + leg(MK.avc, t.legShut) +
+  $("legend-supply").innerHTML = leg(MK.supply, t.legSupply) + leg(MK.avc, t.legShut) +
                            leg(MK.ac, t.legBE) + leg(MK.price, "p");
   const L = t.layers;
-  $("legend2").innerHTML = st.view === "marg"
+  $("legend-firm").innerHTML = st.view === "marg"
     ? leg(MK.mc, L.mc) + leg(MK.ac, L.ac) + leg(MK.avc, L.avc) + leg(MK.price, "p")
     : leg(MK.cost, L.cost) + leg(MK.rev, L.rev) + leg(MK.prof, L.prof) + leg(MK.price, L.tangent);
 }
@@ -1371,7 +1371,7 @@ function applyLang(){
   document.querySelectorAll("[data-t]").forEach(el => {
     const v = t[el.dataset.t]; if(v !== undefined) el.textContent = v;
   });
-  $("vp1-title").textContent = t.vp1; $("vp2-title").textContent = t.vp2;
+  $("vp-supply-title").textContent = t.vp1; $("vp-firm-title").textContent = t.vp2;
   $("foot").textContent = t.foot;
   $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
   $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));

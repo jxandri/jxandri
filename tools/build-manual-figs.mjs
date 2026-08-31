@@ -142,7 +142,8 @@ const APPS = {
                 'st.layers.areaVC=true; st.layers.areaPS=true; buildLayers(); render()'] },
       { name: 'shutdown',  clip: VIEWPORTS,
         steps: ['document.querySelector("[data-fam=custom]").click()', 'setPrice(1.15)'] },
-      { name: 'jump',      clip: LEFT,
+      /* the supply panel is the right-hand one here, as in the GeoGebra original */
+      { name: 'jump',      clip: RIGHT,
         steps: ['document.querySelector("[data-fam=custom]").click()', 'setPrice(1.45)',
                 'st.layers.areaPS=true; buildLayers(); render()'] },
       { name: 'totals',    clip: VIEWPORTS,

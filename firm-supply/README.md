@@ -12,7 +12,7 @@ every price — is the firm's supply curve.
 
 ## The two panels
 
-**The firm's problem**, on the right, in either of two views:
+**The firm's problem**, on the left — where the GeoGebra original put it — in either of two views:
 
 - **Marginals** — marginal cost, average cost and average variable cost, all in
   $ per unit, with the price line, the optimum, the variable-cost area under MC
@@ -21,7 +21,7 @@ every price — is the firm's supply curve.
   slope `p` touching the cost curve at `q*`. The first-order condition drawn
   rather than asserted: the tangent is parallel to the revenue line.
 
-**The firm's supply**, on the left, in `(q, p)`: the inverse supply curve, the
+**The firm's supply**, on the right, in `(q, p)`: the inverse supply curve, the
 shutdown and break-even prices, the price line, `q*(p)`, and producer surplus.
 
 In the marginals view the two panels share **both axes exactly** — same `q`
@@ -66,8 +66,8 @@ jump right: below the shutdown price the answer is `0`, at it the answer leaps t
 a strictly positive quantity, and no inversion of `MC = p` produces that leap.
 
 Producer surplus is drawn in both panels, and the two regions are deliberately
-different shapes. On the right it is the area between `p` and `MC` out to `q*`;
-on the left it is the area between the price axis and the supply curve from the
+different shapes. On the left it is the area between `p` and `MC` out to `q*`;
+on the right it is the area between the price axis and the supply curve from the
 shutdown price up to `p` — the integral of `q*(P) dP`. With a jump at the
 shutdown price the two regions *cannot* coincide, but their areas do, and both
 equal revenue minus variable cost, and profit plus fixed cost. All four agree to
