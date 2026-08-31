@@ -9,7 +9,7 @@
  * Serve dist/site on 8130 first.
  */
 const { chromium } = require('playwright-core');
-const BASE = 'http://127.0.0.1:8130/apps';
+const BASE = 'http://127.0.0.1:' + (process.env.PORT || '8130') + '/apps';
 let fails = 0;
 const check = (n, ok, d) => { if (!ok) fails++; console.log(`${ok ? 'OK  ' : 'FAIL'} ${n}${d ? '  — ' + d : ''}`); };
 

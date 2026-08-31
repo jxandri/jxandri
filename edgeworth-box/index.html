@@ -389,6 +389,37 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 }
 
 /* ============================================================
+   Tabs
+   ------------------------------------------------------------
+   Two goods and three goods are the same economics in different
+   dimensions, so they share the masthead and split below it.
+   ============================================================ */
+.tabs{
+  display:flex; gap:2px; margin:0 0 14px; padding:3px;
+  background:var(--sunk); border:1px solid var(--rule); border-radius:var(--r);
+}
+.tabs button{
+  flex:1; appearance:none; border:0; border-radius:calc(var(--r) - 3px);
+  background:transparent; color:var(--ink-2); font:inherit; font-weight:600;
+  font-size:13.5px; padding:8px 12px; cursor:pointer;
+}
+.tabs button[aria-selected="true"]{ background:var(--surface); color:var(--ink); box-shadow:var(--sh) }
+.tabs button:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px }
+
+/* the three-good stage: one canvas, one strip of numbers */
+#c3{ width:100%; height:100%; display:block; touch-action:none; cursor:grab }
+/* thirteen readouts, several of them a bracketed triple, need wider cells than
+   the two-good strip and have to be allowed to wrap inside one */
+#readout3{ grid-template-columns:repeat(auto-fit,minmax(132px,1fr)) }
+#readout3 .cell dd{ font-size:12.5px; white-space:normal; overflow-wrap:anywhere }
+#c3:active{ cursor:grabbing }
+.verdict.is-eq{ border-color:var(--good) }
+.trip{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px }
+.trip .slider-row{ display:block }
+.trip .slider-row .k{ display:block; margin-bottom:2px }
+.trip .slider-row input[type=range]{ width:100% }
+
+/* ============================================================
    Edgeworth-specific
    ------------------------------------------------------------
    Two agents means every readout, legend and swatch has an A
@@ -511,6 +542,12 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
     </div>
   </section>
 
+  <div class="tabs" role="tablist" aria-label="Bienes / Goods">
+    <button type="button" role="tab" id="tab-g2" aria-selected="true" aria-controls="pane-g2">Dos bienes</button>
+    <button type="button" role="tab" id="tab-g3" aria-selected="false" aria-controls="pane-g3">Tres bienes</button>
+  </div>
+
+  <div id="pane-g2" role="tabpanel" aria-labelledby="tab-g2">
   <div class="console">
 
     <!-- ============ control rail ============ -->
@@ -697,6 +734,108 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.
       </p>
     </div>
+  </div>
+  </div>
+
+  <!-- ============ three goods ============ -->
+  <div id="pane-g3" role="tabpanel" aria-labelledby="tab-g3" hidden>
+  <div class="console">
+
+    <aside class="rail">
+
+      <div class="group">
+        <h2 id="t3-g-endow">Dotaciones</h2>
+        <div class="agent">
+          <h3><span class="dot" style="background:var(--agA)"></span><span id="t3-endow-a">A — ω<sub>A</sub></span></h3>
+          <div class="trip">
+            <div class="slider-row"><span class="k">a<sub>1</sub></span><input type="range" id="g3a1" min="0" max="10" step="0.05" aria-label="Dotación de A en el bien 1"><input class="v" id="g3a1-v" inputmode="decimal" aria-label="a1"></div>
+            <div class="slider-row"><span class="k">a<sub>2</sub></span><input type="range" id="g3a2" min="0" max="5" step="0.05" aria-label="Dotación de A en el bien 2"><input class="v" id="g3a2-v" inputmode="decimal" aria-label="a2"></div>
+            <div class="slider-row"><span class="k">a<sub>3</sub></span><input type="range" id="g3a3" min="0" max="5" step="0.05" aria-label="Dotación de A en el bien 3"><input class="v" id="g3a3-v" inputmode="decimal" aria-label="a3"></div>
+          </div>
+        </div>
+        <div class="agent">
+          <h3><span class="dot" style="background:var(--agB)"></span><span id="t3-endow-b">B — ω<sub>B</sub></span></h3>
+          <div class="trip">
+            <div class="slider-row"><span class="k">b<sub>1</sub></span><input type="range" id="g3b1" min="0" max="5" step="0.05" aria-label="Dotación de B en el bien 1"><input class="v" id="g3b1-v" inputmode="decimal" aria-label="b1"></div>
+            <div class="slider-row"><span class="k">b<sub>2</sub></span><input type="range" id="g3b2" min="0" max="5" step="0.05" aria-label="Dotación de B en el bien 2"><input class="v" id="g3b2-v" inputmode="decimal" aria-label="b2"></div>
+            <div class="slider-row"><span class="k">b<sub>3</sub></span><input type="range" id="g3b3" min="0" max="5" step="0.05" aria-label="Dotación de B en el bien 3"><input class="v" id="g3b3-v" inputmode="decimal" aria-label="b3"></div>
+          </div>
+        </div>
+        <p class="note" id="t3-endow-note">—</p>
+      </div>
+
+      <div class="group">
+        <h2 id="t3-g-pref">Preferencias</h2>
+        <div class="agent">
+          <h3><span class="dot" style="background:var(--agA)"></span><span id="t3-ua">A — u<sub>A</sub> = x<sup>α<sub>a</sub></sup>y<sup>β<sub>a</sub></sup>z<sup>γ<sub>a</sub></sup></span></h3>
+          <div class="trip">
+            <div class="slider-row"><span class="k">α<sub>a</sub></span><input type="range" id="g3aa" min="0" max="1" step="0.001" aria-label="alfa de A"><input class="v" id="g3aa-v" inputmode="decimal" aria-label="alfa a"></div>
+            <div class="slider-row"><span class="k">β<sub>a</sub></span><input type="range" id="g3ba" min="0" max="1" step="0.001" aria-label="beta de A"><input class="v" id="g3ba-v" inputmode="decimal" aria-label="beta a"></div>
+            <div class="slider-row"><span class="k">γ<sub>a</sub></span><input type="range" id="g3ga" min="0" max="1" step="0.001" aria-label="gamma de A"><input class="v" id="g3ga-v" inputmode="decimal" aria-label="gamma a"></div>
+          </div>
+        </div>
+        <div class="agent">
+          <h3><span class="dot" style="background:var(--agB)"></span><span id="t3-ub">B — u<sub>B</sub> = x<sup>α<sub>b</sub></sup>y<sup>β<sub>b</sub></sup>z<sup>γ<sub>b</sub></sup></span></h3>
+          <div class="trip">
+            <div class="slider-row"><span class="k">α<sub>b</sub></span><input type="range" id="g3ab" min="0" max="1" step="0.001" aria-label="alfa de B"><input class="v" id="g3ab-v" inputmode="decimal" aria-label="alfa b"></div>
+            <div class="slider-row"><span class="k">β<sub>b</sub></span><input type="range" id="g3bb" min="0" max="1" step="0.001" aria-label="beta de B"><input class="v" id="g3bb-v" inputmode="decimal" aria-label="beta b"></div>
+            <div class="slider-row"><span class="k">γ<sub>b</sub></span><input type="range" id="g3gb" min="0" max="1" step="0.001" aria-label="gamma de B"><input class="v" id="g3gb-v" inputmode="decimal" aria-label="gamma b"></div>
+          </div>
+        </div>
+        <p class="note" id="t3-pref-note">—</p>
+      </div>
+
+      <div class="group">
+        <h2 id="t3-g-weight">Peso de Pareto</h2>
+        <div class="slider-row">
+          <span class="k">ζ<sub>A</sub></span>
+          <input type="range" id="g3zeta" min="0" max="1" step="0.001" aria-label="Peso de Pareto de A">
+          <input class="v" id="g3zeta-v" inputmode="decimal" aria-label="Peso de Pareto (valor)">
+        </div>
+        <p class="note" id="t3-weight-note">—</p>
+        <button type="button" class="btn btn-primary" id="g3-negishi">Negishi</button>
+      </div>
+
+      <div class="group">
+        <h2 id="t3-g-show">Capas</h2>
+        <div class="checks" id="g3-layers"></div>
+        <div class="slider-row" style="margin-top:8px">
+          <span class="k">L</span>
+          <input type="range" id="g3len" min="0" max="3" step="0.01" aria-label="Longitud de los vectores">
+          <input class="v" id="g3len-v" inputmode="decimal" aria-label="Longitud de los vectores (valor)">
+        </div>
+        <button type="button" class="btn" id="g3-reset-view">Reencuadrar</button>
+      </div>
+    </aside>
+
+    <div class="stage">
+      <div class="viewports">
+        <section class="viewport">
+          <div class="vp-bar">
+            <span class="vp-title" id="t3-vp">Caja de Edgeworth · 3 bienes</span>
+            <div class="keys">
+              <span class="key"><span class="dot" style="background:var(--agA)"></span><span id="t3-keyA">A</span></span>
+              <span class="key"><span class="dot" style="background:var(--agB)"></span><span id="t3-keyB">B</span></span>
+              <span class="key"><span class="dot sq" style="background:var(--core)"></span><span id="t3-keyC">Conjunto de Pareto</span></span>
+            </div>
+          </div>
+          <div class="canvas-wrap" id="wrap3">
+            <canvas id="c3" tabindex="0" role="application"
+              aria-label="Caja de Edgeworth de tres bienes. Arrastra para girar el cubo, rueda para acercar, flechas para girar con el teclado."></canvas>
+          </div>
+          <dl class="readout" id="readout3"></dl>
+        </section>
+      </div>
+
+      <div class="verdict" id="verdict3">
+        <b id="verdict3-title">—</b>
+        <p id="verdict3-text">—</p>
+        <p class="math" id="verdict3-math">—</p>
+      </div>
+
+      <p class="foot" id="t3-foot">—</p>
+    </div>
+  </div>
   </div>
 </div>
 <script>
@@ -2489,6 +2628,22 @@ const LAYER_DEFS = [
 ];
 const MAP_DEFS = [["gains","mapGains"], ["ua","mapUA"], ["ub","mapUB"], ["none","mapNone"]];
 
+/* the three-good tab's own layers: the same ideas one dimension up */
+const G3_LAYERS = [
+  ["box",      "g3lBox"],
+  ["pareto",   "g3lPareto"],
+  ["indiA",    "g3lIndiA"],
+  ["indiB",    "g3lIndiB"],
+  ["lensA",    "g3lLensA"],
+  ["lensB",    "g3lLensB"],
+  ["budget",   "g3lBudget"],
+  ["setA",     "g3lSetA"],
+  ["setB",     "g3lSetB"],
+  ["price",    "g3lPrice"],
+  ["tangents", "g3lTangents"],
+  ["error",    "g3lError"]
+];
+
 const STR = {
   es:{
     title:"La Caja de Edgeworth",
@@ -2591,7 +2746,44 @@ const STR = {
     noPrice:"El mercado no se vacía a ese precio.",
     locked:"Bloqueado mientras dura el reto.",
 
-    foot:'Traducido de una calculadora de Desmos. Con la familia <b>Escrita a mano</b>, la sintaxis admitida es: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.'
+    foot:'Traducido de una calculadora de Desmos. Con la familia <b>Escrita a mano</b>, la sintaxis admitida es: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constantes <code>e pi</code>. La multiplicación implícita funciona: <code>2xy</code> = <code>2*x*y</code>.',
+
+
+    /* --- three goods --- */
+    g3Tab2:"Dos bienes", g3Tab3:"Tres bienes",
+    g3vp:"Caja de Edgeworth · 3 bienes",
+    g3keyC:"Conjunto de Pareto",
+    g3gEndow:"Dotaciones", g3gPref:"Preferencias",
+    g3gWeight:"Peso de Pareto", g3gShow:"Capas",
+    g3EndowA:"A — ω<sub>A</sub> = (a<sub>1</sub>, a<sub>2</sub>, a<sub>3</sub>)",
+    g3EndowB:"B — ω<sub>B</sub> = (b<sub>1</sub>, b<sub>2</sub>, b<sub>3</sub>)",
+    g3uA:"A — u<sub>A</sub> = x<sup>α<sub>a</sub></sup>y<sup>β<sub>a</sub></sup>z<sup>γ<sub>a</sub></sup>",
+    g3uB:"B — u<sub>B</sub> = x<sup>α<sub>b</sub></sup>y<sup>β<sub>b</sub></sup>z<sup>γ<sub>b</sub></sup>",
+    g3EndowNote:(o1, o2, o3) =>
+      `Cubo: ${o1} × ${o2} × ${o3}. A se mide desde la esquina de abajo, B desde la de enfrente: cada punto del cubo reparte los tres bienes por completo.`,
+    g3PrefNote:"Ambos Cobb–Douglas, que es lo que deja el conjunto de Pareto y los precios en forma cerrada. Los exponentes no tienen por qué sumar 1.",
+    g3WeightNote:"ζ<sub>A</sub> recorre el conjunto de Pareto. Con ζ = 0 A no recibe nada; con ζ = 1 se lo lleva todo.",
+    g3Reset:"Reencuadrar",
+    g3Empty:"Alguna dotación total es cero: no hay cubo que repartir.",
+    g3lBox:"Cubo y rejilla", g3lPareto:"Conjunto de Pareto",
+    g3lIndiA:"Superficie de indiferencia de A", g3lIndiB:"Superficie de indiferencia de B",
+    g3lLensA:"A a través de ω", g3lLensB:"B a través de ω",
+    g3lBudget:"Plano de presupuesto", g3lSetA:"Conjunto de A", g3lSetB:"Conjunto de B",
+    g3lPrice:"Vector de precios", g3lTangents:"Direcciones de intercambio", g3lError:"Error de mercado",
+    g3rTotals:"Totales", g3rPrices:"Precios", g3rPnorm:"Precios (suman 100)",
+    g3rDemA:"Demanda A", g3rDemB:"Demanda B",
+    g3rIncA:"Renta de mercado A", g3rIncB:"Renta de mercado B",
+    g3rExpA:"Gasto de A", g3rExpB:"Gasto de B",
+    g3rTrA:"Transferencia a A", g3rTrB:"Transferencia a B",
+    g3rU:"u_A / u_B",
+    g3EqTitle:"Equilibrio walrasiano",
+    g3NoEqTitle:"Óptimo de Pareto con transferencias",
+    g3Swt:(p, ta, tb, net) =>
+      `Implementado por precios (p<sub>1</sub>, p<sub>2</sub>, p<sub>3</sub>) = ${p} con transferencias T<sub>A</sub> = ${ta}, T<sub>B</sub> = ${tb} · suman ${net}`,
+    g3NegLine:(zeq, znow) =>
+      `Negishi: las transferencias se anulan en ζ<sub>A</sub> = ${zeq}. Ahora está en ${znow}.`,
+    g3NegNone:"Ningún peso anula las transferencias con estas dotaciones.",
+    g3Foot:"Traducido de <code>Edgeworth_box__2_agents_3_goods.ggb</code>. Arrastra para girar el cubo, rueda para acercar; con el teclado, flechas y + / −.",
   },
 
   en:{
@@ -2695,8 +2887,44 @@ const STR = {
     noPrice:"The market does not clear at that price.",
     locked:"Locked while the challenge runs.",
 
-    foot:'Translated from a Desmos calculator. With the <b>Typed by hand</b> family, the syntax is: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.'
-  }
+    foot:'Translated from a Desmos calculator. With the <b>Typed by hand</b> family, the syntax is: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.',
+
+    /* --- three goods --- */
+    g3Tab2:"Two goods", g3Tab3:"Three goods",
+    g3vp:"Edgeworth box · 3 goods",
+    g3keyC:"Pareto set",
+    g3gEndow:"Endowments", g3gPref:"Preferences",
+    g3gWeight:"Pareto weight", g3gShow:"Layers",
+    g3EndowA:"A — ω<sub>A</sub> = (a<sub>1</sub>, a<sub>2</sub>, a<sub>3</sub>)",
+    g3EndowB:"B — ω<sub>B</sub> = (b<sub>1</sub>, b<sub>2</sub>, b<sub>3</sub>)",
+    g3uA:"A — u<sub>A</sub> = x<sup>α<sub>a</sub></sup>y<sup>β<sub>a</sub></sup>z<sup>γ<sub>a</sub></sup>",
+    g3uB:"B — u<sub>B</sub> = x<sup>α<sub>b</sub></sup>y<sup>β<sub>b</sub></sup>z<sup>γ<sub>b</sub></sup>",
+    g3EndowNote:(o1, o2, o3) =>
+      `Cube: ${o1} × ${o2} × ${o3}. A is measured from the near corner and B from the far one, so every point of the cube divides all three goods completely.`,
+    g3PrefNote:"Both Cobb–Douglas, which is what keeps the Pareto set and the prices in closed form. The exponents need not sum to 1.",
+    g3WeightNote:"ζ<sub>A</sub> sweeps the Pareto set. At ζ = 0 A gets nothing; at ζ = 1 A gets everything.",
+    g3Reset:"Reframe",
+    g3Empty:"One of the totals is zero: there is no cube to divide.",
+    g3lBox:"Cube and grid", g3lPareto:"Pareto set",
+    g3lIndiA:"A's indifference surface", g3lIndiB:"B's indifference surface",
+    g3lLensA:"A through ω", g3lLensB:"B through ω",
+    g3lBudget:"Budget plane", g3lSetA:"A's set", g3lSetB:"B's set",
+    g3lPrice:"Price vector", g3lTangents:"Trade directions", g3lError:"Market error",
+    g3rTotals:"Totals", g3rPrices:"Prices", g3rPnorm:"Prices (summing to 100)",
+    g3rDemA:"Demand A", g3rDemB:"Demand B",
+    g3rIncA:"Market income A", g3rIncB:"Market income B",
+    g3rExpA:"Expenditure of A", g3rExpB:"Expenditure of B",
+    g3rTrA:"Transfer to A", g3rTrB:"Transfer to B",
+    g3rU:"u_A / u_B",
+    g3EqTitle:"Walrasian equilibrium",
+    g3NoEqTitle:"Pareto optimum with transfers",
+    g3Swt:(p, ta, tb, net) =>
+      `Implemented by prices (p<sub>1</sub>, p<sub>2</sub>, p<sub>3</sub>) = ${p} with transfers T<sub>A</sub> = ${ta}, T<sub>B</sub> = ${tb} · summing to ${net}`,
+    g3NegLine:(zeq, znow) =>
+      `Negishi: the transfers vanish at ζ<sub>A</sub> = ${zeq}. You are at ${znow}.`,
+    g3NegNone:"No weight makes the transfers vanish at these endowments.",
+    g3Foot:"Translated from <code>Edgeworth_box__2_agents_3_goods.ggb</code>. Drag to turn the cube, wheel to zoom; from the keyboard, arrows and + / −.",
+  },
 };
 
 let LANG = "es";
@@ -2824,6 +3052,7 @@ const LEVELS = [
    10. State
    ========================================================================== */
 const st = {
+  tab:"g2",             /* which of the two boxes is on screen */
   kindA:"cd", parA:{ a:0.75 }, rawA:"x^0.5*y^0.5", srcA:"x^(0.75)*y^(0.25)",
   kindB:"cd", parB:{ a:0.25 }, rawB:"x^0.5*y^0.5", srcB:"x^(0.25)*y^(0.75)",
   uA:null, uAx:null, uAy:null, exactA:true,
@@ -3147,6 +3376,30 @@ function applyLang(){
   $("btn-next").textContent  = t.next;
   $("t-foot").innerHTML = t.foot;
 
+  /* the three-good tab keeps its own copy of every label */
+  $("tab-g2").textContent = t.g3Tab2;
+  $("tab-g3").textContent = t.g3Tab3;
+  $("t3-g-endow").textContent  = t.g3gEndow;
+  $("t3-g-pref").textContent   = t.g3gPref;
+  $("t3-g-weight").textContent = t.g3gWeight;
+  $("t3-g-show").textContent   = t.g3gShow;
+  $("t3-endow-a").innerHTML    = t.g3EndowA;
+  $("t3-endow-b").innerHTML    = t.g3EndowB;
+  $("t3-ua").innerHTML         = t.g3uA;
+  $("t3-ub").innerHTML         = t.g3uB;
+  $("t3-pref-note").innerHTML  = t.g3PrefNote;
+  $("t3-weight-note").innerHTML= t.g3WeightNote;
+  $("t3-vp").textContent       = t.g3vp;
+  $("t3-keyA").textContent     = t.keyA;
+  $("t3-keyB").textContent     = t.keyB;
+  $("t3-keyC").textContent     = t.g3keyC;
+  $("g3-negishi").textContent  = t.negishi;
+  $("g3-reset-view").textContent = t.g3Reset;
+  $("t3-foot").innerHTML       = t.g3Foot;
+  buildG3Layers();
+  paintG3EndowNote();
+  g3Readout();
+
   buildFamilies(); buildParams("a"); buildParams("b");
   buildChips(); buildLayers(); buildMapChips();
 
@@ -3163,6 +3416,34 @@ function applyLang(){
 
 function paintEndowNote(){
   $("t-endow-note").innerHTML = T().endowNote(fmt(st.Wx, 1), fmt(st.Wy, 1));
+}
+
+function paintG3EndowNote(){
+  const O = g3Tot(g3);
+  $("t3-endow-note").innerHTML = T().g3EndowNote(fmt(O[0], 2), fmt(O[1], 2), fmt(O[2], 2));
+}
+
+function buildG3Layers(){
+  const t = T();
+  $("g3-layers").innerHTML = G3_LAYERS.map(([k, lbl]) =>
+    `<label class="check"><input type="checkbox" data-g3="${k}"${g3.layers[k] ? " checked" : ""}>` +
+    `<span>${t[lbl]}</span></label>`).join("");
+  $("g3-layers").querySelectorAll("input[data-g3]").forEach(cb => {
+    cb.addEventListener("change", () => { g3.layers[cb.dataset.g3] = cb.checked; g3Render(); });
+  });
+}
+
+/* Switching tabs is the one place the two models touch: challenge mode and the
+   mode switch belong to the two-good box, so they go away with it. */
+function setTab(tab){
+  st.tab = tab;
+  $("tab-g2").setAttribute("aria-selected", tab === "g2");
+  $("tab-g3").setAttribute("aria-selected", tab === "g3");
+  $("pane-g2").hidden = tab !== "g2";
+  $("pane-g3").hidden = tab !== "g3";
+  document.querySelector(".masthead-actions .seg").hidden = tab !== "g2";
+  if(tab === "g2"){ render(); }
+  else { paintG3EndowNote(); g3Sync(); }
 }
 
 /* The expression the dials are building, shown under them. */
@@ -3741,6 +4022,611 @@ function setMethod(m, quiet){
   if(!quiet){ syncState(); syncScrubFromState(); render(); }
 }
 
+
+/* ==========================================================================
+   15. The three-good box
+   --------------------------------------------------------------------------
+   A translation of Edgeworth_box__2_agents_3_goods.ggb. Two agents, three
+   goods, nothing produced, so the box is a cube: [0,O_1] x [0,O_2] x [0,O_3],
+   A measured from the near-bottom-left corner and B from the far-top-right.
+
+   Both agents are Cobb-Douglas, and that is what makes the whole construction
+   closed-form rather than searched, as the two-good tab has to be. Maximising
+   zeta*ln u_A + (1-zeta)*ln u_B good by good gives
+
+       x_Aj = O_j * zeta*A_j / (zeta*A_j + (1-zeta)*B_j)
+
+   and the supporting price of good j is (zeta*A_j + (1-zeta)*B_j) / O_j, at
+   which MRS_A = MRS_B for every pair. Sweeping zeta from 0 to 1 traces the
+   Pareto set as a curve through the cube; the one zeta whose transfers vanish
+   is the Walrasian equilibrium, which is what Negishi's algorithm looks for.
+
+   Four formulas in the source file do not survive arithmetic and are noted
+   in the README; the corrected ones are used here. They are B's demands
+   (written with zeta where 1-zeta belongs, so A and B did not add up to the
+   box), B's off-Pareto indifference surface (missing its 1/gamma root), the
+   two tangent vectors at Q (not actually tangent to the budget plane), and
+   the sign of the transfers (labelled "to A", computed as from A).
+   ========================================================================== */
+
+const g3 = {
+  /* endowments, exponents and weight all start where the .ggb left them */
+  a: [1, 2, 2],
+  b: [2, 2, 2],
+  A: [0.325, 0.331, 0.325],
+  B: [0.570, 0.330, 0.325],
+  zeta: 0.455,
+  L: 0.372,
+  N: [1, 1.3333333333333333, 1.3333333333333333],
+  az: -0.72, el: 0.34, dist: 1,
+  layers: {
+    box:true, pareto:true, indiA:true, indiB:true, budget:true,
+    setA:false, setB:false, lensA:false, lensB:false,
+    price:true, tangents:true, error:true, free:false
+  },
+  drag: null,
+  negishi: null
+};
+
+const g3Tot = s => [s.a[0] + s.b[0], s.a[1] + s.b[1], s.a[2] + s.b[2]];
+const g3Dot = (p, x) => p[0]*x[0] + p[1]*x[1] + p[2]*x[2];
+const g3Sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
+const g3Add = (u, v) => [u[0]+v[0], u[1]+v[1], u[2]+v[2]];
+const g3Mul = (k, v) => [k*v[0], k*v[1], k*v[2]];
+
+/* Cobb-Douglas, with the 0^0 corner treated as 0 rather than 1: an agent
+   holding none of a good it cares about is at utility zero, and saying so
+   keeps the indifference surfaces from sprouting a spurious sheet. */
+function g3U(e, x){
+  let u = 1;
+  for(let j = 0; j < 3; j++){
+    if(e[j] === 0) continue;
+    if(x[j] <= 0) return 0;
+    u *= Math.pow(x[j], e[j]);
+  }
+  return u;
+}
+const g3UA = (s, x) => g3U(s.A, x);
+const g3UB = (s, x) => g3U(s.B, x);
+
+/* A's bundle at Pareto weight zeta. B's is the complement, by construction. */
+function g3Pareto(s, z){
+  const O = g3Tot(s), out = [0, 0, 0];
+  for(let j = 0; j < 3; j++){
+    const D = z*s.A[j] + (1 - z)*s.B[j];
+    out[j] = D > 1e-12 ? O[j] * z*s.A[j] / D : O[j] * (z > 0.5 ? 1 : 0);
+  }
+  return out;
+}
+
+/* The price vector that supports that allocation. Scale is arbitrary — only
+   ratios are economics — so the file's own normalisation is kept and a
+   summing-to-100 version offered beside it, exactly as the .ggb does. */
+function g3Prices(s, z){
+  const O = g3Tot(s);
+  return [0, 1, 2].map(j => O[j] > 0 ? (z*s.A[j] + (1 - z)*s.B[j]) / O[j] : 0);
+}
+
+/* Everything the second welfare theorem needs at one weight: who gets what,
+   at which prices, and the transfer that turns endowments into that income.
+   The two transfers are equal and opposite because A's and B's bundles add up
+   to the box — which is the arithmetic the source file's B-demands break. */
+function g3At(s, z){
+  const O = g3Tot(s);
+  const xA = g3Pareto(s, z);
+  const xB = g3Sub(O, xA);
+  const p  = g3Prices(s, z);
+  const sum = p[0] + p[1] + p[2];
+  const mA = g3Dot(p, s.a), mB = g3Dot(p, s.b);
+  const eA = g3Dot(p, xA),  eB = g3Dot(p, xB);
+  return {
+    z, xA, xB, p, O,
+    pNorm: sum > 0 ? p.map(v => 100*v/sum) : [0, 0, 0],
+    mA, mB, eA, eB,
+    /* The transfer each agent must RECEIVE to afford its share: what the
+       bundle costs, less what the endowment is worth. The .ggb computes the
+       negation of this and still labels it "Net Transfers to A", so its sign
+       is the fourth thing corrected here; defA below keeps its number so the
+       translation can still be checked against the file. */
+    tA: eA - mA,
+    tB: eB - mB,
+    defA: mA - eA,
+    defB: mB - eB,
+    uA: g3UA(s, xA), uB: g3UB(s, xB)
+  };
+}
+
+/* Negishi: the weight at which nobody needs a transfer. T_A(0) is A's whole
+   endowment value (positive) and T_A(1) is minus B's (negative), so a sign
+   change is guaranteed and bisection is enough. */
+function g3Negishi(s){
+  const f = z => g3At(s, z).tA;
+  let lo = 1e-6, hi = 1 - 1e-6;
+  let flo = f(lo), fhi = f(hi);
+  if(!Number.isFinite(flo) || !Number.isFinite(fhi)) return null;
+  if(flo === 0) return { z: lo, ...g3At(s, lo) };
+  if(fhi === 0) return { z: hi, ...g3At(s, hi) };
+  if(flo*fhi > 0) return null;
+  for(let i = 0; i < 90; i++){
+    const mid = 0.5*(lo + hi), fm = f(mid);
+    if(flo*fm <= 0){ hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+  }
+  const z = 0.5*(lo + hi);
+  return { bracketed:true, ...g3At(s, z) };
+}
+
+/* --- the surfaces, all written as a height z over the (x, y) floor -------- */
+
+/* A's indifference surface at utility u, from A's origin. */
+function g3IndiA(s, u, x, y){
+  const [ax, ay, az] = s.A;
+  if(az <= 0) return NaN;
+  const den = Math.pow(x, ax) * Math.pow(y, ay);
+  if(!(den > 0)) return NaN;
+  return Math.pow(u/den, 1/az);
+}
+/* B's, from B's origin, then read off in A's coordinates as O_3 - z_B. */
+function g3IndiB(s, u, x, y){
+  const [bx, by, bz] = s.B, O = g3Tot(s);
+  if(bz <= 0) return NaN;
+  const den = Math.pow(O[0] - x, bx) * Math.pow(O[1] - y, by);
+  if(!(den > 0)) return NaN;
+  return O[2] - Math.pow(u/den, 1/bz);
+}
+
+/* --- camera ---------------------------------------------------------------
+   Orbit around the middle of the cube, then one perspective divide. Every
+   primitive is pushed with the depth of its centroid and the whole list is
+   sorted back to front once, which is all the hidden-surface removal two
+   translucent sheets and a wireframe actually need.
+   -------------------------------------------------------------------------- */
+function g3Cam(s, w, h){
+  const O = g3Tot(s);
+  const c = [O[0]/2, O[1]/2, O[2]/2];
+  const span = Math.max(O[0], O[1], O[2], 1e-6);
+  const ca = Math.cos(s.az), sa = Math.sin(s.az);
+  const ce = Math.cos(s.el), se = Math.sin(s.el);
+  /* dist sets how strong the perspective is; zoom sets how big the cube is
+     drawn. Folding dist into R keeps the two independent, so scrolling to
+     zoom does not also flatten the box. */
+  const dist = 4.6;
+  const R = Math.min(w, h) * 0.60 * s.dist * dist;
+  return {
+    O, span,
+    project(p){
+      const x = (p[0] - c[0])/span, y = (p[1] - c[1])/span, z = (p[2] - c[2])/span;
+      const X  =  ca*x + sa*y;
+      const Y  = -sa*x + ca*y;
+      const Y2 =  ce*Y - se*z;
+      const Z2 =  se*Y + ce*z;
+      const d  = dist + Y2;
+      const f  = d > 0.05 ? 1/d : 20;
+      return [w/2 + R*f*X, h/2 - R*f*Z2, d];
+    }
+  };
+}
+
+/* --- geometry -------------------------------------------------------------- */
+
+/* the cube's 8 corners and 6 faces, in A's coordinates */
+function g3Corners(O){
+  return [[0,0,0],[O[0],0,0],[O[0],O[1],0],[0,O[1],0],
+          [0,0,O[2]],[O[0],0,O[2]],[O[0],O[1],O[2]],[0,O[1],O[2]]];
+}
+const G3_FACES = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
+const G3_EDGES = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+
+/* Sutherland-Hodgman against one half-space g(p) >= 0, in 3-D. */
+function g3ClipPoly(poly, g){
+  const out = [];
+  for(let i = 0; i < poly.length; i++){
+    const P = poly[i], Q = poly[(i + 1) % poly.length];
+    const gp = g(P), gq = g(Q);
+    if(gp >= 0) out.push(P);
+    if((gp >= 0) !== (gq >= 0)){
+      const t = gp/(gp - gq);
+      out.push([P[0] + t*(Q[0]-P[0]), P[1] + t*(Q[1]-P[1]), P[2] + t*(Q[2]-P[2])]);
+    }
+  }
+  return out;
+}
+
+/* The cube cut by a half-space, as a closed translucent solid: every face
+   clipped, plus the cap where the plane slices through. The cap is also the
+   budget plane inside the box, so drawing the set draws the plane for free. */
+function g3HalfSolid(O, nrm, rhs, keepBelow){
+  const V = g3Corners(O);
+  const sgn = keepBelow ? 1 : -1;
+  const g = p => sgn*(rhs - g3Dot(nrm, p));
+  const faces = [];
+  for(const f of G3_FACES){
+    const poly = g3ClipPoly(f.map(i => V[i]), g);
+    if(poly.length >= 3) faces.push(poly);
+  }
+  /* the cap: where the plane crosses the cube's edges */
+  const pts = [];
+  for(const [i, j] of G3_EDGES){
+    const P = V[i], Q = V[j], gp = g(P), gq = g(Q);
+    if((gp >= 0) !== (gq >= 0)){
+      const t = gp/(gp - gq);
+      pts.push([P[0] + t*(Q[0]-P[0]), P[1] + t*(Q[1]-P[1]), P[2] + t*(Q[2]-P[2])]);
+    }
+  }
+  let cap = null;
+  if(pts.length >= 3){
+    const c = pts.reduce((s, p) => g3Add(s, p), [0,0,0]).map(v => v/pts.length);
+    /* order them by angle in the cutting plane */
+    let e1 = g3Sub(pts[0], c);
+    const n1 = Math.hypot(e1[0], e1[1], e1[2]);
+    if(n1 > 1e-12){
+      e1 = g3Mul(1/n1, e1);
+      let e2 = [nrm[1]*e1[2] - nrm[2]*e1[1], nrm[2]*e1[0] - nrm[0]*e1[2], nrm[0]*e1[1] - nrm[1]*e1[0]];
+      const n2 = Math.hypot(e2[0], e2[1], e2[2]);
+      if(n2 > 1e-12){
+        e2 = g3Mul(1/n2, e2);
+        cap = pts.slice().sort((P, Q) => {
+          const dp = g3Sub(P, c), dq = g3Sub(Q, c);
+          return Math.atan2(g3Dot(e2, dp), g3Dot(e1, dp)) -
+                 Math.atan2(g3Dot(e2, dq), g3Dot(e1, dq));
+        });
+      }
+    }
+  }
+  return { faces, cap };
+}
+
+/* A height field z = f(x, y) tessellated into quads, clipped to the cube. A
+   quad is kept only when all four of its corners are finite and inside, which
+   is what stops an indifference surface from drawing its asymptotic wall. */
+function g3Sheet(O, f, n){
+  const quads = [];
+  const hx = O[0]/n, hy = O[1]/n;
+  const Z = [], IN = [];
+  for(let i = 0; i <= n; i++){
+    Z[i] = []; IN[i] = [];
+    for(let j = 0; j <= n; j++){
+      const z = f(i*hx, j*hy);
+      Z[i][j] = Number.isFinite(z) ? Math.min(Math.max(z, 0), O[2]) : NaN;
+      IN[i][j] = Number.isFinite(z) && z >= -1e-9 && z <= O[2] + 1e-9;
+    }
+  }
+  for(let i = 0; i < n; i++) for(let j = 0; j < n; j++){
+    const z00 = Z[i][j], z10 = Z[i+1][j], z11 = Z[i+1][j+1], z01 = Z[i][j+1];
+    if(!(Number.isFinite(z00) && Number.isFinite(z10) && Number.isFinite(z11) && Number.isFinite(z01))) continue;
+    /* keep the quad if any corner is genuinely inside; the clamp above then
+       lays the overhang flat against the wall it leaves through */
+    if(!(IN[i][j] || IN[i+1][j] || IN[i+1][j+1] || IN[i][j+1])) continue;
+    quads.push([[i*hx, j*hy, z00], [(i+1)*hx, j*hy, z10],
+                [(i+1)*hx, (j+1)*hy, z11], [i*hx, (j+1)*hy, z01]]);
+  }
+  return quads;
+}
+
+/* --- the painter ----------------------------------------------------------- */
+
+function g3Scene(){
+  const items = [];
+  return {
+    poly(pts, fill, stroke, lw, depthBias){
+      if(pts.length < 3) return;
+      items.push({ k:"poly", pts, fill, stroke, lw: lw || 0, b: depthBias || 0 });
+    },
+    line(pts, stroke, lw, dash, depthBias){
+      if(pts.length < 2) return;
+      items.push({ k:"line", pts, stroke, lw: lw || 1.5, dash, b: depthBias || 0 });
+    },
+    dot(p, fill, r, ring){ items.push({ k:"dot", pts:[p], fill, r, ring, b: -1e5 }); },
+    label(p, text, fill, dx, dy){ items.push({ k:"label", pts:[p], text, fill, dx: dx||0, dy: dy||0, b: -2e5 }); },
+    draw(ctx, cam){
+      for(const it of items){
+        const pr = it.pts.map(p => cam.project(p));
+        it._pr = pr;
+        let d = 0;
+        for(const q of pr) d += q[2];
+        it._d = d/pr.length + it.b;
+      }
+      items.sort((p, q) => q._d - p._d);
+      for(const it of items){
+        const pr = it._pr;
+        if(it.k === "poly"){
+          ctx.beginPath();
+          pr.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]));
+          ctx.closePath();
+          if(it.fill){ ctx.fillStyle = it.fill; ctx.fill(); }
+          if(it.stroke && it.lw){ ctx.strokeStyle = it.stroke; ctx.lineWidth = it.lw; ctx.stroke(); }
+        } else if(it.k === "line"){
+          ctx.beginPath();
+          pr.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]));
+          ctx.setLineDash(it.dash || []);
+          ctx.strokeStyle = it.stroke; ctx.lineWidth = it.lw;
+          ctx.lineJoin = "round"; ctx.lineCap = "round";
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else if(it.k === "dot"){
+          const q = pr[0];
+          ctx.beginPath(); ctx.arc(q[0], q[1], it.r, 0, 7);
+          ctx.fillStyle = it.fill; ctx.fill();
+          if(it.ring){ ctx.strokeStyle = it.ring; ctx.lineWidth = 2; ctx.stroke(); }
+        } else {
+          const q = pr[0];
+          ctx.font = FONT_UI; ctx.fillStyle = it.fill;
+          ctx.textAlign = "left"; ctx.textBaseline = "middle";
+          ctx.fillText(it.text, q[0] + it.dx, q[1] + it.dy);
+        }
+      }
+    }
+  };
+}
+
+/* Flat shading: a sheet seen edge-on should not read the same as one facing
+   the light, or the two indifference surfaces become indistinguishable mush. */
+function g3Shade(pts, base, alpha){
+  const u = g3Sub(pts[1], pts[0]), v = g3Sub(pts[2], pts[0]);
+  let n = [u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]];
+  const L = Math.hypot(n[0], n[1], n[2]);
+  if(L < 1e-12) return `rgba(${base[0]},${base[1]},${base[2]},${alpha})`;
+  n = g3Mul(1/L, n);
+  const lit = Math.abs(0.42*n[0] + 0.34*n[1] + 0.84*n[2]);
+  const k = 0.62 + 0.38*lit;
+  return `rgba(${Math.round(base[0]*k)},${Math.round(base[1]*k)},${Math.round(base[2]*k)},${alpha})`;
+}
+const g3RGB = hex => {
+  const h = hex.replace("#", "");
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+};
+
+/* --- the picture ----------------------------------------------------------- */
+
+function g3Render(){
+  const cv = $("c3"); if(!cv) return;
+  const { ctx, w, h } = setupCanvas(cv);
+  const s = g3, L = s.layers;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = css("--sunk"); ctx.fillRect(0, 0, w, h);
+
+  const O = g3Tot(s);
+  if(!(O[0] > 0 && O[1] > 0 && O[2] > 0)){
+    ctx.fillStyle = css("--ink-3"); ctx.font = FONT_UI; ctx.textAlign = "center";
+    ctx.fillText(T().g3Empty, w/2, h/2);
+    return;
+  }
+
+  const cam = g3Cam(s, w, h);
+  const sc  = g3Scene();
+  const r   = g3At(s, s.zeta);
+  const V   = g3Corners(O);
+  const rule = css("--rule"), ink = css("--ink"), ink3 = css("--ink-3");
+
+  /* the cube itself */
+  if(L.box){
+    for(const [i, j] of G3_EDGES) sc.line([V[i], V[j]], rule, 1.4, null, 0);
+    /* a floor grid, so heights inside the box can be read off something */
+    const n = 4;
+    for(let k = 1; k < n; k++){
+      sc.line([[O[0]*k/n, 0, 0], [O[0]*k/n, O[1], 0]], rule, 0.7, [2, 3], 0);
+      sc.line([[0, O[1]*k/n, 0], [O[0], O[1]*k/n, 0]], rule, 0.7, [2, 3], 0);
+    }
+  }
+
+  /* the two budget sets, as the cube cut by the one budget plane. A is what
+     A can afford measured from A's origin; B is everything on the far side,
+     which is exactly what B can afford measured from B's. */
+  const nrm = r.p, rhs = r.eA;
+  const planeLive = r.p[2] > 1e-12 || r.p[1] > 1e-12 || r.p[0] > 1e-12;
+  let cap = null;
+  if(planeLive){
+    if(L.setA){
+      const sol = g3HalfSolid(O, nrm, rhs, true); cap = sol.cap;
+      for(const f of sol.faces) sc.poly(f, g3Shade(f, g3RGB(MARK.A), 0.17), null, 0, 0);
+    }
+    if(L.setB){
+      const sol = g3HalfSolid(O, nrm, rhs, false); cap = cap || sol.cap;
+      for(const f of sol.faces) sc.poly(f, g3Shade(f, g3RGB(MARK.B), 0.17), null, 0, 0);
+    }
+    if(L.budget){
+      if(!cap) cap = g3HalfSolid(O, nrm, rhs, true).cap;
+      if(cap) sc.poly(cap, `rgba(255,197,61,.20)`, MARK.budget, 2, 0);
+    }
+  }
+
+  /* indifference surfaces through the Pareto allocation */
+  const mesh = 34;
+  if(L.indiA)
+    for(const q of g3Sheet(O, (x, y) => g3IndiA(s, r.uA, x, y), mesh))
+      sc.poly(q, g3Shade(q, g3RGB(MARK.A), 0.5), null, 0, 0);
+  if(L.indiB)
+    for(const q of g3Sheet(O, (x, y) => g3IndiB(s, r.uB, x, y), mesh))
+      sc.poly(q, g3Shade(q, g3RGB(MARK.B), 0.5), null, 0, 0);
+
+  /* and through the endowment: between these two lies every reallocation both
+     agents would agree to, which is the lens of the two-good box in 3-D */
+  const uAw = g3UA(s, s.a), uBw = g3UB(s, s.b);
+  if(L.lensA)
+    for(const q of g3Sheet(O, (x, y) => g3IndiA(s, uAw, x, y), 26))
+      sc.poly(q, g3Shade(q, g3RGB(MARK.A), 0.22), null, 0, 0);
+  if(L.lensB)
+    for(const q of g3Sheet(O, (x, y) => g3IndiB(s, uBw, x, y), 26))
+      sc.poly(q, g3Shade(q, g3RGB(MARK.B), 0.22), null, 0, 0);
+
+  /* the Pareto set, swept in the weight */
+  if(L.pareto){
+    const pts = [];
+    for(let i = 0; i <= 160; i++) pts.push(g3Pareto(s, i/160));
+    sc.line(pts, MARK.contract, 2.6, null, -20);
+  }
+
+  /* vectors at Q: the price normal, and the two directions along the budget
+     plane in which A can trade goods 1 and 3, and 2 and 3, at those prices */
+  const Q = r.xA;
+  const arrow = (from, to, col) => {
+    sc.line([from, to], col, 2.2, null, -30);
+    sc.dot(to, col, 3.2, null);
+  };
+  if(L.price && planeLive){
+    const sum = r.p[0] + r.p[1] + r.p[2];
+    if(sum > 0) arrow(Q, g3Add(Q, g3Mul(1/sum, r.p)), MARK.budget);
+  }
+  if(L.tangents && r.p[2] > 1e-12){
+    arrow(Q, g3Add(Q, g3Mul(s.L, [1, 0, -r.p[0]/r.p[2]])), MARK.B);
+    arrow(Q, g3Add(Q, g3Mul(s.L, [0, 1, -r.p[1]/r.p[2]])), MARK.A);
+  }
+
+  /* how far this weight is from clearing the market, drawn as the .ggb does */
+  if(L.error){
+    const e = Math.abs(r.tA);
+    if(e > 1e-9) arrow([0,0,0], [Math.min(3*e, O[0]), Math.min(3*e, O[1]), 0], ink3);
+  }
+
+  /* the points that carry the argument */
+  sc.dot(s.a, css("--surface"), 5.5, ink);
+  sc.label(s.a, "ω", ink, -16, -12);
+  sc.dot(Q, MARK.contract, 6, css("--surface"));
+  sc.label(Q, "Q", ink, 10, 11);
+  if(L.free){
+    sc.dot(s.N, css("--ink"), 5, css("--surface"));
+    sc.label(s.N, "N", ink, 9, -9);
+  }
+  sc.label([0,0,0], "O_A", MARK.A, -22, 12);
+  sc.label(O, "O_B", MARK.B, 6, -8);
+
+  sc.draw(ctx, cam);
+}
+
+/* --- readouts -------------------------------------------------------------- */
+
+const g3N = (v, d) => {
+  if(!Number.isFinite(v)) return "—";
+  const k = d === undefined ? 3 : d;
+  /* a transfer that bisection drove to -1e-17 should read 0, not -0.0000 */
+  const r = +v.toFixed(k);
+  return (r === 0 ? 0 : r).toFixed(k);
+};
+const g3V = (v, d) => "(" + v.map(x => g3N(x, d)).join(", ") + ")";
+
+function g3Readout(){
+  const t = T(), s = g3, r = g3At(s, s.zeta);
+  const rows = [
+    [t.g3rTotals,  g3V(r.O, 2)],
+    [t.g3rPrices,  g3V(r.p, 4)],
+    [t.g3rPnorm,   g3V(r.pNorm, 2)],
+    [t.g3rDemA,    g3V(r.xA, 3)],
+    [t.g3rDemB,    g3V(r.xB, 3)],
+    [t.g3rIncA,    g3N(r.mA, 4)],
+    [t.g3rIncB,    g3N(r.mB, 4)],
+    [t.g3rExpA,    g3N(r.eA, 4)],
+    [t.g3rExpB,    g3N(r.eB, 4)],
+    [t.g3rTrA,     g3N(r.tA, 4)],
+    [t.g3rTrB,     g3N(r.tB, 4)],
+    [t.g3rU,       g3N(r.uA, 3) + " / " + g3N(r.uB, 3)]
+  ];
+  $("readout3").innerHTML = rows.map(([k, v]) =>
+    `<div class="cell"><dt${/[ζω]/.test(k) ? ' class="raw"' : ""}>${k}</dt>` +
+    `<dd>${v}</dd></div>`).join("");
+
+  /* the second welfare theorem, spelled out in the same shape as the two-good
+     tab: these prices, and these transfers, which have to net to zero */
+  const eq = Math.abs(r.tA) < 1e-7;
+  $("verdict3-title").textContent = eq ? t.g3EqTitle : t.g3NoEqTitle;
+  $("verdict3-text").innerHTML = t.g3Swt(g3V(r.pNorm, 2), g3N(r.tA, 4), g3N(r.tB, 4), g3N(r.tA + r.tB, 6));
+  const n = s.negishi;
+  $("verdict3-math").innerHTML = n
+    ? t.g3NegLine(g3N(n.z, 4), g3N(s.zeta, 4))
+    : t.g3NegNone;
+  $("verdict3").classList.toggle("is-eq", eq);
+}
+
+/* --- recompute + render ---------------------------------------------------- */
+function g3Sync(){
+  g3.negishi = g3Negishi(g3);
+  paintG3EndowNote();
+  g3Readout();
+  g3Render();
+}
+
+/* --- wiring ---------------------------------------------------------------- */
+
+const G3_ENDOW = [
+  ["g3a1", "a", 0, 0, 10], ["g3a2", "a", 1, 0, 5], ["g3a3", "a", 2, 0, 5],
+  ["g3b1", "b", 0, 0, 5],  ["g3b2", "b", 1, 0, 5], ["g3b3", "b", 2, 0, 5]
+];
+const G3_PREF = [
+  ["g3aa", "A", 0], ["g3ba", "A", 1], ["g3ga", "A", 2],
+  ["g3ab", "B", 0], ["g3bb", "B", 1], ["g3gb", "B", 2]
+];
+
+function g3Bind(id, get, set){
+  const sl = $(id), tx = $(id + "-v");
+  const push = v => {
+    set(v);
+    if(sl.value !== String(v)) sl.value = v;
+    tx.value = (+v).toFixed(3).replace(/\.?0+$/, "") || "0";
+    g3Sync();
+  };
+  sl.addEventListener("input", () => push(+sl.value));
+  tx.addEventListener("change", () => {
+    const v = parseFloat(tx.value);
+    if(Number.isFinite(v)) push(clamp(v, +sl.min, +sl.max)); else tx.value = get();
+  });
+  tx.value = String(get());
+  sl.value = String(get());
+}
+
+function g3Boot(){
+  for(const [id, key, j] of G3_ENDOW) g3Bind(id, () => g3[key][j], v => { g3[key][j] = v; });
+  for(const [id, key, j] of G3_PREF)  g3Bind(id, () => g3[key][j], v => { g3[key][j] = v; });
+  g3Bind("g3zeta", () => g3.zeta, v => { g3.zeta = v; });
+  g3Bind("g3len",  () => g3.L,    v => { g3.L = v; });
+
+  buildG3Layers();
+
+  $("g3-negishi").addEventListener("click", () => {
+    const n = g3Negishi(g3);
+    if(!n) return;
+    g3.zeta = clamp(n.z, 0, 1);
+    $("g3zeta").value = String(g3.zeta);
+    $("g3zeta-v").value = g3.zeta.toFixed(4);
+    g3Sync();
+  });
+  $("g3-reset-view").addEventListener("click", () => {
+    g3.az = -0.72; g3.el = 0.34; g3.dist = 1; g3Render();
+  });
+
+  /* orbit with the pointer, zoom with the wheel */
+  const cv = $("c3");
+  cv.addEventListener("pointerdown", e => {
+    cv.setPointerCapture(e.pointerId);
+    g3.drag = { x: e.clientX, y: e.clientY, az: g3.az, el: g3.el };
+  });
+  cv.addEventListener("pointermove", e => {
+    if(!g3.drag) return;
+    g3.az = g3.drag.az + (e.clientX - g3.drag.x)*0.008;
+    g3.el = clamp(g3.drag.el - (e.clientY - g3.drag.y)*0.008, -1.45, 1.45);
+    g3Render();
+  });
+  const stop = () => { g3.drag = null; };
+  cv.addEventListener("pointerup", stop);
+  cv.addEventListener("pointercancel", stop);
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    g3.dist = clamp(g3.dist * (e.deltaY > 0 ? 1/1.08 : 1.08), 0.35, 3.2);
+    g3Render();
+  }, { passive:false });
+  cv.addEventListener("keydown", e => {
+    const k = e.key, step = e.shiftKey ? 0.12 : 0.04;
+    if(k === "ArrowLeft")  g3.az -= step;
+    else if(k === "ArrowRight") g3.az += step;
+    else if(k === "ArrowUp")    g3.el = clamp(g3.el + step, -1.45, 1.45);
+    else if(k === "ArrowDown")  g3.el = clamp(g3.el - step, -1.45, 1.45);
+    else if(k === "+" || k === "=") g3.dist = clamp(g3.dist*1.1, 0.35, 3.2);
+    else if(k === "-") g3.dist = clamp(g3.dist/1.1, 0.35, 3.2);
+    else return;
+    e.preventDefault(); g3Render();
+  });
+
+  window.addEventListener("resize", () => { if(st.tab === "g3") g3Render(); });
+}
+
+
 /* ==========================================================================
    14. Boot
    ========================================================================== */
@@ -3854,6 +4740,17 @@ function boot(){
 
   /* one handle for the checks in tools/, and for anyone who wants to drive the
      model from the console during a lesson */
+  g3Boot();
+  for(const [id, tab] of [["tab-g2","g2"],["tab-g3","g3"]])
+    $(id).addEventListener("click", () => setTab(tab));
+
+  /* the same handle the two-good model exposes, for tools/check-edgeworth3.js */
+  window.__edgeworth3 = {
+    g3, g3Tot, g3UA, g3UB, g3Pareto, g3Prices, g3At, g3Negishi,
+    g3IndiA, g3IndiB, g3HalfSolid, g3Sheet, g3Sync, g3Render, setTab,
+    g3Cam, g3Corners, G3_EDGES
+  };
+
   window.__edgeworth = {
     st, render, syncState, recomputeModel, recomputeUtilities,
     marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod,
@@ -3863,6 +4760,7 @@ function boot(){
   };
   applyLang();
   buildTray();
+  setTab("g2");
   render();
 }
 

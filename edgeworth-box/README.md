@@ -12,6 +12,11 @@ point of the rectangle is a complete description of who has what. The diagram
 and the utility space are two views of one model: move the allocation or the
 price in either panel and the other follows.
 
+A second tab holds the same economics with **three goods**, translated from the
+GeoGebra file `Edgeworth_box__2_agents_3_goods.ggb`. There the box is a cube,
+and the picture is drawn in a small hand-rolled 3-D renderer rather than lifted
+from a library. See [Three goods](#three-goods) below.
+
 ## On the source
 
 The Desmos graph could not be read while this was built — `desmos.com` is
@@ -133,6 +138,92 @@ The supporting weight is exact — a ratio of two marginal utilities of the
 numéraire — and rises monotonically along the Pareto set, so the applet finds
 the point whose supporting weight *is* λ. Same answer, continuous where the sum
 is flat to machine precision.
+
+## Three goods
+
+The second tab is a translation of `Edgeworth_box__2_agents_3_goods.ggb`, which
+unlike the Desmos graph behind the first tab *was* available to read: it is a
+zip of XML, so every object, formula, slider range and saved value in it could
+be pulled out and checked against. That makes the source file a specification
+and a test fixture at the same time, and `tools/check-edgeworth3.js` compares
+the applet against twenty of its stored values.
+
+Two agents, three goods, nothing produced, so the box is a cube
+`[0,O₁] × [0,O₂] × [0,O₃]`, A measured from the near corner and B from the far
+one. Both agents are Cobb–Douglas, `u = x^α y^β z^γ`, and that is what keeps the
+whole construction closed-form rather than searched the way the two-good tab has
+to search. Maximising `ζ·ln u_A + (1−ζ)·ln u_B` good by good gives
+
+```
+x_Aj = O_j · ζ·A_j / (ζ·A_j + (1−ζ)·B_j)
+```
+
+with B taking the complement, and the price that supports it is
+`p_j = (ζ·A_j + (1−ζ)·B_j) / O_j`. At those prices `MRS_A = MRS_B` for every
+pair of goods, which the checks verify to eleven decimals. Sweeping ζ from 0 to
+1 traces the Pareto set as a curve from A's corner of the cube to B's, and the
+one ζ whose transfers vanish is the Walrasian equilibrium — which is what the
+**Negishi** button finds by bisection, and what the source file's own last text
+box asks the reader to find by hand.
+
+Everything the .ggb draws is here: the cube, the Pareto curve, both
+indifference surfaces through the chosen allocation, the budget plane, A's
+budget set, the price vector and the two trade directions at Q, the
+market-error arrow, the totals, the raw and the normalised-to-100 prices, the
+demands, the market incomes, the expenditures and the transfers.
+
+Four things were added to make it a sibling of the two-good tab rather than a
+separate applet: the **Negishi** solve; **B's budget set** as well as A's, in
+the same red-and-blue as the two-good box, so the budget plane is seen to
+partition the cube into what each agent can pay for; the **indifference
+surfaces through the endowment**, whose interior is the three-good version of
+the lens of mutual gain; and the **Spanish/English** switch, the theme, and the
+keyboard operation that the rest of the site already had.
+
+### Where the source file is not followed
+
+Four of its formulas do not survive arithmetic. The applet uses the corrected
+ones, and the checks assert both the correction and the fact that the original
+breaks an identity:
+
+| In the .ggb | The problem | Used here |
+|---|---|---|
+| `x_b = ζ·α_b/D · O₁` (and `y_b`, `z_b`) | written with ζ where 1−ζ belongs, so A's and B's bundles do not add up to the cube — at the saved sliders they leave 0.97 of good 1 unallocated | `x_b = (1−ζ)·α_b/D · O₁` |
+| `Def_A = p·ω_A − p·x_A`, labelled "Net Transfers to A" | the sign is inverted against its own label: when A is given more than its endowment buys, this goes *negative* | `T_A = p·x_A − p·ω_A`, so a transfer *to* A is positive |
+| `Indi_b(x,y) = O₃ − u_b/((O₁−x)^α_b (O₂−y)^β_b)` | missing the `^(1/γ_b)` root that its own `Indi_Pb` has, so it is not a level surface of `u_B` | the root restored |
+| `ParcialX = L·(p₁/p₃, 0, −p₁/p₃)` | not orthogonal to `(p₁,p₂,p₃)` unless `p₁ = p₃`, so it does not lie in the budget plane it is meant to run along | `L·(1, 0, −p₁/p₃)` |
+
+With the first two fixed, `T_A + T_B = 0` identically — which is the whole
+content of the second welfare theorem here, and which the original cannot show:
+its two transfers sum to 0.110 at its own saved sliders.
+
+One thing in the file is deliberately **not** carried over. It contains an
+unfinished CES branch — sliders `φ_a`, `φ_b` feeding `ρ = 1 + log₂φ`,
+`σ = 1/(1−ρ)` and a price index `P_b` — but nothing consumes it: `U_a` and
+`U_b` are Cobb–Douglas, and every closed form above depends on their being so.
+Wiring CES in would mean giving up the closed-form Pareto set and prices for a
+numerical solve, which is a different applet, so the objects were left out
+rather than shown as dead controls.
+
+### Drawing it
+
+There is no 3-D library. The renderer is about 200 lines: an orbit camera and
+one perspective divide, primitives pushed onto a list with the depth of their
+centroid, one back-to-front sort, and flat shading from each quad's own normal
+so two translucent sheets do not read as mush. Surfaces are height fields
+`z = f(x,y)` tessellated over the floor and clamped to the cube, so a sheet
+that runs out of the box ends against the wall rather than in a ragged fringe.
+
+The budget sets are the honest solid, not a shaded face: the cube is clipped by
+the half-space `p·x ≤ p·x_A` with Sutherland–Hodgman, and the cap where the
+plane cuts through is computed from the edge crossings and ordered by angle in
+the cutting plane. That cap *is* the budget plane, so drawing the set draws the
+plane for free, and the checks confirm that no point of A's solid costs more
+than A can pay, no point of B's costs less, and every corner of the shared face
+sits on the plane to within 1e-9.
+
+Drag to turn the cube, wheel to zoom; from the keyboard, arrows turn and `+`/`−`
+zoom.
 
 ## Preferences
 
@@ -344,9 +435,29 @@ it owns. The improving set is cross-checked against the utility closures
 themselves by Monte Carlo, so a bug in the grid or in the bilinear read cannot
 agree with itself.
 
+`tools/check-edgeworth3.js` does the same for the three-good tab. Because the
+GeoGebra file stores the value of every object it defines, twenty of those
+values are used directly as expected results — the demands, all three prices
+raw and normalised, both market incomes, A's expenditure, both utilities at the
+Pareto point, both utilities at the far corner, and `Def_A` — and the applet
+reproduces every one of them to at least twelve decimals. The four corrected
+formulas are checked in the opposite direction: that A and B now exhaust the
+cube, that the transfers net to zero, that the trade directions are orthogonal
+to the price vector while the file's own are not. Beyond the fixture: the
+Pareto set runs from corner to corner in the maths *and* in screen
+coordinates, raising the weight never takes a good away from A, Negishi lands
+where each agent's textbook Cobb–Douglas demand `share × income / price` equals
+what it holds, and the clipped budget solids satisfy their own inequalities.
+The controls, both languages and the two-good tab are exercised too, so a
+regression in either tab fails a check.
+
 ```sh
 cd edgeworth-box && python3 -m http.server 8130 &
 node tools/check-edgeworth.js
+
+# and, on its own port, the three-good tab
+python3 -m http.server 8131 --directory edgeworth-box &
+node tools/check-edgeworth3.js
 ```
 
 ## Accessibility
