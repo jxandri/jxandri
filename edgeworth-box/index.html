@@ -795,6 +795,30 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       </div>
 
       <div class="group">
+        <h2 id="t3-g-firm">Sector productivo</h2>
+        <label class="check"><input type="checkbox" id="g3-prod-on"><span id="t3-prod-on">—</span></label>
+        <div id="g3-firm-body" hidden>
+          <div class="slider-row">
+            <span class="k" id="t3-prod-out-k">sale</span>
+            <input type="range" id="g3-out" min="0" max="2" step="1" aria-label="Bien producido">
+            <input class="v" id="g3-out-v" inputmode="decimal" aria-label="Bien producido (valor)">
+          </div>
+          <div class="trip">
+            <div class="slider-row"><span class="k">z</span><input type="range" id="g3-z" min="0.2" max="4" step="0.01" aria-label="Escala de la tecnología"><input class="v" id="g3-z-v" inputmode="decimal" aria-label="z"></div>
+            <div class="slider-row"><span class="k">m</span><input type="range" id="g3-m" min="0.05" max="0.9" step="0.01" aria-label="Elasticidad del primer insumo"><input class="v" id="g3-m-v" inputmode="decimal" aria-label="m"></div>
+            <div class="slider-row"><span class="k">n</span><input type="range" id="g3-n" min="0.05" max="0.9" step="0.01" aria-label="Elasticidad del segundo insumo"><input class="v" id="g3-n-v" inputmode="decimal" aria-label="n"></div>
+          </div>
+          <div class="slider-row">
+            <span class="k">θ<sub>A</sub></span>
+            <input type="range" id="g3-theta" min="0" max="1" step="0.01" aria-label="Participación de A en el beneficio">
+            <input class="v" id="g3-theta-v" inputmode="decimal" aria-label="Participación de A (valor)">
+          </div>
+          <output class="expr-out" id="g3-prod-out"></output>
+        </div>
+        <p class="note" id="t3-prod-note">—</p>
+      </div>
+
+      <div class="group">
         <h2 id="t3-g-weight">Peso de Pareto</h2>
         <div class="slider-row">
           <span class="k">ζ<sub>A</sub></span>
@@ -2840,6 +2864,14 @@ const STR = {
 
 
     /* --- three goods --- */
+    g3gFirm:"Sector productivo",
+    g3ProdOn:"Con empresa",
+    g3ProdOutK:"sale",
+    g3ProdOff:"Sin empresa: el cubo es la dotación total y no cambia. Con empresa, dos bienes entran y el tercero sale, y el cubo pasa a ser lo que queda más lo que se produce.",
+    g3ProdNote:(k, i, j, mn) =>
+      `x<sub>${k}</sub> = z · x<sub>${i}</sub><sup>m</sup> · x<sub>${j}</sub><sup>n</sup>, una sola tecnología para toda la economía. m + n = ${mn} &lt; 1: con rendimientos constantes o crecientes el beneficio no tiene máximo interior y el cubo no tendría tamaño determinado. El plan y el reparto se eligen a la vez, así que el cubo se mueve con ζ.`,
+    g3rInputs:"Insumos", g3rOutput:"Producto", g3rProfit:"Beneficio",
+    g3MrtGap:g => `La tangencia de la empresa falla en un ${g}: el plan toca un límite (todo o nada de un insumo).`,
     g3f_cd:"Cobb–Douglas", g3f_ces:"CES ponderada", g3f_sub:"Sustitutos perfectos",
     g3f_ql:"Cuasilineal", g3f_free:"Escrita a mano",
     g3uA:"A — u<sub>A</sub>(x₁, x₂, x₃)",
@@ -2985,6 +3017,14 @@ const STR = {
     foot:'Translated from a Desmos calculator. With the <b>Typed by hand</b> family, the syntax is: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.',
 
     /* --- three goods --- */
+    g3gFirm:"Productive sector",
+    g3ProdOn:"With a firm",
+    g3ProdOutK:"out",
+    g3ProdOff:"With no firm the cube is the total endowment and does not move. With one, two goods go in and the third comes out, and the cube becomes what is left plus what is made.",
+    g3ProdNote:(k, i, j, mn) =>
+      `x<sub>${k}</sub> = z · x<sub>${i}</sub><sup>m</sup> · x<sub>${j}</sub><sup>n</sup>, one technology for the whole economy. m + n = ${mn} &lt; 1: at constant or increasing returns profit has no interior maximum and the cube would have no determinate size. The plan and the split are chosen together, so the cube moves with ζ.`,
+    g3rInputs:"Inputs", g3rOutput:"Output", g3rProfit:"Profit",
+    g3MrtGap:g => `The firm's tangency is off by ${g}: the plan is against a bound (all or none of an input).`,
     g3f_cd:"Cobb–Douglas", g3f_ces:"Weighted CES", g3f_sub:"Perfect substitutes",
     g3f_ql:"Quasilinear", g3f_free:"Typed by hand",
     g3uA:"A — u<sub>A</sub>(x₁, x₂, x₃)",
@@ -3498,6 +3538,7 @@ function applyLang(){
   $("g3-reset-view").textContent = t.g3Reset;
   $("t3-foot").innerHTML       = t.g3Foot;
   buildG3Layers();
+  paintG3Firm();
   paintG3EndowNote();
   g3Readout();
 
@@ -3517,6 +3558,28 @@ function applyLang(){
 
 function paintEndowNote(){
   $("t-endow-note").innerHTML = T().endowNote(fmt(st.Wx, 1), fmt(st.Wy, 1));
+}
+
+function paintG3Firm(){
+  const t = T(), P = g3.prod, on = g3ProdOn(g3);
+  $("g3-prod-on").checked = P.on;
+  $("g3-firm-body").hidden = !P.on;
+  $("t3-prod-on").textContent = t.g3ProdOn;
+  $("t3-g-firm").textContent = t.g3gFirm;
+  $("t3-prod-out-k").textContent = t.g3ProdOutK;
+  if(!on){ $("t3-prod-note").innerHTML = t.g3ProdOff; $("g3-prod-out").textContent = ""; return; }
+  const { k, i } = g3ProdIdx(g3);
+  /* the console and the checks can set these directly, so the rail is pushed
+     from the state rather than assumed to be the only thing that writes it */
+  for(const [id, key] of [["g3-z","z"], ["g3-m","m"], ["g3-n","n"], ["g3-theta","theta"]]){
+    $(id).value = P[key];
+    $(id + "-v").value = g3Par(P[key]);
+  }
+  $("g3-out").value = String(k);
+  $("g3-out-v").value = String(k + 1);
+  $("g3-prod-out").textContent =
+    `x${k+1} = ${g3Par(P.z)} · x${i[0]+1}^${g3Par(P.m)} · x${i[1]+1}^${g3Par(P.n)}`;
+  $("t3-prod-note").innerHTML = t.g3ProdNote(k + 1, i[0] + 1, i[1] + 1, g3Par(P.m + P.n));
 }
 
 function paintG3EndowNote(){
@@ -4333,6 +4396,9 @@ const g3 = {
   famB: "cd", parB: { a: 0.570, b: 0.330, c: 0.325 },
   zeta: 0.455,
   L: 0.372,
+  /* out is the index of the good the firm makes; the other two are its
+     inputs. theta is A's share of the profit. */
+  prod: { on:false, out:2, z:1.2, m:0.35, n:0.35, theta:0.5, t:[0.5, 0.5] },
   N: [1, 1.3333333333333333, 1.3333333333333333],
   az: -0.72, el: 0.34, dist: 1,
   layers: {
@@ -4345,11 +4411,156 @@ const g3 = {
   now: null, curve: null
 };
 
-const g3Tot = s => [s.a[0] + s.b[0], s.a[1] + s.b[1], s.a[2] + s.b[2]];
 const g3Dot = (p, x) => p[0]*x[0] + p[1]*x[1] + p[2]*x[2];
 const g3Sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
 const g3Add = (u, v) => [u[0]+v[0], u[1]+v[1], u[2]+v[2]];
 const g3Mul = (k, v) => [k*v[0], k*v[1], k*v[2]];
+
+/* --- the productive sector -------------------------------------------------
+   One technology for the whole economy: two of the three goods go in, the
+   third comes out. Which good is the output is a setting, so all three
+   combinations are reachable.
+
+       F(t_i, t_j) = z · t_i^m · t_j^n,    m, n > 0,  m + n < 1
+
+   Decreasing returns are not decoration. At constant or increasing returns
+   profit is unbounded or zero at every scale, the firm's problem has no
+   interior answer, and the box would have no determinate size — so m + n is
+   capped below 1 and the sliders say so.
+
+   With the firm switched on the cube is no longer the endowment: it is
+
+       O_i = w_i - t_i,   O_j = w_j - t_j,   O_k = w_k + F(t)
+
+   and the planner picks the input use and the split together. The value of
+   the box still equals what the two agents can pay for it, because
+   p·O = p·w + profit exactly, so the transfers still cancel — that identity
+   is what the checks pin down.
+   -------------------------------------------------------------------------- */
+
+const g3ProdOn = s => !!(s.prod && s.prod.on);
+
+/* inputs are whichever two goods are not the output */
+function g3ProdIdx(s){
+  const k = Math.round(s.prod.out);
+  return { k, i: [0, 1, 2].filter(j => j !== k) };
+}
+
+function g3F(s, t){
+  const P = s.prod, { i } = g3ProdIdx(s);
+  const a = Math.max(t[0], 0), b = Math.max(t[1], 0);
+  if(a <= 0 || b <= 0) return 0;
+  const v = P.z * Math.pow(a, P.m) * Math.pow(b, P.n);
+  return Number.isFinite(v) ? v : 0;
+}
+
+/* marginal products, which are the firm's side of the tangency */
+function g3MP(s, t){
+  const P = s.prod;
+  const a = Math.max(t[0], G3_EPS), b = Math.max(t[1], G3_EPS);
+  const F = P.z * Math.pow(a, P.m) * Math.pow(b, P.n);
+  return [P.m*F/a, P.n*F/b].map(v => Number.isFinite(v) ? v : 0);
+}
+
+/* the endowment, before anything is produced */
+const g3Endow = s => [s.a[0] + s.b[0], s.a[1] + s.b[1], s.a[2] + s.b[2]];
+
+/* what there is to divide, after the firm has run at input use t */
+function g3TotalsAt(s, t){
+  const w = g3Endow(s);
+  if(!g3ProdOn(s)) return w;
+  const { k, i } = g3ProdIdx(s);
+  const O = w.slice();
+  O[i[0]] = Math.max(w[i[0]] - t[0], 0);
+  O[i[1]] = Math.max(w[i[1]] - t[1], 0);
+  O[k]    = w[k] + g3F(s, t);
+  return O;
+}
+
+/* the box the rest of the model works in: the endowment when the firm is off,
+   the post-production totals at the plan the current weight chose when it is on */
+function g3Tot(s){
+  return g3ProdOn(s) ? g3TotalsAt(s, (s.now && s.now.t) || s.prod.t) : g3Endow(s);
+}
+
+/* --- solving with the firm in the loop -------------------------------------
+   Five variables now: the two input quantities and A's three-good bundle. The
+   feasible set is convex — the objective is concave in the bundle and the
+   frontier O(t) is concave in t — so ascent with a backtracking line search
+   still finds the top. The bundle is re-clamped into the box after every step
+   because the box itself moves when t does.
+   -------------------------------------------------------------------------- */
+
+function g3SolveProd(s, z, seed){
+  const w = g3Endow(s), { k, i } = g3ProdIdx(s);
+  const cap = [w[i[0]], w[i[1]]];
+  let t = (seed && seed.t) ? [clamp(seed.t[0], 0, cap[0]), clamp(seed.t[1], 0, cap[1])]
+                           : [cap[0]*0.25, cap[1]*0.25];
+  const fit = (x, O) => [0, 1, 2].map(j => {
+    const pad = Math.max(O[j], 1e-9) * 1e-7;
+    return Math.min(Math.max(x[j], pad), O[j] - pad);
+  });
+  let O = g3TotalsAt(s, t);
+  let x = fit(seed && seed.x ? seed.x : O.map(v => v/2), O);
+
+  const val = (tt, xx) => {
+    const OO = g3TotalsAt(s, tt);
+    const q = fit(xx, OO);
+    const ua = g3UA(s, q), ub = g3UB(s, g3Sub(OO, q));
+    if(!(ua > 0) || !(ub > 0)) return -Infinity;
+    return z*Math.log(ua) + (1 - z)*Math.log(ub);
+  };
+
+  let f = val(t, x);
+  let sx = 0.2*Math.max(...O, 1e-9), stp = 0.2*Math.max(cap[0], cap[1], 1e-9);
+
+  for(let it = 0; it < 220; it++){
+    let moved = false;
+
+    /* the split, at the box the current plan gives */
+    O = g3TotalsAt(s, t);
+    x = fit(x, O);
+    const ga = g3GL(s, "A", x), gb = g3GL(s, "B", g3Sub(O, x));
+    const gx = [0, 1, 2].map(j => z*ga[j] - (1 - z)*gb[j]);
+    const nx = Math.hypot(gx[0], gx[1], gx[2]);
+    if(nx > 0 && Number.isFinite(nx)){
+      const d = g3Mul(1/nx, gx);
+      while(sx > 1e-13){
+        const y = fit([0,1,2].map(j => x[j] + sx*d[j]), O);
+        const fy = val(t, y);
+        if(fy > f + 1e-16){ x = y; f = fy; moved = true; break; }
+        sx *= 0.5;
+      }
+      sx = Math.min(sx*1.7, 0.4*Math.max(...O, 1e-9));
+    }
+
+    /* the plan, by finite differences: F is cheap and its derivative through
+       the inner clamp is not worth writing out */
+    const h = 1e-6*Math.max(cap[0], cap[1], 1);
+    const gt = [0, 1].map(q => {
+      const up = t.slice(), dn = t.slice();
+      up[q] = clamp(t[q] + h, 0, cap[q]); dn[q] = clamp(t[q] - h, 0, cap[q]);
+      const a = val(up, x), b = val(dn, x);
+      if(!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+      return (a - b) / Math.max(up[q] - dn[q], 1e-18);
+    });
+    const nt = Math.hypot(gt[0], gt[1]);
+    if(nt > 0 && Number.isFinite(nt)){
+      const d = [gt[0]/nt, gt[1]/nt];
+      while(stp > 1e-13){
+        const u = [clamp(t[0] + stp*d[0], 0, cap[0]), clamp(t[1] + stp*d[1], 0, cap[1])];
+        const fu = val(u, x);
+        if(fu > f + 1e-16){ t = u; f = fu; moved = true; break; }
+        stp *= 0.5;
+      }
+      stp = Math.min(stp*1.7, 0.4*Math.max(cap[0], cap[1], 1e-9));
+    }
+
+    if(!moved) break;
+  }
+  O = g3TotalsAt(s, t);
+  return { x: fit(x, O), t, O };
+}
 
 const g3Fam = (s, who) => G3_FAMS[who === "A" ? s.famA : s.famB];
 const g3Pars = (s, who) => who === "A" ? s.parA : s.parB;
@@ -4427,9 +4638,9 @@ function g3Pareto(s, z, seed){
    two agents' weighted log-gradients are equal and either one is the price;
    on a face of the cube — where perfect substitutes usually land — they need
    not be, and the midpoint is reported with the gap beside it. */
-function g3PricesAt(s, z, xA){
-  const O = g3Tot(s);
-  if(g3BothCD(s)){
+function g3PricesAt(s, z, xA, box){
+  const O = box || g3Tot(s);
+  if(g3BothCD(s) && !g3ProdOn(s)){
     const A = g3CDExp(s, "A"), B = g3CDExp(s, "B");
     const p = [0, 1, 2].map(j => O[j] > 0 ? (z*A[j] + (1 - z)*B[j]) / O[j] : 0);
     return { p, gap: 0 };
@@ -4448,15 +4659,40 @@ function g3PricesAt(s, z, xA){
    The two transfers are equal and opposite because A's and B's bundles add up
    to the box — which is the arithmetic the source file's B-demands break. */
 function g3At(s, z, seed){
-  const O = g3Tot(s);
-  const xA = g3Pareto(s, z, seed);
+  let O, xA, t = null;
+  if(g3ProdOn(s)){
+    const r = g3SolveProd(s, z, seed);
+    O = r.O; xA = r.x; t = r.t;
+  }else{
+    O = g3Endow(s);
+    xA = g3Pareto(s, z, seed && seed.xA);
+  }
   const xB = g3Sub(O, xA);
-  const { p, gap } = g3PricesAt(s, z, xA);
+  const { p, gap } = g3PricesAt(s, z, xA, O);
   const sum = p[0] + p[1] + p[2];
-  const mA = g3Dot(p, s.a), mB = g3Dot(p, s.b);
+
+  /* With a firm, wealth is the endowment plus a share of the profit, and it
+     is that addition which keeps the two sides equal: p·O = p·w + profit
+     exactly, so what the box is worth is still what the two agents can pay. */
+  let profit = 0, mrtGap = 0, mp = null;
+  if(t){
+    const { k, i } = g3ProdIdx(s);
+    profit = p[k]*g3F(s, t) - p[i[0]]*t[0] - p[i[1]]*t[1];
+    mp = g3MP(s, t);
+    /* the firm's own tangency: price of an input = its marginal product,
+       valued at the price of what it makes */
+    const sc = Math.max(p[i[0]], p[i[1]], 1e-12);
+    for(const q of [0, 1]){
+      const inside = t[q] > 1e-7 && t[q] < g3Endow(s)[i[q]] - 1e-7;
+      if(inside) mrtGap = Math.max(mrtGap, Math.abs(p[k]*mp[q] - p[i[q]])/sc);
+    }
+  }
+  const th = t ? s.prod.theta : 0;
+  const mA = g3Dot(p, s.a) + th*profit;
+  const mB = g3Dot(p, s.b) + (1 - th)*profit;
   const eA = g3Dot(p, xA),  eB = g3Dot(p, xB);
   return {
-    z, xA, xB, p, O, gap,
+    z, xA, xB, p, O, gap, t, profit, mrtGap, mp,
     pNorm: sum > 0 ? p.map(v => 100*v/sum) : [0, 0, 0],
     mA, mB, eA, eB,
     /* The transfer each agent must RECEIVE to afford its share: what the
@@ -4478,9 +4714,17 @@ function g3Curve(s, n){
   const pts = [];
   let seed = null;
   for(let i = 0; i <= n; i++){
-    const x = g3Pareto(s, i/n, seed);
-    pts.push(x);
-    seed = x;
+    if(g3ProdOn(s)){
+      /* with the firm running the cube itself moves with the weight, so this
+         is the locus of A's bundles rather than a path inside one fixed cube */
+      const r = g3SolveProd(s, i/n, seed);
+      pts.push(r.x);
+      seed = r;
+    }else{
+      const x = g3Pareto(s, i/n, seed);
+      pts.push(x);
+      seed = x;
+    }
   }
   return pts;
 }
@@ -4919,6 +5163,12 @@ function g3Readout(){
     [t.g3rTrB,     g3N(r.tB, 4)],
     [t.g3rU,       g3N(r.uA, 3) + " / " + g3N(r.uB, 3)]
   ];
+  if(r.t){
+    const { k, i } = g3ProdIdx(s);
+    rows.push([t.g3rInputs, g3V(r.t, 3)],
+              [t.g3rOutput, g3N(g3F(s, r.t), 3)],
+              [t.g3rProfit, g3N(r.profit, 4)]);
+  }
   $("readout3").innerHTML = rows.map(([k, v]) =>
     `<div class="cell"><dt${/[ζω]/.test(k) ? ' class="raw"' : ""}>${k}</dt>` +
     `<dd>${v}</dd></div>`).join("");
@@ -4932,7 +5182,8 @@ function g3Readout(){
   /* off Cobb-Douglas the optimum can sit on a face of the cube, where the two
      weighted gradients need not agree and the supporting price stops being
      unique. That is a fact about the model, so it is said rather than hidden. */
-  const bound = r.gap > 1e-3 ? " " + t.g3Boundary((100*r.gap).toFixed(1) + "%") : "";
+  const bound = (r.gap > 1e-3 ? " " + t.g3Boundary((100*r.gap).toFixed(1) + "%") : "")
+    + (r.mrtGap > 1e-3 ? " " + t.g3MrtGap((100*r.mrtGap).toFixed(1) + "%") : "");
   $("verdict3-math").innerHTML = (n
     ? t.g3NegLine(g3N(n.z, 4), g3N(s.zeta, 4))
     : t.g3NegNone) + bound;
@@ -4945,6 +5196,7 @@ function g3Sync(){
   g3.curve = g3Curve(g3, 160);
   g3.negishi = g3Negishi(g3);
   paintG3EndowNote();
+  paintG3Firm();
   g3Readout();
   g3Render();
 }
@@ -5065,6 +5317,31 @@ function g3Boot(){
 
   g3Compile(g3, "A"); g3Compile(g3, "B");
   g3BuildFams();
+
+  /* the firm */
+  $("g3-prod-on").addEventListener("change", e => {
+    g3.prod.on = e.target.checked;
+    $("g3-firm-body").hidden = !g3.prod.on;
+    g3Invalidate();
+  });
+  for(const [id, key] of [["g3-z","z"], ["g3-m","m"], ["g3-n","n"], ["g3-theta","theta"]])
+    g3Bind(id, () => g3.prod[key], v => {
+      g3.prod[key] = v;
+      /* m + n < 1 or the firm has no determinate scale, so each elasticity
+         leaves room for the other rather than being clipped after the fact */
+      if(key === "m" || key === "n"){
+        const other = key === "m" ? "n" : "m";
+        const cap = 0.98 - g3.prod[key];
+        if(g3.prod[other] > cap){
+          g3.prod[other] = Math.max(cap, 0.05);
+          const oid = "g3-" + other;
+          $(oid).value = g3.prod[other];
+          $(oid + "-v").value = g3Par(g3.prod[other]);
+        }
+      }
+    });
+  g3Bind("g3-out", () => g3.prod.out, v => { g3.prod.out = Math.round(v); });
+
   for(const [who, tag] of [["A", "a"], ["B", "b"]]){
     $("g3-fam-" + tag).addEventListener("change", e => {
       const k = e.target.value;
@@ -5269,7 +5546,8 @@ function boot(){
     g3, g3Tot, g3UA, g3UB, g3U, g3GL, g3Pareto, g3PricesAt, g3At, g3Negishi,
     g3IndiA, g3IndiB, g3HalfSolid, g3Sheet, g3Sync, g3Render, g3Invalidate, setTab,
     g3Cam, g3Corners, G3_EDGES, G3_FAMS, G3_FAM_KEYS, g3CDExp, g3Curve,
-    g3BuildFams, g3Compile, buildUtility3
+    g3BuildFams, g3Compile, buildUtility3,
+    g3Endow, g3TotalsAt, g3ProdOn, g3ProdIdx, g3F, g3MP, g3SolveProd, paintG3Firm
   };
 
   window.__edgeworth = {

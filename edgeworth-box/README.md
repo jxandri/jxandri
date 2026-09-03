@@ -148,29 +148,115 @@ be pulled out and checked against. That makes the source file a specification
 and a test fixture at the same time, and `tools/check-edgeworth3.js` compares
 the applet against twenty of its stored values.
 
-Two agents, three goods, nothing produced, so the box is a cube
-`[0,O₁] × [0,O₂] × [0,O₃]`, A measured from the near corner and B from the far
-one. Both agents are Cobb–Douglas, `u = x^α y^β z^γ`, and that is what keeps the
-whole construction closed-form rather than searched the way the two-good tab has
-to search. Maximising `ζ·ln u_A + (1−ζ)·ln u_B` good by good gives
+Two agents, three goods, so the box is a cube `[0,O₁] × [0,O₂] × [0,O₃]`, A
+measured from the near corner and B from the far one. Goods are written
+**x₁, x₂, x₃** rather than x, y, z: past two dimensions the letters run out and
+the index does not. The three edges leaving A's corner are labelled in the cube
+itself.
+
+Everything hangs off one scalarisation, the one the source file used:
 
 ```
-x_Aj = O_j · ζ·A_j / (ζ·A_j + (1−ζ)·B_j)
+W(x) = ζ·ln u_A(x) + (1−ζ)·ln u_B(O−x),   maximised over the box
 ```
 
-with B taking the complement, and the price that supports it is
-`p_j = (ζ·A_j + (1−ζ)·B_j) / O_j`. At those prices `MRS_A = MRS_B` for every
-pair of goods, which the checks verify to eleven decimals. Sweeping ζ from 0 to
-1 traces the Pareto set as a curve from A's corner of the cube to B's, and the
-one ζ whose transfers vanish is the Walrasian equilibrium — which is what the
-**Negishi** button finds by bisection, and what the source file's own last text
-box asks the reader to find by hand.
+Its first-order condition is `ζ·∇ln u_A = (1−ζ)·∇ln u_B`, and that common
+vector **is** the supporting price — no rescaling, no second derivation. At it
+`MRS_A = MRS_B` for every pair of goods, which the checks verify to eleven
+decimals. Sweeping ζ from 0 to 1 traces the Pareto set as a curve from A's
+corner of the cube to B's, and the one ζ whose transfers vanish is the
+Walrasian equilibrium — which is what the **Negishi** button finds by
+bisection, and what the source file's own last text box asks the reader to find
+by hand.
+
+### Five families, mixed freely
+
+Each agent picks its own family, so any of the 25 pairs can be set:
+
+| | | parameters |
+|---|---|---|
+| **Cobb–Douglas** | `x₁^α · x₂^β · x₃^γ` | α, β, γ each in [0, 1] |
+| **Weighted CES** | `(α·x₁^ρ + β·x₂^ρ + (1−α−β)·x₃^ρ)^(1/ρ)` | α ∈ [0,1], β ∈ [0, 1−α], ρ < 1 |
+| **Perfect substitutes** | `a·x₁ + b·x₂ + (1−a−b)·x₃` | a ∈ [0,1], b ∈ [0, 1−a] |
+| **Quasilinear** | `a·xᵢ^s + b·xⱼ^s + x_k` | a, b, s, and k choosing the numéraire |
+| **Typed by hand** | anything in `x1, x2, x3` | — |
+
+α and β are capped against each other, so the third weight is never negative:
+moving α rewrites β's maximum and pulls it back in if it no longer fits.
+Parameters persist across a family change and are clamped into the new family's
+range, so the selector feels continuous rather than resetting.
+
+The CES snaps to its Cobb–Douglas limit inside |ρ| < 0.02, where the formula is
+0/0. The limit is exact — the checks confirm the two agree to 1e-12 — so
+nothing jumps crossing zero.
+
+### What that costs, and what it buys
+
+With **both** agents Cobb–Douglas the maximisation separates good by good and
+closes:
+
+```
+x_Aj = O_j · ζ·A_j / (ζ·A_j + (1−ζ)·B_j),   p_j = (ζ·A_j + (1−ζ)·B_j) / O_j
+```
+
+which is the .ggb's own formula, so that path is kept exactly as it was and
+still reproduces every value the file stores. The moment either agent is
+anything else the separation is gone, and W is maximised by projected gradient
+ascent instead, warm-started along the sweep so the Pareto curve costs one
+solve per point rather than one search per point. Every family here has a
+concave log-utility, so the maximum is unique — up to the flat directions
+perfect substitutes genuinely have.
+
+Two things follow that the Cobb–Douglas-only version never had to say. The
+optimum can now sit on a **face** of the cube, where the two weighted gradients
+need not agree and the supporting price stops being unique; the readout reports
+that gap rather than hiding it. And the indifference surfaces have no closed
+inverse, so they are bisected in x₃ — returning "past the top" rather than
+"undefined" where no level exists, which lays the overhang flat against the
+wall instead of leaving a row of teeth.
+
+### A productive sector
+
+The cube need not be an endowment. Switch the firm on and one technology serves
+the whole economy: two goods go in, the third comes out, and which good is the
+output is a setting, so all three combinations are reachable.
+
+```
+F(t_i, t_j) = z · t_i^m · t_j^n,        O_i = ω_i − t_i,  O_j = ω_j − t_j,
+                                        O_k = ω_k + F(t)
+```
+
+Decreasing returns are not decoration: `m + n` is held below 1 by the sliders
+themselves — pushing one elasticity up pulls the other down — because at
+constant or increasing returns profit has no interior maximum and the cube
+would have no determinate size.
+
+The plan and the split are chosen **together**, by ascent over five variables
+rather than three, so the answer satisfies `MRS_A = MRS_B = MRT` at one price
+vector. Wealth becomes the endowment plus a share of the profit, `θ_A` setting
+who owns the firm, and the accounting identity that makes the second welfare
+theorem work survives intact:
+
+```
+p·O = p·ω + π      so     m_A + m_B = e_A + e_B     and     T_A + T_B = 0
+```
+
+The checks pin all of that down: that the cube loses exactly the inputs and
+gains exactly the output, that each input is paid its marginal product to 1e-7,
+that the MRT between the two inputs equals their price ratio, that moving θ_A
+shifts wealth by exactly the profit without moving the plan, and that Negishi
+still finds a zero-transfer weight with the firm running.
+
+One consequence worth saying out loud to a class: with the firm on, **the cube
+itself moves with ζ**, so the drawn Pareto set is a locus of A's bundles rather
+than a path inside one fixed box.
 
 Everything the .ggb draws is here: the cube, the Pareto curve, both
 indifference surfaces through the chosen allocation, the budget plane, A's
 budget set, the price vector and the two trade directions at Q, the
 market-error arrow, the totals, the raw and the normalised-to-100 prices, the
-demands, the market incomes, the expenditures and the transfers.
+demands, the market incomes, the expenditures and the transfers — plus, with
+the firm running, the input use, the output and the profit.
 
 Four things were added to make it a sibling of the two-good tab rather than a
 separate applet: the **Negishi** solve; **B's budget set** as well as A's, in
@@ -222,8 +308,24 @@ plane for free, and the checks confirm that no point of A's solid costs more
 than A can pay, no point of B's costs less, and every corner of the shared face
 sits on the plane to within 1e-9.
 
+The pane opts out of the width cap the flat box wants and gives the canvas an
+explicit height rather than letting it fall back to its intrinsic 2:1, which is
+exactly the wrong shape for a cube. The solve and the curve are cached, so
+orbiting does not re-run the optimisation 160 times a frame.
+
 Drag to turn the cube, wheel to zoom; from the keyboard, arrows turn and `+`/`−`
 zoom.
+
+### The typed family
+
+It reuses the two-good tab's parser rather than a second one. `tokenize()` now
+takes the list of names that count as variables, so `2x1` still means `2*x*1`
+on the flat tab and `2*x₁` on the cube; `compile3()` closes the same tree over
+three arguments; `diff()` was already generic over the variable name. Partials
+are symbolic where the expression admits them and central differences where it
+does not — `min` and `abs` are exactly the shapes a student reaches for, and
+refusing them would be the wrong trade. A parse error is reported under the box
+rather than swallowed.
 
 ## Preferences
 
@@ -435,7 +537,8 @@ it owns. The improving set is cross-checked against the utility closures
 themselves by Monte Carlo, so a bug in the grid or in the bilinear read cannot
 agree with itself.
 
-`tools/check-edgeworth3.js` does the same for the three-good tab. Because the
+`tools/check-edgeworth3.js` does the same for the three-good tab, now 129
+checks. Because the
 GeoGebra file stores the value of every object it defines, twenty of those
 values are used directly as expected results — the demands, all three prices
 raw and normalised, both market incomes, A's expenditure, both utilities at the
@@ -450,6 +553,18 @@ where each agent's textbook Cobb–Douglas demand `share × income / price` equa
 what it holds, and the clipped budget solids satisfy their own inequalities.
 The controls, both languages and the two-good tab are exercised too, so a
 regression in either tab fails a check.
+
+The families and the firm are checked on their own terms. All 25 family pairs
+have to exhaust the cube and net their transfers to zero; the CES at ρ → 0 has
+to equal Cobb–Douglas with the same weights to 1e-12; perfect substitutes have
+to be additive and homogeneous of degree one; the quasilinear numéraire has to
+add exactly 1 per unit whichever good it is; a typed expression has to
+differentiate symbolically, fall back to numeric partials at a `min`, and
+report a syntax error rather than swallowing it. With the firm on, the cube has
+to lose exactly the inputs and gain exactly the output, `p·O = p·ω + π` to
+1e-12, each input to be paid its marginal product to 1e-7, the MRT between the
+inputs to equal their price ratio, θ_A to move wealth by exactly the profit
+without moving the plan, and Negishi to still clear.
 
 ```sh
 cd edgeworth-box && python3 -m http.server 8130 &

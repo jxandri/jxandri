@@ -387,6 +387,116 @@ const fmt = v => Number.isFinite(v) ? (Math.abs(v) < 1e-4 && v !== 0 ? v.toExpon
   await setFam('B', 'cd');
   await page.waitForTimeout(250);
 
+  /* ----------------------------------------------------- the productive sector */
+  console.log('\n--- the firm ---');
+
+  await page.check('#g3-prod-on');
+  await page.waitForTimeout(700);
+  ok('turning the firm on reveals its controls', await ev(() =>
+    !document.getElementById('g3-firm-body').hidden && window.__edgeworth3.g3.prod.on));
+
+  const firm = await ev(() => {
+    const E = window.__edgeworth3, g = E.g3;
+    g.prod.z = 3.2; g.prod.m = 0.4; g.prod.n = 0.4; E.g3Invalidate();
+    const r = E.g3At(g, g.zeta);
+    const w = E.g3Endow(g), { k, i } = E.g3ProdIdx(g);
+    const dot = (u, v) => u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+    const mp = E.g3MP(g, r.t);
+    return {
+      w, O: r.O, t: r.t, k, i, F: E.g3F(g, r.t), profit: r.profit,
+      pO: dot(r.p, r.O), pwPi: dot(r.p, w) + r.profit,
+      wealth: r.mA + r.mB, spend: r.eA + r.eB, net: r.tA + r.tB,
+      exhaust: Math.max(...r.xA.map((v, j) => Math.abs(v + r.xB[j] - r.O[j]))),
+      foc: [0, 1].map(q => r.p[k]*mp[q] - r.p[i[q]]),
+      mrtGap: r.mrtGap, gap: r.gap, p: r.p, mp
+    };
+  });
+  ok('two goods go in and the third comes out', firm.k === 2 && firm.i[0] === 0 && firm.i[1] === 1,
+    `x${firm.k + 1} from x${firm.i[0] + 1}, x${firm.i[1] + 1}`);
+  ok('inputs are drawn down and the output added', 
+    firm.O[0] < firm.w[0] && firm.O[1] < firm.w[1] && firm.O[2] > firm.w[2],
+    firm.O.map(v => v.toFixed(3)).join(' x '));
+  near('the cube loses exactly the first input', firm.w[0] - firm.O[0], firm.t[0], 1e-12);
+  near('and gains exactly what is produced', firm.O[2] - firm.w[2], firm.F, 1e-12);
+
+  /* the identity the whole thing rests on: what the box is worth is what the
+     endowment is worth plus the profit, so the transfers still cancel */
+  near('p·O = p·w + profit', firm.pO, firm.pwPi, 1e-12);
+  near('and that is exactly what the two agents can pay', firm.wealth, firm.pO, 1e-12);
+  near('which is exactly what they spend', firm.spend, firm.pO, 1e-12);
+  near('so the transfers still net to zero', firm.net, 0, 1e-12);
+  near('and the bundles still exhaust the cube', firm.exhaust, 0, 1e-9);
+
+  /* the firm's own tangency: MRT = the price ratio = the common MRS */
+  near('the first input is paid its marginal product', firm.foc[0], 0, 1e-7);
+  near('and so is the second', firm.foc[1], 0, 1e-7);
+  near('so the plan sits on the firm\'s tangency', firm.mrtGap, 0, 1e-6);
+  near('and the split on the consumers\'', firm.gap, 0, 1e-6);
+  near('MRT between the two inputs equals their price ratio',
+    firm.mp[0]/firm.mp[1], firm.p[0]/firm.p[1], 1e-6);
+
+  /* profit shares move wealth between the agents without moving the plan */
+  const share = await ev(() => {
+    const E = window.__edgeworth3, g = E.g3;
+    const at = th => { g.prod.theta = th; E.g3Invalidate(); const r = E.g3At(g, g.zeta);
+                       return { mA: r.mA, mB: r.mB, t: r.t.slice(), profit: r.profit }; };
+    const lo = at(0), hi = at(1);
+    g.prod.theta = 0.5; E.g3Invalidate();
+    return { lo, hi };
+  });
+  near('all the profit to A raises A\'s wealth by the whole profit',
+    share.hi.mA - share.lo.mA, share.lo.profit, 1e-9);
+  near('and lowers B\'s by the same', share.lo.mB - share.hi.mB, share.lo.profit, 1e-9);
+  near('the production plan does not care who owns the firm',
+    Math.abs(share.hi.t[0] - share.lo.t[0]) + Math.abs(share.hi.t[1] - share.lo.t[1]), 0, 1e-9);
+
+  /* each of the three outputs is reachable and each behaves */
+  for (let k = 0; k < 3; k++) {
+    const q = await page.evaluate((kk) => {
+      const E = window.__edgeworth3, g = E.g3;
+      g.prod.out = kk; E.g3Invalidate();
+      const r = E.g3At(g, 0.5), w = E.g3Endow(g), { i } = E.g3ProdIdx(g);
+      return { grew: r.O[kk] > w[kk], shrank: r.O[i[0]] <= w[i[0]] && r.O[i[1]] <= w[i[1]],
+               net: Math.abs(r.tA + r.tB), exhaust: Math.max(...r.xA.map((v, j) => Math.abs(v + r.xB[j] - r.O[j]))) };
+    }, k);
+    ok(`making x${k + 1} grows x${k + 1} and spends the other two`, q.grew && q.shrank);
+    ok(`and keeps the accounts straight`, q.net < 1e-12 && q.exhaust < 1e-9,
+      `net ${fmt(q.net)}, exhaust ${fmt(q.exhaust)}`);
+  }
+
+  /* Negishi still has to find a zero-transfer weight with the firm running */
+  await ev(() => { const E = window.__edgeworth3; E.g3.prod.out = 2; E.g3Invalidate(); });
+  await page.click('#g3-negishi');
+  await page.waitForTimeout(700);
+  const negProd = await ev(() => {
+    const E = window.__edgeworth3, g = E.g3, r = E.g3At(g, g.zeta);
+    return { zeta: g.zeta, tA: r.tA, eA: r.eA, mA: r.mA, profit: r.profit };
+  });
+  near('Negishi clears the transfers with a firm in the loop', negProd.tA, 0, 1e-6);
+  near('A spends its endowment plus its share of the profit', negProd.eA, negProd.mA, 1e-6);
+  ok('and the firm is actually running there', negProd.profit > 0, fmt(negProd.profit));
+
+  /* m + n is held below one, or the firm has no determinate scale */
+  const rts = await ev(() => {
+    const E = window.__edgeworth3, g = E.g3;
+    const sl = document.getElementById('g3-m');
+    sl.value = '0.9'; sl.dispatchEvent(new Event('input'));
+    return { m: g.prod.m, n: g.prod.n, sum: g.prod.m + g.prod.n };
+  });
+  ok('pushing one elasticity up pulls the other down', rts.sum < 1,
+    `m + n = ${rts.sum.toFixed(3)}`);
+
+  await ev(() => {
+    const E = window.__edgeworth3, g = E.g3;
+    g.prod.on = false; g.prod.m = 0.35; g.prod.n = 0.35; g.prod.z = 1.2; g.prod.theta = 0.5;
+    E.paintG3Firm(); E.g3Invalidate();
+  });
+  await page.waitForTimeout(300);
+  ok('switching the firm off restores the pure endowment cube', await ev(() => {
+    const E = window.__edgeworth3, g = E.g3, O = E.g3Tot(g), w = E.g3Endow(g);
+    return O.every((v, j) => Math.abs(v - w[j]) < 1e-12);
+  }));
+
   /* ------------------------------------------------------------- languages */
   console.log('\n--- both languages ---');
   await page.click('#lang-en');
@@ -398,7 +508,9 @@ const fmt = v => Number.isFinite(v) ? (Math.abs(v) < 1e-4 && v !== 0 ? v.toExpon
     note: document.getElementById('t3-endow-note').textContent
   }));
   ok('the tab is in English', en.tab === 'Three goods', en.tab);
-  ok('so are the rail headings', en.head.join('|') === 'Endowments|Preferences|Pareto weight|Layers', en.head.join('|'));
+  ok('so are the rail headings',
+    en.head.join('|') === 'Endowments|Preferences|Productive sector|Pareto weight|Layers',
+    en.head.join('|'));
   ok('and the readout', en.keys[0] === 'Totals' && en.keys.includes('Transfer to A'), en.keys[0]);
   ok('and nothing is left undefined', !/undefined/.test(en.note + en.keys.join('') + en.head.join('')));
 
