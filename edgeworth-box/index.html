@@ -407,6 +407,13 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .tabs button:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px }
 
 /* the three-good stage: one canvas, one strip of numbers */
+/* A cube in perspective needs room in both directions, so this pane opts out
+   of the width cap the flat box wants and takes the height the viewport can
+   spare. Without an explicit height the canvas falls back to its intrinsic
+   2:1, which is exactly the wrong shape for a cube. */
+#pane-g3 .viewports > .viewport{ max-width:none }
+#wrap3{ height:clamp(430px, 76vh, 1040px) }
+@media (max-width:900px){ #wrap3{ height:clamp(360px, 62vh, 620px) } }
 #c3{ width:100%; height:100%; display:block; touch-action:none; cursor:grab }
 /* thirteen readouts, several of them a bracketed triple, need wider cells than
    the two-good strip and have to be allowed to wrap inside one */
@@ -767,20 +774,22 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       <div class="group">
         <h2 id="t3-g-pref">Preferencias</h2>
         <div class="agent">
-          <h3><span class="dot" style="background:var(--agA)"></span><span id="t3-ua">A — u<sub>A</sub> = x<sup>α<sub>a</sub></sup>y<sup>β<sub>a</sub></sup>z<sup>γ<sub>a</sub></sup></span></h3>
-          <div class="trip">
-            <div class="slider-row"><span class="k">α<sub>a</sub></span><input type="range" id="g3aa" min="0" max="1" step="0.001" aria-label="alfa de A"><input class="v" id="g3aa-v" inputmode="decimal" aria-label="alfa a"></div>
-            <div class="slider-row"><span class="k">β<sub>a</sub></span><input type="range" id="g3ba" min="0" max="1" step="0.001" aria-label="beta de A"><input class="v" id="g3ba-v" inputmode="decimal" aria-label="beta a"></div>
-            <div class="slider-row"><span class="k">γ<sub>a</sub></span><input type="range" id="g3ga" min="0" max="1" step="0.001" aria-label="gamma de A"><input class="v" id="g3ga-v" inputmode="decimal" aria-label="gamma a"></div>
-          </div>
+          <h3><span class="dot" style="background:var(--agA)"></span><span id="t3-ua">A — u<sub>A</sub></span></h3>
+          <select class="sel" id="g3-fam-a" aria-label="Familia de utilidad de A"></select>
+          <div class="trip" id="g3-par-a"></div>
+          <input class="text-in" id="g3-src-a" spellcheck="false" autocomplete="off" hidden
+                 aria-label="Utilidad de A escrita a mano">
+          <div class="err" id="g3-err-a"></div>
+          <output class="expr-out" id="g3-out-a"></output>
         </div>
         <div class="agent">
-          <h3><span class="dot" style="background:var(--agB)"></span><span id="t3-ub">B — u<sub>B</sub> = x<sup>α<sub>b</sub></sup>y<sup>β<sub>b</sub></sup>z<sup>γ<sub>b</sub></sup></span></h3>
-          <div class="trip">
-            <div class="slider-row"><span class="k">α<sub>b</sub></span><input type="range" id="g3ab" min="0" max="1" step="0.001" aria-label="alfa de B"><input class="v" id="g3ab-v" inputmode="decimal" aria-label="alfa b"></div>
-            <div class="slider-row"><span class="k">β<sub>b</sub></span><input type="range" id="g3bb" min="0" max="1" step="0.001" aria-label="beta de B"><input class="v" id="g3bb-v" inputmode="decimal" aria-label="beta b"></div>
-            <div class="slider-row"><span class="k">γ<sub>b</sub></span><input type="range" id="g3gb" min="0" max="1" step="0.001" aria-label="gamma de B"><input class="v" id="g3gb-v" inputmode="decimal" aria-label="gamma b"></div>
-          </div>
+          <h3><span class="dot" style="background:var(--agB)"></span><span id="t3-ub">B — u<sub>B</sub></span></h3>
+          <select class="sel" id="g3-fam-b" aria-label="Familia de utilidad de B"></select>
+          <div class="trip" id="g3-par-b"></div>
+          <input class="text-in" id="g3-src-b" spellcheck="false" autocomplete="off" hidden
+                 aria-label="Utilidad de B escrita a mano">
+          <div class="err" id="g3-err-b"></div>
+          <output class="expr-out" id="g3-out-b"></output>
         </div>
         <p class="note" id="t3-pref-note">—</p>
       </div>
@@ -860,7 +869,12 @@ const FUNCS = {
 };
 const CONSTS = { e:Math.E, pi:Math.PI, "π":Math.PI };
 
-function tokenize(src){
+/* `vars` is the list of names that count as variables. The two-good box wants
+   x and y; the three-good box wants x1, x2, x3, and passing the list rather
+   than hard-coding both keeps "2x1" meaning 2*x*1 on one tab and 2*x_1 on the
+   other, which is what each tab's reader expects. */
+function tokenize(src, vars){
+  const VARS = vars || ["x", "y"];
   const s = src.replace(/−/g,"-").replace(/[×⋅]/g,"*").replace(/÷/g,"/");
   const out = [];
   let i = 0;
@@ -886,7 +900,11 @@ function tokenize(src){
       }
       if(name && FUNCS[name]){ out.push({ k:"fn", v:name, arity:FUNCS[name] }); i += name.length; continue; }
       if(name && name in CONSTS){ out.push({ k:"num", v:CONSTS[name] }); i += name.length; continue; }
-      if(c === "x" || c === "y"){ out.push({ k:"var", v:c }); i++; continue; }
+      /* longest variable name that matches here, so x1 beats x */
+      let vn = null;
+      for(const cand of VARS)
+        if(s.startsWith(cand, i) && (!vn || cand.length > vn.length)) vn = cand;
+      if(vn){ out.push({ k:"var", v:vn }); i += vn.length; continue; }
       throw new SyntaxError(`unknown:${c}`);
     }
 
@@ -907,8 +925,8 @@ function tokenize(src){
   return res;
 }
 
-function parse(src){
-  const ts = tokenize(src);
+function parse(src, vars){
+  const ts = tokenize(src, vars);
   let p = 0;
   const peek = () => ts[p];
   const eat = k => {
@@ -996,6 +1014,78 @@ function compile(n){
     }
   }
   throw new Error("compile");
+}
+
+/* The same tree, closed over three arguments instead of two. Written out
+   rather than generalised over an environment object: this runs inside the
+   solver's inner loop and inside every bisection of every surface quad, and
+   an object lookup per node there is not free. */
+function compile3(n){
+  switch(n.t){
+    case "num": { const v = n.v; return () => v; }
+    case "var": {
+      const i = n.n === "x1" ? 0 : n.n === "x2" ? 1 : 2;
+      return i === 0 ? (a) => a : i === 1 ? (a,b) => b : (a,b,c) => c;
+    }
+    case "neg": { const a = compile3(n.a); return (p,q,r) => -a(p,q,r); }
+    case "pow": {
+      const a = compile3(n.a), b = compile3(n.b);
+      if(n.b.t === "num"){ const k = n.b.v; return (p,q,r) => Math.pow(a(p,q,r), k); }
+      return (p,q,r) => Math.pow(a(p,q,r), b(p,q,r));
+    }
+    case "bin": {
+      const a = compile3(n.a), b = compile3(n.b);
+      switch(n.o){
+        case "+": return (p,q,r) => a(p,q,r) + b(p,q,r);
+        case "-": return (p,q,r) => a(p,q,r) - b(p,q,r);
+        case "*": return (p,q,r) => a(p,q,r) * b(p,q,r);
+        case "/": return (p,q,r) => a(p,q,r) / b(p,q,r);
+      }
+      break;
+    }
+    case "call": {
+      const A = n.a.map(compile3), f = A[0], g = A[1];
+      switch(n.n){
+        case "sqrt":  return (p,q,r) => Math.sqrt(f(p,q,r));
+        case "ln":    return (p,q,r) => Math.log(f(p,q,r));
+        case "log":   return (p,q,r) => Math.log(f(p,q,r));
+        case "log10": return (p,q,r) => Math.log10(f(p,q,r));
+        case "exp":   return (p,q,r) => Math.exp(f(p,q,r));
+        case "abs":   return (p,q,r) => Math.abs(f(p,q,r));
+        case "sin":   return (p,q,r) => Math.sin(f(p,q,r));
+        case "cos":   return (p,q,r) => Math.cos(f(p,q,r));
+        case "tan":   return (p,q,r) => Math.tan(f(p,q,r));
+        case "min":   return (p,q,r) => Math.min(f(p,q,r), g(p,q,r));
+        case "max":   return (p,q,r) => Math.max(f(p,q,r), g(p,q,r));
+        case "pow":   return (p,q,r) => Math.pow(f(p,q,r), g(p,q,r));
+      }
+    }
+  }
+  throw new Error("compile3");
+}
+
+/* u and its three partials from source. Symbolic where the expression admits
+   it, central differences where it does not — min and abs are exactly the
+   shapes a student reaches for, and refusing them would be the wrong trade. */
+const G3_VARS = ["x1", "x2", "x3"];
+function buildUtility3(src){
+  const ast = parse(src, G3_VARS);
+  const u = compile3(ast);
+  let g, exact = true;
+  try{
+    const d = G3_VARS.map(v => compile3(diff(ast, v)));
+    g = (p,q,r) => [d[0](p,q,r), d[1](p,q,r), d[2](p,q,r)];
+  }catch(err){
+    if(!(err instanceof NonDifferentiable)) throw err;
+    exact = false;
+    const h = 1e-6;
+    g = (p,q,r) => [
+      (u(p+h,q,r) - u(p-h,q,r)) / (2*h),
+      (u(p,q+h,r) - u(p,q-h,r)) / (2*h),
+      (u(p,q,r+h) - u(p,q,r-h)) / (2*h)
+    ];
+  }
+  return { src, ast, u, g, exactPartials:exact };
 }
 
 /* ---- symbolic differentiation -------------------------------------------
@@ -2750,6 +2840,13 @@ const STR = {
 
 
     /* --- three goods --- */
+    g3f_cd:"Cobb–Douglas", g3f_ces:"CES ponderada", g3f_sub:"Sustitutos perfectos",
+    g3f_ql:"Cuasilineal", g3f_free:"Escrita a mano",
+    g3uA:"A — u<sub>A</sub>(x₁, x₂, x₃)",
+    g3uB:"B — u<sub>B</sub>(x₁, x₂, x₃)",
+    g3BadExpr:m => `No se entiende: ${m}`,
+    g3PrefNote2:"Cada agente elige su propia familia. Con ambos Cobb–Douglas el conjunto de Pareto y los precios son fórmula cerrada; en cualquier otro caso se resuelven numéricamente, maximizando ζ·ln u<sub>A</sub> + (1−ζ)·ln u<sub>B</sub> sobre el cubo.",
+    g3Boundary:g => `Los gradientes ponderados difieren en un ${g}: el óptimo toca una cara del cubo y el precio de apoyo no es único.`,
     g3Tab2:"Dos bienes", g3Tab3:"Tres bienes",
     g3vp:"Caja de Edgeworth · 3 bienes",
     g3keyC:"Conjunto de Pareto",
@@ -2757,11 +2854,9 @@ const STR = {
     g3gWeight:"Peso de Pareto", g3gShow:"Capas",
     g3EndowA:"A — ω<sub>A</sub> = (a<sub>1</sub>, a<sub>2</sub>, a<sub>3</sub>)",
     g3EndowB:"B — ω<sub>B</sub> = (b<sub>1</sub>, b<sub>2</sub>, b<sub>3</sub>)",
-    g3uA:"A — u<sub>A</sub> = x<sup>α<sub>a</sub></sup>y<sup>β<sub>a</sub></sup>z<sup>γ<sub>a</sub></sup>",
-    g3uB:"B — u<sub>B</sub> = x<sup>α<sub>b</sub></sup>y<sup>β<sub>b</sub></sup>z<sup>γ<sub>b</sub></sup>",
     g3EndowNote:(o1, o2, o3) =>
       `Cubo: ${o1} × ${o2} × ${o3}. A se mide desde la esquina de abajo, B desde la de enfrente: cada punto del cubo reparte los tres bienes por completo.`,
-    g3PrefNote:"Ambos Cobb–Douglas, que es lo que deja el conjunto de Pareto y los precios en forma cerrada. Los exponentes no tienen por qué sumar 1.",
+    g3PrefNote:"—",
     g3WeightNote:"ζ<sub>A</sub> recorre el conjunto de Pareto. Con ζ = 0 A no recibe nada; con ζ = 1 se lo lleva todo.",
     g3Reset:"Reencuadrar",
     g3Empty:"Alguna dotación total es cero: no hay cubo que repartir.",
@@ -2890,6 +2985,13 @@ const STR = {
     foot:'Translated from a Desmos calculator. With the <b>Typed by hand</b> family, the syntax is: <code>+ − * / ^ ( )</code>, <code>sqrt ln log exp abs min max sin cos</code>, constants <code>e pi</code>. Implicit multiplication works: <code>2xy</code> = <code>2*x*y</code>.',
 
     /* --- three goods --- */
+    g3f_cd:"Cobb–Douglas", g3f_ces:"Weighted CES", g3f_sub:"Perfect substitutes",
+    g3f_ql:"Quasilinear", g3f_free:"Typed by hand",
+    g3uA:"A — u<sub>A</sub>(x₁, x₂, x₃)",
+    g3uB:"B — u<sub>B</sub>(x₁, x₂, x₃)",
+    g3BadExpr:m => `Not understood: ${m}`,
+    g3PrefNote2:"Each agent picks its own family. With both Cobb–Douglas the Pareto set and the prices are closed form; anything else is solved numerically, maximising ζ·ln u<sub>A</sub> + (1−ζ)·ln u<sub>B</sub> over the cube.",
+    g3Boundary:g => `The weighted gradients differ by ${g}: the optimum touches a face of the cube, so the supporting price is not unique.`,
     g3Tab2:"Two goods", g3Tab3:"Three goods",
     g3vp:"Edgeworth box · 3 goods",
     g3keyC:"Pareto set",
@@ -2897,11 +2999,9 @@ const STR = {
     g3gWeight:"Pareto weight", g3gShow:"Layers",
     g3EndowA:"A — ω<sub>A</sub> = (a<sub>1</sub>, a<sub>2</sub>, a<sub>3</sub>)",
     g3EndowB:"B — ω<sub>B</sub> = (b<sub>1</sub>, b<sub>2</sub>, b<sub>3</sub>)",
-    g3uA:"A — u<sub>A</sub> = x<sup>α<sub>a</sub></sup>y<sup>β<sub>a</sub></sup>z<sup>γ<sub>a</sub></sup>",
-    g3uB:"B — u<sub>B</sub> = x<sup>α<sub>b</sub></sup>y<sup>β<sub>b</sub></sup>z<sup>γ<sub>b</sub></sup>",
     g3EndowNote:(o1, o2, o3) =>
       `Cube: ${o1} × ${o2} × ${o3}. A is measured from the near corner and B from the far one, so every point of the cube divides all three goods completely.`,
-    g3PrefNote:"Both Cobb–Douglas, which is what keeps the Pareto set and the prices in closed form. The exponents need not sum to 1.",
+    g3PrefNote:"—",
     g3WeightNote:"ζ<sub>A</sub> sweeps the Pareto set. At ζ = 0 A gets nothing; at ζ = 1 A gets everything.",
     g3Reset:"Reframe",
     g3Empty:"One of the totals is zero: there is no cube to divide.",
@@ -3387,7 +3487,8 @@ function applyLang(){
   $("t3-endow-b").innerHTML    = t.g3EndowB;
   $("t3-ua").innerHTML         = t.g3uA;
   $("t3-ub").innerHTML         = t.g3uB;
-  $("t3-pref-note").innerHTML  = t.g3PrefNote;
+  g3BuildFams();
+  $("t3-pref-note").innerHTML  = t.g3PrefNote2;
   $("t3-weight-note").innerHTML= t.g3WeightNote;
   $("t3-vp").textContent       = t.g3vp;
   $("t3-keyA").textContent     = t.keyA;
@@ -4026,20 +4127,33 @@ function setMethod(m, quiet){
 /* ==========================================================================
    15. The three-good box
    --------------------------------------------------------------------------
-   A translation of Edgeworth_box__2_agents_3_goods.ggb. Two agents, three
-   goods, nothing produced, so the box is a cube: [0,O_1] x [0,O_2] x [0,O_3],
-   A measured from the near-bottom-left corner and B from the far-top-right.
+   A translation of Edgeworth_box__2_agents_3_goods.ggb, widened. Two agents,
+   three goods, nothing produced, so the box is a cube
+   [0,O_1] x [0,O_2] x [0,O_3], A measured from the near corner and B from the
+   far one. Goods are written x_1, x_2, x_3 rather than x, y, z, because past
+   two dimensions the letters run out and the index does not.
 
-   Both agents are Cobb-Douglas, and that is what makes the whole construction
-   closed-form rather than searched, as the two-good tab has to be. Maximising
-   zeta*ln u_A + (1-zeta)*ln u_B good by good gives
+   Everything hangs off one scalarisation, the one the source file used:
 
-       x_Aj = O_j * zeta*A_j / (zeta*A_j + (1-zeta)*B_j)
+       W(x) = zeta*ln u_A(x) + (1-zeta)*ln u_B(O-x),   maximised over the box.
 
-   and the supporting price of good j is (zeta*A_j + (1-zeta)*B_j) / O_j, at
-   which MRS_A = MRS_B for every pair. Sweeping zeta from 0 to 1 traces the
-   Pareto set as a curve through the cube; the one zeta whose transfers vanish
-   is the Walrasian equilibrium, which is what Negishi's algorithm looks for.
+   Its first-order condition is zeta*grad ln u_A = (1-zeta)*grad ln u_B, and
+   that common vector IS the supporting price — no rescaling, no second
+   derivation. Sweeping zeta from 0 to 1 traces the Pareto set as a curve from
+   A's corner of the cube to B's, and the zeta whose transfers vanish is the
+   Walrasian equilibrium, which is what Negishi's algorithm looks for.
+
+   With both agents Cobb-Douglas the maximisation is separable and closes:
+
+       x_Aj = O_j * zeta*A_j / (zeta*A_j + (1-zeta)*B_j),
+       p_j  = (zeta*A_j + (1-zeta)*B_j) / O_j
+
+   which is the .ggb's own formula, so that path is kept exactly as it was and
+   still reproduces every value the file stores. The moment either agent is
+   CES or a perfect substituter the separation is gone, and W is maximised by
+   projected gradient ascent instead. Every family offered here has a concave
+   log-utility, so the maximum is unique (up to the flat directions perfect
+   substitutes genuinely have) and ascent from anywhere inside reaches it.
 
    Four formulas in the source file do not survive arithmetic and are noted
    in the README; the corrected ones are used here. They are B's demands
@@ -4049,12 +4163,174 @@ function setMethod(m, quiet){
    the sign of the transfers (labelled "to A", computed as from A).
    ========================================================================== */
 
+/* --- preference families ---------------------------------------------------
+   Each answers three questions: the utility of a bundle, the gradient of its
+   log there, and what the formula looks like written out. The gradient of the
+   LOG is what the model needs, because that is what the scalarisation above
+   differentiates and what hands back the supporting price directly.
+
+   A parameter is [key, label, min, max, step, default, cappedBy?]. "cappedBy"
+   names another parameter this one must leave room for: beta lives in
+   [0, 1-alpha], so the third weight 1-alpha-beta is never negative.
+   -------------------------------------------------------------------------- */
+
+const G3_EPS = 1e-9;
+const g3Clamp3 = x => [Math.max(x[0], 0), Math.max(x[1], 0), Math.max(x[2], 0)];
+
+/* Below this |rho| the CES formula is 0/0 and its Cobb-Douglas limit is used
+   instead. The limit is exact, so the surface does not jump crossing zero. */
+const G3_CES_FLAT = 0.02;
+
+const G3_FAMS = {
+  cd: {
+    pars: [["a", "α", 0, 1, 0.001, 0.325],
+           ["b", "β", 0, 1, 0.001, 0.331],
+           ["c", "γ", 0, 1, 0.001, 0.325]],
+    exps: p => [p.a, p.b, p.c],
+    u: (p, x) => {
+      const e = [p.a, p.b, p.c];
+      let u = 1;
+      for(let j = 0; j < 3; j++){
+        if(e[j] === 0) continue;
+        if(x[j] <= 0) return 0;
+        u *= Math.pow(x[j], e[j]);
+      }
+      return u;
+    },
+    gl: (p, x) => {
+      const e = [p.a, p.b, p.c];
+      return [0, 1, 2].map(j => e[j] > 0 ? e[j]/Math.max(x[j], G3_EPS) : 0);
+    },
+    src: p => `x₁^${g3Par(p.a)} · x₂^${g3Par(p.b)} · x₃^${g3Par(p.c)}`
+  },
+
+  ces: {
+    pars: [["a", "α", 0, 1, 0.001, 0.45],
+           ["b", "β", 0, 1, 0.001, 0.30, "a"],
+           ["r", "ρ", -5, 0.98, 0.01, 0.5]],
+    w: p => [p.a, p.b, Math.max(1 - p.a - p.b, 0)],
+    u: (p, x) => {
+      const w = G3_FAMS.ces.w(p), r = p.r;
+      if(Math.abs(r) < G3_CES_FLAT) return G3_FAMS.cd.u({a:w[0], b:w[1], c:w[2]}, x);
+      let S = 0;
+      for(let j = 0; j < 3; j++){
+        if(w[j] === 0) continue;
+        const v = Math.max(x[j], G3_EPS);
+        S += w[j] * Math.pow(v, r);
+      }
+      /* with rho < 0 a good in zero supply drives the sum to infinity, which
+         is the right answer: the bundle is worthless without it */
+      if(!Number.isFinite(S) || S <= 0) return 0;
+      return Math.pow(S, 1/r);
+    },
+    gl: (p, x) => {
+      const w = G3_FAMS.ces.w(p), r = p.r;
+      if(Math.abs(r) < G3_CES_FLAT) return G3_FAMS.cd.gl({a:w[0], b:w[1], c:w[2]}, x);
+      let S = 0;
+      const t = [0, 0, 0];
+      for(let j = 0; j < 3; j++){
+        if(w[j] === 0) continue;
+        const v = Math.max(x[j], G3_EPS);
+        t[j] = w[j] * Math.pow(v, r - 1);
+        S += w[j] * Math.pow(v, r);
+      }
+      if(!(S > 0) || !Number.isFinite(S)) return [0, 0, 0];
+      return t.map(v => Number.isFinite(v/S) ? v/S : 0);
+    },
+    src: p => {
+      const w = G3_FAMS.ces.w(p);
+      return Math.abs(p.r) < G3_CES_FLAT
+        ? `x₁^${g3Par(w[0])} · x₂^${g3Par(w[1])} · x₃^${g3Par(w[2])}`
+        : `(${g3Par(w[0])}·x₁^${g3Par(p.r)} + ${g3Par(w[1])}·x₂^${g3Par(p.r)}` +
+          ` + ${g3Par(w[2])}·x₃^${g3Par(p.r)})^(1/${g3Par(p.r)})`;
+    }
+  },
+
+  ql: {
+    /* linear in one good, concave in the other two. k picks which good is the
+       numeraire, so "quasilinear" here is a family of three, not one. */
+    pars: [["a", "a", 0.1, 4, 0.01, 2],
+           ["b", "b", 0.1, 4, 0.01, 1.5],
+           ["s", "s", 0.05, 0.95, 0.01, 0.5],
+           ["k", "lin", 1, 3, 1, 3]],
+    idx: p => {
+      const k = Math.round(p.k) - 1;
+      return { k, o: [0, 1, 2].filter(j => j !== k) };
+    },
+    u: (p, x) => {
+      const { k, o } = G3_FAMS.ql.idx(p);
+      const f = (c, v) => c * Math.pow(Math.max(v, 0), p.s);
+      return f(p.a, x[o[0]]) + f(p.b, x[o[1]]) + Math.max(x[k], 0);
+    },
+    gl: (p, x) => {
+      const { k, o } = G3_FAMS.ql.idx(p);
+      const u = G3_FAMS.ql.u(p, x);
+      if(!(u > G3_EPS)) return [0, 0, 0];
+      const d = (c, v) => c * p.s * Math.pow(Math.max(v, G3_EPS), p.s - 1);
+      const g = [0, 0, 0];
+      g[o[0]] = d(p.a, x[o[0]]) / u;
+      g[o[1]] = d(p.b, x[o[1]]) / u;
+      g[k]    = 1 / u;
+      return g;
+    },
+    src: p => {
+      const { k, o } = G3_FAMS.ql.idx(p);
+      return `${g3Par(p.a)}·x${o[0]+1}^${g3Par(p.s)} + ${g3Par(p.b)}·x${o[1]+1}^${g3Par(p.s)} + x${k+1}`;
+    }
+  },
+
+  free: {
+    /* typed by hand. The solver assumes a concave log-utility; anything else
+       is still drawn faithfully, but ascent may stop at a local maximum, and
+       the readout says so rather than pretending otherwise. */
+    typed: true,
+    pars: [],
+    u: (p, x) => {
+      const c = p._c;
+      if(!c) return 0;
+      const v = c.u(Math.max(x[0], 0), Math.max(x[1], 0), Math.max(x[2], 0));
+      return Number.isFinite(v) ? v : 0;
+    },
+    gl: (p, x) => {
+      const c = p._c;
+      if(!c) return [0, 0, 0];
+      const q = [Math.max(x[0], G3_EPS), Math.max(x[1], G3_EPS), Math.max(x[2], G3_EPS)];
+      const u = c.u(q[0], q[1], q[2]);
+      if(!(u > G3_EPS) || !Number.isFinite(u)) return [0, 0, 0];
+      return c.g(q[0], q[1], q[2]).map(v => Number.isFinite(v) ? v/u : 0);
+    },
+    src: p => p.src || "—"
+  },
+
+  sub: {
+    pars: [["a", "a", 0, 1, 0.001, 0.5],
+           ["b", "b", 0, 1, 0.001, 0.3, "a"]],
+    w: p => [p.a, p.b, Math.max(1 - p.a - p.b, 0)],
+    u: (p, x) => {
+      const w = G3_FAMS.sub.w(p);
+      return w[0]*Math.max(x[0], 0) + w[1]*Math.max(x[1], 0) + w[2]*Math.max(x[2], 0);
+    },
+    gl: (p, x) => {
+      const w = G3_FAMS.sub.w(p);
+      const S = w[0]*Math.max(x[0], 0) + w[1]*Math.max(x[1], 0) + w[2]*Math.max(x[2], 0);
+      return S > G3_EPS ? w.map(v => v/S) : w.map(v => v > 0 ? 1/G3_EPS : 0);
+    },
+    src: p => {
+      const w = G3_FAMS.sub.w(p);
+      return `${g3Par(w[0])}·x₁ + ${g3Par(w[1])}·x₂ + ${g3Par(w[2])}·x₃`;
+    }
+  }
+};
+const G3_FAM_KEYS = ["cd", "ces", "sub", "ql", "free"];
+const g3Par = v => (+v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+
 const g3 = {
-  /* endowments, exponents and weight all start where the .ggb left them */
+  /* endowments and weight start where the .ggb left them, and so do both
+     agents' Cobb-Douglas exponents, so the file's own numbers still come out */
   a: [1, 2, 2],
   b: [2, 2, 2],
-  A: [0.325, 0.331, 0.325],
-  B: [0.570, 0.330, 0.325],
+  famA: "cd", parA: { a: 0.325, b: 0.331, c: 0.325 },
+  famB: "cd", parB: { a: 0.570, b: 0.330, c: 0.325 },
   zeta: 0.455,
   L: 0.372,
   N: [1, 1.3333333333333333, 1.3333333333333333],
@@ -4065,7 +4341,8 @@ const g3 = {
     price:true, tangents:true, error:true, free:false
   },
   drag: null,
-  negishi: null
+  negishi: null,
+  now: null, curve: null
 };
 
 const g3Tot = s => [s.a[0] + s.b[0], s.a[1] + s.b[1], s.a[2] + s.b[2]];
@@ -4074,53 +4351,112 @@ const g3Sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
 const g3Add = (u, v) => [u[0]+v[0], u[1]+v[1], u[2]+v[2]];
 const g3Mul = (k, v) => [k*v[0], k*v[1], k*v[2]];
 
-/* Cobb-Douglas, with the 0^0 corner treated as 0 rather than 1: an agent
-   holding none of a good it cares about is at utility zero, and saying so
-   keeps the indifference surfaces from sprouting a spurious sheet. */
-function g3U(e, x){
-  let u = 1;
-  for(let j = 0; j < 3; j++){
-    if(e[j] === 0) continue;
-    if(x[j] <= 0) return 0;
-    u *= Math.pow(x[j], e[j]);
-  }
-  return u;
-}
-const g3UA = (s, x) => g3U(s.A, x);
-const g3UB = (s, x) => g3U(s.B, x);
+const g3Fam = (s, who) => G3_FAMS[who === "A" ? s.famA : s.famB];
+const g3Pars = (s, who) => who === "A" ? s.parA : s.parB;
+const g3UA = (s, x) => G3_FAMS[s.famA].u(s.parA, x);
+const g3UB = (s, x) => G3_FAMS[s.famB].u(s.parB, x);
+const g3U  = (s, who, x) => g3Fam(s, who).u(g3Pars(s, who), x);
+const g3GL = (s, who, x) => g3Fam(s, who).gl(g3Pars(s, who), x);
 
-/* A's bundle at Pareto weight zeta. B's is the complement, by construction. */
-function g3Pareto(s, z){
-  const O = g3Tot(s), out = [0, 0, 0];
+/* the Cobb-Douglas exponents, when that is what the agent has; null otherwise */
+const g3CDExp = (s, who) =>
+  (who === "A" ? s.famA : s.famB) === "cd" ? G3_FAMS.cd.exps(g3Pars(s, who)) : null;
+const g3BothCD = s => s.famA === "cd" && s.famB === "cd";
+
+/* --- the Pareto set --------------------------------------------------------
+   Two paths to the same thing. Cobb-Douglas on both sides separates good by
+   good and closes, so that case is solved in one line and reproduces the
+   source file exactly. Anything else is maximised by projected gradient
+   ascent, warm-started along the sweep so the curve costs one solve per point
+   rather than one search per point.
+   -------------------------------------------------------------------------- */
+
+function g3ParetoCD(s, z){
+  const O = g3Tot(s), A = g3CDExp(s, "A"), B = g3CDExp(s, "B"), out = [0, 0, 0];
   for(let j = 0; j < 3; j++){
-    const D = z*s.A[j] + (1 - z)*s.B[j];
-    out[j] = D > 1e-12 ? O[j] * z*s.A[j] / D : O[j] * (z > 0.5 ? 1 : 0);
+    const D = z*A[j] + (1 - z)*B[j];
+    out[j] = D > 1e-12 ? O[j] * z*A[j] / D : O[j] * (z > 0.5 ? 1 : 0);
   }
   return out;
 }
 
-/* The price vector that supports that allocation. Scale is arbitrary — only
-   ratios are economics — so the file's own normalisation is kept and a
-   summing-to-100 version offered beside it, exactly as the .ggb does. */
-function g3Prices(s, z){
+function g3Solve(s, z, seed){
   const O = g3Tot(s);
-  return [0, 1, 2].map(j => O[j] > 0 ? (z*s.A[j] + (1 - z)*s.B[j]) / O[j] : 0);
+  const pad = [0, 1, 2].map(j => Math.max(O[j], 1e-9) * 1e-7);
+  const box = x => [0, 1, 2].map(j => Math.min(Math.max(x[j], pad[j]), O[j] - pad[j]));
+  const W = q => {
+    const ua = g3UA(s, q), ub = g3UB(s, g3Sub(O, q));
+    if(!(ua > 0) || !(ub > 0)) return -Infinity;
+    return z*Math.log(ua) + (1 - z)*Math.log(ub);
+  };
+  let x = box(seed && seed.every(Number.isFinite) ? seed : O.map(v => v/2));
+  let f = W(x);
+  if(!Number.isFinite(f)){ x = box(O.map(v => v/2)); f = W(x); }
+  let step = 0.2 * Math.max(O[0], O[1], O[2], 1e-9);
+  for(let it = 0; it < 260; it++){
+    const ga = g3GL(s, "A", x), gb = g3GL(s, "B", g3Sub(O, x));
+    const g = [0, 1, 2].map(j => z*ga[j] - (1 - z)*gb[j]);
+    const n = Math.hypot(g[0], g[1], g[2]);
+    if(!(n > 0) || !Number.isFinite(n)) break;
+    const d = g3Mul(1/n, g);
+    let moved = false;
+    while(step > 1e-13){
+      const y = box([0, 1, 2].map(j => x[j] + step*d[j]));
+      const fy = W(y);
+      if(fy > f + 1e-16){ x = y; f = fy; moved = true; break; }
+      step *= 0.5;
+    }
+    if(!moved) break;
+    /* let the step grow again, or a single tight corner early on strands the
+       search with a step too small to cross the box */
+    step = Math.min(step*1.7, 0.4*Math.max(O[0], O[1], O[2], 1e-9));
+  }
+  return x;
+}
+
+/* A's bundle at Pareto weight zeta. B's is the complement, by construction. */
+function g3Pareto(s, z, seed){
+  const O = g3Tot(s);
+  /* the ends are corners of the cube and are named, not searched */
+  if(z <= 0) return [0, 0, 0];
+  if(z >= 1) return O.slice();
+  return g3BothCD(s) ? g3ParetoCD(s, z) : g3Solve(s, z, seed);
+}
+
+/* The price vector that supports that allocation. At an interior optimum the
+   two agents' weighted log-gradients are equal and either one is the price;
+   on a face of the cube — where perfect substitutes usually land — they need
+   not be, and the midpoint is reported with the gap beside it. */
+function g3PricesAt(s, z, xA){
+  const O = g3Tot(s);
+  if(g3BothCD(s)){
+    const A = g3CDExp(s, "A"), B = g3CDExp(s, "B");
+    const p = [0, 1, 2].map(j => O[j] > 0 ? (z*A[j] + (1 - z)*B[j]) / O[j] : 0);
+    return { p, gap: 0 };
+  }
+  const ga = g3GL(s, "A", xA).map(v => z*v);
+  const gb = g3GL(s, "B", g3Sub(O, xA)).map(v => (1 - z)*v);
+  const p = [0, 1, 2].map(j => 0.5*(ga[j] + gb[j]));
+  const scale = Math.max(...p.map(Math.abs), 1e-12);
+  let gap = 0;
+  for(let j = 0; j < 3; j++) gap = Math.max(gap, Math.abs(ga[j] - gb[j])/scale);
+  return { p: p.map(v => Number.isFinite(v) ? v : 0), gap };
 }
 
 /* Everything the second welfare theorem needs at one weight: who gets what,
    at which prices, and the transfer that turns endowments into that income.
    The two transfers are equal and opposite because A's and B's bundles add up
    to the box — which is the arithmetic the source file's B-demands break. */
-function g3At(s, z){
+function g3At(s, z, seed){
   const O = g3Tot(s);
-  const xA = g3Pareto(s, z);
+  const xA = g3Pareto(s, z, seed);
   const xB = g3Sub(O, xA);
-  const p  = g3Prices(s, z);
+  const { p, gap } = g3PricesAt(s, z, xA);
   const sum = p[0] + p[1] + p[2];
   const mA = g3Dot(p, s.a), mB = g3Dot(p, s.b);
   const eA = g3Dot(p, xA),  eB = g3Dot(p, xB);
   return {
-    z, xA, xB, p, O,
+    z, xA, xB, p, O, gap,
     pNorm: sum > 0 ? p.map(v => 100*v/sum) : [0, 0, 0],
     mA, mB, eA, eB,
     /* The transfer each agent must RECEIVE to afford its share: what the
@@ -4136,42 +4472,99 @@ function g3At(s, z){
   };
 }
 
-/* Negishi: the weight at which nobody needs a transfer. T_A(0) is A's whole
-   endowment value (positive) and T_A(1) is minus B's (negative), so a sign
-   change is guaranteed and bisection is enough. */
+/* the whole Pareto set, swept once and cached: orbiting the cube must not
+   re-solve 160 optimisations per frame */
+function g3Curve(s, n){
+  const pts = [];
+  let seed = null;
+  for(let i = 0; i <= n; i++){
+    const x = g3Pareto(s, i/n, seed);
+    pts.push(x);
+    seed = x;
+  }
+  return pts;
+}
+
+/* Negishi: the weight at which nobody needs a transfer. T_A(0) is minus A's
+   whole endowment value and T_A(1) is plus B's, so a sign change is
+   guaranteed and bisection is enough. */
 function g3Negishi(s){
   const f = z => g3At(s, z).tA;
   let lo = 1e-6, hi = 1 - 1e-6;
   let flo = f(lo), fhi = f(hi);
   if(!Number.isFinite(flo) || !Number.isFinite(fhi)) return null;
-  if(flo === 0) return { z: lo, ...g3At(s, lo) };
-  if(fhi === 0) return { z: hi, ...g3At(s, hi) };
+  if(flo === 0) return { bracketed:true, ...g3At(s, lo) };
+  if(fhi === 0) return { bracketed:true, ...g3At(s, hi) };
   if(flo*fhi > 0) return null;
   for(let i = 0; i < 90; i++){
     const mid = 0.5*(lo + hi), fm = f(mid);
     if(flo*fm <= 0){ hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
   }
-  const z = 0.5*(lo + hi);
-  return { bracketed:true, ...g3At(s, z) };
+  return { bracketed:true, ...g3At(s, 0.5*(lo + hi)) };
 }
 
-/* --- the surfaces, all written as a height z over the (x, y) floor -------- */
+/* --- the surfaces, all written as a height x_3 over the (x_1, x_2) floor ----
+   Cobb-Douglas inverts in closed form; everything else is bisected, which is
+   safe because utility rises with x_3 for any weight the families allow.
+   -------------------------------------------------------------------------- */
+
+function g3LevelUp(f, hi, target){
+  /* Smallest t in [0, hi] with f(t) >= target, for f non-decreasing. When no
+     such t exists the answer is "past the top", not "undefined": returning a
+     value above the box lets the sheet clamp it flat against the wall it
+     leaves through, the way the closed-form path already does. Returning NaN
+     instead drops the quad and leaves a row of teeth along the boundary. */
+  if(f(hi) < target) return hi*2 + 1;
+  if(f(0) >= target) return 0;
+  let lo = 0, h = hi;
+  for(let i = 0; i < 46; i++){
+    const m = 0.5*(lo + h);
+    if(f(m) >= target) h = m; else lo = m;
+  }
+  return 0.5*(lo + h);
+}
 
 /* A's indifference surface at utility u, from A's origin. */
-function g3IndiA(s, u, x, y){
-  const [ax, ay, az] = s.A;
-  if(az <= 0) return NaN;
-  const den = Math.pow(x, ax) * Math.pow(y, ay);
-  if(!(den > 0)) return NaN;
-  return Math.pow(u/den, 1/az);
+function g3IndiA(s, u, x1, x2){
+  const O = g3Tot(s);
+  const e = g3CDExp(s, "A");
+  if(e){
+    if(e[2] <= 0) return NaN;
+    const den = Math.pow(x1, e[0]) * Math.pow(x2, e[1]);
+    if(!(den > 0)) return NaN;
+    return Math.pow(u/den, 1/e[2]);
+  }
+  return g3LevelUp(t => g3UA(s, [x1, x2, t]), O[2], u);
 }
-/* B's, from B's origin, then read off in A's coordinates as O_3 - z_B. */
-function g3IndiB(s, u, x, y){
-  const [bx, by, bz] = s.B, O = g3Tot(s);
-  if(bz <= 0) return NaN;
-  const den = Math.pow(O[0] - x, bx) * Math.pow(O[1] - y, by);
-  if(!(den > 0)) return NaN;
-  return O[2] - Math.pow(u/den, 1/bz);
+
+/* B's, from B's origin, then read off in A's coordinates as O_3 - x_3B. */
+function g3IndiB(s, u, x1, x2){
+  const O = g3Tot(s);
+  const e = g3CDExp(s, "B");
+  if(e){
+    if(e[2] <= 0) return NaN;
+    const den = Math.pow(O[0] - x1, e[0]) * Math.pow(O[1] - x2, e[1]);
+    if(!(den > 0)) return NaN;
+    return O[2] - Math.pow(u/den, 1/e[2]);
+  }
+  return O[2] - g3LevelUp(t => g3UB(s, [O[0] - x1, O[1] - x2, t]), O[2], u);
+}
+
+/* --- the typed family's compiler ------------------------------------------
+   Kept out of the family table because it has to report a parse error to the
+   interface, which nothing else in the table does. */
+function g3Compile(s, who){
+  const p = g3Pars(s, who);
+  if((who === "A" ? s.famA : s.famB) !== "free") return true;
+  try{
+    p._c = buildUtility3(p.src || "");
+    p.err = null;
+    return true;
+  }catch(err){
+    p._c = null;
+    p.err = String(err.message || err).replace(/^(unknown|char):/, "");
+    return false;
+  }
 }
 
 /* --- camera ---------------------------------------------------------------
@@ -4190,7 +4583,7 @@ function g3Cam(s, w, h){
      drawn. Folding dist into R keeps the two independent, so scrolling to
      zoom does not also flatten the box. */
   const dist = 4.6;
-  const R = Math.min(w, h) * 0.60 * s.dist * dist;
+  const R = Math.min(w, h) * 0.55 * s.dist * dist;
   return {
     O, span,
     project(p){
@@ -4280,7 +4673,7 @@ function g3HalfSolid(O, nrm, rhs, keepBelow){
    is what stops an indifference surface from drawing its asymptotic wall. */
 function g3Sheet(O, f, n){
   const quads = [];
-  const hx = O[0]/n, hy = O[1]/n;
+  const hx = O[0]/n, hy = O[1]/n;   /* steps along x_1 and x_2 */
   const Z = [], IN = [];
   for(let i = 0; i <= n; i++){
     Z[i] = []; IN[i] = [];
@@ -4393,7 +4786,9 @@ function g3Render(){
 
   const cam = g3Cam(s, w, h);
   const sc  = g3Scene();
-  const r   = g3At(s, s.zeta);
+  /* solved in g3Sync, not here: orbiting the cube must not re-run the
+     optimisation, and with a typed utility it would run it 160 times a frame */
+  const r   = s.now || (s.now = g3At(s, s.zeta));
   const V   = g3Corners(O);
   const rule = css("--rule"), ink = css("--ink"), ink3 = css("--ink-3");
 
@@ -4430,28 +4825,27 @@ function g3Render(){
   }
 
   /* indifference surfaces through the Pareto allocation */
-  const mesh = 34;
+  const mesh = 44;   /* the frame is large now; the sheets can afford to be finer */
   if(L.indiA)
-    for(const q of g3Sheet(O, (x, y) => g3IndiA(s, r.uA, x, y), mesh))
+    for(const q of g3Sheet(O, (x1, x2) => g3IndiA(s, r.uA, x1, x2), mesh))
       sc.poly(q, g3Shade(q, g3RGB(MARK.A), 0.5), null, 0, 0);
   if(L.indiB)
-    for(const q of g3Sheet(O, (x, y) => g3IndiB(s, r.uB, x, y), mesh))
+    for(const q of g3Sheet(O, (x1, x2) => g3IndiB(s, r.uB, x1, x2), mesh))
       sc.poly(q, g3Shade(q, g3RGB(MARK.B), 0.5), null, 0, 0);
 
   /* and through the endowment: between these two lies every reallocation both
      agents would agree to, which is the lens of the two-good box in 3-D */
   const uAw = g3UA(s, s.a), uBw = g3UB(s, s.b);
   if(L.lensA)
-    for(const q of g3Sheet(O, (x, y) => g3IndiA(s, uAw, x, y), 26))
+    for(const q of g3Sheet(O, (x1, x2) => g3IndiA(s, uAw, x1, x2), 26))
       sc.poly(q, g3Shade(q, g3RGB(MARK.A), 0.22), null, 0, 0);
   if(L.lensB)
-    for(const q of g3Sheet(O, (x, y) => g3IndiB(s, uBw, x, y), 26))
+    for(const q of g3Sheet(O, (x1, x2) => g3IndiB(s, uBw, x1, x2), 26))
       sc.poly(q, g3Shade(q, g3RGB(MARK.B), 0.22), null, 0, 0);
 
   /* the Pareto set, swept in the weight */
   if(L.pareto){
-    const pts = [];
-    for(let i = 0; i <= 160; i++) pts.push(g3Pareto(s, i/160));
+    const pts = s.curve || (s.curve = g3Curve(s, 160));
     sc.line(pts, MARK.contract, 2.6, null, -20);
   }
 
@@ -4488,6 +4882,12 @@ function g3Render(){
   }
   sc.label([0,0,0], "O_A", MARK.A, -22, 12);
   sc.label(O, "O_B", MARK.B, 6, -8);
+  /* three goods means the axes have to be named; past two the letters run out */
+  if(L.box){
+    sc.label([O[0]*0.55, 0, 0], "x₁", ink3, 2, 12);
+    sc.label([0, O[1]*0.55, 0], "x₂", ink3, -18, 10);
+    sc.label([0, 0, O[2]*0.55], "x₃", ink3, -20, 0);
+  }
 
   sc.draw(ctx, cam);
 }
@@ -4504,7 +4904,7 @@ const g3N = (v, d) => {
 const g3V = (v, d) => "(" + v.map(x => g3N(x, d)).join(", ") + ")";
 
 function g3Readout(){
-  const t = T(), s = g3, r = g3At(s, s.zeta);
+  const t = T(), s = g3, r = s.now || (s.now = g3At(s, s.zeta));
   const rows = [
     [t.g3rTotals,  g3V(r.O, 2)],
     [t.g3rPrices,  g3V(r.p, 4)],
@@ -4529,19 +4929,29 @@ function g3Readout(){
   $("verdict3-title").textContent = eq ? t.g3EqTitle : t.g3NoEqTitle;
   $("verdict3-text").innerHTML = t.g3Swt(g3V(r.pNorm, 2), g3N(r.tA, 4), g3N(r.tB, 4), g3N(r.tA + r.tB, 6));
   const n = s.negishi;
-  $("verdict3-math").innerHTML = n
+  /* off Cobb-Douglas the optimum can sit on a face of the cube, where the two
+     weighted gradients need not agree and the supporting price stops being
+     unique. That is a fact about the model, so it is said rather than hidden. */
+  const bound = r.gap > 1e-3 ? " " + t.g3Boundary((100*r.gap).toFixed(1) + "%") : "";
+  $("verdict3-math").innerHTML = (n
     ? t.g3NegLine(g3N(n.z, 4), g3N(s.zeta, 4))
-    : t.g3NegNone;
+    : t.g3NegNone) + bound;
   $("verdict3").classList.toggle("is-eq", eq);
 }
 
 /* --- recompute + render ---------------------------------------------------- */
 function g3Sync(){
+  g3.now = g3At(g3, g3.zeta);
+  g3.curve = g3Curve(g3, 160);
   g3.negishi = g3Negishi(g3);
   paintG3EndowNote();
   g3Readout();
   g3Render();
 }
+
+/* the expression a typed agent starts with: concave, defined on the whole
+   box, and visibly not any of the four families above it in the list */
+const G3_TYPED_DEFAULT = "sqrt(x1) + sqrt(x2) + sqrt(x3)";
 
 /* --- wiring ---------------------------------------------------------------- */
 
@@ -4549,10 +4959,87 @@ const G3_ENDOW = [
   ["g3a1", "a", 0, 0, 10], ["g3a2", "a", 1, 0, 5], ["g3a3", "a", 2, 0, 5],
   ["g3b1", "b", 0, 0, 5],  ["g3b2", "b", 1, 0, 5], ["g3b3", "b", 2, 0, 5]
 ];
-const G3_PREF = [
-  ["g3aa", "A", 0], ["g3ba", "A", 1], ["g3ga", "A", 2],
-  ["g3ab", "B", 0], ["g3bb", "B", 1], ["g3gb", "B", 2]
-];
+
+/* --- the preference rail ---------------------------------------------------
+   One selector and a row of sliders per agent, rebuilt when the family
+   changes. A parameter that names another in its "cappedBy" slot has its
+   maximum rewritten whenever that other one moves, which is how beta stays in
+   [0, 1-alpha] and the third CES weight never goes negative.
+   -------------------------------------------------------------------------- */
+
+function g3ParMax(s, who, def){
+  const cap = def[6];
+  if(!cap) return def[3];
+  return Math.max(0, def[3] - g3Pars(s, who)[cap]);
+}
+
+function g3BuildPars(who){
+  const tag = who === "A" ? "a" : "b";
+  const fam = g3Fam(g3, who), pars = g3Pars(g3, who);
+  const t = T();
+  const host = $("g3-par-" + tag);
+  host.innerHTML = fam.pars.map(([k, lbl]) => {
+    const id = `g3p-${tag}-${k}`;
+    return `<div class="slider-row"><span class="k">${lbl}</span>` +
+      `<input type="range" id="${id}" aria-label="${lbl}">` +
+      `<input class="v" id="${id}-v" inputmode="decimal" aria-label="${lbl}"></div>`;
+  }).join("");
+
+  for(const def of fam.pars){
+    const [k, , mn, , st0] = def, id = `g3p-${tag}-${k}`;
+    const sl = $(id), tx = $(id + "-v");
+    sl.min = mn; sl.step = st0; sl.max = g3ParMax(g3, who, def);
+    /* parameters persist across a family change, which is what makes the
+       selector feel continuous — but a value legal for the old family can be
+       out of range for the new one, so it is pulled back in on the way in */
+    pars[k] = clamp(pars[k] === undefined ? def[5] : pars[k], mn, +sl.max);
+    const push = v => {
+      pars[k] = v;
+      sl.value = v;
+      tx.value = g3Par(v);
+      /* anything this one caps has to be re-clamped and re-labelled */
+      for(const other of fam.pars){
+        if(other[6] !== k) continue;
+        const oid = `g3p-${tag}-${other[0]}`, os = $(oid);
+        const mx = g3ParMax(g3, who, other);
+        os.max = mx;
+        if(pars[other[0]] > mx){ pars[other[0]] = mx; os.value = mx; $(oid + "-v").value = g3Par(mx); }
+      }
+      g3Invalidate();
+    };
+    sl.value = pars[k]; tx.value = g3Par(pars[k]);
+    sl.addEventListener("input", () => push(+sl.value));
+    tx.addEventListener("change", () => {
+      const v = parseFloat(tx.value);
+      if(Number.isFinite(v)) push(clamp(v, +sl.min, +sl.max)); else tx.value = g3Par(pars[k]);
+    });
+  }
+
+  const typed = !!fam.typed;
+  $("g3-src-" + tag).hidden = !typed;
+  $("g3-src-" + tag).value = pars.src || "";
+  $("g3-err-" + tag).textContent = typed && pars.err ? t.g3BadExpr(pars.err) : "";
+  $("g3-out-" + tag).textContent =
+    `u_${who} = ` + (typed && !pars._c ? "—" : fam.src(pars));
+}
+
+function g3BuildFams(){
+  const t = T();
+  for(const [who, tag] of [["A", "a"], ["B", "b"]]){
+    const sel = $("g3-fam-" + tag);
+    sel.innerHTML = G3_FAM_KEYS.map(k =>
+      `<option value="${k}">${t["g3f_" + k]}</option>`).join("");
+    sel.value = who === "A" ? g3.famA : g3.famB;
+    g3BuildPars(who);
+  }
+}
+
+/* Every model-level change lands here: drop the cached solve and the cached
+   curve, then recompute. Nothing else may write s.now or s.curve. */
+function g3Invalidate(){
+  g3.now = null; g3.curve = null;
+  g3Sync();
+}
 
 function g3Bind(id, get, set){
   const sl = $(id), tx = $(id + "-v");
@@ -4560,7 +5047,7 @@ function g3Bind(id, get, set){
     set(v);
     if(sl.value !== String(v)) sl.value = v;
     tx.value = (+v).toFixed(3).replace(/\.?0+$/, "") || "0";
-    g3Sync();
+    g3Invalidate();
   };
   sl.addEventListener("input", () => push(+sl.value));
   tx.addEventListener("change", () => {
@@ -4573,9 +5060,35 @@ function g3Bind(id, get, set){
 
 function g3Boot(){
   for(const [id, key, j] of G3_ENDOW) g3Bind(id, () => g3[key][j], v => { g3[key][j] = v; });
-  for(const [id, key, j] of G3_PREF)  g3Bind(id, () => g3[key][j], v => { g3[key][j] = v; });
   g3Bind("g3zeta", () => g3.zeta, v => { g3.zeta = v; });
   g3Bind("g3len",  () => g3.L,    v => { g3.L = v; });
+
+  g3Compile(g3, "A"); g3Compile(g3, "B");
+  g3BuildFams();
+  for(const [who, tag] of [["A", "a"], ["B", "b"]]){
+    $("g3-fam-" + tag).addEventListener("change", e => {
+      const k = e.target.value;
+      if(who === "A") g3.famA = k; else g3.famB = k;
+      /* a family the agent has not worn before starts at its own defaults */
+      const pars = g3Pars(g3, who);
+      for(const d of G3_FAMS[k].pars) if(!(d[0] in pars)) pars[d[0]] = d[5];
+      if(G3_FAMS[k].typed && !pars.src) pars.src = G3_TYPED_DEFAULT;
+      g3Compile(g3, who);
+      g3BuildPars(who);
+      g3Invalidate();
+    });
+    let typing = 0;
+    const read = () => {
+      g3Pars(g3, who).src = $("g3-src-" + tag).value.trim();
+      g3Compile(g3, who);
+      g3BuildPars(who);
+      g3Invalidate();
+    };
+    $("g3-src-" + tag).addEventListener("change", read);
+    $("g3-src-" + tag).addEventListener("input", () => {
+      clearTimeout(typing); typing = setTimeout(read, 340);
+    });
+  }
 
   buildG3Layers();
 
@@ -4585,7 +5098,7 @@ function g3Boot(){
     g3.zeta = clamp(n.z, 0, 1);
     $("g3zeta").value = String(g3.zeta);
     $("g3zeta-v").value = g3.zeta.toFixed(4);
-    g3Sync();
+    g3Invalidate();
   });
   $("g3-reset-view").addEventListener("click", () => {
     g3.az = -0.72; g3.el = 0.34; g3.dist = 1; g3Render();
@@ -4624,6 +5137,13 @@ function g3Boot(){
   });
 
   window.addEventListener("resize", () => { if(st.tab === "g3") g3Render(); });
+  if(window.ResizeObserver){
+    let pending = 0;
+    new ResizeObserver(() => {
+      cancelAnimationFrame(pending);
+      pending = requestAnimationFrame(() => { if(st.tab === "g3") g3Render(); });
+    }).observe($("wrap3"));
+  }
 }
 
 
@@ -4746,9 +5266,10 @@ function boot(){
 
   /* the same handle the two-good model exposes, for tools/check-edgeworth3.js */
   window.__edgeworth3 = {
-    g3, g3Tot, g3UA, g3UB, g3Pareto, g3Prices, g3At, g3Negishi,
-    g3IndiA, g3IndiB, g3HalfSolid, g3Sheet, g3Sync, g3Render, setTab,
-    g3Cam, g3Corners, G3_EDGES
+    g3, g3Tot, g3UA, g3UB, g3U, g3GL, g3Pareto, g3PricesAt, g3At, g3Negishi,
+    g3IndiA, g3IndiB, g3HalfSolid, g3Sheet, g3Sync, g3Render, g3Invalidate, setTab,
+    g3Cam, g3Corners, G3_EDGES, G3_FAMS, G3_FAM_KEYS, g3CDExp, g3Curve,
+    g3BuildFams, g3Compile, buildUtility3
   };
 
   window.__edgeworth = {

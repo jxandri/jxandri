@@ -117,9 +117,10 @@ const fmt = v => Number.isFinite(v) ? (Math.abs(v) < 1e-4 && v !== 0 ? v.toExpon
   console.log('\n--- the economics, checked against arithmetic ---');
   const mrs = await ev(() => {
     const E = window.__edgeworth3, g = E.g3, a = E.g3At(g, g.zeta);
+    const eA = E.g3CDExp(g, 'A'), eB = E.g3CDExp(g, 'B');
     const m = (e, x, i, j) => (e[i] / x[i]) / (e[j] / x[j]);
     return [[0, 1], [0, 2], [1, 2]].map(([i, j]) => ({
-      i, j, A: m(g.A, a.xA, i, j), B: m(g.B, a.xB, i, j), p: a.p[i] / a.p[j]
+      i, j, A: m(eA, a.xA, i, j), B: m(eB, a.xB, i, j), p: a.p[i] / a.p[j]
     }));
   });
   for (const m of mrs) {
@@ -191,7 +192,7 @@ const fmt = v => Number.isFinite(v) ? (Math.abs(v) < 1e-4 && v !== 0 ? v.toExpon
       const S = e[0] + e[1] + e[2];
       return [0, 1, 2].map(j => (e[j] / S) * m / a.p[j]);
     };
-    const dA = dem(g.A, a.mA), dB = dem(g.B, a.mB);
+    const dA = dem(E.g3CDExp(g, 'A'), a.mA), dB = dem(E.g3CDExp(g, 'B'), a.mB);
     return { dA, dB, xA: a.xA, xB: a.xB };
   });
   for (let j = 0; j < 3; j++) {
@@ -256,6 +257,135 @@ const fmt = v => Number.isFinite(v) ? (Math.abs(v) < 1e-4 && v !== 0 ? v.toExpon
   ok('nothing in B\'s set costs less than the plane', solid.bOver < 1e-9, fmt(solid.bOver));
   ok('and the shared face is exactly the budget plane', solid.capOff < 1e-9,
     `${solid.capN} corners, off by ${fmt(solid.capOff)}`);
+
+  /* ------------------------------------------------- the other four families */
+  console.log('\n--- the families beyond Cobb-Douglas ---');
+
+  const setFam = async (who, key) => {
+    await page.selectOption('#g3-fam-' + (who === 'A' ? 'a' : 'b'), key);
+    await page.waitForTimeout(260);
+  };
+
+  /* the CES limit: as rho goes to zero the weighted CES IS Cobb-Douglas with
+     those weights, so the applet must not show a seam crossing it */
+  const lim = await ev(() => {
+    const E = window.__edgeworth3, F = E.G3_FAMS;
+    const p = { a: 0.5, b: 0.3, r: 0.0005 };
+    const x = [1.7, 2.3, 0.9];
+    const w = F.ces.w(p);
+    return { ces: F.ces.u(p, x), cd: F.cd.u({ a: w[0], b: w[1], c: w[2] }, x),
+             cesJustOver: F.ces.u({ ...p, r: 0.05 }, x),
+             cdW: w };
+  });
+  near('CES at rho -> 0 is Cobb-Douglas with the same weights', lim.ces, lim.cd, 1e-12);
+  ok('and the weights still sum to one', Math.abs(lim.cdW.reduce((a, b) => a + b, 0) - 1) < 1e-12,
+    lim.cdW.join(' + '));
+  near('with no visible seam just outside the snap band', lim.cesJustOver, lim.cd, 0.02);
+
+  /* perfect substitutes really are linear, and the third weight is 1-a-b */
+  const sub = await ev(() => {
+    const F = window.__edgeworth3.G3_FAMS, p = { a: 0.5, b: 0.2 };
+    const u = q => F.sub.u(p, q);
+    return { w: F.sub.w(p), one: u([1, 1, 1]), dbl: u([2, 2, 2]),
+             mix: u([3, 0, 0]) + u([0, 5, 0]), joint: u([3, 5, 0]) };
+  });
+  ok('the three substitute weights sum to one', Math.abs(sub.w.reduce((a, b) => a + b, 0) - 1) < 1e-12,
+    sub.w.join(' + '));
+  near('doubling the bundle doubles utility', sub.dbl, 2*sub.one, 1e-12);
+  near('and utility is additive across goods', sub.joint, sub.mix, 1e-12);
+
+  /* quasilinear: the numeraire slider really moves which good is the linear one */
+  const ql = await ev(() => {
+    const F = window.__edgeworth3.G3_FAMS;
+    const base = { a: 2, b: 1.5, s: 0.5 };
+    const lin = k => {
+      const p = { ...base, k };
+      /* utility should rise by exactly 1 per unit of the numeraire */
+      const x = [2, 2, 2];
+      const y = x.slice(); y[k - 1] += 1;
+      return F.ql.u(p, y) - F.ql.u(p, x);
+    };
+    return [1, 2, 3].map(lin);
+  });
+  for (let k = 0; k < 3; k++)
+    near(`with the numeraire on x${k + 1}, a unit of it adds exactly 1`, ql[k], 1, 1e-12);
+
+  /* typed by hand: x1, x2, x3 tokenise, and a broken expression is reported */
+  const typed = await ev(() => {
+    const E = window.__edgeworth3;
+    const good = E.buildUtility3('x1^0.5*x2^0.25*x3^0.25');
+    let bad = null;
+    try { E.buildUtility3('x1 + oops('); } catch (e) { bad = String(e.message || e); }
+    const kink = E.buildUtility3('min(x1, x2) + x3');
+    return {
+      u: good.u(4, 4, 4), exact: good.exactPartials,
+      g: good.g(1, 1, 1),
+      bad,
+      kinkU: kink.u(2, 5, 1), kinkExact: kink.exactPartials, kinkG: kink.g(2, 5, 1)
+    };
+  });
+  near('a typed Cobb-Douglas evaluates correctly', typed.u, 4, 1e-12);
+  ok('and differentiates symbolically', typed.exact === true);
+  near('its partial in x1 is the exponent at the unit bundle', typed.g[0], 0.5, 1e-9);
+  ok('a broken expression is reported, not thrown away', !!typed.bad, typed.bad);
+  near('min() still evaluates', typed.kinkU, 3, 1e-12);
+  ok('and falls back to numeric partials at the kink', typed.kinkExact === false);
+  near('where the gradient still points along the slack good', typed.kinkG[1], 0, 1e-6);
+
+  /* every pair of families has to keep the two identities the model rests on:
+     the bundles exhaust the cube, and the transfers cancel */
+  const KEYS = await ev(() => window.__edgeworth3.G3_FAM_KEYS);
+  let worstSum = 0, worstNet = 0, worstOut = 0, pairs = 0;
+  for (const ka of KEYS) {
+    await setFam('A', ka);
+    for (const kb of KEYS) {
+      await setFam('B', kb);
+      const q = await ev(() => {
+        const E = window.__edgeworth3, g = E.g3, O = E.g3Tot(g);
+        const r = E.g3At(g, 0.42);
+        let sum = 0;
+        for (let j = 0; j < 3; j++) sum = Math.max(sum, Math.abs(r.xA[j] + r.xB[j] - O[j]));
+        const c = E.g3Curve(g, 24);
+        let out = 0;
+        for (const x of c) for (let j = 0; j < 3; j++)
+          out = Math.max(out, Math.max(-x[j], x[j] - O[j]));
+        return { sum, net: Math.abs(r.tA + r.tB), out };
+      });
+      worstSum = Math.max(worstSum, q.sum);
+      worstNet = Math.max(worstNet, q.net);
+      worstOut = Math.max(worstOut, q.out);
+      pairs++;
+    }
+  }
+  ok(`all ${pairs} family pairs exhaust the cube`, worstSum < 1e-9, `worst ${fmt(worstSum)}`);
+  ok('all of them net their transfers to zero', worstNet < 1e-12, `worst ${fmt(worstNet)}`);
+  ok('and none lets the Pareto set leave the box', worstOut < 1e-9, `worst ${fmt(worstOut)}`);
+
+  /* Negishi has to work off Cobb-Douglas too, where nothing is closed form */
+  await setFam('A', 'ces');
+  await setFam('B', 'ql');
+  await page.click('#g3-negishi');
+  await page.waitForTimeout(500);
+  const negGen = await ev(() => {
+    const E = window.__edgeworth3, g = E.g3, a = E.g3At(g, g.zeta);
+    return { zeta: g.zeta, tA: a.tA, eA: a.eA, mA: a.mA, eB: a.eB, mB: a.mB };
+  });
+  near('Negishi clears the transfers with CES against quasilinear', negGen.tA, 0, 1e-7);
+  near('A spends its endowment there', negGen.eA, negGen.mA, 1e-7);
+  near('and so does B', negGen.eB, negGen.mB, 1e-7);
+  ok('at a weight strictly inside (0, 1)', negGen.zeta > 0 && negGen.zeta < 1, fmt(negGen.zeta));
+
+  /* the interior first-order condition, now checked through the reported gap */
+  const gapCD = await ev(() => {
+    const E = window.__edgeworth3, g = E.g3;
+    g.famA = 'ces'; g.famB = 'ces'; E.g3BuildFams(); E.g3Invalidate();
+    return E.g3At(g, 0.5).gap;
+  });
+  near('two CES agents meet the first-order condition exactly', gapCD, 0, 1e-6);
+
+  await setFam('A', 'cd');
+  await setFam('B', 'cd');
+  await page.waitForTimeout(250);
 
   /* ------------------------------------------------------------- languages */
   console.log('\n--- both languages ---');
