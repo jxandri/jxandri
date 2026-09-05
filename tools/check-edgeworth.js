@@ -933,6 +933,116 @@ const { chromium } = require('playwright-core');
     E.setModel('exchange'); E.render();
   });
 
+  // --- two countries, autarky and free trade -------------------------------
+  await p.click('#mdl-twocountry');
+  await p.waitForTimeout(500);
+
+  const aut = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st, T = st.twoc;
+    return {
+      regime: st.regime,
+      onPPF_A: Math.abs(T.prodA.y - E.ppfY(T.TA, T.prodA.x)),
+      onPPF_B: Math.abs(T.prodB.y - E.ppfY(T.TB, T.prodB.x)),
+      mrtA: T.mrtA, mrtB: T.mrtB,
+      mrsA: st.uAx(T.prodA.x, T.prodA.y) / st.uAy(T.prodA.x, T.prodA.y),
+      mrsB: st.uBx(T.prodB.x, T.prodB.y) / st.uBy(T.prodB.x, T.prodB.y),
+      P: st.P.slice(), omega: [st.wAx, st.wAy],
+      box: [st.Wx, st.Wy],
+      uA: st.uP.a, uB: st.uP.b,
+      autU: [T.autA.u, T.autB.u],
+      lens: st.lensArea
+    };
+  });
+  say('two countries start under autarky', aut.regime === 'autarky');
+  say('each produces on its own frontier',
+      aut.onPPF_A < 1e-6 && aut.onPPF_B < 1e-6,
+      aut.onPPF_A.toExponential(1) + ' / ' + aut.onPPF_B.toExponential(1));
+  say('at its own MRS = MRT, which is what autarky means',
+      Math.abs(aut.mrsA - aut.mrtA) / aut.mrtA < 2e-3 &&
+      Math.abs(aut.mrsB - aut.mrtB) / aut.mrtB < 2e-3,
+      'A ' + aut.mrsA.toFixed(4) + '/' + aut.mrtA.toFixed(4) +
+      '  B ' + aut.mrsB.toFixed(4) + '/' + aut.mrtB.toFixed(4));
+  say('and consumes exactly what it produced',
+      Math.abs(aut.P[0] - aut.omega[0]) < 1e-6 && Math.abs(aut.P[1] - aut.omega[1]) < 1e-6,
+      '(' + aut.P.map(v => v.toFixed(3)).join(', ') + ')');
+  say('the two marginal rates of transformation differ, so the world is inefficient',
+      Math.abs(aut.mrtA - aut.mrtB) > 1e-3,
+      aut.mrtA.toFixed(4) + ' vs ' + aut.mrtB.toFixed(4));
+  say('which leaves a lens of gains from trade unclaimed', aut.lens > 0.01,
+      (aut.lens * 100).toFixed(1) + '% of the box');
+
+  await p.click('#rg-trade');
+  await p.waitForTimeout(600);
+  const tr = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st, T = st.twoc;
+    const w = E.worldAt(st, T.p);
+    return {
+      p: T.p, mrtA: T.mrtA, mrtB: T.mrtB,
+      zx: w.zx, zy: w.dA[1] + w.dB[1] - (w.A.y + w.B.y),
+      box: [st.Wx, st.Wy],
+      P: st.P.slice(), uA: st.uP.a, uB: st.uP.b,
+      autU: [T.autA.u, T.autB.u],
+      coreNonEmpty: st.core.nonEmpty, coreU: [st.core.uAe, st.core.uBe],
+      lens: st.lensArea,
+      onCurve: E.nearestOnCurve(st.contract, st.P[0], st.P[1]).dist
+    };
+  });
+  say('opening the border equalises the two marginal rates of transformation',
+      Math.abs(tr.mrtA - tr.mrtB) < 1e-6,
+      tr.mrtA.toFixed(6) + ' vs ' + tr.mrtB.toFixed(6));
+  say('at the world price itself',
+      Math.abs(tr.mrtA - tr.p) < 1e-6, 'MRT ' + tr.mrtA.toFixed(6) + ' vs p ' + tr.p.toFixed(6));
+  say('and the world market clears',
+      Math.abs(tr.zx) < 1e-3 && Math.abs(tr.zy) < 1e-3,
+      'z_x ' + tr.zx.toExponential(1) + '  z_y ' + tr.zy.toExponential(1));
+  say('specialisation makes the world bigger in both goods',
+      tr.box[0] > aut.box[0] + 1e-6 && tr.box[1] > aut.box[1] + 1e-6,
+      aut.box.map(v => v.toFixed(3)).join('x') + ' -> ' + tr.box.map(v => v.toFixed(3)).join('x'));
+  say('both countries end up better off than under autarky',
+      tr.uA > tr.autU[0] + 1e-6 && tr.uB > tr.autU[1] + 1e-6,
+      'A ' + tr.autU[0].toFixed(3) + ' -> ' + tr.uA.toFixed(3) +
+      '   B ' + tr.autU[1].toFixed(3) + ' -> ' + tr.uB.toFixed(3));
+  say('so the free-trade allocation sits inside the core', tr.coreNonEmpty);
+  say('measured against autarky, not against what was produced',
+      Math.abs(tr.coreU[0] - tr.autU[0]) < 1e-12 && Math.abs(tr.coreU[1] - tr.autU[1]) < 1e-12);
+  say('the allocation is Pareto efficient', tr.onCurve < 0.02, tr.onCurve.toExponential(1));
+  say('and nothing is left on the table', tr.lens < 1e-6, tr.lens.toExponential(1));
+
+  // A core narrower than the spacing of the traced points is still a core.
+  const narrow = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    E.setFamily('a', 'cd', { a:0.75 });
+    E.setFamily('b', 'cd', { a:0.25 });
+    st.Fx = 10; st.Fy = 5; st.Fc = 2;
+    st.Gx = 5;  st.Gy = 10; st.Gc = 2;
+    E.applyPrefs(); E.recomputeModel(); E.syncState();
+    const C = st.contract, c = st.core;
+    let vertices = 0;
+    for(const q of C) if(q.uA >= c.uAe && q.uB >= c.uBe) vertices++;
+    return { vertices, nonEmpty: c.nonEmpty, tLo: c.tLo, tHi: c.tHi,
+             width: c.tHi - c.tLo, pathLen: E.corePath(C, c.tLo, c.tHi).length };
+  });
+  say('a core no traced point falls inside is still reported',
+      narrow.vertices === 0 && narrow.nonEmpty,
+      narrow.vertices + ' vertices, interval [' +
+      narrow.tLo.toFixed(3) + ', ' + narrow.tHi.toFixed(3) + ']');
+  say('and it still has a segment to draw', narrow.pathLen >= 2, narrow.pathLen + ' points');
+
+  say('the endowment cannot be dragged when it is an output of the model',
+      await p.evaluate(() => {
+        const E = window.__edgeworth;
+        const before = [E.st.wAx, E.st.wAy];
+        const cv = document.getElementById('cbox');
+        const r = cv.getBoundingClientRect();
+        cv.dispatchEvent(new PointerEvent('pointerdown',
+          { clientX:r.left + r.width*0.3, clientY:r.top + r.height*0.3, bubbles:true, pointerId:1 }));
+        cv.dispatchEvent(new PointerEvent('pointerup', { bubbles:true, pointerId:1 }));
+        return Math.abs(E.st.wAx - before[0]) < 1e-12 && Math.abs(E.st.wAy - before[1]) < 1e-12;
+      }));
+
+  await p.evaluate(() => window.__edgeworth.setModel('exchange'));
+  await p.waitForTimeout(300);
+
   // --- language ------------------------------------------------------------
   await p.click('#lang-en');
   await p.waitForTimeout(200);

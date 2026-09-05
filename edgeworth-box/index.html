@@ -114,7 +114,14 @@ button,input,select,textarea{font:inherit;color:inherit}
   border:1px solid var(--rule); border-radius:var(--r); padding:2px; gap:2px;
 }
 .seg-wide{display:flex; width:100%}
-.seg-wide button{flex:1; text-align:center; padding:5px 4px}
+/* a flex item will not shrink below its longest word unless told to, and
+   "Intercambio" is wider than a quarter of the rail — without this the model
+   selector pushes itself out from under the panel it belongs to */
+.seg-wide button{flex:1 1 0; min-width:0; text-align:center; padding:5px 4px;
+  overflow-wrap:anywhere; hyphens:auto}
+/* four models do not fit on one row at any readable size, so they pair up */
+.seg-grid{display:grid; grid-template-columns:1fr 1fr; width:100%}
+.seg-grid button{min-width:0; text-align:center; padding:5px 4px; overflow-wrap:anywhere}
 .seg button{
   appearance:none; border:0; background:transparent; cursor:pointer;
   padding:5px 11px; border-radius:2px; font-size:12.5px; font-weight:500;
@@ -562,10 +569,11 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 
       <div class="group">
         <h2 id="t-g-model">Modelo</h2>
-        <div class="seg seg-wide" role="group" aria-label="Modelo">
+        <div class="seg seg-grid" role="group" aria-label="Modelo">
           <button type="button" id="mdl-exchange" aria-pressed="true">Intercambio</button>
           <button type="button" id="mdl-production" aria-pressed="false">Producción</button>
           <button type="button" id="mdl-robinson" aria-pressed="false">Robinson</button>
+          <button type="button" id="mdl-twocountry" aria-pressed="false">Dos países</button>
         </div>
         <p class="note" id="t-model-note">—</p>
       </div>
@@ -643,6 +651,31 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
           <input class="v" id="theta-v" inputmode="decimal" aria-label="Participación de A (valor)">
         </div>
         <p class="note" id="t-firm-note">—</p>
+      </div>
+
+      <div class="group" id="g-trade" hidden>
+        <h2 id="t-g-trade">Comercio</h2>
+        <div class="seg seg-wide" role="group" aria-label="Régimen">
+          <button type="button" id="rg-autarky" aria-pressed="true">Autarquía</button>
+          <button type="button" id="rg-trade" aria-pressed="false">Libre comercio</button>
+        </div>
+        <p class="note" id="t-trade-note">—</p>
+        <h2 id="t-g-techb" style="margin-top:6px">Tecnología de B</h2>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agB)">G<sub>x</sub></span>
+          <input type="range" id="gx" min="2" max="20" step="0.5" value="5" aria-label="Máximo de x de B">
+          <input class="v" id="gx-v" inputmode="decimal" aria-label="Máximo de x de B (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agB)">G<sub>y</sub></span>
+          <input type="range" id="gy" min="2" max="20" step="0.5" value="10" aria-label="Máximo de y de B">
+          <input class="v" id="gy-v" inputmode="decimal" aria-label="Máximo de y de B (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agB)">c<sub>B</sub></span>
+          <input type="range" id="gc" min="1" max="8" step="0.05" value="2" aria-label="Curvatura de B">
+          <input class="v" id="gc-v" inputmode="decimal" aria-label="Curvatura de B (valor)">
+        </div>
       </div>
 
       <div class="group">
@@ -1347,8 +1380,13 @@ const NPRICE = 241;   // price ratios swept for the offer curves and z(p)
    production one rather than a separate thing.
    ========================================================================== */
 
-const hasFirm = st => st.model !== "exchange";
+/* "Has a firm" means "the frontier replaces the corner of the box". The two
+   country model has two frontiers and no such corner: it resolves to an
+   exchange economy whose endowments are the two production points, so it
+   answers no here and inherits the whole exchange apparatus. */
+const hasFirm = st => st.model === "production" || st.model === "robinson";
 const hasB    = st => st.model !== "robinson";
+const isTwoC  = st => st.model === "twocountry";
 
 /* The frontier, both ways round, and the slack that says which side of it a
    point is on. */
@@ -1428,6 +1466,128 @@ function residualField(st, n){
   const f = fieldFromGrid(g, n, st.Wx, st.Wy);
   f.prodAt = at;
   return f;
+}
+
+/* ==========================================================================
+   3b. Two countries, each its own Robinson economy
+   --------------------------------------------------------------------------
+   Two consumers, two technologies, and a switch between closed borders and
+   open ones.
+
+   Under autarky each country IS a Robinson Crusoe economy: it produces on its
+   own frontier at the point it likes best, and eats exactly what it produced.
+   Open the borders and a single world price appears; each country produces
+   where its own marginal rate of transformation meets that price, and then
+   the two trade what they made. That last sentence is an exchange economy
+   whose endowments are the two production points — which is why this model
+   needs almost no machinery of its own. Work out where the two countries
+   start, and the box, the contract curve, the core, the offer curves and the
+   Walrasian equilibrium are the ones already drawn everywhere else. The
+   regime switch changes only the starting point.
+
+   The gains from trade are then the core, read against autarky. A country can
+   always shut the border and go back to producing for itself, so autarky —
+   not the value of whatever it happened to produce — is the outside option
+   individual rationality has to beat. Everything both countries prefer to
+   staying at home is the core, and free trade lands inside it.
+   ========================================================================== */
+
+/* A technology in the shape the frontier functions already read. */
+const techA = st => ({ Fx:st.Fx, Fy:st.Fy, Fc:st.Fc });
+const techB = st => ({ Fx:st.Gx, Fy:st.Gy, Fc:st.Gc });
+
+/* Where a country settles when it must consume what it produces: its own
+   frontier is its budget set, and it picks the point of it it likes best. */
+function autarkyOn(T, u){
+  const val = X => {
+    const v = u(X, ppfY(T, X));
+    return Number.isFinite(v) ? v : -Infinity;
+  };
+  const N = 400;
+  let bX = 0, bv = -Infinity;
+  for(let k = 0; k <= N; k++){
+    const X = T.Fx * k / N, v = val(X);
+    if(v > bv){ bv = v; bX = X; }
+  }
+  const h = T.Fx / N, phi = (Math.sqrt(5) - 1) / 2;
+  let a = Math.max(0, bX - h), b = Math.min(T.Fx, bX + h);
+  let c = b - phi*(b-a), d = a + phi*(b-a), gc = val(c), gd = val(d);
+  for(let k = 0; k < 48; k++){
+    if(gc > gd){ b = d; d = c; gd = gc; c = b - phi*(b-a); gc = val(c); }
+    else       { a = c; c = d; gc = gd; d = a + phi*(b-a); gd = val(d); }
+  }
+  const X = val((a+b)/2) > bv ? (a+b)/2 : bX;
+  const Y = ppfY(T, X);
+  return { x:X, y:Y, u:u(X, Y), mrt:mrt(T, X, Y) };
+}
+
+/* What a country makes at a world price. Profit is maximised where MRT meets
+   the price, and MRT rises along the frontier, so a bisection finds it. */
+function firmOn(T, p){
+  let lo = 0, hi = T.Fx;
+  for(let k = 0; k < 60; k++){
+    const mid = (lo + hi) / 2;
+    if(mrt(T, mid, ppfY(T, mid)) < p) lo = mid; else hi = mid;
+  }
+  const x = (lo + hi) / 2, y = ppfY(T, x);
+  return { x, y, income: p * x + y };
+}
+
+/* The world at one price: both produce for it, both spend exactly what their
+   production is worth, and the excess demand for x is what does not add up.
+   Walras' law makes the market for y redundant, as ever. */
+function worldAt(st, p){
+  const A = firmOn(techA(st), p), B = firmOn(techB(st), p);
+  const dA = demandAt(st.uA, p, A.income);
+  const dB = demandAt(st.uB, p, B.income);
+  return { p, A, B, dA, dB,
+           Wx:A.x + B.x, Wy:A.y + B.y,
+           zx: dA[0] + dB[0] - (A.x + B.x) };
+}
+
+/* The world price. Dearer x is made in greater quantity and wanted in smaller,
+   so the excess demand for it falls monotonically and one bisection in the
+   logarithm of the price finds where it crosses zero. */
+function worldPrice(st){
+  let lo = LOGP_MIN, hi = LOGP_MAX;
+  const z = s => worldAt(st, Math.pow(10, s)).zx;
+  const zl = z(lo), zh = z(hi);
+  if(!Number.isFinite(zl) || !Number.isFinite(zh)) return 1;
+  if(zl <= 0) return Math.pow(10, lo);
+  if(zh >= 0) return Math.pow(10, hi);
+  for(let k = 0; k < 80; k++){
+    const m = (lo + hi) / 2;
+    if(z(m) > 0) lo = m; else hi = m;
+  }
+  return Math.pow(10, (lo + hi) / 2);
+}
+
+/* The starting points, which is all the regime decides. Autarky: each country
+   brings what it made for itself. Free trade: each brings what it made for the
+   world price. Either way the box is the world total and everything else in
+   this applet takes it from there. */
+function twoCountrySetup(st){
+  const TA = techA(st), TB = techB(st);
+  const autA = autarkyOn(TA, st.uA), autB = autarkyOn(TB, st.uB);
+  let A, B, p = NaN, dA = null, dB = null;
+  if(st.regime === "autarky"){
+    A = { x:autA.x, y:autA.y };
+    B = { x:autB.x, y:autB.y };
+    /* with the border shut there is nothing to buy: you eat what you made */
+    dA = [A.x, A.y]; dB = [B.x, B.y];
+  }else{
+    p = worldPrice(st);
+    const fa = firmOn(TA, p), fb = firmOn(TB, p);
+    A = { x:fa.x, y:fa.y };
+    B = { x:fb.x, y:fb.y };
+    dA = demandAt(st.uA, p, fa.income);
+    dB = demandAt(st.uB, p, fb.income);
+  }
+  st.wAx = A.x; st.wAy = A.y;
+  st.wBx = B.x; st.wBy = B.y;
+  st.Wx = A.x + B.x; st.Wy = A.y + B.y;
+  st.twoc = { TA, TB, p, prodA:A, prodB:B, autA, autB, dA, dB,
+              mrtA:mrt(TA, A.x, A.y), mrtB:mrt(TB, B.x, B.y) };
 }
 
 /* ---- the box ------------------------------------------------------------ */
@@ -1994,21 +2154,67 @@ function coreOf(st, curve){
        firm trades. So there is no core to draw here, and the applet says so
        by not drawing one rather than by drawing the whole set and calling it
        the core. */
-    return { uAe:NaN, uBe:NaN, from:-1, to:-1, n:0 };
+    return { uAe:NaN, uBe:NaN, from:-1, to:-1, n:0, tLo:NaN, tHi:NaN, nonEmpty:false };
   }
-  const uAe = st.uA(st.wAx, st.wAy);
-  const uBe = st.uB(st.wBx, st.wBy);
+  /* Two countries can always shut the border and produce for themselves
+     again, so what individual rationality has to beat is the autarky utility
+     — not the utility of whatever they happened to produce for the world
+     price. The core is then exactly the set of gains from trade. */
+  const uAe = isTwoC(st) && st.twoc ? st.twoc.autA.u : st.uA(st.wAx, st.wAy);
+  const uBe = isTwoC(st) && st.twoc ? st.twoc.autB.u : st.uB(st.wBx, st.wBy);
   const rel = v => 1e-9 * (1 + Math.abs(v));
-  const idx = [];
-  for(let i = 0; i < curve.length; i++){
-    if(curve[i].uA >= uAe - rel(uAe) && curve[i].uB >= uBe - rel(uBe)) idx.push(i);
+
+  /* Where the core STARTS and ENDS, found by crossing rather than by
+     sampling. u_A rises along the traced curve and u_B falls, so each floor
+     bites at one end and the core is the interval between the two crossings.
+     Counting the traced points that happen to fall inside it instead would
+     report a core narrower than the spacing of those points as empty — and a
+     small gain from trade is exactly that: a real core, a few thousandths of
+     the box wide. Saying "no core" there states the opposite of the truth. */
+  let tLo = NaN, tHi = NaN;
+  for(let i = 0; i + 1 < curve.length; i++){
+    const a0 = curve[i].uA - (uAe - rel(uAe)), a1 = curve[i+1].uA - (uAe - rel(uAe));
+    if(!Number.isFinite(tLo) && Number.isFinite(a0) && Number.isFinite(a1) && a0 < 0 && a1 >= 0)
+      tLo = i + (a1 === a0 ? 0 : -a0 / (a1 - a0));
+    const b0 = curve[i].uB - (uBe - rel(uBe)), b1 = curve[i+1].uB - (uBe - rel(uBe));
+    if(Number.isFinite(b0) && Number.isFinite(b1) && b0 >= 0 && b1 < 0)
+      tHi = i + (b1 === b0 ? 0 : -b0 / (b1 - b0));
   }
+  /* a floor the curve never drops below is met from its very first point */
+  if(curve.length && !Number.isFinite(tLo) && curve[0].uA >= uAe - rel(uAe)) tLo = 0;
+  if(curve.length && !Number.isFinite(tHi) &&
+     curve[curve.length-1].uB >= uBe - rel(uBe)) tHi = curve.length - 1;
+
+  const nonEmpty = Number.isFinite(tLo) && Number.isFinite(tHi) && tHi >= tLo;
+  let n = 0;
+  for(let i = 0; i < curve.length; i++)
+    if(curve[i].uA >= uAe - rel(uAe) && curve[i].uB >= uBe - rel(uBe)) n++;
+
   return {
-    uAe, uBe,
-    from: idx.length ? idx[0] : -1,
-    to:   idx.length ? idx[idx.length - 1] : -1,
-    n:    idx.length
+    uAe, uBe, nonEmpty,
+    tLo: nonEmpty ? tLo : NaN,
+    tHi: nonEmpty ? tHi : NaN,
+    from: nonEmpty ? Math.ceil(tLo - 1e-9) : -1,
+    to:   nonEmpty ? Math.floor(tHi + 1e-9) : -1,
+    n
   };
+}
+
+/* The stretch of the contract curve between two fractional positions along
+   it, so that a core narrower than the gap between two traced points still
+   draws as the short segment it is instead of as nothing at all. */
+function corePath(curve, tLo, tHi){
+  if(curve.length < 2 || !Number.isFinite(tLo) || !Number.isFinite(tHi)) return [];
+  const at = t => {
+    const i = Math.min(curve.length - 2, Math.max(0, Math.floor(t)));
+    const u = Math.min(1, Math.max(0, t - i));
+    return [curve[i].x + (curve[i+1].x - curve[i].x) * u,
+            curve[i].y + (curve[i+1].y - curve[i].y) * u];
+  };
+  const pts = [at(tLo)];
+  for(let i = Math.ceil(tLo); i <= Math.floor(tHi); i++) pts.push([curve[i].x, curve[i].y]);
+  pts.push(at(tHi));
+  return pts;
 }
 
 /* Position along a polyline by a parameter in [0,1], for the scrubber. */
@@ -2520,8 +2726,13 @@ function drawBox(st){
     }
   };
 
-  /* the core's two curves go down first, so the loci land on top of them */
-  if(L.core && hasCore(st)){
+  /* The two curves that draw the floor: what each side already has and will
+     not go below. Normally that is the endowment and the core owns them, an
+     advanced idea. Between two countries it is autarky, and "you will not
+     sign a deal that leaves you worse off than staying home" is the whole
+     first lecture on trade — so there the autarky layer owns them and they
+     are available without turning the advanced concepts on. */
+  if(hasCore(st) && (L.core || (isTwoC(st) && L.autarky))){
     const omega = (lv, field, colour) => {
       if(!Number.isFinite(lv) || !field) return;
       const segs = marchingSquares(field, lv);
@@ -2549,12 +2760,16 @@ function drawBox(st){
     dot(ctx, SX(q.x), SY(q.y), 3.4, MARK.contract, MARK.casing);
   }
 
-  if(L.contract && hasCore(st) && st.core.n > 1){
-    ctx.save();
-    ctx.globalAlpha = 0.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.beginPath(); cpath(st.core.from, st.core.to)();
-    ctx.strokeStyle = MARK.core; ctx.lineWidth = 9; ctx.stroke();
-    ctx.restore();
+  if(L.contract && hasCore(st) && st.core.nonEmpty){
+    const pts = corePath(st.contract, st.core.tLo, st.core.tHi);
+    if(pts.length){
+      ctx.save();
+      ctx.globalAlpha = 0.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath();
+      pts.forEach((q, i) => i ? ctx.lineTo(SX(q[0]), SY(q[1])) : ctx.moveTo(SX(q[0]), SY(q[1])));
+      ctx.strokeStyle = MARK.core; ctx.lineWidth = 9; ctx.stroke();
+      ctx.restore();
+    }
   }
 
   /* --- offer curves --- */
@@ -2670,6 +2885,52 @@ function drawBox(st){
       ctx.setLineDash([]);
       ctx.restore();
       dot(ctx, SX(prod.X), SY(prod.Y), 5, MARK.frontier, MARK.casing);
+    }
+  }
+
+  /* --- two countries: each frontier drawn from its own origin ---
+     A's runs from O_A the usual way up, B's from O_B with both axes
+     backwards — exactly as B's indifference curves do. They meet at the world
+     production point, and under free trade they meet TANGENTIALLY: that is
+     the same tangency argument as the consumption one, applied to production.
+     Under autarky they merely cross, and the angle between them is the
+     comparative advantage the world is not yet exploiting. */
+  if(isTwoC(st) && st.twoc){
+    if(L.frontiers){
+      /* green is this applet's colour for "what can be made", and keeping it
+         here stops the two frontiers reading as two more indifference curves.
+         A's is solid and B's is dashed, and both are labelled, because which
+         country a frontier belongs to is the one thing that has to be legible
+         at a glance. */
+      const arc = (T, flip) => () => {
+        for(let k = 0; k <= 240; k++){
+          const x = T.Fx * k / 240, y = ppfY(T, x);
+          const sx = SX(flip ? st.Wx - x : x), sy = SY(flip ? st.Wy - y : y);
+          k ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+        }
+      };
+      cased(ctx, arc(st.twoc.TA, false), MARK.frontier, 2.4, MARK.casing);
+      ctx.save(); ctx.setLineDash([8, 5]);
+      cased(ctx, arc(st.twoc.TB, true), MARK.frontier, 2.4, MARK.casing);
+      ctx.restore();
+      const lab = (T, flip, txt) => {
+        const x = T.Fx * 0.5, y = ppfY(T, x);
+        haloText(ctx, txt, SX(flip ? st.Wx - x : x) + (flip ? -8 : 8),
+                 SY(flip ? st.Wy - y : y) + (flip ? -10 : 12),
+                 css("--ink-2"), dark ? "rgba(10,16,19,.8)" : "rgba(255,255,255,.86)",
+                 FONT_UI, flip ? "right" : "left");
+      };
+      lab(st.twoc.TA, false, "FPP A");
+      lab(st.twoc.TB, true,  "FPP B");
+    }
+    /* where each country sat with the border shut. Under free trade the box
+       itself has moved, so these are drawn where those old bundles now fall —
+       which is the whole point: the indifference curves through them are the
+       floor trade has to beat, and they are the core's two curves. */
+    if(L.autarky){
+      const a = st.twoc.autA, b = st.twoc.autB;
+      square(ctx, SX(a.x), SY(a.y), 5, MARK.A, MARK.casing);
+      square(ctx, SX(st.Wx - b.x), SY(st.Wy - b.y), 5, MARK.B, MARK.casing);
     }
   }
 
@@ -2842,6 +3103,8 @@ const LAYER_DEFS = [
   ["offer",    "lOffer",    false],
   ["optimum",  "lOptimum",  false],
   ["production","lProduction", true ],
+  ["frontiers","lFrontiers", true ],
+  ["autarky",  "lAutarky",   true ],
   ["swt",      "lSwt",      true ],
   ["budgetA",  "lBudgetA",  true ],
   ["budgetB",  "lBudgetB",  true ]
@@ -2872,6 +3135,16 @@ const STR = {
 
     gModel:"Modelo", gFirm:"Empresa",
     mdlExchange:"Intercambio", mdlProduction:"Producción", mdlRobinson:"Robinson",
+    mdlTwoCountry:"Dos países",
+    noteTwoCountry:"Dos economías Robinson, una por país. Con la frontera cerrada cada una consume lo que produce; al abrirla aparece un precio mundial y la caja pasa a ser una economía de intercambio.",
+    gTrade:"Comercio", rgAutarky:"Autarquía", rgTrade:"Libre comercio",
+    gTechA:"Tecnología de A", gTechB:"Tecnología de B",
+    techNote:"(x/F<sub>x</sub>)<sup>c</sup> + (y/F<sub>y</sub>)<sup>c</sup> = 1 para cada país. Quien tenga F<sub>x</sub> alto y F<sub>y</sub> bajo produce x más barato: ahí está la ventaja comparativa.",
+    tradeNoteShut:"Frontera cerrada: cada país produce en su propia frontera el punto que prefiere, y consume exactamente eso. Las dos curvas de indiferencia se cruzan ahí, y esa lente son las ganancias del comercio sin tomar.",
+    tradeNoteOpen:"Frontera abierta: un único precio mundial, cada país produce donde su RMT lo iguala, y luego intercambian lo producido. Las dos fronteras se vuelven tangentes y el reparto cae dentro del núcleo medido contra la autarquía.",
+    lFrontiers:"Fronteras de producción", lAutarky:"Puntos de autarquía",
+    rWorldP:"Precio mundial", rAutA:"u de A en autarquía", rAutB:"u de B en autarquía",
+    rGains:"Ganancias del comercio",
     noteExchange:"Dos consumidores reparten dotaciones dadas. La caja es el total y no cambia.",
     noteProduction:"Dos consumidores y una empresa. La frontera de producción sustituye a la esquina de la caja: el rectángulo que se reparte se desliza sobre ella.",
     noteRobinson:"Un consumidor y una empresa. No hay reparto que discutir: el óptimo es donde la RMS iguala a la RMT.",
@@ -3030,6 +3303,16 @@ const STR = {
 
     gModel:"Model", gFirm:"Firm",
     mdlExchange:"Exchange", mdlProduction:"Production", mdlRobinson:"Robinson",
+    mdlTwoCountry:"Two countries",
+    noteTwoCountry:"Two Robinson economies, one per country. With the border shut each consumes what it produces; open it and a world price appears, and the box becomes an exchange economy.",
+    gTrade:"Trade", rgAutarky:"Autarky", rgTrade:"Free trade",
+    gTechA:"A's technology", gTechB:"B's technology",
+    techNote:"(x/F<sub>x</sub>)<sup>c</sup> + (y/F<sub>y</sub>)<sup>c</sup> = 1 for each country. Whoever has a high F<sub>x</sub> and a low F<sub>y</sub> makes x more cheaply: that is the comparative advantage.",
+    tradeNoteShut:"Border shut: each country produces the point of its own frontier it likes best, and eats exactly that. The two indifference curves cross there, and that lens is the gains from trade nobody has taken yet.",
+    tradeNoteOpen:"Border open: one world price, each country produces where its own MRT meets it, and then they trade what they made. The two frontiers become tangent and the allocation lands inside the core measured against autarky.",
+    lFrontiers:"Production frontiers", lAutarky:"Autarky points",
+    rWorldP:"World price", rAutA:"A's u under autarky", rAutB:"B's u under autarky",
+    rGains:"Gains from trade",
     noteExchange:"Two consumers divide given endowments. The box is the total and does not move.",
     noteProduction:"Two consumers and a firm. The production frontier replaces the corner of the box: the rectangle being divided slides along it.",
     noteRobinson:"One consumer and a firm. There is no division to argue about: the optimum is where MRS meets MRT.",
@@ -3314,6 +3597,8 @@ const st = {
 
   wAx:6, wAy:2, wBx:2, wBy:6, Wx:8, Wy:8,
   model:"exchange", Fx:8, Fy:8, Fc:2, theta:0.5,
+  /* B's technology, and whether the border is open */
+  Gx:5, Gy:10, Gc:2, regime:"autarky", twoc:null, twocInit:false,
   lam:0.5, negishi:null, swt:null,
 
   fA:null, fB:null, fieldKey:"", famA:null, famB:null, famKey:"",
@@ -3362,6 +3647,9 @@ function recomputeUtilities(){
 }
 
 function recomputeModel(){
+  /* where the two countries start is an output of the technologies and the
+     regime, so it has to be settled before anything is sampled over the box */
+  if(isTwoC(st)) twoCountrySetup(st);
   sampleBox(st);
   buildRanks(st.fA);
   if(st.fB) buildRanks(st.fB);
@@ -3474,6 +3762,20 @@ function paintReadouts(){
   if(hasB(st)) boxRows.push([t.rUB, fmt(st.uP.b, 3), "b"]);
   if(hasFirm(st) && st.prod)
     boxRows.push([t.rProd, `${fmt(st.prod.X, 2)}, ${fmt(st.prod.Y, 2)}`]);
+  /* The one number the whole model exists to produce: how much better off
+     each country is than it was with the border shut. Both non-negative is
+     the claim; either one negative means this allocation is outside the core
+     and that country would rather go home. */
+  if(isTwoC(st) && st.twoc){
+    if(Number.isFinite(st.twoc.p)) boxRows.push([t.rWorldP, fmt(st.twoc.p, 3)]);
+    boxRows.push([t.rAutA, fmt(st.twoc.autA.u, 3), "a"]);
+    boxRows.push([t.rAutB, fmt(st.twoc.autB.u, 3), "b"]);
+    const gA = st.uP.a - st.twoc.autA.u, gB = st.uP.b - st.twoc.autB.u;
+    const both = gA > -1e-9 && gB > -1e-9;
+    boxRows.push([t.rGains,
+      (gA >= 0 ? "+" : "") + fmt(gA, 3) + " / " + (gB >= 0 ? "+" : "") + fmt(gB, 3),
+      both ? "good" : "warn"]);
+  }
   /* everything in one strip now that there is one panel */
   boxRows.push([t.rMRSA, Number.isFinite(s.mrsA) ? fmt(s.mrsA) : "∞", "a"]);
   boxRows.push([hasB(st) ? t.rMRSB : t.rMRT, Number.isFinite(s.mrsB) ? fmt(s.mrsB) : "∞", "b"]);
@@ -3598,6 +3900,11 @@ function applyLang(){
   $("mdl-exchange").textContent   = t.mdlExchange;
   $("mdl-production").textContent = t.mdlProduction;
   $("mdl-robinson").textContent   = t.mdlRobinson;
+  $("mdl-twocountry").textContent = t.mdlTwoCountry;
+  $("t-g-trade").textContent      = t.gTrade;
+  $("t-g-techb").textContent      = t.gTechB;
+  $("rg-autarky").textContent     = t.rgAutarky;
+  $("rg-trade").textContent       = t.rgTrade;
   $("t-m-planner").textContent    = t.mPlanner;
   $("t-m-planner-d").textContent  = t.mPlannerD;
   $("t-firm-note").innerHTML      = t.firmNote;
@@ -3828,6 +4135,7 @@ function layersFor(){
     if(k === "price" || k === "demands") return !hasFirm(st) && st.method === "auction";
     if(k === "offer" || k === "optimum") return !hasFirm(st);
     if(k === "production") return hasFirm(st);
+    if(k === "frontiers" || k === "autarky") return isTwoC(st);
     if(k === "budgetB") return hasB(st);
     return true;
   });
@@ -3919,6 +4227,39 @@ function onModelChange(){
 function onPointChange(){ syncState(); syncScrubFromState(); render(); }
 
 /* ---- the scrubber ------------------------------------------------------- */
+function paintTradeNote(){
+  if(!$("t-trade-note")) return;
+  $("t-trade-note").textContent =
+    st.regime === "trade" ? T().tradeNoteOpen : T().tradeNoteShut;
+}
+
+/* Shutting or opening the border does not change a technology or a taste: it
+   changes only where the two countries start, which is why the whole model is
+   recomputed from scratch rather than nudged. */
+function setRegime(v){
+  st.regime = v;
+  for(const [id, k] of [["rg-autarky","autarky"],["rg-trade","trade"]])
+    $(id).setAttribute("aria-pressed", v === k);
+  paintTradeNote();
+  if(applyPrefs()) onModelChange();
+  landOnRegime();
+}
+
+/* The regime does not merely redraw the box, it moves the two countries.
+   Shut, each consumes what it made and the two indifference curves cross
+   there, lens and all. Open, each consumes what the world price lets it buy,
+   and the curves become tangent. Flipping the switch has to SHOW that, so the
+   allocation is placed where the regime puts it rather than left wherever the
+   pointer last was. Dragging it away afterwards is the whole point of the
+   hand mode, so nothing re-places it until the switch moves again. */
+function landOnRegime(){
+  if(!isTwoC(st) || !st.twoc) return;
+  const d = st.twoc.dA;
+  st.P = d && Number.isFinite(d[0]) ? [clamp(d[0], 0, st.Wx), clamp(d[1], 0, st.Wy)]
+                                    : [st.wAx, st.wAy];
+  syncState(); syncScrubFromState(); render();
+}
+
 function paintLevelNote(){
   $("t-level-note").textContent =
     st.level === "advanced" ? T().levelNoteAdvanced : T().levelNoteBasic;
@@ -3939,12 +4280,14 @@ function setLevel(v){
 function paintModelNote(){
   const t = T();
   $("t-model-note").textContent =
-    st.model === "production" ? t.noteProduction :
-    st.model === "robinson"   ? t.noteRobinson   : t.noteExchange;
+    st.model === "production"  ? t.noteProduction :
+    st.model === "robinson"    ? t.noteRobinson   :
+    st.model === "twocountry"  ? t.noteTwoCountry : t.noteExchange;
+  paintTradeNote();
 }
 
 function scrubRange(){
-  if(st.method === "trade" && st.core.n > 1) return [st.core.from, st.core.to];
+  if(st.method === "trade" && st.core.nonEmpty) return [st.core.tLo, st.core.tHi];
   return [0, Math.max(0, st.contract.length - 1)];
 }
 function applyScrub(v){
@@ -4045,7 +4388,7 @@ function moveEndowment(to){
 
 /* Is the pointer on the endowment marker? */
 function overEndowment(ev, cv){
-  if(hasFirm(st) || challengeLocked()) return false;
+  if(hasFirm(st) || isTwoC(st) || challengeLocked()) return false;
   const rct = cv.getBoundingClientRect();
   const r = viewBox.rect(rct.width, rct.height, st);
   const dx = (ev.clientX - rct.left) - viewBox.sx(st.wAx, st, r);
@@ -4282,11 +4625,24 @@ function buildTray(){
    that booting into a model shows the same rail as switching into one. */
 function applyModelUI(){
   const m = st.model;
-  for(const [id, k] of [["mdl-exchange","exchange"],["mdl-production","production"],["mdl-robinson","robinson"]])
+  for(const [id, k] of [["mdl-exchange","exchange"],["mdl-production","production"],
+                        ["mdl-robinson","robinson"],["mdl-twocountry","twocountry"]])
     $(id).setAttribute("aria-pressed", m === k);
-  $("g-firm").hidden = !hasFirm(st);
-  $("g-endow").hidden = hasFirm(st);
-  $("row-theta").hidden = !hasB(st);
+  /* two countries need A's technology too, so that group serves both models
+     and only its heading changes; the profit share belongs to neither */
+  $("g-firm").hidden = !hasFirm(st) && !isTwoC(st);
+  $("g-trade").hidden = !isTwoC(st);
+  /* endowments are an OUTPUT here — what each country produced — so the
+     sliders that would set them by hand have nothing to set */
+  $("g-endow").hidden = hasFirm(st) || isTwoC(st);
+  $("row-theta").hidden = !hasB(st) || isTwoC(st);
+  $("t-g-firm").textContent = isTwoC(st) ? T().gTechA : T().gFirm;
+  $("t-firm-note").innerHTML = isTwoC(st) ? T().techNote : T().firmNote;
+  for(const [id, k] of [["gx","Gx"],["gy","Gy"],["gc","Gc"]]){
+    $(id).value = st[k]; $(id + "-v").value = st[k];
+  }
+  for(const [id, v] of [["rg-autarky","autarky"],["rg-trade","trade"]])
+    $(id).setAttribute("aria-pressed", st.regime === v);
   $("radio-auction").hidden = hasFirm(st);
   $("radio-planner").hidden = !hasB(st);
   $("btn-clear").hidden = hasFirm(st);
@@ -4302,6 +4658,23 @@ function applyModelUI(){
 
 function setModel(m){
   st.model = m;
+  /* Two identical technologies have nothing to trade, and the model would
+     open on its own degenerate case. So the first visit sets a pair with a
+     comparative advantage in it — A better at x, B better at y — and after
+     that the sliders are the student's. */
+  if(m === "twocountry" && !st.twocInit){
+    st.twocInit = true;
+    st.Fx = 12; st.Fy = 4;  st.Fc = 1.6;
+    st.Gx = 4;  st.Gy = 12; st.Gc = 1.6;
+    /* Tastes alike, technologies opposed — otherwise the country that is good
+       at x is also the one that wants x, autarky already gives it roughly
+       what it wanted, and the gains from trade are a rounding error. The
+       lesson wants countries that want the same things and are good at
+       different ones. Both sets of dials stay the student's afterwards. */
+    setFamily("a", "cd", { a:0.5 });
+    setFamily("b", "cd", { a:0.5 });
+    buildFamilies();
+  }
   applyModelUI();
 
   /* the auction reads demands against endowments, which a production economy
@@ -4312,6 +4685,7 @@ function setModel(m){
   totals(st);
   st.P = [st.Wx * 0.4, st.Wy * 0.4];
   if(applyPrefs()) onModelChange();
+  landOnRegime();
   buildChips();
 }
 
@@ -5589,7 +5963,13 @@ function boot(){
     st.negishi = negishiSolve(st); syncState(); render();
   });
 
-  for(const [id, m] of [["mdl-exchange","exchange"],["mdl-production","production"],["mdl-robinson","robinson"]])
+  for(const [id, key] of [["gx","Gx"],["gy","Gy"],["gc","Gc"]])
+    bindNum(id, id + "-v", key, scheduleModel);
+  for(const [id, v] of [["rg-autarky","autarky"],["rg-trade","trade"]])
+    $(id).addEventListener("click", () => setRegime(v));
+
+  for(const [id, m] of [["mdl-exchange","exchange"],["mdl-production","production"],
+                        ["mdl-robinson","robinson"],["mdl-twocountry","twocountry"]])
     $(id).addEventListener("click", () => setModel(m));
 
   $("btn-negishi").addEventListener("click", () => {
@@ -5696,7 +6076,9 @@ function boot(){
     marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod,
     setFamily, applyPrefs, applyPreset, exprOf, lensShare, FAMILIES, PRESETS,
     setModel, paretoAtWeight, supportAt, negishiSolve, weightFor, moveEndowment,
-    ppfY, ppfX, mrt, firmAt, hasFirm, hasB, bUtilAt
+    ppfY, ppfX, mrt, firmAt, hasFirm, hasB, bUtilAt,
+    isTwoC, techA, techB, autarkyOn, firmOn, worldAt, worldPrice,
+    twoCountrySetup, setRegime, landOnRegime, coreOf, corePath, setLevel
   };
   applyLang();
   buildTray();
