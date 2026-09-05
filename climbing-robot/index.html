@@ -33,7 +33,7 @@
 body{margin:0; background:var(--paper); color:var(--ink);
   font-family:var(--f-ui); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased}
 button,input,select{font:inherit; color:inherit}
-.shell{max-width:1560px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+.shell{max-width:1840px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
 
 .masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
   flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
@@ -41,7 +41,7 @@ button,input,select{font:inherit; color:inherit}
 .masthead p{margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:78ch}
 .head-actions{display:flex; align-items:center; gap:8px}
 
-.console{display:grid; grid-template-columns:clamp(216px,23vw,322px) minmax(0,1fr);
+.console{display:grid; grid-template-columns:clamp(206px,19vw,286px) minmax(0,1fr);
   gap:12px; align-items:start}
 @media (max-width:680px){.console{grid-template-columns:1fr}}
 
@@ -116,6 +116,17 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .chip:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
 .chips[hidden]{display:none}
 
+/* the derivative switches: the colour is the point, so it goes on the switch */
+.togs{display:grid; grid-template-columns:1fr 1fr; gap:5px}
+.tog{appearance:none; cursor:pointer; display:flex; align-items:center; gap:6px;
+  border:1px solid var(--rule); background:var(--panel); color:var(--ink-3);
+  border-radius:3px; padding:5px 8px; font-size:12px; font-family:var(--f-mono)}
+.tog i{width:10px; height:10px; border-radius:2px; flex:none; opacity:.35}
+.tog[aria-pressed="true"]{background:var(--sunk); color:var(--ink); font-weight:600}
+.tog[aria-pressed="true"] i{opacity:1}
+.tog:hover{border-color:var(--accent)}
+.tog:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
 .check{display:flex; gap:7px; align-items:flex-start; font-size:12.5px; color:var(--ink-2);
   cursor:pointer; line-height:1.3}
 .check input{accent-color:var(--accent); margin:1px 0 0; flex:none}
@@ -146,7 +157,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
   padding:9px 12px; border-bottom:1px solid var(--rule-2); flex-wrap:wrap}
 .vp-head h2{margin:0; font-family:var(--f-mono); font-size:10.5px; font-weight:600;
   letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
-.vp canvas{display:block; width:100%; height:clamp(340px,52vh,540px); touch-action:none}
+.vp canvas{display:block; width:100%; height:clamp(420px,66vh,760px); touch-action:none}
 #cWide{cursor:grab} #cWide:active{cursor:grabbing}
 #cZoom{cursor:crosshair}
 .pill{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.05em; padding:2px 9px;
@@ -225,14 +236,16 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
         <div class="dial">
           <div class="mag" id="mag">×1</div>
           <div class="scale" id="scale">d = 1.5 km</div>
-          <input type="range" id="zoom" min="0" max="1" step="0.0005" value="0"
+          <input type="range" id="zoom" min="0" max="1" step="0.0005" value="0.0769"
                  aria-label="Zoom">
-          <div class="ticks"><span>×1</span><span>×10⁶</span><span>×10¹²</span></div>
+          <div class="ticks"><span>×0.1</span><span>×1</span><span>×10⁶</span><span>×10¹²</span></div>
         </div>
         <div class="btn-row">
           <button type="button" class="btn btn-primary" id="btn-zoom" data-t="zoomGo">Acercar al límite</button>
-          <button type="button" class="btn" id="btn-zoom-out" data-t="zoomOut">Alejar</button>
+          <button type="button" class="btn" id="btn-zoom-out" data-t="zoomOut">Alejar del todo</button>
+          <button type="button" class="btn" id="btn-zoom-1" data-t="zoomOne">×1</button>
         </div>
+        <label class="check"><input type="checkbox" id="geo" checked><span data-t="geoOn">Alcance geodésico (sobre la superficie)</span></label>
         <p class="hint" data-t="zoomHint">La rueda del ratón sobre cualquiera de los dos paneles mueve este dial. d es a la vez lo que el robot alcanza a ver y el incremento con el que mide la pendiente.</p>
       </div>
 
@@ -272,6 +285,16 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
           <button type="button" class="btn btn-primary" id="btn-climb" data-t="climbBtn">Escalar</button>
         </div>
         <div class="slider-row"><span class="k">paso</span><input type="range" id="step" min="0.02" max="1" step="0.01" value="0.28"><input class="v" id="step-v"></div>
+      </div>
+
+      <div class="group" id="g-dir">
+        <h2 data-t="gDeriv">Derivadas</h2>
+        <div class="togs" id="derivs"></div>
+        <div class="slider-row"><span class="k">θ</span><input type="range" id="theta" min="0" max="360" step="1" value="0"><input class="v" id="theta-v"></div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="btn-grad-dir" data-t="alignGrad">Hacia el gradiente</button>
+        </div>
+        <p class="hint" data-t="dirHint">La derivada direccional es la pendiente del corte en esa dirección. Es máxima cuando θ apunta como el gradiente, y cero perpendicular a él.</p>
       </div>
 
       <div class="group">
@@ -656,10 +679,39 @@ function magStr(v){
    the ground and looking closer.
    ========================================================================== */
 
-/* the dial: d = D0 * 10^(-DEC * zoom), with zoom in [0, 1] */
-const D0 = 1.5, DEC = 12;
-const dOf = z => D0 * Math.pow(10, -DEC * clamp(z, 0, 1));
-const zOf = d => clamp(-Math.log10(d / D0) / DEC, 0, 1);
+/* The dial: d = D0 * 10^(OUT - (OUT+DEC)*zoom), zoom in [0, 1]. It runs two
+   decades OUT as well as twelve in, because "is this function locally like a
+   plane" has an answer in both directions: back off far enough and a plane is
+   the one thing it is not. Magnification ×1 sits at Z1, not at either end. */
+const D0 = 1.5, DEC = 12, OUT = 1, SPAN = OUT + DEC;
+const Z1 = OUT/SPAN;
+const dOf = z => D0 * Math.pow(10, OUT - SPAN*clamp(z, 0, 1));
+const zOf = d => clamp((OUT - Math.log10(d/D0))/SPAN, 0, 1);
+
+/* The terrain panel follows the robot in. Its window is a fixed multiple of
+   what the robot can see, so the robot keeps its size on screen while the
+   scale around it shrinks — which is the demonstration, and it has to happen
+   on the panel the robot is standing on and not only in the inset. Eight, so
+   the sight radius is always an eighth of the terrain panel and the zoom
+   window beside it is one more factor of eight closer.
+
+   Until the window is smaller than the domain it stays the whole domain, so
+   turning the dial from rest still starts from the overview. */
+const ZW = 8;
+let REACH = null;
+function windowOf(){
+  /* the ground radius the robot actually reaches, once solve() has measured
+     it; before the first frame the flat guess will do */
+  const r = fin(REACH) && REACH > 0 ? REACH : dOf(st.zoom);
+  const fullX = (st.x1 - st.x0)/2, fullY = (st.y1 - st.y0)/2;
+  const full = is1d() ? fullX : Math.min(fullX, fullY);
+  const W = Math.min(full, ZW*r);
+  const zoomed = W < full - 1e-12;
+  if(!zoomed) return { W:full, zoomed:false, x0:st.x0, x1:st.x1, y0:st.y0, y1:st.y1 };
+  const cx = clamp(is1d() ? st.p : st.rx, st.x0+W, st.x1-W);
+  const cy = clamp(st.ry, st.y0+W, st.y1-W);
+  return { W, zoomed:true, x0:cx-W, x1:cx+W, y0:cy-W, y1:cy+W };
+}
 
 /* A term whose coefficient is zero is not part of the function, and a
    coefficient of one is not worth printing. */
@@ -724,14 +776,23 @@ const PRESETS3 = ["sin(x)*cos(y)*3", "x*y/3", "(x^2-y^2)/4", "exp(-(x^2+y^2)/6)*
                   "sqrt(abs(x*y))", "abs(x)+abs(y)", "4-pow(x^2+y^2,1/3)"];
 
 const LAYERS = {
-  sight:"#FFD24A", measured:"#6FD3A0", tangent:"#FF4D6D", grad:"#C15CFF",
-  trail:"#5AA9FF", fence:"#E4705C", grid:null, axes:null
+  sight:"#FFD24A", measured:"#6FD3A0", tangent:"#FF4D6D",
+  partX:"#FF9E2C", partY:"#5AA9FF", dir:"#8CE2EC", grad:"#C15CFF",
+  trail:"#3D8FE0", fence:"#E4705C", grid:null, axes:null
 };
-const LAYER_KEYS = ["sight","measured","tangent","grad","trail","fence","grid","axes"];
+const LAYER_KEYS = ["sight","measured","tangent","partX","partY","dir","grad",
+                    "trail","fence","grid","axes"];
+/* The four derivative pictures get their own row of coloured switches rather
+   than a line each in the layer list: on a surface they are the subject, not
+   scenery. Both partials and a chosen direction only mean something on a
+   surface — on a curve there is one direction to go in. */
+const DERIV_KEYS = ["partX","partY","dir","grad"];
+const LAYERS_3D_ONLY = new Set(["partX","partY","dir"]);
 
 const MK = {
   curve:"#7FD4E0", robot:"#C15CFF", sight:"#FFD24A", measured:"#6FD3A0",
   tangent:"#FF4D6D", grad:"#C15CFF", trail:"#5AA9FF", fence:"#E4705C",
+  partX:"#FF9E2C", partY:"#5AA9FF", dir:"#8CE2EC",
   axis:"#7C8B93", flat:"#8CE2EC"
 };
 
@@ -742,12 +803,12 @@ const st = {
   a0:8.1, a1:0.1, a2:0.145, a3:0,
   src1:"x^3-3*x", src3:"sin(x)*cos(y)*3",
   p:0.6, rx:1.4, ry:1.1,
-  zoom:0, step:0.28,
+  zoom:Z1, step:0.28, geo:true, theta:0,
   x0:-2, x1:8, y0:-5, y1:5,
   fence:false, cLo:-0.8, cHi:2.3, s:2,
   trail:[],
-  layers:{ sight:true, measured:true, tangent:true, grad:true,
-           trail:true, fence:true, grid:true, axes:true }
+  layers:{ sight:true, measured:true, tangent:true, partX:true, partY:true,
+           dir:true, grad:true, trail:true, fence:true, grid:true, axes:true }
 };
 let LANG = "es";
 
@@ -764,6 +825,79 @@ const FAMS = () => is1d() ? FAMS1 : FAMS3;
 const FAM_KEYS = () => is1d() ? FAM1_KEYS : FAM3_KEYS;
 const famOf = () => is1d() ? st.fam1 : st.fam3;
 const PRESETS = () => is1d() ? PRESETS1 : PRESETS3;
+
+/* ==========================================================================
+   3b. How far the robot can actually walk
+   --------------------------------------------------------------------------
+   The robot can walk a distance d over the ground it is standing on, not d
+   across the map. On a slope those are not the same: climbing costs more
+   surface length per step of ground, so the set it can reach is squashed
+   along the gradient and stretched across it. That set is the geodesic ball
+   of radius d, and it is an ellipse rather than a disc.
+
+   For each direction u it solves L(t) = d, where L is the arc length of the
+   surface curve lying above the straight ground ray:
+
+       L(t) = INTEGRAL from 0 to t of sqrt(1 + (grad f(P + r u) . u)^2) dr
+
+   by Newton from the flat-ground guess. Walking straight over the ground is
+   not exactly a geodesic, so this is a slight under-estimate of the true
+   ball; the two agree to the order that this applet is about, and the
+   difference vanishes with d. Turning "Alcance geodésico" off measures the
+   radius on the map instead, which is what the GeoGebra originals did.
+   ========================================================================== */
+function reachRay(M, x, y, ux, uy, d){
+  const speed = t => {
+    const gx = M.fx(x + t*ux, y + t*uy), gy = M.fy(x + t*ux, y + t*uy);
+    const sl = (fin(gx) ? gx : 0)*ux + (fin(gy) ? gy : 0)*uy;
+    return Math.sqrt(1 + sl*sl);
+  };
+  const L = t => {                       /* Simpson, eight panels */
+    const n = 8; let acc = 0;
+    for(let i = 0; i <= n; i++){
+      const v = speed(t*i/n);
+      if(!fin(v)) return NaN;
+      acc += (i === 0 || i === n ? 1 : (i % 2 ? 4 : 2))*v;
+    }
+    return acc*t/(3*n);
+  };
+  const s0 = speed(0);
+  let t = d/(fin(s0) && s0 > 1e-12 ? s0 : 1);
+  for(let k = 0; k < 3; k++){
+    const sp = speed(t), Lt = L(t);
+    if(!fin(sp) || !fin(Lt) || sp < 1e-12) break;
+    const nt = clamp(t - (Lt - d)/sp, d/50, d*50);
+    if(!fin(nt) || nt <= 0) break;
+    t = nt;
+  }
+  return fin(t) && t > 0 ? clamp(t, d/50, d*50) : d;
+}
+
+const BALL_J = 48;
+let BALL = null, BALLKEY = "";
+function ballOf(M, x, y, d){
+  const key = `${srcOf()}|${x}|${y}|${d}|${st.geo}|${st.mode}`;
+  if(BALL && BALLKEY === key) return BALL;
+  const R = new Float64Array(BALL_J);
+  let rMax = 0, rMin = Infinity;
+  for(let j = 0; j < BALL_J; j++){
+    const a = 2*Math.PI*j/BALL_J;
+    const t = st.geo ? reachRay(M, x, y, Math.cos(a), Math.sin(a), d) : d;
+    R[j] = t;
+    if(t > rMax) rMax = t;
+    if(t < rMin) rMin = t;
+  }
+  BALL = { R, J:BALL_J, rMax, rMin,
+    /* the reach in an arbitrary direction, interpolated between spokes */
+    at(a){
+      let u = (a/(2*Math.PI))*BALL_J;
+      u = ((u % BALL_J) + BALL_J) % BALL_J;
+      const i0 = Math.floor(u), i1 = (i0+1) % BALL_J, w = u - i0;
+      return R[i0]*(1-w) + R[i1]*w;
+    }};
+  BALLKEY = key;
+  return BALL;
+}
 
 /* ==========================================================================
    4. The model
@@ -793,17 +927,28 @@ function ensureModel(){
 let ZR = null, ZRKEY = "";
 function zRange(){
   const M = MODEL; if(!M) return { lo:0, hi:1 };
-  const key = srcOf() + "|" + st.x0 + "," + st.x1 + "," + st.y0 + "," + st.y1;
+  const w = windowOf();
+  const key = srcOf() + "|" + w.x0 + "," + w.x1 + "," + w.y0 + "," + w.y1;
   if(ZR && ZRKEY === key) return ZR;
   let lo = Infinity, hi = -Infinity;
   const N = 41;
   for(let j = 0; j < N; j++) for(let i = 0; i < N; i++){
-    const x = st.x0 + (st.x1-st.x0)*i/(N-1), y = st.y0 + (st.y1-st.y0)*j/(N-1);
+    const x = w.x0 + (w.x1-w.x0)*i/(N-1), y = w.y0 + (w.y1-w.y0)*j/(N-1);
     const v = M.f(x,y);
     if(fin(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
   }
   if(!fin(lo) || !fin(hi)){ lo = 0; hi = 1; }
-  if(hi - lo < 1e-9) hi = lo + 1;
+  /* Once the panel is following the robot in, the vertical scale has to
+     shrink with the window. Auto-fitting it would stretch the relief back up
+     to fill the panel at every magnification and nothing would ever flatten. */
+  if(w.zoomed){
+    const fp = M.f(st.rx, st.ry);
+    if(fin(fp)){
+      const half = Math.max((hi-lo)/2*1.14, 0.4375*w.W);
+      lo = fp - half; hi = fp + half;
+    }
+  }
+  if(hi - lo < 1e-300) hi = lo + 1e-300;
   ZR = { lo, hi }; ZRKEY = key;
   return ZR;
 }
@@ -826,10 +971,15 @@ function solve(){
     const fp = f(p);
     S.p = p; S.fp = fp;
     S.fx = M.fx(p, 0);
-    /* the robot looks both ways: the slope it measures is the centred
-       difference over what it can see */
-    const fR = f(p + d), fL = f(p - d);
-    S.sR = (fR - fp)/d; S.sL = (fp - fL)/d;
+    /* how far along the ground the robot gets for d of walking, each way */
+    S.tR = st.geo ? reachRay(M, p, 0,  1, 0, d) : d;
+    S.tL = st.geo ? reachRay(M, p, 0, -1, 0, d) : d;
+    S.reach = Math.max(S.tR, S.tL);
+    const fR = f(p + S.tR), fL = f(p - S.tL);
+    /* the robot looks both ways; what it reports is the forward difference,
+       which is what the GeoGebra original built and what someone who takes a
+       step and compares altitudes actually gets */
+    S.sR = (fR - fp)/S.tR; S.sL = (fp - fL)/S.tL;
     S.meas = S.sR;
     S.jump = S.sR - S.sL;            /* zero in the limit iff there is no corner */
     S.gn = Math.abs(S.meas);
@@ -838,53 +988,73 @@ function solve(){
        measured keeps the number meaningful — and it is exactly the number that
        refuses to go to zero, which is the point. */
     S.tx = fin(S.fx) ? S.fx : S.meas;
-    /* the largest gap between the terrain and the tangent line inside the
-       window: the numerator of the definition of differentiability */
     let dev = 0;
     const N = 240;
     for(let i = 0; i <= N; i++){
-      const h = -d + 2*d*i/N, v = f(p + h);
+      const h = -S.tL + (S.tL+S.tR)*i/N, v = f(p + h);
       if(!fin(v)) continue;
       const e = Math.abs(v - (fp + S.tx*h));
       if(e > dev) dev = e;
     }
-    S.dev = dev; S.ratio = d > 0 ? dev/d : NaN;
+    S.dev = dev;
     S.nf = noiseFloor(fp);
   }else{
     const x = st.rx, y = st.ry, f = M.f;
     const fp = f(x, y);
     S.x = x; S.y = y; S.fp = fp;
     S.fx = M.fx(x, y); S.fy = M.fy(x, y);
-    S.mx = (f(x+d, y) - fp)/d;
-    S.my = (f(x, y+d) - fp)/d;
+    const B = S.ball = ballOf(M, x, y, d);
+    S.reach = B.rMax; S.rMin = B.rMin;
+    /* aspect of the ball: 1 on the flat, and the more the ground tilts the
+       more it flattens across the gradient */
+    S.aspect = B.rMin > 0 ? B.rMax/B.rMin : Infinity;
+    const tx = B.R[0], ty = B.R[BALL_J/4];
+    S.tRx = tx; S.tRy = ty;
+    S.mx = (f(x + tx, y) - fp)/tx;
+    S.my = (f(x, y + ty) - fp)/ty;
     S.meas = Math.hypot(S.mx, S.my);
     S.jump = Math.max(
-      Math.abs((f(x+d,y)-fp)/d - (fp-f(x-d,y))/d),
-      Math.abs((f(x,y+d)-fp)/d - (fp-f(x,y-d))/d));
+      Math.abs((f(x+tx,y)-fp)/tx - (fp-f(x-B.R[BALL_J/2],y))/B.R[BALL_J/2]),
+      Math.abs((f(x,y+ty)-fp)/ty - (fp-f(x,y-B.R[3*BALL_J/4]))/B.R[3*BALL_J/4]));
     S.gn = Math.hypot(S.fx, S.fy);
     S.tx = fin(S.fx) ? S.fx : S.mx;
     S.ty = fin(S.fy) ? S.fy : S.my;
+    /* the directional derivative, in the direction the dial is pointing */
+    const a = st.theta*Math.PI/180, ca = Math.cos(a), sa = Math.sin(a);
+    S.ux = ca; S.uy = sa;
+    S.tu = B.at(a);
+    S.du = (fin(S.fx) && fin(S.fy)) ? S.fx*ca + S.fy*sa : NaN;
+    S.duMeas = (f(x + S.tu*ca, y + S.tu*sa) - fp)/S.tu;
+    S.gradAngle = S.gn > 1e-12 ? Math.atan2(S.fy, S.fx)*180/Math.PI : NaN;
+    /* the gap, taken over the ball rather than over a square: the square's
+       corners reach 1.41 times further than its sides and would report a
+       deviation from a neighbourhood the robot cannot get to */
     let dev = 0;
-    const N = 26;
-    for(let j = 0; j <= N; j++) for(let i = 0; i <= N; i++){
-      const hx = -d + 2*d*i/N, hy = -d + 2*d*j/N;
-      const v = f(x+hx, y+hy);
-      if(!fin(v)) continue;
-      const e = Math.abs(v - (fp + S.tx*hx + S.ty*hy));
-      if(e > dev) dev = e;
+    const NR = 14;
+    for(let j = 0; j < BALL_J; j++){
+      const th = 2*Math.PI*j/BALL_J, cx = Math.cos(th), cy = Math.sin(th);
+      for(let i = 1; i <= NR; i++){
+        const r = B.R[j]*i/NR, hx = r*cx, hy = r*cy;
+        const v = f(x+hx, y+hy);
+        if(!fin(v)) continue;
+        const e = Math.abs(v - (fp + S.tx*hx + S.ty*hy));
+        if(e > dev) dev = e;
+      }
     }
-    S.dev = dev; S.ratio = d > 0 ? dev/d : NaN;
+    S.dev = dev;
     S.nf = noiseFloor(fp);
   }
+  S.ratio = S.reach > 0 ? S.dev/S.reach : NaN;
+  REACH = S.reach;
   /* the half-height the zoom window is drawn over: enough to hold the
-     reference line at any slope, and proportional to d so shrinking d really
-     is a zoom. It has to come from the reference slopes rather than the true
-     partials, because at a corner the true ones are NaN and a NaN half-height
-     silently disables every scale on the panel. */
+     reference line at any slope, and proportional to the reach so shrinking d
+     really is a zoom. It has to come from the reference slopes rather than the
+     true partials, because at a corner the true ones are NaN and a NaN
+     half-height silently disables every scale on the panel. */
   S.gnRef = is1d() ? Math.abs(S.tx)
                    : Math.hypot(fin(S.tx) ? S.tx : 0, fin(S.ty) ? S.ty : 0);
   if(!fin(S.gnRef)) S.gnRef = 0;
-  S.H = Math.max(S.gnRef*S.d, 0.35*S.d) * 1.25;
+  S.H = Math.max(S.gnRef*S.reach, 0.35*S.reach) * 1.25;
   /* A plane's gap is exactly zero, which is a fact, not a measurement that
      ran out of digits. The two have to be told apart or the one case where
      the linear approximation costs nothing gets reported as unmeasurable. */
@@ -902,7 +1072,7 @@ function solve(){
 function cornerTest(S){
   const M = MODEL;
   if(!M || !S || !fin(S.fp)) return { corner:false, cusp:false };
-  const d = S.d, small = d/32;
+  const d = S.reach, small = d/32;
   const oneSided = (h, ax) => {
     if(is1d()){
       const f = u => M.f(u, 0), p = S.p;
@@ -1071,19 +1241,35 @@ function drawWide1(S){
   if(!M || !S){ const c = setupCanvas(cv);
     c.ctx.fillStyle = css("--ink-3"); c.ctx.font = `13px ${css("--f-ui")}`;
     c.ctx.textAlign = "center"; c.ctx.fillText(t.errParse, c.w/2, c.h/2); return; }
-  const f = u => M.f(u, 0);
+  const f = u => M.f(u, 0), win = windowOf();
 
   let lo = Infinity, hi = -Infinity;
   const N = 520, pts = [];
   for(let i = 0; i <= N; i++){
-    const x = st.x0 + (st.x1-st.x0)*i/N, v = f(x);
+    const x = win.x0 + (win.x1-win.x0)*i/N, v = f(x);
     if(fin(v) && Math.abs(v) < 1e6){ pts.push([x,v]); if(v<lo) lo=v; if(v>hi) hi=v; }
     else pts.push(null);
   }
   if(fin(S.fp)){ lo = Math.min(lo, S.fp); hi = Math.max(hi, S.fp); }
   if(!fin(lo) || !fin(hi)){ lo = 0; hi = 1; }
-  const pad = ((hi-lo)||1)*0.14;
-  const V = plot2d(cv, st.x0, st.x1, lo-pad, hi+pad, "x", "f(x)");
+  let ylo, yhi;
+  if(win.zoomed && fin(S.fp)){
+    /* Once the panel follows the robot in, the vertical scale has to shrink
+       with the window. Auto-fitting it would stretch the relief back up to
+       fill the panel at every magnification, and a summit would stay a
+       parabola for ever. */
+    const half = Math.max((hi-lo)/2*1.14, 0.4375*win.W);
+    ylo = S.fp - half; yhi = S.fp + half;
+  }else{
+    const pad = ((hi-lo)||1)*0.14; ylo = lo - pad; yhi = hi + pad;
+  }
+  /* Twelve decades of zoom outrun any fixed number of decimals, so once the
+     window is following the robot the axes are labelled as distances from it
+     rather than as absolute coordinates nobody could read. */
+  const opt = win.zoomed ? { tick:v => sgnLen(v - S.p), tickY:v => sgnLen(v - S.fp) } : {};
+  const V = plot2d(cv, win.x0, win.x1, ylo, yhi,
+                   win.zoomed ? "x − x\u1D63" : "x",
+                   win.zoomed ? "f − f(x\u1D63)" : "f(x)", opt);
   const ctx = V.ctx;
   ctx.save(); ctx.beginPath();
   ctx.rect(V.bx.x0, V.bx.y0, V.bx.x1-V.bx.x0, V.bx.y1-V.bx.y0); ctx.clip();
@@ -1091,57 +1277,55 @@ function drawWide1(S){
   /* the fence: everything the robot may not reach */
   if(st.fence && st.layers.fence){
     ctx.fillStyle = "rgba(228,112,92,.10)";
-    ctx.fillRect(V.bx.x0, V.bx.y0, V.SX(st.cLo)-V.bx.x0, V.bx.y1-V.bx.y0);
-    ctx.fillRect(V.SX(st.cHi), V.bx.y0, V.bx.x1-V.SX(st.cHi), V.bx.y1-V.bx.y0);
+    if(st.cLo > win.x0) ctx.fillRect(V.bx.x0, V.bx.y0, V.SX(st.cLo)-V.bx.x0, V.bx.y1-V.bx.y0);
+    if(st.cHi < win.x1) ctx.fillRect(V.SX(st.cHi), V.bx.y0, V.bx.x1-V.SX(st.cHi), V.bx.y1-V.bx.y0);
     for(const c of [st.cLo, st.cHi])
-      poly2(ctx, [[V.SX(c),V.bx.y0],[V.SX(c),V.bx.y1]], MK.fence, 2, [6,4]);
+      if(c > win.x0 && c < win.x1)
+        poly2(ctx, [[V.SX(c),V.bx.y0],[V.SX(c),V.bx.y1]], MK.fence, 2, [6,4]);
   }
 
-  /* the window the robot can see, at this scale. Below about a pixel it is
-     not a band any more and drawing one would be a lie, so it becomes a mark. */
-  const wpx = (V.SXr(S.p+S.d) - V.SXr(S.p-S.d));
-  if(st.layers.sight){
+  /* what the robot can reach: d of walking along the curve, each way */
+  const xL = S.p - S.tL, xR = S.p + S.tR;
+  const wpx = V.SXr(xR) - V.SXr(xL);
+  const bandFills = xL <= win.x0 + 1e-12 && xR >= win.x1 - 1e-12;
+  if(st.layers.sight && !bandFills){
     if(wpx > 2.5){
       ctx.fillStyle = "rgba(255,210,74,.13)";
-      ctx.fillRect(V.SX(S.p-S.d), V.bx.y0, wpx, V.bx.y1-V.bx.y0);
-      for(const c of [S.p-S.d, S.p+S.d])
+      ctx.fillRect(V.SX(xL), V.bx.y0, wpx, V.bx.y1-V.bx.y0);
+      for(const c of [xL, xR])
         poly2(ctx, [[V.SX(c),V.bx.y0],[V.SX(c),V.bx.y1]], MK.sight, 1.4, [4,4]);
     }else if(fin(S.fp)){
-      const X = V.SXr(S.p), Y = V.SYr(S.fp);
       ctx.strokeStyle = MK.sight; ctx.lineWidth = 1.6; ctx.setLineDash([3,3]);
-      ctx.beginPath(); ctx.arc(X, Y, 13, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(V.SXr(S.p), V.SYr(S.fp), 13, 0, 7); ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 
-  /* the trail the robot has walked */
   if(st.layers.trail && st.trail.length > 1)
     poly2(ctx, st.trail.map(q => [V.SX(q[0]), V.SY(q[1])]), MK.trail, 2, [1,4]);
 
   poly2(ctx, pts.map(q => q && [V.SX(q[0]), V.SY(q[1])]), MK.curve, 3);
 
   if(fin(S.fp)){
-    const span = (st.x1 - st.x0);
     /* the slope the robot measured, and the slope that is actually there */
     if(st.layers.measured && fin(S.meas))
-      poly2(ctx, [[V.SX(st.x0), V.SY(S.fp + S.meas*(st.x0-S.p))],
-                  [V.SX(st.x1), V.SY(S.fp + S.meas*(st.x1-S.p))]], MK.measured, 2, [7,5]);
+      poly2(ctx, [[V.SX(win.x0), V.SY(S.fp + S.meas*(win.x0-S.p))],
+                  [V.SX(win.x1), V.SY(S.fp + S.meas*(win.x1-S.p))]], MK.measured, 2, [7,5]);
     if(st.layers.tangent && fin(S.tx))
-      poly2(ctx, [[V.SX(st.x0), V.SY(S.fp + S.tx*(st.x0-S.p))],
-                  [V.SX(st.x1), V.SY(S.fp + S.tx*(st.x1-S.p))]], MK.tangent, 2.4,
+      poly2(ctx, [[V.SX(win.x0), V.SY(S.fp + S.tx*(win.x0-S.p))],
+                  [V.SX(win.x1), V.SY(S.fp + S.tx*(win.x1-S.p))]], MK.tangent, 2.4,
             S.noTangent ? [3,4] : null);
-    /* the two ends of what the robot sees, as the original drew them */
-    if(st.layers.sight && wpx > 8){
-      for(const sgn of [-1, 1]){
-        const u = S.p + sgn*S.d, v = f(u);
+    if(st.layers.sight && wpx > 8)
+      for(const u of [xL, xR]){
+        const v = f(u);
         if(fin(v)) dot2(ctx, V.SX(u), V.SY(v), MK.sight, 3.2);
       }
-    }
     /* the gradient, exactly as the GeoGebra file built it: the ascent
        direction, with the slope itself as its length */
     if(st.layers.grad && fin(S.meas)){
-      const g = S.meas, n = Math.hypot(1, g) || 1;
-      const kx = (st.x1-st.x0)*0.13;
-      const ax = S.p + kx*g/n, ay = S.fp + kx*(V.ymax-V.ymin)/(st.x1-st.x0)*g*g/n;
+      const g = S.meas, n = Math.hypot(1, g) || 1, kx = win.W*0.26;
+      const ax = S.p + kx*g/n;
+      const ay = S.fp + kx*(V.ymax-V.ymin)/(win.x1-win.x0)*g*g/n;
       const A = [V.SXr(S.p), V.SYr(S.fp)], B = [V.SXr(ax), V.SYr(ay)];
       const L = Math.hypot(B[0]-A[0], B[1]-A[1]);
       if(L > 3){
@@ -1162,20 +1346,23 @@ function drawWide1(S){
   ctx.restore();
   if(st.layers.tangent) tag(ctx, S.noTangent ? t.noTangent : `${t.sTrue} ${fmt(S.fx,3)}`,
     MK.tangent, V.bx.x0+8, V.bx.y0+12);
-  if(st.layers.measured && fin(S.meas)) tag(ctx, `${t.sMeas} ${fmt(S.meas,3)}`, MK.measured, V.bx.x0+8, V.bx.y0+28);
+  if(st.layers.measured && fin(S.meas))
+    tag(ctx, `${t.sMeas} ${fmt(S.meas,3)}`, MK.measured, V.bx.x0+8, V.bx.y0+28);
+  tag(ctx, "±" + asLength(win.W), css("--ink-3"), V.bx.x1-6, V.bx.y0+12, "right");
 }
 
 /* ---- 3D ---------------------------------------------------------------- */
 function boxOf(){
   const zr = zRange();
-  const sx = 2/((st.x1-st.x0)||1), sy = 2/((st.y1-st.y0)||1);
+  const w = windowOf();
+  const sx = 2/((w.x1-w.x0)||1), sy = 2/((w.y1-w.y0)||1);
   const sz = 1.24/((zr.hi-zr.lo)||1);
-  return { zr, sz,
-    X: x => (x - st.x0)*sx - 1,
-    Y: y => (y - st.y0)*sy - 1,
+  return { zr, sz, w,
+    X: x => (x - w.x0)*sx - 1,
+    Y: y => (y - w.y0)*sy - 1,
     Z: z => (z - zr.lo)*sz - 0.62,
-    Xi: X => st.x0 + (X + 1)/sx,
-    Yi: Y => st.y0 + (Y + 1)/sy,
+    Xi: X => w.x0 + (X + 1)/sx,
+    Yi: Y => w.y0 + (Y + 1)/sy,
     floor:-0.62 };
 }
 function camera(w, h, az, el, dist, ortho){
@@ -1219,13 +1406,14 @@ const mainCam = (w,h) => camera(w, h, view.az, view.el, view.dist, view.ortho);
 let MESH = null, MESHKEY = "";
 function buildMesh(n){
   const B = boxOf();
-  const key = `${srcOf()}|${st.x0},${st.x1},${st.y0},${st.y1}|${n}`;
+  const w = B.w;
+  const key = `${srcOf()}|${w.x0},${w.x1},${w.y0},${w.y1}|${n}`;
   if(MESH && MESHKEY === key) return MESH;
   const M = MODEL;
   const px = new Float32Array(n*n), py = new Float32Array(n*n), pz = new Float32Array(n*n);
   const hh = new Float32Array(n*n), ok = new Uint8Array(n*n);
   for(let j = 0; j < n; j++) for(let i = 0; i < n; i++){
-    const x = st.x0 + (st.x1-st.x0)*i/(n-1), y = st.y0 + (st.y1-st.y0)*j/(n-1);
+    const x = w.x0 + (w.x1-w.x0)*i/(n-1), y = w.y0 + (w.y1-w.y0)*j/(n-1);
     const v = M ? M.f(x,y) : NaN, k = j*n + i;
     px[k] = B.X(x); py[k] = B.Y(y);
     pz[k] = fin(v) ? clamp(B.Z(v), -1.1, 1.1) : 0;
@@ -1285,6 +1473,20 @@ function painter(cam){
         if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
       });
     },
+    poly(c, fill, stroke, wd){
+      const q = c.map(P3);
+      let zc = 0, n = 0;
+      for(const v of q){ if(fin(v[2])){ zc += v[2]; n++; } }
+      if(!n) return;
+      zc /= n;
+      push(zc, ctx => {
+        ctx.beginPath(); ctx.moveTo(q[0][0],q[0][1]);
+        for(let i = 1; i < q.length; i++) ctx.lineTo(q[i][0],q[i][1]);
+        ctx.closePath();
+        if(fill){ ctx.fillStyle = fill; ctx.fill(); }
+        if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = wd || 1; ctx.stroke(); }
+      });
+    },
     arrow(a, b, col, wd){
       const A = P3(a), B = P3(b), near = Math.min(A[2], B[2]);
       if(!fin(near)) return;
@@ -1314,21 +1516,23 @@ function drawWide3(S){
   const { ctx, w, h } = setupCanvas(cv);
   if(!M || !S){ ctx.fillStyle = css("--ink-3"); ctx.font = `13px ${css("--f-ui")}`;
     ctx.textAlign = "center"; ctx.fillText(t.errParse, w/2, h/2); return; }
-  const cam = mainCam(w, h), B = boxOf(), pa = painter(cam);
+  const cam = mainCam(w, h), B = boxOf(), pa = painter(cam), win = B.w;
   const W = (x,y,z) => [B.X(x), B.Y(y), B.Z(z)];
+  const inWin = (x,y) => x >= win.x0-1e-12 && x <= win.x1+1e-12 &&
+                         y >= win.y0-1e-12 && y <= win.y1+1e-12;
   const onS = (x,y) => W(x, y, M.f(x,y));
 
   if(st.layers.grid){
     const g = css("--rule-2"), n = 8;
     for(let i = 0; i <= n; i++){
-      const x = st.x0 + (st.x1-st.x0)*i/n, y = st.y0 + (st.y1-st.y0)*i/n;
-      pa.line([W(x,st.y0,B.zr.lo), W(x,st.y1,B.zr.lo)], g, 1, null, false);
-      pa.line([W(st.x0,y,B.zr.lo), W(st.x1,y,B.zr.lo)], g, 1, null, false);
+      const x = win.x0 + (win.x1-win.x0)*i/n, y = win.y0 + (win.y1-win.y0)*i/n;
+      pa.line([W(x,win.y0,B.zr.lo), W(x,win.y1,B.zr.lo)], g, 1, null, false);
+      pa.line([W(win.x0,y,B.zr.lo), W(win.x1,y,B.zr.lo)], g, 1, null, false);
     }
   }
   if(st.layers.axes){
-    if(st.y0 <= 0 && st.y1 >= 0) pa.line([W(st.x0,0,B.zr.lo), W(st.x1,0,B.zr.lo)], MK.axis, 1.4, null, false);
-    if(st.x0 <= 0 && st.x1 >= 0) pa.line([W(0,st.y0,B.zr.lo), W(0,st.y1,B.zr.lo)], MK.axis, 1.4, null, false);
+    if(win.y0 <= 0 && win.y1 >= 0) pa.line([W(win.x0,0,B.zr.lo), W(win.x1,0,B.zr.lo)], MK.axis, 1.4, null, false);
+    if(win.x0 <= 0 && win.x1 >= 0) pa.line([W(0,win.y0,B.zr.lo), W(0,win.y1,B.zr.lo)], MK.axis, 1.4, null, false);
   }
 
   /* the terrain */
@@ -1363,8 +1567,8 @@ function drawWide3(S){
   if(st.fence && st.layers.fence){
     const seg = [];
     for(let i = 0; i <= 120; i++){
-      const x = st.x0 + (st.x1-st.x0)*i/120, y = st.s - x;
-      if(y < st.y0 || y > st.y1){ seg.push(null); continue; }
+      const x = win.x0 + (win.x1-win.x0)*i/120, y = st.s - x;
+      if(!inWin(x,y)){ seg.push(null); continue; }
       const v = M.f(x,y);
       seg.push(fin(v) ? onS(x,y) : null);
     }
@@ -1375,9 +1579,9 @@ function drawWide3(S){
     }
     if(run.length > 1) pa.line(run, MK.fence, 2.6);
     for(let i = 0; i < 120; i++){
-      const x0 = st.x0 + (st.x1-st.x0)*i/120, x1 = st.x0 + (st.x1-st.x0)*(i+1)/120;
+      const x0 = win.x0 + (win.x1-win.x0)*i/120, x1 = win.x0 + (win.x1-win.x0)*(i+1)/120;
       const y0 = st.s - x0, y1 = st.s - x1;
-      if(y0 < st.y0 || y0 > st.y1 || y1 < st.y0 || y1 > st.y1) continue;
+      if(!inWin(x0,y0) || !inWin(x1,y1)) continue;
       const a = M.f(x0,y0), b = M.f(x1,y1);
       if(!fin(a) || !fin(b)) continue;
       pa.quad([W(x0,y0,B.zr.lo), W(x1,y1,B.zr.lo), W(x1,y1,b), W(x0,y0,a)],
@@ -1386,38 +1590,73 @@ function drawWide3(S){
   }
 
   /* the trail */
-  if(st.layers.trail && st.trail.length > 1)
-    pa.line(st.trail.map(q => onS(q[0], q[1])), MK.trail, 2.2, [2,5]);
+  if(st.layers.trail && st.trail.length > 1){
+    let run = [];
+    for(const q of st.trail){
+      if(inWin(q[0], q[1])) run.push(onS(q[0], q[1]));
+      else { if(run.length > 1) pa.line(run, MK.trail, 2.2, [2,5]); run = []; }
+    }
+    if(run.length > 1) pa.line(run, MK.trail, 2.2, [2,5]);
+  }
 
-  /* the patch the robot can see, and the tangent plane over exactly that
-     patch: the original's ROBOTFUN and FiniteTangent */
-  const d = S.d;
-  const cornersOK = [[-1,-1],[1,-1],[1,1],[-1,1]].every(([a,b]) =>
-    fin(M.f(S.x+a*d, S.y+b*d)));
-  const scrW = Math.abs(cam.project(B.X(S.x+d), B.Y(S.y), B.Z(S.fp))[0] -
-                        cam.project(B.X(S.x-d), B.Y(S.y), B.Z(S.fp))[0]);
-  if(st.layers.sight && cornersOK && scrW > 3){
+  /* what the robot can reach, and the tangent plane over exactly that
+     footprint: the original's ROBOTFUN and FiniteTangent, with the square
+     patch replaced by the ball the robot can actually walk to */
+  const B4 = S.ball;
+  const ringPt = (j, k) => {
+    const th = 2*Math.PI*j/B4.J, r = B4.R[j]*(k === undefined ? 1 : k);
+    return [S.x + r*Math.cos(th), S.y + r*Math.sin(th)];
+  };
+  const scrW = Math.abs(cam.project(B.X(S.x+S.reach), B.Y(S.y), B.Z(S.fp))[0] -
+                        cam.project(B.X(S.x-S.reach), B.Y(S.y), B.Z(S.fp))[0]);
+  const kArrow = win.W*0.30/Math.hypot(1, S.gnRef);
+  if(st.layers.sight && scrW > 3){
     const ring = [];
-    const K = 18;
-    for(let i = 0; i <= 4*K; i++){
-      const s2 = i/K, side = Math.floor(s2) % 4, u = s2 - Math.floor(s2);
-      const c = [[-1,-1],[1,-1],[1,1],[-1,1]], nx2 = c[(side+1)%4], p0 = c[side];
-      const hx = (p0[0] + (nx2[0]-p0[0])*u)*d, hy = (p0[1] + (nx2[1]-p0[1])*u)*d;
-      const v = M.f(S.x+hx, S.y+hy);
-      if(fin(v)) ring.push(W(S.x+hx, S.y+hy, v));
+    for(let j = 0; j <= B4.J; j++){
+      const q = ringPt(j % B4.J), v = M.f(q[0], q[1]);
+      if(fin(v)) ring.push(W(q[0], q[1], v));
     }
     if(ring.length > 3) pa.line(ring, MK.sight, 2.2);
     if(st.layers.tangent && fin(S.tx) && fin(S.ty)){
-      const TP = (a,b) => W(S.x+a*d, S.y+b*d, S.fp + S.tx*a*d + S.ty*b*d);
-      pa.quad([TP(-1,-1), TP(1,-1), TP(1,1), TP(-1,1)], "rgba(255,77,109,.22)", MK.tangent);
+      const disc = [];
+      for(let j = 0; j < B4.J; j++){
+        const q = ringPt(j);
+        disc.push(W(q[0], q[1], S.fp + S.tx*(q[0]-S.x) + S.ty*(q[1]-S.y)));
+      }
+      pa.poly(disc, "rgba(255,77,109,.20)", MK.tangent, 1.6);
     }
+  }
+
+  /* the two partial derivatives, as tangent directions with unit run. The
+     original built them as c*(f_x, 0, f_x^2), which reverses when the slope
+     goes negative and vanishes where the derivative is zero — the one place a
+     student most wants to see it. */
+  if(st.layers.partX && fin(S.tx))
+    pa.arrow(W(S.x, S.y, S.fp), W(S.x + kArrow, S.y, S.fp + S.tx*kArrow), MK.partX, 2.4);
+  if(st.layers.partY && fin(S.ty))
+    pa.arrow(W(S.x, S.y, S.fp), W(S.x, S.y + kArrow, S.fp + S.ty*kArrow), MK.partY, 2.4);
+
+  /* one direction, chosen on the dial: the slice of the surface along it out
+     to the ball, and the directional derivative as the slope of that slice */
+  if(st.layers.dir && fin(S.du)){
+    const cut = [];
+    for(let i = -24; i <= 24; i++){
+      const r = S.tu*i/24, qx = S.x + r*S.ux, qy = S.y + r*S.uy;
+      const v = M.f(qx, qy);
+      if(fin(v) && inWin(qx, qy)) cut.push(W(qx, qy, v));
+    }
+    if(cut.length > 1) pa.line(cut, MK.dir, 2.4);
+    pa.arrow(W(S.x, S.y, S.fp),
+             W(S.x + kArrow*S.ux, S.y + kArrow*S.uy, S.fp + S.du*kArrow), MK.dir, 2.6);
+    pa.arrow(W(S.x, S.y, B.zr.lo),
+             W(S.x + kArrow*S.ux, S.y + kArrow*S.uy, B.zr.lo), MK.dir, 1.6);
   }
 
   /* the gradient, on the floor where it lives, and lifted as the direction of
      steepest ascent */
   if(st.layers.grad && fin(S.mx) && fin(S.my) && S.meas > 1e-9){
-    const kx = (st.x1-st.x0)*0.16/Math.max(S.meas, 0.35);
-    const gx = S.mx*kx, gy = S.my*kx;
+    const kg = win.W*0.32/Math.max(S.meas, 0.35);
+    const gx = S.mx*kg, gy = S.my*kg;
     pa.arrow(W(S.x, S.y, B.zr.lo), W(S.x+gx, S.y+gy, B.zr.lo), MK.grad, 2);
     pa.arrow(W(S.x, S.y, S.fp),
              W(S.x+gx, S.y+gy, S.fp + S.tx*gx + S.ty*gy), MK.grad, 2.4);
@@ -1446,9 +1685,10 @@ function drawWide3(S){
       ctx.lineWidth = 3.5; ctx.strokeStyle = css("--surface"); ctx.strokeText(s, q[0], q[1]);
       ctx.fillStyle = css("--ink-2"); ctx.fillText(s, q[0], q[1]);
     };
-    lab([st.x1, st.y0, B.zr.lo], "x"); lab([st.x0, st.y1, B.zr.lo], "y");
-    lab([st.x0, st.y0, B.zr.hi], "z");
+    lab([win.x1, win.y0, B.zr.lo], "x"); lab([win.x0, win.y1, B.zr.lo], "y");
+    lab([win.x0, win.y0, B.zr.hi], "z");
   }
+  tag(ctx, "±" + asLength(win.W), css("--ink-3"), w-10, 16, "right");
 }
 
 /* Ray-march the pointer ray against the height field, then bisect. Crossings
@@ -1480,7 +1720,7 @@ function pick3d(mx, my, w, h){
       }
       const t3 = (a+b)/2;
       return [clamp(B.Xi(o[0]+dir[0]*t3), st.x0, st.x1),
-              clamp(B.Yi(o[1]+dir[1]*t3), st.y0, st.y1)];
+              clamp(B.Yi(o[1]+dir[1]*t3), st.y0, st.y1)];   /* the robot may leave the window */
     }
     if(g !== null){ prev = g; prevT = t2; }
   }
@@ -1507,8 +1747,8 @@ function drawZoom1(S){
   if(!M || !S || !fin(S.fp)){ const c = setupCanvas(cv);
     c.ctx.fillStyle = css("--ink-3"); c.ctx.font = `13px ${css("--f-ui")}`;
     c.ctx.textAlign = "center"; c.ctx.fillText(t.errParse, c.w/2, c.h/2); return; }
-  const f = u => M.f(u, 0), d = S.d, H = S.H;
-  const V = plot2d(cv, -d, d, -H, H, "Δx", "Δf", { tick:sgnLen, tickY:sgnLen });
+  const f = u => M.f(u, 0), H = S.H;
+  const V = plot2d(cv, -S.tL, S.tR, -H, H, "Δx", "Δf", { tick:sgnLen, tickY:sgnLen });
   const ctx = V.ctx;
   const pxPerUnit = fin(H) && H > 0 ? (V.bx.y1 - V.bx.y0)/(2*H) : NaN;
   S.devPx = S.dev*pxPerUnit;
@@ -1518,9 +1758,25 @@ function drawZoom1(S){
   ctx.save(); ctx.beginPath();
   ctx.rect(V.bx.x0, V.bx.y0, V.bx.x1-V.bx.x0, V.bx.y1-V.bx.y0); ctx.clip();
 
+  /* A fence the robot is standing near is inside the window it can see, so it
+     belongs in this panel too — the constraint does not stop being there when
+     you look closer at it. */
+  if(st.fence && st.layers.fence){
+    const lo = st.cLo - S.p, hi = st.cHi - S.p;
+    ctx.fillStyle = "rgba(228,112,92,.12)";
+    if(lo > -S.tL) ctx.fillRect(V.bx.x0, V.bx.y0, V.SX(lo)-V.bx.x0, V.bx.y1-V.bx.y0);
+    if(hi <  S.tR) ctx.fillRect(V.SX(hi), V.bx.y0, V.bx.x1-V.SX(hi), V.bx.y1-V.bx.y0);
+    const room = Math.abs(V.SXr(hi) - V.SXr(lo)) > 46;
+    for(const c of [lo, hi])
+      if(c > -S.tL && c < S.tR){
+        poly2(ctx, [[V.SX(c),V.bx.y0],[V.SX(c),V.bx.y1]], MK.fence, 2, [6,4]);
+        if(room || c === lo) tag(ctx, t.fenceMark, MK.fence, V.SXr(c)+5, V.bx.y0+14);
+      }
+  }
+
   const N = 480, cur = [], tanp = [];
   for(let i = 0; i <= N; i++){
-    const hx = -d + 2*d*i/N, v = f(S.p + hx);
+    const hx = -S.tL + (S.tL+S.tR)*i/N, v = f(S.p + hx);
     cur.push(fin(v) ? [hx, v - S.fp] : null);
     tanp.push(fin(S.tx) ? [hx, S.tx*hx] : null);
   }
@@ -1538,15 +1794,16 @@ function drawZoom1(S){
   }
   /* the slope the robot measured, from the two ends of what it can see */
   if(st.layers.measured && fin(S.meas))
-    poly2(ctx, [[V.SX(-d), V.SY(-S.meas*d)], [V.SX(d), V.SY(S.meas*d)]], MK.measured, 2, [7,5]);
+    poly2(ctx, [[V.SX(-S.tL), V.SY(-S.meas*S.tL)], [V.SX(S.tR), V.SY(S.meas*S.tR)]],
+          MK.measured, 2, [7,5]);
   if(st.layers.tangent && fin(S.tx))
-    poly2(ctx, [[V.SX(-d), V.SY(-S.tx*d)], [V.SX(d), V.SY(S.tx*d)]], MK.tangent, 2.6,
-          S.noTangent ? [6,4] : null);
+    poly2(ctx, [[V.SX(-S.tL), V.SY(-S.tx*S.tL)], [V.SX(S.tR), V.SY(S.tx*S.tR)]],
+          MK.tangent, 2.6, S.noTangent ? [6,4] : null);
   poly2(ctx, cur.map(q => q && [V.SX(q[0]), V.SY(q[1])]), MK.curve, 3);
   if(st.layers.sight)
-    for(const sgn of [-1, 1]){
-      const v = f(S.p + sgn*d);
-      if(fin(v)) dot2(ctx, V.SX(sgn*d), V.SY(v - S.fp), MK.sight, 3.4);
+    for(const hx of [-S.tL, S.tR]){
+      const v = f(S.p + hx);
+      if(fin(v)) dot2(ctx, V.SX(hx), V.SY(v - S.fp), MK.sight, 3.4);
     }
   drawRobot(ctx, V.SXr(0), V.SYr(0), 0.9, fin(S.meas) && S.meas < 0 ? -1 : 1);
   ctx.restore();
@@ -1573,72 +1830,107 @@ function drawZoom3(S){
   const { ctx, w, h } = setupCanvas(cv);
   if(!M || !S || !fin(S.fp)){ ctx.fillStyle = css("--ink-3"); ctx.font = `13px ${css("--f-ui")}`;
     ctx.textAlign = "center"; ctx.fillText(t.errParse, w/2, h/2); return; }
-  const d = S.d, H = S.H;
-  const cam = camera(w, h, view.az, view.el, 4.6, false), pa = painter(cam);
-  const Wz = (a, b, v) => [a, b, clamp((v - S.fp)/H, -1.25, 1.25)*0.62];
-  const n = view.dragging ? 25 : 45;
+  const H = S.H, B4 = S.ball, R = S.reach;
+  const cam = camera(w, h, view.az, view.el, 3.4, false), pa = painter(cam);
+  /* ground offsets in units of the ball's widest reach, so the whole ball
+     fills the box whatever shape the slope has squashed it into */
+  const Wz = (hx, hy, v) => [hx/R, hy/R, clamp((v - S.fp)/H, -1.25, 1.25)*0.62];
+  const NR = view.dragging ? 8 : 16, J = B4.J;
 
-  /* the patch, coloured by how far it is from the tangent plane. Fully flat
-     comes out a uniform neutral; a bowl or a saddle keeps its colours until
-     the zoom takes them away. */
-  let maxRel = 0;
-  const zz = new Float64Array(n*n), rr = new Float64Array(n*n), okk = new Uint8Array(n*n);
-  for(let j = 0; j < n; j++) for(let i = 0; i < n; i++){
-    const hx = -d + 2*d*i/(n-1), hy = -d + 2*d*j/(n-1);
-    const v = M.f(S.x+hx, S.y+hy), k = j*n+i;
-    okk[k] = fin(v) ? 1 : 0;
-    if(!fin(v)) continue;
-    zz[k] = v;
-    rr[k] = (v - (S.fp + S.tx*hx + S.ty*hy))/H;
-    if(Math.abs(rr[k]) > maxRel) maxRel = Math.abs(rr[k]);
-  }
+  /* the patch, in polar coordinates over the ball rather than on a square
+     grid, coloured by how far it is from the tangent plane. Fully flat comes
+     out a uniform neutral; a bowl or a saddle keeps its colours until the
+     zoom takes them away. */
   const cScale = 0.22;
-  for(let j = 0; j < n-1; j++) for(let i = 0; i < n-1; i++){
-    const k00 = j*n+i, k10 = k00+1, k01 = k00+n, k11 = k01+1;
-    if(!(okk[k00] && okk[k10] && okk[k01] && okk[k11])) continue;
-    const U = i2 => -1 + 2*i2/(n-1);
-    const c = [ Wz(U(i),   U(j),   zz[k00]), Wz(U(i+1), U(j),   zz[k10]),
-                Wz(U(i+1), U(j+1), zz[k11]), Wz(U(i),   U(j+1), zz[k01]) ];
-    const rel = (rr[k00]+rr[k10]+rr[k01]+rr[k11])/4;
+  /* the constraint, in offsets from the robot: hx + hy >= fence */
+  const fenceOn = st.fence && st.layers.fence;
+  const fenceC = st.s - (S.x + S.y);
+  const barred = (hx, hy) => fenceOn && (hx + hy) < fenceC;
+  const pt = (j, i) => {
+    const th = 2*Math.PI*j/J, r = B4.R[j % J]*i/NR;
+    const hx = r*Math.cos(th), hy = r*Math.sin(th);
+    const v = M.f(S.x+hx, S.y+hy);
+    if(!fin(v)) return null;
+    return { p:Wz(hx, hy, v), rel:(v - (S.fp + S.tx*hx + S.ty*hy))/H };
+  };
+  for(let j = 0; j < J; j++) for(let i = 0; i < NR; i++){
+    const a = pt(j, i), b = pt(j, i+1), c = pt(j+1, i+1), dd = pt(j+1, i);
+    if(!a || !b || !c || !dd) continue;
+    const rel = (a.rel + b.rel + c.rel + dd.rel)/4;
     const rgb = devRGB(rel/cScale);
-    /* flat shading, so a bowl still reads as a bowl before it flattens */
-    const q = c.map(p => p);
+    const th0 = 2*Math.PI*j/J, rr = B4.R[j]*(i+0.5)/NR;
+    if(barred(rr*Math.cos(th0), rr*Math.sin(th0))){
+      rgb[0] = rgb[0]*0.45 + 228*0.55; rgb[1] = rgb[1]*0.45 + 112*0.55;
+      rgb[2] = rgb[2]*0.45 + 92*0.55;
+    }
+    const q = [a.p, b.p, c.p, dd.p];
     const ux = q[1][0]-q[0][0], uy = q[1][1]-q[0][1], uz = q[1][2]-q[0][2];
     const vx = q[3][0]-q[0][0], vy = q[3][1]-q[0][1], vz = q[3][2]-q[0][2];
     const nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
     const nl = Math.hypot(nx,ny,nz) || 1;
     const sh = 0.62 + 0.5*Math.abs((nx*0.35 + ny*0.22 + nz*0.91)/nl);
-    pa.quad(c, `rgba(${clamp(rgb[0]*sh,0,255)|0},${clamp(rgb[1]*sh,0,255)|0},${clamp(rgb[2]*sh,0,255)|0},0.97)`,
+    pa.quad(q, `rgba(${clamp(rgb[0]*sh,0,255)|0},${clamp(rgb[1]*sh,0,255)|0},${clamp(rgb[2]*sh,0,255)|0},0.97)`,
             null);
   }
-  /* the tangent plane over exactly the same patch */
+
+  const TP = (hx, hy) => [hx/R, hy/R, clamp((S.tx*hx + S.ty*hy)/H, -1.25, 1.25)*0.62];
+  const ring = k => {
+    const out = [];
+    for(let j = 0; j <= J; j++){
+      const th = 2*Math.PI*(j % J)/J, r = B4.R[j % J]*k;
+      out.push([r*Math.cos(th), r*Math.sin(th)]);
+    }
+    return out;
+  };
+  /* the tangent plane over exactly the same footprint */
   if(st.layers.tangent){
-    const TP = (a,b) => [a, b, clamp((S.tx*a*d + S.ty*b*d)/H, -1.25, 1.25)*0.62];
-    pa.quad([TP(-1,-1), TP(1,-1), TP(1,1), TP(-1,1)], "rgba(255,77,109,.20)", MK.tangent);
-    for(let i = 0; i <= 6; i++){
-      const u = -1 + 2*i/6;
-      pa.line([TP(u,-1), TP(u,1)], "rgba(255,77,109,.55)", 1, null, false);
-      pa.line([TP(-1,u), TP(1,u)], "rgba(255,77,109,.55)", 1, null, false);
+    pa.poly(ring(1).slice(0, J).map(q => TP(q[0], q[1])), "rgba(255,77,109,.18)", MK.tangent, 1.6);
+    for(const k of [0.33, 0.66])
+      pa.line(ring(k).map(q => TP(q[0], q[1])), "rgba(255,77,109,.5)", 1, null, false);
+    for(let j = 0; j < J; j += 6){
+      const th = 2*Math.PI*j/J, r = B4.R[j];
+      pa.line([TP(0,0), TP(r*Math.cos(th), r*Math.sin(th))], "rgba(255,77,109,.5)", 1, null, false);
     }
   }
+  /* the boundary of what the robot can reach, lifted onto the surface */
   if(st.layers.sight){
-    const ring = [];
-    const cor = [[-1,-1],[1,-1],[1,1],[-1,1]];
-    for(let s2 = 0; s2 < 4; s2++){
-      const a = cor[s2], b = cor[(s2+1)%4];
-      for(let i = 0; i < 16; i++){
-        const u = i/16, ax = a[0]+(b[0]-a[0])*u, ay = a[1]+(b[1]-a[1])*u;
-        const v = M.f(S.x+ax*d, S.y+ay*d);
-        if(fin(v)) ring.push(Wz(ax, ay, v));
-      }
+    const edge = [];
+    for(let j = 0; j <= J; j++){
+      const q = ring(1)[j], v = M.f(S.x+q[0], S.y+q[1]);
+      if(fin(v)) edge.push(Wz(q[0], q[1], v));
     }
-    if(ring.length > 3){ ring.push(ring[0]); pa.line(ring, MK.sight, 2.2); }
+    if(edge.length > 3) pa.line(edge, MK.sight, 2.2);
+  }
+  /* the two partials and the chosen direction, on the ball itself */
+  const cutAlong = (ux, uy, reach, col, wd) => {
+    const cut = [];
+    for(let i = -NR*2; i <= NR*2; i++){
+      const r = reach*i/(NR*2), hx = r*ux, hy = r*uy;
+      const v = M.f(S.x+hx, S.y+hy);
+      if(fin(v)) cut.push(Wz(hx, hy, v));
+    }
+    if(cut.length > 1) pa.line(cut, col, wd);
+  };
+  if(st.layers.partX) cutAlong(1, 0, S.tRx, MK.partX, 2.2);
+  if(st.layers.partY) cutAlong(0, 1, S.tRy, MK.partY, 2.2);
+  if(st.layers.dir && fin(S.du)) cutAlong(S.ux, S.uy, S.tu, MK.dir, 2.4);
+  /* and the fence itself, lifted onto the surface, where it crosses the ball */
+  if(fenceOn){
+    let run = [];
+    for(let i = 0; i <= 120; i++){
+      const u = (-1.5 + 3*i/120)*R;
+      const hx = fenceC/2 + u, hy = fenceC/2 - u;
+      const rr = Math.hypot(hx, hy);
+      const v = M.f(S.x+hx, S.y+hy);
+      if(rr <= B4.at(Math.atan2(hy, hx)) && fin(v)) run.push(Wz(hx, hy, v));
+      else { if(run.length > 1) pa.line(run, MK.fence, 2.6); run = []; }
+    }
+    if(run.length > 1) pa.line(run, MK.fence, 2.6);
   }
   pa.paint(ctx);
 
-  const q = cam.project(0, 0, 0);
-  const sc = clamp(2.4/Math.max(q[2], 0.2), 0.5, 1.2);
-  drawRobot(ctx, q[0], q[1], sc, S.mx >= 0 ? 1 : -1);
+  const q0 = cam.project(0, 0, 0);
+  drawRobot(ctx, q0[0], q0[1], clamp(2.4/Math.max(q0[2], 0.2), 0.5, 1.2), S.mx >= 0 ? 1 : -1);
 
   /* the deviation, in pixels of this panel: measured off the drawing itself,
      because "you cannot see the difference any more" is the claim being made */
@@ -1649,10 +1941,15 @@ function drawZoom3(S){
 
   tag(ctx, S.noTangent ? t.noTangent : `∂f/∂x ${fmt(S.fx,4)}   ∂f/∂y ${fmt(S.fy,4)}`,
       MK.tangent, 12, 16);
+  if(st.layers.dir && fin(S.du))
+    tag(ctx, `D\u1D64f ${fmt(S.du,4)}  (${Math.round(st.theta)}°)`, MK.dir, 12, 32);
   tag(ctx, S.pictureNoisy ? t.belowFloor
         : `${t.gapPx} ${S.exactZero || S.devPx < 0.01 ? "<0.01" : fmt(S.devPx,2)} px`,
       S.pictureNoisy ? css("--warn") : (S.exactZero || S.devPx < 0.35 ? css("--good") : MK.tangent),
       w-12, 16, "right");
+  tag(ctx, `r ${asLength(R)}` + (st.geo && fin(S.aspect) && S.aspect > 1.02
+        ? `   ${t.squash} ${fmt(S.aspect,2)}×` : ""),
+      css("--ink-3"), w-12, 32, "right");
 }
 
 /* ==========================================================================
@@ -1714,6 +2011,7 @@ function paint(S){
       ["x", fmt(S.x,2)], ["y", fmt(S.y,2)], ["f", fmt(S.fp,3)],
       ["∂f/∂x", S.noTangent ? "—" : fmt(S.fx,3), S.noTangent ? "is-crit" : ""],
       ["∂f/∂y", S.noTangent ? "—" : fmt(S.fy,3), S.noTangent ? "is-crit" : ""],
+      ["D<sub>u</sub>f", S.noTangent ? "—" : fmt(S.du,3), S.noTangent ? "is-crit" : ""],
       ["‖∇f‖", S.noTangent ? "—" : fmt(S.gn,3),
         S.noTangent ? "is-crit" : S.gn < 2e-3 ? "is-good" : ""]
     ]);
@@ -1722,12 +2020,13 @@ function paint(S){
     const corner = !!(S.ct && S.ct.corner);
     rows($("ro-zoom"), [
       ["d", asLength(S.d)],
+      ["r", asLength(S.reach)],
       [t.roMag, magStr(S.mag)],
       [t.roGap, S.exactZero ? "0" : S.noisy ? "< " + asLength(S.nf*4) : asLength(S.dev)],
       [t.roGapPx, S.exactZero ? "0" : !fin(S.devPx) ? "—"
                 : S.devPx < 0.01 ? "<0.01" : fmt(S.devPx,2),
         S.pictureNoisy ? "is-warn" : (S.exactZero || S.devPx < 0.35 ? "is-good" : "")],
-      [t.roRatio, S.exactZero ? "0" : S.noisy ? "< " + fmt(S.nf*4/S.d, 4) : fmt(S.ratio,4),
+      [t.roRatio, S.exactZero ? "0" : S.noisy ? "< " + fmt(S.nf*4/S.reach, 4) : fmt(S.ratio,4),
         S.exactZero || S.ratio < 0.01 ? "is-good" : ""],
       [t.roJump, fmt(S.jump,4), corner ? "is-crit" : ""]
     ]);
@@ -1777,8 +2076,8 @@ es:{
     "1d":"El robot camina sobre la curva y = f(x). Arrástrelo, o muévalo con el deslizador.",
     "3d":"El robot camina sobre la superficie z = f(x, y). Arrástrelo sobre ella; arrastrando fuera de él se gira la vista."
   },
-  zoomGo:"Acercar al límite", zoomOut:"Alejar",
-  zoomHint:"La rueda del ratón sobre cualquiera de los dos paneles mueve este dial. d es a la vez lo que el robot alcanza a ver y el incremento con el que mide la pendiente.",
+  zoomGo:"Acercar al límite", zoomOut:"Alejar del todo",
+  zoomHint:"La rueda del ratón sobre cualquiera de los dos paneles mueve este dial, y los dos paneles se acercan con él: el robot conserva su tamaño y la escala a su alrededor se encoge. El dial gira en los dos sentidos, de ×0,1 a ×10¹². d es la distancia que el robot puede caminar; r es lo que eso avanza sobre el mapa.",
   fams:{ hill:"Una colina", line:"Una rampa recta", range:"Una cordillera",
          tent:"Una arista", custom1:"Personalizada",
          quad:"Cuadrática", plane:"Un plano", ridge:"Tres cerros",
@@ -1803,11 +2102,22 @@ es:{
   fenceOn:"Poner una valla",
   fenceHint:"El robot no puede cruzarla. Si la cima queda del otro lado, se detiene contra la valla con la pendiente todavía subiendo.",
   layers:{ sight:"Lo que alcanza a ver", measured:"Pendiente medida", tangent:"Tangente verdadera",
+           partX:"∂f/∂x", partY:"∂f/∂y", dir:"Derivada direccional",
            grad:"Gradiente", trail:"Rastro", fence:"Valla", grid:"Retícula", axes:"Ejes" },
+  derivs:{ partX:"∂f/∂x", partY:"∂f/∂y", dir:"D\u1D64 f", grad:"∇f" },
+  gDeriv:"Derivadas",
+  gDir:"Dirección",
+  zoomOne:"×1",
+  alignGrad:"Hacia el gradiente",
+  geoOn:"Alcance geodésico (sobre la superficie)",
+  squash:"achatada",
+  fenceMark:"valla",
+  dirHint:"La derivada direccional es la pendiente del corte en esa dirección. Es máxima cuando θ apunta como el gradiente, y cero perpendicular a él.",
+
   vpWide:"El terreno", vpZoom:"Lo que ve el robot",
   sTrue:"verdadera", sMeas:"medida", gapPx:"separación", belowFloor:"por debajo del límite de la aritmética",
   roTrue:"Verdadera", roMeas:"Medida", roMissed:"Se equivoca en",
-  roMag:"Aumento", roGap:"Separación", roGapPx:"En píxeles", roRatio:"Separación / d",
+  roMag:"Aumento", roGap:"Separación", roGapPx:"En píxeles", roRatio:"Separación / r",
   roJump:"Salto izq/der",
   legTerrain:"Terreno", legSight:"Alcance", legMeas:"Pendiente medida", legTan:"Tangente",
   legGrad:"Gradiente", legTrail:"Rastro", legRobot:"Robot", legGap:"Separación",
@@ -1844,8 +2154,8 @@ en:{
     "1d":"The robot walks on the curve y = f(x). Drag it, or move it with the slider.",
     "3d":"The robot walks on the surface z = f(x, y). Drag it over the surface; dragging anywhere else orbits the view."
   },
-  zoomGo:"Zoom to the limit", zoomOut:"Zoom out",
-  zoomHint:"The mouse wheel over either panel turns this dial. d is both how far the robot can see and the increment its slope is measured over.",
+  zoomGo:"Zoom to the limit", zoomOut:"All the way out",
+  zoomHint:"The mouse wheel over either panel turns this dial, and both panels move in with it: the robot keeps its size and the scale around it shrinks. The dial turns both ways, from ×0.1 to ×10¹². d is how far the robot can walk; r is how far that gets it across the map.",
   fams:{ hill:"A hill", line:"A straight ramp", range:"A mountain range",
          tent:"A ridge", custom1:"Custom",
          quad:"Quadratic", plane:"A plane", ridge:"Three peaks",
@@ -1870,11 +2180,22 @@ en:{
   fenceOn:"Put up a fence",
   fenceHint:"The robot cannot cross it. If the summit is on the other side it stops against the fence with the slope still climbing.",
   layers:{ sight:"What it can see", measured:"Measured slope", tangent:"True tangent",
+           partX:"∂f/∂x", partY:"∂f/∂y", dir:"Directional derivative",
            grad:"Gradient", trail:"Trail", fence:"Fence", grid:"Grid", axes:"Axes" },
+  derivs:{ partX:"∂f/∂x", partY:"∂f/∂y", dir:"D\u1D64 f", grad:"∇f" },
+  gDeriv:"Derivatives",
+  gDir:"Direction",
+  zoomOne:"×1",
+  alignGrad:"Point at the gradient",
+  geoOn:"Geodesic reach (measured on the surface)",
+  squash:"squashed",
+  fenceMark:"fence",
+  dirHint:"The directional derivative is the slope of the slice along that direction. It is largest when θ points along the gradient, and zero across it.",
+
   vpWide:"The terrain", vpZoom:"What the robot sees",
   sTrue:"true", sMeas:"measured", gapPx:"gap", belowFloor:"below the arithmetic floor",
   roTrue:"True", roMeas:"Measured", roMissed:"Off by",
-  roMag:"Magnification", roGap:"Gap", roGapPx:"In pixels", roRatio:"Gap / d",
+  roMag:"Magnification", roGap:"Gap", roGapPx:"In pixels", roRatio:"Gap / r",
   roJump:"Left/right jump",
   legTerrain:"Terrain", legSight:"Sight radius", legMeas:"Measured slope", legTan:"Tangent",
   legGrad:"Gradient", legTrail:"Trail", legRobot:"Robot", legGap:"Gap",
@@ -1944,9 +2265,21 @@ function buildPresets(){
     $("f-expr").value = b.dataset.p; readCustom(); buildPresets(); render();
   }));
 }
+function buildDerivs(){
+  const t = T();
+  $("derivs").innerHTML = DERIV_KEYS.map(k =>
+    '<button type="button" class="tog" data-d="'+k+'" aria-pressed="'+(st.layers[k]?"true":"false")+'">'+
+    '<i style="background:'+LAYERS[k]+'"></i><span>'+t.derivs[k]+'</span></button>').join("");
+  $("derivs").querySelectorAll("[data-d]").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.d;
+    st.layers[k] = !st.layers[k];
+    b.setAttribute("aria-pressed", String(st.layers[k]));
+    buildLayers(); render();
+  }));
+}
 function buildLayers(){
   const t = T();
-  $("layers").innerHTML = LAYER_KEYS.map(k => {
+  $("layers").innerHTML = LAYER_KEYS.filter(k => !(is1d() && LAYERS_3D_ONLY.has(k))).map(k => {
     const c = LAYERS[k];
     return '<label class="check"><input type="checkbox" data-l="'+k+'" '+(st.layers[k]?"checked":"")+'>'+
       (c ? '<i class="swatch" style="background:'+c+'"></i>' : '') +
@@ -1961,8 +2294,9 @@ function buildLegends(){
   const leg = (c,l) => '<span><i style="background:'+c+'"></i>'+l+'</span>';
   $("legend-wide").innerHTML =
     leg(MK.curve, t.legTerrain) + leg(MK.sight, t.legSight) + leg(MK.measured, t.legMeas) +
-    leg(MK.tangent, t.legTan) + leg(MK.grad, t.legGrad) + leg(MK.trail, t.legTrail) +
-    leg(MK.robot, t.legRobot);
+    leg(MK.tangent, t.legTan) +
+    (is1d() ? "" : leg(MK.partX, "∂f/∂x") + leg(MK.partY, "∂f/∂y") + leg(MK.dir, "D\u1D64f")) +
+    leg(MK.grad, t.legGrad) + leg(MK.trail, t.legTrail) + leg(MK.robot, t.legRobot);
   $("legend-zoom").innerHTML =
     leg(MK.curve, t.legTerrain) + leg(MK.tangent, t.legTan) +
     leg("rgba(255,77,109,.45)", t.legGap) + leg(MK.measured, t.legMeas) +
@@ -1986,6 +2320,7 @@ function syncParams(){
   const fam = famOf();
   $("g-custom").hidden = fam !== "custom1" && fam !== "custom3";
   $("view-seg").hidden = is1d();
+  $("g-dir").hidden = is1d();
 }
 function bind(id, key, after){
   const s = $(id), b = $(id+"-v");
@@ -2211,7 +2546,7 @@ function setMode(md){
   const v = VIEWS.iso;
   view.az = v.az; view.el = v.el; view.ortho = v.ortho; view.dist = v.dist; view.canonical = "iso";
   syncViewButtons();
-  buildFams(); buildPresets(); buildLayers(); buildLegends(); syncParams(); readCustom();
+  buildFams(); buildPresets(); buildLayers(); buildDerivs(); buildLegends(); syncParams(); readCustom();
   setRobot(is1d() ? st.p : st.rx, st.ry);
   render();
 }
@@ -2230,7 +2565,7 @@ function applyLang(){
   $("foot").textContent = t.foot;
   $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
   $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));
-  buildFams(); buildPresets(); buildLayers(); buildLegends(); syncParams(); readCustom(); render();
+  buildFams(); buildPresets(); buildLayers(); buildDerivs(); buildLegends(); syncParams(); readCustom(); render();
   try{ localStorage.setItem("cr.lang", LANG); }catch(_){}
 }
 function setTheme(th){
@@ -2243,6 +2578,14 @@ function setTheme(th){
 
 ["k","b","m","a0","a1","a2","a3"].forEach(id => bind(id, id, () => { st.trail = []; }));
 bind("step","step");
+bind("theta","theta");
+$("btn-grad-dir").addEventListener("click", () => {
+  const S = solve();
+  if(!S || !fin(S.gradAngle)) return;
+  st.theta = (S.gradAngle + 360) % 360;
+  $("theta").value = st.theta; $("theta-v").value = +st.theta.toFixed(1);
+  st.layers.dir = true; buildLayers(); buildDerivs(); render();
+});
 bind("p","p",  () => setRobot(st.p, 0));
 bind("rx","rx",() => setRobot(st.rx, st.ry));
 bind("ry","ry",() => setRobot(st.rx, st.ry));
@@ -2255,11 +2598,10 @@ $("zoom").addEventListener("input", () => {
   if(zooming){ cancelAnimationFrame(zooming); zooming = 0; }
   setZoom(parseFloat($("zoom").value));
 });
-$("btn-zoom").addEventListener("click", () => zoomTo(st.zoom > 0.97 ? 0 : 1));
-$("btn-zoom-out").addEventListener("click", () => { 
-  if(zooming){ cancelAnimationFrame(zooming); zooming = 0; }
-  setZoom(0);
-});
+$("btn-zoom").addEventListener("click", () => zoomTo(st.zoom > 0.97 ? Z1 : 1));
+$("btn-zoom-out").addEventListener("click", () => zoomTo(st.zoom < 0.01 ? Z1 : 0));
+$("btn-zoom-1").addEventListener("click", () => zoomTo(Z1));
+$("geo").addEventListener("change", () => { st.geo = $("geo").checked; BALLKEY = ""; render(); });
 $("btn-step").addEventListener("click", () => {
   if(!st.trail.length) st.trail = is1d() ? [[st.p, MODEL ? MODEL.f(st.p,0) : 0]] : [[st.rx, st.ry]];
   oneStep(); render();
