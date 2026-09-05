@@ -27,6 +27,61 @@ them the surface drops to 30 % opacity — edge on, the trace curve lies *inside
 the surface, and leaving it opaque would hide the one thing those buttons exist
 to show.
 
+## The layers, in two directions
+
+The layer switches run along two axes, as the GeoGebra original's booleans did.
+
+The **first two** choose which coordinate function is on show, and therefore
+which derivative:
+
+| | |
+|---|---|
+| `y` fixed: `f(x, y_P) → ∂f/∂x` | the amber cutting plane, the amber trace, the `Δx` staircase and the red tangent |
+| `x` fixed: `f(x_P, y) → ∂f/∂y` | the blue cutting plane, the blue trace, the `Δy` staircase and the violet tangent |
+
+Switch one off and the whole apparatus for that variable goes with it, so one
+partial derivative can be told on its own without the other in the way. Turning
+off the one the slice panel happens to be drawing moves the slice panel to the
+other.
+
+The **rest** choose what gets drawn for whichever variables are on: planes,
+traces, staircase, tangents, tangent plane, gradient.
+
+**Opaque surface** is the one switch that does not remove anything. Everything
+else on that panel is drawn *on* the surface, and a tangent plane floating in
+an empty box says nothing, so unchecking it drops the surface to a ghost at
+14 % opacity and lets the traces, the staircase and the vectors show through
+it. That is what a reader wanting the surface "out of the way" actually wants.
+
+## The two tangent vectors
+
+Each variable owns a temperature — `x` warm, `y` cool — and within it the
+tangent is the hotter sibling of the plane and the trace it belongs to: an
+amber plane and trace with a **red** `∂f/∂x`, a blue plane and trace with a
+**violet** `∂f/∂y`. They leave the same point in the same shape, so sharing one
+colour made the one thing the panel is about unreadable.
+
+Their **direction** is the true tangent, `(1, 0, f_x)` and `(0, 1, f_y)`, so an
+arrow never reverses and never collapses. Their **length** carries the size of
+the derivative, through a saturating map:
+
+    length = 0.62 · (0.35 + 0.65 · tanh(|f'| / 2.5))     in box units
+
+| `f_x` | 0 | 0.4 | 1 | 2 | 4 | 10 | 400 |
+|---|---|---|---|---|---|---|---|
+| length | 0.217 | 0.28 | 0.36 | 0.47 | 0.57 | 0.61 | 0.62 |
+
+Bounded, so a partial of 400 draws a long arrow rather than one off the edge of
+the panel; and floored at 0.35, so a *zero* derivative still shows a visible
+flat arrow, which is the one place a student most wants one.
+
+The length is measured in the **normalised box**, not along the ground. Fixing
+the run instead — which is what a unit-run vector does — leaves the rise equal
+to the slope times the run, and therefore unbounded: it is the rise that throws
+the arrowhead out of the picture, so it is the rise that has to be bounded. The
+gradient arrows use the same map on `‖∇f‖`, so the three vectors can be
+compared by eye.
+
 ## Δ → 0
 
 The button that makes the definition visible. It shrinks both increments
@@ -86,11 +141,16 @@ has no usable Hessian.
   `a₀ − a₁x² − a₂y² − a₃xy`. That formula is now implemented, so `a₃` stops
   being a dead slider and one family covers the dome, the bowl, the ridge and
   the saddle. At the opening values it reproduces the original `g` exactly.
-- **The tangent vectors have unit run.** The original built them as
-  `c·(f_x, 0, f_x²)` and `c·(0, f_y, f_y²)` — the right direction, but scaled by
-  the derivative itself, so the arrow reversed when the slope went negative and
-  vanished where the derivative was zero. That is the one place a student most
-  wants to see it. They are now `(1, 0, f_x)` and `(0, 1, f_y)`.
+- **The tangent vectors keep their direction and vary their length.** The
+  original built them as `c·(f_x, 0, f_x²)` and `c·(0, f_y, f_y²)` — the right
+  direction, but scaled by the derivative itself, so the arrow reversed when the
+  slope went negative and vanished where the derivative was zero. That is the
+  one place a student most wants to see it. Here the direction is the plain
+  tangent and the length is a bounded, floored function of `|f'|`, so the size
+  of the derivative is still legible without either failure. See above.
+- **The two of them are different colours**, which they were not.
+- **The two coordinate functions can be shown separately**, which is what
+  `BoolePartialX` and `BoolePartialY` were for in the source file.
 - **The gradient is drawn where it lives.** On the floor, as `(f_x, f_y)`, with
   its lift onto the tangent plane shown as the direction of steepest ascent.
   The original drew only the lifted vector, which makes the gradient look like

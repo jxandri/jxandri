@@ -241,6 +241,7 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
       <div class="group">
         <h2 data-t="gLayers">Capas</h2>
         <div class="checks" id="layers"></div>
+        <p class="hint" id="layer-hint"></p>
       </div>
 
     </aside>
@@ -584,14 +585,25 @@ const FAM_KEYS = ["quad", "plane", "custom"];
 const PRESETS = ["x*y", "x^2-y^2", "sin(x)*cos(y)", "exp(-(x^2+y^2)/4)",
                  "x^2*y", "sqrt(x^2+y^2)", "abs(x)+abs(y)"];
 
+/* Two axes of control, as the GeoGebra original had them: WHICH variable is
+   being differentiated (wrtX, wrtY — the file's BoolePartialX and
+   BoolePartialY), and WHAT is drawn for it. The plane, the trace, the
+   staircase and the tangent for one variable all switch together. */
 const LAYERS = {
-  surface: "#7FD4E0", planes:"#B07CFF", traces:"#FF9E2C", steps:"#6FD3A0",
-  tangents:"#FF4D6D", tanplane:"#8CE2EC", grad:"#FFD24A", grid:null, axes:null
+  wrtX:"#FF9E2C", wrtY:"#5AA9FF",
+  surface: "#7FD4E0", planes:null, traces:null, steps:"#6FD3A0",
+  tangents:null, tanplane:"#8CE2EC", grad:"#FFD24A", grid:null, axes:null
 };
-const LAYER_KEYS = ["surface","planes","traces","steps","tangents","tanplane","grad","grid","axes"];
+const LAYER_KEYS = ["wrtX","wrtY","surface","planes","traces","steps",
+                    "tangents","tanplane","grad","grid","axes"];
 
+/* Each variable owns a temperature — x warm, y cool — and within it the
+   tangent is the hotter sibling of the plane and the trace it belongs to. The
+   two tangent arrows leave the same point in the same shape, so sharing one
+   colour, as they did, made the one thing the panel is about unreadable. */
 const MK = {
-  surfTop:"#7FD4E0", point:"#C15CFF", tanX:"#FF4D6D", tanY:"#FF4D6D",
+  surfTop:"#7FD4E0", point:"#C15CFF",
+  tanX:"#FF4D6D", tanY:"#6E7BFF",
   secant:"#6FD3A0", run:"#8CE2EC", rise:"#6FD3A0", grad:"#FFD24A",
   planeX:"#FF9E2C", planeY:"#5AA9FF", traceX:"#FF9E2C", traceY:"#5AA9FF",
   tanPlane:"#8CE2EC", axis:"#7C8B93"
@@ -605,8 +617,9 @@ const st = {
   xP:1, yP:2,
   dx:2, dy:1.5,
   x0:-4, x1:4, y0:-4, y1:4,
-  layers:{ surface:true, planes:true, traces:true, steps:true,
-           tangents:true, tanplane:false, grad:false, grid:true, axes:true }
+  layers:{ wrtX:true, wrtY:true, surface:true, planes:true, traces:true,
+           steps:true, tangents:true, tanplane:false, grad:false,
+           grid:true, axes:true }
 };
 let LANG = "es";
 
@@ -849,14 +862,22 @@ function scene3d(cam, S){
   }
 
   /* ---- the surface ---- */
-  if(st.layers.surface && MODEL){
+  if(MODEL){
     const n = view.dragging ? view.N_DRAG : view.N_IDLE;
     const M = buildMesh(n);
     /* Edge on, the trace curve lies INSIDE the surface and the surface hides
        it — which is the one thing the X-Z and Y-Z buttons exist to show. In
-       those views the surface is a backdrop for the slice, not the subject. */
+       those views the surface is a backdrop for the slice, not the subject.
+
+       Switching the surface off does not remove it either. Everything else on
+       this panel is drawn ON the surface, and a tangent plane floating in an
+       empty box says nothing; what the reader wants is to see through it, not
+       to lose the thing being cut. So it drops to a ghost and the marks show
+       through. */
     const sideOn = view.ortho && (view.canonical === "xz" || view.canonical === "yz");
-    const alpha = sideOn ? 0.3 : (st.layers.tanplane || st.layers.traces ? 0.86 : 1);
+    const alpha = !st.layers.surface ? 0.14
+                : sideOn ? 0.3
+                : (st.layers.tanplane || st.layers.traces ? 0.86 : 1);
     for(let j = 0; j < n-1; j++) for(let i = 0; i < n-1; i++){
       const k00 = j*n+i, k10 = k00+1, k01 = k00+n, k11 = k01+1;
       if(!(M.ok[k00] && M.ok[k10] && M.ok[k01] && M.ok[k11])) continue;
@@ -908,7 +929,8 @@ function scene3d(cam, S){
         ctx.strokeStyle = `rgba(${tint},.5)`; ctx.lineWidth = 1; ctx.stroke();
       });
     };
-    drawPlane("x"); drawPlane("y");
+    if(st.layers.wrtX) drawPlane("x");
+    if(st.layers.wrtY) drawPlane("y");
   }
 
   /* ---- the trace curves: the whole point of the applet ---- */
@@ -920,8 +942,8 @@ function scene3d(cam, S){
       const w = st.y0 + (st.y1-st.y0)*i/sampleN, v2 = MODEL.f(x, w);
       if(fin(v2)) ty.push([x, w, v2]);
     }
-    if(tx.length > 1) line(tx, MK.traceX, 3);
-    if(ty.length > 1) line(ty, MK.traceY, 3);
+    if(st.layers.wrtX && tx.length > 1) line(tx, MK.traceX, 3);
+    if(st.layers.wrtY && ty.length > 1) line(ty, MK.traceY, 3);
   }
 
   /* ---- the tangent plane ---- */
@@ -944,13 +966,13 @@ function scene3d(cam, S){
      secant is the hypotenuse, and its slope is what the readout calls
      delta f / delta x. */
   if(st.layers.steps && fin(z)){
-    if(fin(zx) && Math.abs(st.dx) > 1e-9){
+    if(st.layers.wrtX && fin(zx) && Math.abs(st.dx) > 1e-9){
       line([[x,y,z],[x+st.dx,y,z]], MK.run, 2, [5,4]);
       line([[x+st.dx,y,z],[x+st.dx,y,zx]], MK.rise, 2, [5,4]);
       arrow([x,y,z],[x+st.dx,y,zx], MK.secant, 2.4);
       dot([x+st.dx,y,zx], MK.secant, 3.6);
     }
-    if(fin(zy) && Math.abs(st.dy) > 1e-9){
+    if(st.layers.wrtY && fin(zy) && Math.abs(st.dy) > 1e-9){
       line([[x,y,z],[x,y+st.dy,z]], MK.run, 2, [5,4]);
       line([[x,y+st.dy,z],[x,y+st.dy,zy]], MK.rise, 2, [5,4]);
       arrow([x,y,z],[x,y+st.dy,zy], MK.secant, 2.4);
@@ -958,26 +980,49 @@ function scene3d(cam, S){
     }
   }
 
-  /* ---- the tangent directions ----
-     (1, 0, f_x) and (0, 1, f_y), each of unit run. The original scaled them
-     by f_x and f_y themselves, so the arrow reversed when the slope went
-     negative and vanished where the derivative was zero, which is the one
-     place a student most wants to see it. */
+  /* ---- the tangent directions, drawn at the size of the derivative ----
+     The direction is the true tangent, (1, 0, f_x) and (0, 1, f_y), so the
+     arrow never reverses and never collapses. The LENGTH carries the size of
+     the derivative, through a tanh that saturates, so a slope of 40 draws a
+     long arrow rather than one off the edge of the panel.
+
+     Measured in the normalised box, because that is what gets projected:
+     fixing the run alone — which is what unit-run vectors do — leaves the
+     rise proportional to the slope and therefore unbounded, and a partial of
+     30 would still have thrown the head out of the picture. And the floor of
+     0.35 keeps a visible flat arrow where the derivative is zero, which is the
+     one place a student most wants to see one. The original scaled them by
+     f_x and f_y themselves, so the arrow reversed with the sign and vanished
+     at a critical point. */
+  const SXb = 2/((st.x1-st.x0)||1), SYb = 2/((st.y1-st.y0)||1);
+  const boxLen = v => 0.62*(0.35 + 0.65*Math.tanh(Math.abs(v)/2.5));
+  /* the world step along (ux, uy) that gives the arrow that box length */
+  const vstep = (ux, uy, slope, mag) =>
+    boxLen(mag)/(Math.hypot(ux*SXb, uy*SYb, slope*B.sz) || 1);
+
   if(st.layers.tangents && fin(z) && fin(fx) && fin(fy)){
-    const L = Math.min(st.x1-st.x0, st.y1-st.y0)*0.26;
-    arrow([x,y,z], [x+L, y, z+fx*L], MK.tanX, 2.6);
-    arrow([x,y,z], [x, y+L, z+fy*L], MK.tanY, 2.6);
+    if(st.layers.wrtX){
+      const k = vstep(1, 0, fx, fx);
+      arrow([x,y,z], [x+k, y, z+fx*k], MK.tanX, 2.6);
+    }
+    if(st.layers.wrtY){
+      const k = vstep(0, 1, fy, fy);
+      arrow([x,y,z], [x, y+k, z+fy*k], MK.tanY, 2.6);
+    }
   }
 
   /* ---- the gradient, on the floor where it lives ---- */
   if(st.layers.grad && fin(fx) && fin(fy)){
     const g = Math.hypot(fx, fy);
     if(g > 1e-9){
-      const L = Math.min(st.x1-st.x0, st.y1-st.y0)*0.26;
-      arrow([x, y, B.zr.lo], [x + fx/g*L, y + fy/g*L, B.zr.lo], MK.grad, 2.6);
+      const ux = fx/g, uy = fy/g;
+      /* the same saturating length, so the three vectors can be compared */
+      const kf = vstep(ux, uy, 0, g);
+      arrow([x, y, B.zr.lo], [x + ux*kf, y + uy*kf, B.zr.lo], MK.grad, 2.6);
       line([[x,y,B.zr.lo],[x,y,z]], MK.grad, 1, [2,4]);
       /* the same direction lifted onto the tangent plane: the way uphill */
-      arrow([x,y,z], [x + fx/g*L, y + fy/g*L, z + g*L], MK.grad, 2.2);
+      const kl = vstep(ux, uy, g, g);
+      arrow([x,y,z], [x + ux*kl, y + uy*kl, z + g*kl], MK.grad, 2.2);
     }
   }
 
@@ -1133,6 +1178,7 @@ function drawSlice(S){
     ctx.textAlign = "center"; ctx.fillText(T().errParse, w/2, h/2); return; }
 
   const t = T(), alongX = st.slice === "x";
+  const tanCol = alongX ? MK.tanX : MK.tanY;
   const u0 = alongX ? st.x0 : st.y0, u1 = alongX ? st.x1 : st.y1;
   const uP = alongX ? S.x : S.y, du = alongX ? st.dx : st.dy;
   const slope = alongX ? S.fx : S.fy, sec = alongX ? S.sx : S.sy;
@@ -1180,7 +1226,7 @@ function drawSlice(S){
   /* the tangent */
   if(st.layers.tangents && fin(slope) && fin(S.z)){
     const a = [u0, S.z + slope*(u0-uP)], b = [u1, S.z + slope*(u1-uP)];
-    poly2(ctx, [[V.SX(a[0]),V.SY(a[1])],[V.SX(b[0]),V.SY(b[1])]], MK.tanX, 2.6);
+    poly2(ctx, [[V.SX(a[0]),V.SY(a[1])],[V.SX(b[0]),V.SY(b[1])]], tanCol, 2.6);
   }
   if(st.layers.steps && fin(far) && Math.abs(du) > 1e-9)
     dot2(ctx, V.SX(uP+du), V.SY(far), MK.secant, 4);
@@ -1194,7 +1240,7 @@ function drawSlice(S){
     ctx.lineWidth = 3.5; ctx.strokeStyle = css("--surface"); ctx.strokeText(s, V.bx.x0+6, yy);
     ctx.fillStyle = col; ctx.fillText(s, V.bx.x0+6, yy);
   };
-  if(st.layers.tangents && fin(slope)) tag(`${t.sTan} ${fmt(slope,3)}`, MK.tanX, V.bx.y0+12);
+  if(st.layers.tangents && fin(slope)) tag(`${t.sTan} ${fmt(slope,3)}`, tanCol, V.bx.y0+12);
   if(st.layers.steps && fin(sec))      tag(`${t.sSec} ${fmt(sec,3)}`,  MK.secant, V.bx.y0+28);
 }
 
@@ -1266,6 +1312,7 @@ function paint(S){
   $("v-title").textContent = t["v"+kind];
   $("v-text").textContent  = t["v"+kind+"T"];
   $("fam-hint").textContent = t.famHint[st.fam];
+  $("layer-hint").textContent = t.layerHint;
   $("pmode-hint").textContent = t.pmHint[st.pmode];
   $("fam-formula").textContent = FAMS[st.fam].show(st) +
     (MODEL && !MODEL.exact ? "\n" + t.numericNote : "");
@@ -1303,15 +1350,18 @@ es:{
   },
   shrink:"Δ → 0", resetD:"Restablecer",
   deltaHint:"El incremento con el que se mide la pendiente por secante. Llévelo a cero y mire la secante caer sobre la tangente.",
-  layers:{ surface:"Superficie", planes:"Planos de corte", traces:"Curvas de corte",
+  layers:{ wrtX:"y fija: f(x, y<sub>P</sub>) → ∂f/∂x",
+           wrtY:"x fija: f(x<sub>P</sub>, y) → ∂f/∂y",
+           surface:"Superficie opaca", planes:"Planos de corte", traces:"Curvas de corte",
            steps:"Variaciones (secante)", tangents:"Tangentes", tanplane:"Plano tangente",
            grad:"Gradiente", grid:"Retícula", axes:"Ejes" },
+  layerHint:"Las dos primeras eligen respecto a qué variable se deriva; las demás, qué se dibuja para ella. Al apagar «Superficie opaca» la superficie no desaparece: queda translúcida, para ver a través de ella lo que está dibujado encima.",
   vpSurface:"La superficie z = f(x, y)", vpSlice:"La rebanada",
   sliceX:"y = y<sub>P</sub>", sliceY:"x = x<sub>P</sub>",
   sTan:"tangente", sSec:"secante",
   roSec:"Δf/Δ", roTan:"Derivada", roErr:"Error",
-  legSurface:"Superficie", legTraceX:"Corte en x", legTraceY:"Corte en y",
-  legSec:"Secante", legTan:"Tangente", legPoint:"P",
+  legSurface:"Superficie", legTraceX:"f(x, y\u209A)", legTraceY:"f(x\u209A, y)",
+  legSec:"Secante", legTan:"Tangente", legTanX:"∂f/∂x", legTanY:"∂f/∂y", legPoint:"P",
   legCurve:"Curva de corte", legRun:"Δ (base)", legRise:"Δf (altura)",
   numericNote:"Con abs, min o max no hay derivada simbólica: se usan diferencias centradas.",
   vLinear:"El plano tangente es la función",
@@ -1358,15 +1408,18 @@ en:{
   },
   shrink:"Δ → 0", resetD:"Reset",
   deltaHint:"The increment the secant slope is measured over. Take it to zero and watch the secant fall onto the tangent.",
-  layers:{ surface:"Surface", planes:"Cutting planes", traces:"Trace curves",
+  layers:{ wrtX:"y fixed: f(x, y<sub>P</sub>) → ∂f/∂x",
+           wrtY:"x fixed: f(x<sub>P</sub>, y) → ∂f/∂y",
+           surface:"Opaque surface", planes:"Cutting planes", traces:"Trace curves",
            steps:"Increments (secant)", tangents:"Tangents", tanplane:"Tangent plane",
            grad:"Gradient", grid:"Grid", axes:"Axes" },
+  layerHint:"The first two choose which variable is being differentiated; the rest, what gets drawn for it. Switching off “Opaque surface” does not remove the surface: it goes translucent, so you can see through it to what is drawn on it.",
   vpSurface:"The surface z = f(x, y)", vpSlice:"The slice",
   sliceX:"y = y<sub>P</sub>", sliceY:"x = x<sub>P</sub>",
   sTan:"tangent", sSec:"secant",
   roSec:"Δf/Δ", roTan:"Derivative", roErr:"Error",
-  legSurface:"Surface", legTraceX:"x-slice", legTraceY:"y-slice",
-  legSec:"Secant", legTan:"Tangent", legPoint:"P",
+  legSurface:"Surface", legTraceX:"f(x, y\u209A)", legTraceY:"f(x\u209A, y)",
+  legSec:"Secant", legTan:"Tangent", legTanX:"∂f/∂x", legTanY:"∂f/∂y", legPoint:"P",
   legCurve:"Trace curve", legRun:"Δ (run)", legRise:"Δf (rise)",
   numericNote:"With abs, min or max there is no symbolic derivative: central differences are used.",
   vLinear:"The tangent plane is the function",
@@ -1437,7 +1490,13 @@ function buildLayers(){
       '<span>'+t.layers[k]+'</span></label>';
   }).join("");
   $("layers").querySelectorAll("input").forEach(cb => cb.addEventListener("change", () => {
-    st.layers[cb.dataset.l] = cb.checked; render();
+    const k = cb.dataset.l;
+    st.layers[k] = cb.checked;
+    /* the slice panel should not go on drawing a coordinate function the
+       surface panel has just been told to stop showing */
+    if(!cb.checked && k === "wrtX" && st.slice === "x" && st.layers.wrtY) setSlice("y");
+    if(!cb.checked && k === "wrtY" && st.slice === "y" && st.layers.wrtX) setSlice("x");
+    render();
   }));
 }
 function buildLegends(){
@@ -1445,11 +1504,13 @@ function buildLegends(){
   const leg = (c,l) => '<span><i style="background:'+c+'"></i>'+l+'</span>';
   $("legend-surface").innerHTML =
     leg(MK.traceX, t.legTraceX) + leg(MK.traceY, t.legTraceY) +
-    leg(MK.secant, t.legSec) + leg(MK.tanX, t.legTan) + leg(MK.point, t.legPoint);
+    leg(MK.secant, t.legSec) +
+    leg(MK.tanX, t.legTanX) + leg(MK.tanY, t.legTanY) + leg(MK.point, t.legPoint);
   $("legend-slice").innerHTML =
     leg(st.slice === "x" ? MK.traceX : MK.traceY, t.legCurve) +
     leg(MK.run, t.legRun) + leg(MK.rise, t.legRise) +
-    leg(MK.secant, t.legSec) + leg(MK.tanX, t.legTan);
+    leg(MK.secant, t.legSec) +
+    leg(st.slice === "x" ? MK.tanX : MK.tanY, t.legTan);
 }
 function syncParams(){
   const on = new Set(FAMS[st.fam].params);
@@ -1571,6 +1632,12 @@ function attachSurface(){
       render(); }
   });
 }
+function setSlice(which){
+  st.slice = which;
+  document.querySelectorAll("#slice-seg [data-sl]").forEach(o =>
+    o.setAttribute("aria-pressed", String(o.dataset.sl === which)));
+  buildLegends();
+}
 function syncViewButtons(){
   document.querySelectorAll("#view-seg [data-view]").forEach(b =>
     b.setAttribute("aria-pressed", String(b.dataset.view === view.canonical)));
@@ -1623,12 +1690,8 @@ document.querySelectorAll("#pmode-seg [data-pm]").forEach(b => b.addEventListene
     o.setAttribute("aria-pressed", String(o === b)));
   render();
 }));
-document.querySelectorAll("#slice-seg [data-sl]").forEach(b => b.addEventListener("click", () => {
-  st.slice = b.dataset.sl;
-  document.querySelectorAll("#slice-seg [data-sl]").forEach(o =>
-    o.setAttribute("aria-pressed", String(o === b)));
-  buildLegends(); render();
-}));
+document.querySelectorAll("#slice-seg [data-sl]").forEach(b =>
+  b.addEventListener("click", () => { setSlice(b.dataset.sl); render(); }));
 document.querySelectorAll("#view-seg [data-view]").forEach(b => b.addEventListener("click", () => {
   const v = VIEWS[b.dataset.view];
   view.az = v.az; view.el = v.el; view.ortho = v.ortho;
