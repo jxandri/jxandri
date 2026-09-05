@@ -1,0 +1,349 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[spanish,es-noquoting,es-nodecimaldot]{babel}
+\manuallang{es}
+
+\appletname{Funciones de Demanda}
+\appletsub{De dónde salen las curvas de demanda. Mueve un precio o la renta, y
+cada canasta óptima deja una marca: el rastro que se va formando es la función
+de demanda.}
+\appletdir{demand-functions}
+
+\begin{document}
+\manualtitlepage{Manual del applet · Microeconomía I · Universidad de los Andes\\
+Traducido de un applet de GeoGebra.\\
+Código MIT. Se abre en el navegador; no hay nada que instalar.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{Qué es esto}
+
+Una curva de demanda no es un dato. Es el resultado de resolver el problema del
+consumidor una vez por cada precio, y de apuntar la respuesta.
+
+En un curso eso se dice, se dibuja la curva ya hecha, y se pasa al siguiente
+tema. Este applet hace lo otro: pone el problema del consumidor a la izquierda,
+un eje vacío a la derecha, y deja que el estudiante mueva el precio. Cada
+canasta óptima deja una marca en el panel derecho. Al cabo de un rato hay una
+curva ahí, y el estudiante la ha construido punto por punto.
+
+\figher[1.0]{revealed}{Después de barrer $p_x$. Los puntos morados del panel
+izquierdo son la senda precio-consumo; los del derecho son la curva de demanda
+que se acaba de construir, con la curva exacta revelada por debajo.}
+
+\begin{amkey}
+El rastro y la curva no son dos cosas: la curva revelada pasa exactamente por
+los puntos registrados. Ver que coinciden es la diferencia entre saber la
+definición de una función de demanda y entenderla.
+\end{amkey}
+
+\subsection{Para quién}
+
+Para el tema de demanda, después de haber visto el óptimo del consumidor. Es el
+puente entre los dos. Sirve además para bienes normales, inferiores y Giffen,
+que suelen quedar como una nota al pie y aquí se pueden fabricar y mirar.
+
+\input{open-es}
+
+% ==========================================================================
+\section{La pantalla}
+
+\fig[1.0]{interface}{La pantalla completa. Izquierda: el problema del
+consumidor. Derecha: la demanda que se va construyendo.}
+
+\begin{description}
+\item[Intervalos.] El rango que se considera para cada variable. Es a la vez el
+  recorrido del deslizador y el tramo que dibuja el eje horizontal del panel
+  derecho. Es el control que más se olvida y el que más problemas resuelve.
+\item[Preferencias.] Cinco familias, la última escribible.
+\item[Parámetros.] Los de la familia elegida.
+\item[Variable que varía.] Cuál de $p_x$, $p_y$ o $m$ se mueve. Las otras dos
+  quedan fijas, y los puntos registrados pertenecen solo a esa.
+\item[Precios y renta.] $p_x$, $p_y$, $m$.
+\item[Descubrir la demanda.] Los botones que registran, barren y limpian.
+\item[Capas.] Qué se dibuja.
+\end{description}
+
+\subsection{Los dos paneles}
+
+\begin{description}
+\item[Elección · plano $(x, y)$.] La recta presupuestaria, la curva de
+  indiferencia por la canasta óptima, la canasta misma, y la senda
+  precio-consumo que se va formando.
+\item[Demanda.] La cantidad óptima frente a la variable que se mueve. Su
+  cabecera dice cuál es. Cuando la variable es la renta, el panel se llama
+  \ui{Curva de Engel}.
+\end{description}
+
+El conmutador \ui{Un panel / Dos} de la cabecera derecha separa la demanda de
+$x$ de la de $y$ en dos gráficos, lo que hace falta cuando las dos tienen
+escalas muy distintas.
+
+\fig[1.0]{engel}{Con la renta como variable que varía, el panel derecho pasa a
+ser la curva de Engel.}
+
+\subsection{El tema oscuro}
+
+\fig[0.95]{dark}{Los dos paneles en el tema oscuro.}
+
+% ==========================================================================
+\section{Las cinco familias}
+
+Cada una trae una demanda en forma cerrada, salvo la personalizada, que se
+resuelve numéricamente.
+
+\begin{ctrltable}{Familia & Utilidad y demanda}
+Cobb--Douglas & $U = x^{\alpha} y^{1-\alpha}$, con
+  $x^\ast = \alpha m/p_x$ e $y^\ast = (1-\alpha) m/p_y$. La demanda de cada
+  bien no depende del precio del otro: es el caso limpio. \\
+CES & $U = (x^{r} + y^{r})^{1/r}$. Con $r$ cerca de 1 son casi sustitutos
+  perfectos; con $r$ muy negativo, casi complementarios. \\
+Lineal (sustitutos) & $U = a x + y$. La demanda es de esquina: todo en $x$ si
+  $a > p_x/p_y$, todo en $y$ si es al revés. \\
+X inferior (Giffen) & $U = \ln(x - \underline{x}) -
+  \tfrac{1+b}{b}\ln(\bar y - y)$ con $b = (1-\beta)/\beta$. Es la familia con
+  la que se fabrica el caso Giffen. \\
+Personalizada & La $U(x, y)$ que escriba. \\
+\end{ctrltable}
+
+\begin{ctrltable}{Parámetro & De qué familia}
+$\alpha$ & Cobb--Douglas: la participación de $x$ en el gasto. \\
+$r$ & CES: el exponente de sustitución. \\
+$a$ & Lineal: cuánto vale $x$ frente a $y$. \\
+$\beta$, $\underline{x}$, $\bar y$ & X inferior: el peso, el mínimo de
+  subsistencia de $x$, y el techo de $y$. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Descubrir la demanda}
+
+Es el corazón del applet. Cuatro controles:
+
+\begin{ctrltable}{Control & Qué hace}
+Marcar al mover & Registra un punto automáticamente cada vez que se mueve la
+  variable elegida. Es lo más cómodo para una demostración en clase. \\
+Registrar punto & Guarda la canasta actual. Un punto, deliberadamente. \\
+Barrido & Recorre la variable de un extremo a otro del intervalo y va
+  marcando. Pulsar otra vez lo para. \\
+Limpiar & Borra los puntos de la variable actual. \\
+\end{ctrltable}
+
+Los puntos pertenecen a la variable que se estaba moviendo. Cambiar de $p_x$ a
+$m$ no mezcla los rastros: cada uno guarda el suyo.
+
+\fig[1.0]{swept}{A mitad de un barrido de $p_x$: los puntos ya registrados y la
+canasta óptima actual.}
+
+\subsection{Las capas}
+
+\begin{ctrltable}{Capa & Qué dibuja}
+Puntos registrados & Las marcas que se han ido dejando. \\
+Unir los puntos & Los conecta con segmentos. \\
+Revelar la curva & Dibuja la función de demanda exacta, calculada, por debajo
+  de los puntos. Es la comprobación. \\
+Senda precio-consumo & En el plano $(x, y)$, el rastro de las canastas
+  óptimas. \\
+Recta presupuestaria & La restricción actual. \\
+Curva de indiferencia & La que pasa por la canasta óptima. \\
+Demanda de x / Demanda de y & Cuál de las dos demandas se dibuja en el panel
+  derecho. \\
+Resaltar tramo Giffen & Marca en morado los tramos con
+  $\partial x^\ast/\partial p_x > 0$. \\
+Retícula & La cuadrícula de fondo. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Intervalos y ejes}
+
+\begin{amwatch}
+Los deslizadores de $p_x$, $p_y$ y $m$ están \emph{acotados por el intervalo}
+que se haya fijado en el grupo \ui{Intervalos}. Si intenta bajar $p_y$ por
+debajo de su mínimo de intervalo no se mueve. Baje primero el mínimo del
+intervalo. Es la causa más frecuente de que un deslizador «no responda».
+\end{amwatch}
+
+El eje vertical del panel derecho tiene dos modos:
+
+\begin{description}
+\item[Eje vertical fijo] (por defecto). El tope es $m_{\text{máx}}/p_{\text{mín}}$,
+  la cantidad máxima comprable con los intervalos vigentes. La ventaja es que el
+  eje no se mueve al arrastrar, así que dos barridos se pueden comparar a ojo.
+\item[Automático.] El eje se ajusta a la curva. Hace falta cuando la cantidad de
+  interés es pequeña frente a ese tope —el caso Giffen, por ejemplo, donde
+  $x^\ast$ ronda $0{,}3$ y el tope está en $8$.
+\end{description}
+
+% ==========================================================================
+\section{Normal, inferior, Giffen}
+
+Las tres lecturas de la derecha lo resuelven todo:
+
+\begin{ctrltable}{Lectura & Qué dice}
+$\partial x^\ast/\partial p_x$ & La pendiente de la demanda. Negativa es lo
+  normal; positiva es Giffen. \\
+$\partial x^\ast/\partial m$ & El efecto renta. Negativo significa bien
+  inferior. \\
+Tipo & \emph{normal} o \emph{inferior}, según el signo del anterior. \\
+\end{ctrltable}
+
+Y el veredicto de arriba nombra el caso:
+
+\begin{description}
+\item[x es un bien normal aquí.] La demanda baja cuando sube su precio y sube
+  con la renta.
+\item[x es un bien inferior aquí.] $\partial x^\ast/\partial m < 0$. Ser
+  inferior es \emph{necesario} para ser Giffen, pero no basta.
+\item[x es un bien Giffen aquí.] $\partial x^\ast/\partial p_x > 0$. El efecto
+  renta domina al de sustitución, cosa que solo puede pasar si $x$ es inferior.
+\end{description}
+
+\fig[1.0]{giffen}{El caso Giffen. La demanda sube con el precio, y todo el
+tramo está resaltado. Observe el panel izquierdo: la senda precio-consumo sube
+casi en vertical, porque el consumidor apenas puede reducir $x$ por debajo de
+su mínimo de subsistencia.}
+
+\fig[0.85]{giffen-verdict}{El veredicto en el caso Giffen.}
+
+% ==========================================================================
+\section{Actividades para clase}
+
+\begin{activity}{Construir una demanda a mano}
+\amset Valores de partida (Cobb--Douglas). \ui{Variable que varía} en $p_x$.
+Encienda \ui{Marcar al mover}.
+\amexp Con $p_x = 1{,}83$: $x^\ast = 1{,}68$, $y^\ast = 2{,}11$, gasto
+$5{,}4$ de $5{,}4$. Mueva $p_x$ despacio de un extremo al otro. Cada canasta
+deja una marca a la derecha.
+\par\smallskip
+Cuando tenga quince o veinte puntos, encienda \ui{Revelar la curva}. La curva
+calculada pasa exactamente por ellos. Pregunte a la clase qué es entonces una
+función de demanda: no un dato, sino el registro de veinte problemas de
+optimización resueltos.
+\end{activity}
+
+\begin{activity}{El gasto no se mueve}
+\amset Cobb--Douglas, barrido de $p_x$.
+\amexp La lectura \ui{Gasto} dice siempre $5{,}4 / 5{,}4$, y $y^\ast$ no cambia
+al mover $p_x$. Con Cobb--Douglas cada bien se lleva una fracción fija de la
+renta: $x^\ast = \alpha m / p_x$ no depende de $p_y$, e $y^\ast$ no depende de
+$p_x$.
+\par\smallskip
+Mueva $\alpha$ y vea las dos participaciones cambiar. Es la propiedad que hace
+de Cobb--Douglas el caso de examen, y conviene que se vea antes de darla por
+supuesta.
+\end{activity}
+
+\begin{activity}{La curva de Engel}
+\amset \ui{Variable que varía} en $m$. Barra.
+\amexp El panel derecho pasa a llamarse \ui{Curva de Engel}. Con
+Cobb--Douglas sale una recta por el origen: la demanda es proporcional a la
+renta.
+\par\smallskip
+Cambie a \ui{X inferior} y repita. La curva de Engel se dobla hacia abajo:
+más renta, menos $x$. Ahí está la definición de bien inferior, dibujada.
+\end{activity}
+
+\begin{activity}{Inferior no es Giffen}
+\amset Familia \ui{X inferior}, valores de partida.
+\amexp $x^\ast = 1{,}08$, $y^\ast = 3{,}12$,
+$\partial x^\ast/\partial p_x = -0{,}422$ y
+$\partial x^\ast/\partial m = -0{,}068$. El tipo es \emph{inferior} y el
+veredicto lo dice, pero la demanda sigue teniendo pendiente negativa.
+\par\smallskip
+Pregunte si eso contradice algo. No: ser inferior es necesario para ser Giffen,
+no suficiente. Falta que el efecto renta sea lo bastante fuerte, y para eso hay
+que empobrecer al consumidor en términos reales.
+\end{activity}
+
+\begin{activity}{Fabricar un bien Giffen}
+\amset Familia \ui{X inferior}. En \ui{Intervalos}, baje el mínimo de $p_y$ a
+$0{,}2$. Después ponga $p_y = 0{,}35$. Quite el \ui{Eje vertical fijo}.
+\amexp Ahora $x^\ast = 0{,}30$, $y^\ast = 10{,}54$, y
+$\partial x^\ast/\partial p_x = +3{,}1\times 10^{-4}$: \emph{positiva}. El
+veredicto dice «x es un bien Giffen aquí» y el tramo sale resaltado.
+\par\smallskip
+Barra $p_x$ y mire la curva subir. Lo que ha hecho es abaratar tanto el otro
+bien que $x$ se ha convertido en el bien de subsistencia del consumidor: cuando
+$x$ sube de precio, se empobrece, y al empobrecerse compra más de lo barato.
+Es la historia de la patata irlandesa, y hace falta este ajuste para verla.
+\end{activity}
+
+\begin{activity}{Los dos casos extremos}
+\amset Familia \ui{Lineal (sustitutos)}. Barra $p_x$.
+\amexp La demanda es un escalón: todo en $x$ hasta que $p_x/p_y$ cruza $a$, y
+entonces cero de golpe. No hay tramo intermedio.
+\par\smallskip
+Cambie a \ui{CES} y baje $r$ hacia $-6$: las curvas se suavizan hasta parecerse
+a las de complementarios. Los dos extremos acotan lo que puede hacer una
+demanda, y el resto de las familias caen en medio.
+\end{activity}
+
+\begin{activity}{La senda precio-consumo}
+\amset Cualquier familia. Encienda \ui{Senda precio-consumo} y barra $p_x$.
+\amexp En el plano $(x, y)$ aparece el rastro de las canastas óptimas. Con
+Cobb--Douglas es una horizontal, porque $y^\ast$ no depende de $p_x$. Con la
+familia inferior sube casi en vertical.
+\par\smallskip
+La curva de demanda del panel derecho es esa misma senda, con $p_x$ en el eje
+horizontal en vez de $x$. Son la misma información en dos sistemas de
+coordenadas.
+\end{activity}
+
+\begin{activity}{Su propia función de utilidad}
+\amset Familia \ui{Personalizada}. Escriba \code{x\^{}0.3*y\^{}0.7}, luego
+\code{min(2x,y)}, luego \code{x+4ln(y)}.
+\amexp La demanda se resuelve numéricamente y el rastro se construye igual. Con
+\code{min(2x,y)} las dos demandas se mueven juntas; con la cuasilineal, la
+demanda de $y$ deja de depender de la renta en cuanto esta pasa de un umbral.
+\par\smallskip
+Es el momento de pedir a la clase que prediga la forma antes de barrer.
+\end{activity}
+
+% ==========================================================================
+\section{Sintaxis de expresiones}
+
+\begin{ctrltable}{Elemento & Qué se admite}
+Operadores & \code{+ - * / \^{} ( )} \\
+Funciones & \code{sqrt ln log exp abs min max sin cos} \\
+Constantes & \code{e}, \code{pi} \\
+Multiplicación implícita & \code{2xy} es \code{2*x*y} \\
+Variables & Solo \code{x} e \code{y} \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Cómo se calcula}
+
+Las cuatro familias con nombre traen su demanda en forma cerrada, deducida a
+mano. La personalizada no puede, así que su óptimo se busca numéricamente sobre
+la recta presupuestaria: un barrido denso y un refinamiento por sección áurea,
+igual que en los otros applets de esta colección. Es robusto donde una
+condición de primer orden no encuentra nada —esquinas y quiebres incluidos.
+
+Las derivadas $\partial x^\ast/\partial p_x$ y $\partial x^\ast/\partial m$ que
+aparecen en las lecturas son diferencias centradas sobre la propia función de
+demanda, no derivadas simbólicas: así valen igual para las familias cerradas y
+para la que escriba el usuario.
+
+% ==========================================================================
+\section{Problemas frecuentes}
+
+\begin{ctrltable}{Síntoma & Qué pasa}
+Un deslizador de precio no se mueve & Está topando con su intervalo. Cambie el
+  mínimo o el máximo en \ui{Intervalos}. \\
+La curva sale pegada al eje & El eje vertical está fijo en
+  $m_{\text{máx}}/p_{\text{mín}}$ y la cantidad es pequeña. Quite \ui{Eje
+  vertical fijo}. \\
+Los puntos desaparecen al cambiar de variable & No desaparecen: cada variable
+  guarda su propio rastro. Vuelva a la anterior y ahí están. \\
+El panel derecho está ilegible & Las dos demandas tienen escalas muy distintas.
+  Pase a \ui{Dos} paneles, o apague una de las dos capas. \\
+No consigo el caso Giffen & Hacen falta las tres cosas: la familia
+  \ui{X inferior}, un $p_y$ bajo (bajando antes su intervalo) y mirar el signo
+  de $\partial x^\ast/\partial p_x$, no el de $\partial x^\ast/\partial m$. \\
+\end{ctrltable}
+
+\input{tail-es}
+
+\end{document}

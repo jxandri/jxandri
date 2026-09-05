@@ -1,0 +1,52 @@
+%% Secciones comunes a todos los manuales, edición española.
+%% Se incluyen con \input{common-es}. Lo único que cambia entre applets es
+%% \appletfolder, que es también el nombre de la carpeta y de la ruta en el sitio.
+
+\section{Cómo abrirlo}
+
+No hay que instalar nada. La aplicación entera es un solo archivo
+\code{index.html}: no descarga librerías, no llama a ningún servidor y no
+guarda nada fuera del navegador.
+
+\subsection{Las tres maneras}
+
+\begin{description}
+\item[Doble clic sobre el archivo.] Es lo más rápido. Busque
+  \code{\appletfolder/index.html} y ábralo. El navegador lo muestra desde el disco,
+  con la barra de direcciones empezando por \code{file://}. Funciona sin
+  conexión desde el primer momento.
+\item[Desde la web.] Si alguien ya lo publicó, la dirección termina en
+  \code{/\appletfolder/}. Una vez cargada la página, puede desconectarse: no
+  necesita la red para nada más.
+\item[Servido desde una carpeta.] Para una clase, poner la carpeta en
+  cualquier servidor estático basta. Con Python instalado:
+  \begin{quote}\code{python3 -m http.server 8000}\end{quote}
+  y luego \code{http://localhost:8000/\appletfolder/} en el navegador.
+\end{description}
+
+\begin{amnote}
+Guardar la página con \key{Ctrl}\,+\,\key{S} (o \key{Cmd}\,+\,\key{S} en
+Mac) deja una copia propia que sigue funcionando sin conexión y que se puede
+llevar en una memoria USB o repartir por correo.
+\end{amnote}
+
+\subsection{Idioma y tema}
+
+Arriba a la derecha hay dos pares de botones.
+
+\begin{ctrltable}{Control & Qué hace}
+ES / EN & Cambia el idioma de toda la interfaz al vuelo. Nada se recalcula:
+          puede cambiarlo en mitad de una explicación sin perder el estado. \\
+Oscuro / Claro & Cambia el tema. El oscuro es el diseño original; el claro
+          existe para proyectores y para imprimir. \\
+\end{ctrltable}
+
+Las dos elecciones se recuerdan en el navegador, así que la próxima vez se abre
+como la dejó.
+
+\subsection{Qué navegador}
+
+Cualquiera que sea razonablemente reciente: Chrome, Edge, Firefox o Safari, en
+ordenador, tableta o teléfono. En pantallas estrechas los paneles se apilan uno
+sobre otro en lugar de ponerse al lado. No hace falta cuenta, ni permisos, ni
+extensiones.

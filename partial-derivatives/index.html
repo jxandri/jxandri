@@ -1,0 +1,1728 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Derivadas Parciales</title>
+<meta name="description" content="Una derivada parcial es la pendiente de la curva que queda al cortar la superficie con un plano. La rebanada, dibujada al lado, es una función de una variable.">
+<style>
+/* Dark is the design here, not a variant of it. Light is an explicit opt-out
+   for projectors and printed handouts, chosen from the header. */
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --crit:#E4705C; --good:#6FD3A0; --warn:#FF9E2C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
+  --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
+  --rule:#CBD4D8; --rule-2:#E1E7EA;
+  --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --crit:#A93726; --good:#1B6E48; --warn:#9A5B00;
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-ui); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased}
+button,input,select{font:inherit; color:inherit}
+.shell{max-width:1560px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
+.masthead h1{margin:0; font-family:var(--f-display); font-size:26px; font-weight:600; letter-spacing:-.01em}
+.masthead p{margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:74ch}
+.head-actions{display:flex; align-items:center; gap:8px}
+
+.console{display:grid; grid-template-columns:clamp(212px,22vw,312px) minmax(0,1fr);
+  gap:12px; align-items:start}
+@media (max-width:680px){.console{grid-template-columns:1fr}}
+
+.rail{display:flex; flex-direction:column; gap:12px; background:var(--surface);
+  border:1px solid var(--rule); border-radius:3px; padding:16px; box-shadow:var(--shadow)}
+.group{display:flex; flex-direction:column; gap:8px}
+.group[hidden]{display:none}
+.group+.group{border-top:1px solid var(--rule-2); padding-top:12px}
+.group>h2{margin:0; font-size:10.5px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.hint{margin:0; font-size:12px; color:var(--ink-3); line-height:1.4}
+
+.scen{display:flex; flex-direction:column; gap:4px}
+.scen button{appearance:none; cursor:pointer; text-align:left; display:flex; gap:8px;
+  align-items:baseline; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:3px; padding:6px 9px; font-size:12.5px; line-height:1.3}
+.scen button:hover{border-color:var(--accent); color:var(--accent-ink)}
+.scen button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.scen .n{font-family:var(--f-mono); font-size:11px; opacity:.75; flex:none; width:1.1em}
+.scen button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.slider-row{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px}
+.slider-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.6em}
+.slider-row .v{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  text-align:right; width:4.2em; background:transparent; border:0;
+  border-bottom:1px dotted var(--rule); padding:1px 2px}
+.slider-row .v:focus{outline:none; border-bottom-color:var(--accent); background:var(--sunk)}
+.slider-row[hidden]{display:none}
+input[type=range]{appearance:none; -webkit-appearance:none; width:100%; height:20px;
+  background:transparent; cursor:pointer; margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-moz-range-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px;
+  margin-top:-5.5px; border-radius:50%; background:var(--accent); border:2px solid var(--surface)}
+input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid var(--surface)}
+input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.text-in{width:100%; padding:7px 9px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--sunk); font-family:var(--f-mono); font-size:12.5px; color:var(--ink)}
+.text-in:focus{outline:none; border-color:var(--accent)}
+.text-in[aria-invalid="true"]{border-color:var(--crit)}
+.err{margin:0; font-size:12px; color:var(--crit); min-height:1em}
+.formula{font-family:var(--f-mono); font-size:12px; color:var(--ink-2);
+  background:var(--sunk); border:1px solid var(--rule-2); border-radius:3px;
+  padding:8px 10px; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.5}
+.formula[hidden]{display:none}
+
+.chips{display:flex; flex-wrap:wrap; gap:5px}
+.chip{appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:20px; padding:4px 11px; font-size:12px;
+  font-family:var(--f-mono)}
+.chip:hover{border-color:var(--accent); color:var(--accent-ink)}
+.chip[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.chip:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.chips[hidden]{display:none}
+
+.check{display:flex; gap:7px; align-items:flex-start; font-size:12.5px; color:var(--ink-2);
+  cursor:pointer; line-height:1.3}
+.check input{accent-color:var(--accent); margin:1px 0 0; flex:none}
+.checks{display:grid; grid-template-columns:1fr; gap:5px 9px}
+.swatch{width:9px; height:9px; border-radius:2px; display:inline-block; flex:none; margin-top:3px}
+
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:5px 11px; font-size:12px; white-space:nowrap}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+
+.btn{appearance:none; cursor:pointer; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:3px; padding:6px 11px; font-size:12.5px}
+.btn:hover{border-color:var(--accent); color:var(--accent-ink)}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:var(--btn-ink); font-weight:600}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.btn-row{display:flex; gap:6px; flex-wrap:wrap}
+
+.viewports{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:12px; align-items:start}
+@media (max-width:1000px){.viewports{grid-template-columns:1fr}}
+.vp{background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden}
+.vp-head{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:9px 12px; border-bottom:1px solid var(--rule-2); flex-wrap:wrap}
+.vp-head h2{margin:0; font-family:var(--f-mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+.vp canvas{display:block; width:100%; height:clamp(340px,52vh,560px); touch-action:none}
+#cSurface{cursor:grab}
+#cSurface:active{cursor:grabbing}
+.legend{display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--ink-2);
+  font-family:var(--f-mono); padding:7px 12px; border-top:1px solid var(--rule-2)}
+.legend span{display:inline-flex; align-items:center; gap:4px}
+.legend i{width:9px; height:9px; border-radius:2px; display:inline-block}
+
+.readouts{display:grid; grid-template-columns:repeat(auto-fit,minmax(84px,1fr));
+  border-top:1px solid var(--rule-2)}
+.ro{padding:8px 12px; border-right:1px solid var(--rule-2)}
+.ro:last-child{border-right:0}
+.ro .lab{font-family:var(--f-mono); font-size:9.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3)}
+.ro .val{font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:15px; color:var(--ink); margin-top:1px}
+.ro .val.is-good{color:var(--good)}
+.ro .val.is-crit{color:var(--crit)}
+.ro .val.is-warn{color:var(--warn)}
+
+.verdict{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent);
+  border-radius:3px; padding:11px 14px; box-shadow:var(--shadow)}
+.verdict h3{margin:0 0 3px; font-size:13px; font-weight:700; color:var(--accent-ink)}
+.verdict p{margin:0; font-size:12.5px; color:var(--ink-2); max-width:96ch}
+.verdict.is-warn{border-left-color:var(--warn)} .verdict.is-warn h3{color:var(--warn)}
+.verdict.is-crit{border-left-color:var(--crit)} .verdict.is-crit h3{color:var(--crit)}
+.verdict.is-good{border-left-color:var(--good)} .verdict.is-good h3{color:var(--good)}
+
+footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid var(--rule-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <h1 id="h-title">Derivadas Parciales</h1>
+      <p id="h-sub">Una derivada parcial es la pendiente de la curva que queda al cortar la
+         superficie con un plano que deja fija la otra variable. Esa rebanada, dibujada al lado,
+         es una función de una sola variable.</p>
+    </div>
+    <div class="head-actions">
+      <div class="seg" id="lang-seg">
+        <button type="button" id="lg-es" aria-pressed="true">ES</button>
+        <button type="button" id="lg-en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme-seg">
+        <button type="button" id="th-dark" aria-pressed="true">Oscuro</button>
+        <button type="button" id="th-light" aria-pressed="false">Claro</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="console">
+    <aside class="rail">
+
+      <div class="group">
+        <h2 data-t="gFam">Función</h2>
+        <div class="scen" id="fams"></div>
+        <p class="hint" id="fam-hint"></p>
+        <div class="formula" id="fam-formula"></div>
+      </div>
+
+      <div class="group" id="g-custom">
+        <h2 data-t="gCustom">Expresión</h2>
+        <input class="text-in" id="f-expr" value="x*y" spellcheck="false" aria-label="f(x, y)">
+        <p class="err" id="f-err"></p>
+        <div class="chips" id="presets"></div>
+      </div>
+
+      <div class="group" id="g-params">
+        <h2 data-t="gParams">Parámetros</h2>
+        <div class="slider-row" data-p="a0"><span class="k">a₀</span><input type="range" id="a0" min="-5" max="5" step="0.05" value="3"><input class="v" id="a0-v"></div>
+        <div class="slider-row" data-p="a1"><span class="k">a₁</span><input type="range" id="a1" min="-1" max="1" step="0.01" value="0.1"><input class="v" id="a1-v"></div>
+        <div class="slider-row" data-p="a2"><span class="k">a₂</span><input type="range" id="a2" min="-1" max="1" step="0.01" value="0.1"><input class="v" id="a2-v"></div>
+        <div class="slider-row" data-p="a3"><span class="k">a₃</span><input type="range" id="a3" min="-1" max="1" step="0.01" value="0"><input class="v" id="a3-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gPoint">El punto P</h2>
+        <div class="seg" id="pmode-seg">
+          <button type="button" data-pm="hand" aria-pressed="true" data-t="pmHand">A mano</button>
+          <button type="button" data-pm="slider" aria-pressed="false" data-t="pmSlider">Con deslizadores</button>
+        </div>
+        <p class="hint" id="pmode-hint"></p>
+        <div class="slider-row"><span class="k">x<sub>P</sub></span><input type="range" id="xP" min="-5" max="5" step="0.01" value="1"><input class="v" id="xP-v"></div>
+        <div class="slider-row"><span class="k">y<sub>P</sub></span><input type="range" id="yP" min="-5" max="5" step="0.01" value="2"><input class="v" id="yP-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gDelta">Incrementos</h2>
+        <div class="slider-row"><span class="k">Δx</span><input type="range" id="dx" min="-3" max="3" step="0.01" value="2"><input class="v" id="dx-v"></div>
+        <div class="slider-row"><span class="k">Δy</span><input type="range" id="dy" min="-3" max="3" step="0.01" value="1.5"><input class="v" id="dy-v"></div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="btn-shrink" data-t="shrink">Δ → 0</button>
+          <button type="button" class="btn" id="btn-reset-d" data-t="resetD">Restablecer</button>
+        </div>
+        <p class="hint" data-t="deltaHint">El incremento con el que se mide la pendiente por secante. Llévelo a cero y mire la secante caer sobre la tangente.</p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gDomain">Dominio</h2>
+        <div class="slider-row"><span class="k">x ≥</span><input type="range" id="x0" min="-8" max="0" step="0.5" value="-4"><input class="v" id="x0-v"></div>
+        <div class="slider-row"><span class="k">x ≤</span><input type="range" id="x1" min="0" max="8" step="0.5" value="4"><input class="v" id="x1-v"></div>
+        <div class="slider-row"><span class="k">y ≥</span><input type="range" id="y0" min="-8" max="0" step="0.5" value="-4"><input class="v" id="y0-v"></div>
+        <div class="slider-row"><span class="k">y ≤</span><input type="range" id="y1" min="0" max="8" step="0.5" value="4"><input class="v" id="y1-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gLayers">Capas</h2>
+        <div class="checks" id="layers"></div>
+        <p class="hint" id="layer-hint"></p>
+      </div>
+
+    </aside>
+
+    <div style="display:flex; flex-direction:column; gap:12px; min-width:0">
+      <div class="verdict" id="verdict">
+        <h3 id="v-title">—</h3>
+        <p id="v-text">—</p>
+      </div>
+
+      <div class="viewports">
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp-surface-title">La superficie z = f(x, y)</h2>
+            <div class="seg" id="view-seg">
+              <button type="button" data-view="iso" aria-pressed="true">3D</button>
+              <button type="button" data-view="xz" aria-pressed="false">X–Z</button>
+              <button type="button" data-view="yz" aria-pressed="false">Y–Z</button>
+              <button type="button" data-view="xy" aria-pressed="false">X–Y</button>
+            </div>
+          </div>
+          <canvas id="cSurface" tabindex="0" aria-label="Superficie en 3D"></canvas>
+          <div class="legend" id="legend-surface"></div>
+          <div class="readouts" id="ro-surface"></div>
+        </section>
+
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp-slice-title">La rebanada</h2>
+            <div class="seg" id="slice-seg">
+              <button type="button" data-sl="x" aria-pressed="true">y = y<sub>P</sub></button>
+              <button type="button" data-sl="y" aria-pressed="false">x = x<sub>P</sub></button>
+            </div>
+          </div>
+          <canvas id="cSlice" aria-label="Curva de corte"></canvas>
+          <div class="legend" id="legend-slice"></div>
+          <div class="readouts" id="ro-slice"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ==========================================================================
+   1. Expression language
+   --------------------------------------------------------------------------
+   Tokeniser -> Pratt parser -> AST -> closure tree, plus symbolic partial
+   differentiation. The derivative of a derivative is taken the same way, so
+   the second-derivative test at a critical point is exact rather than a
+   difference of differences.
+
+   No eval() and no new Function(): what a student types into a box must not
+   be able to become code, and a strict content security policy must not be
+   able to break the page.
+   ========================================================================== */
+
+const FUNCS = {
+  sqrt:1, ln:1, log:1, log10:1, exp:1, abs:1, sin:1, cos:1, tan:1,
+  sinh:1, cosh:1, tanh:1, atan:1, min:2, max:2, pow:2, atan2:2
+};
+const CONSTS = { e:Math.E, pi:Math.PI, "π":Math.PI };
+
+function tokenize(src){
+  const s = String(src).replace(/−/g,"-").replace(/[×⋅]/g,"*").replace(/÷/g,"/");
+  const out = [];
+  let i = 0;
+  const isDigit = c => c >= "0" && c <= "9";
+  const isAlpha = c => /[A-Za-zα-ω]/.test(c);
+
+  while(i < s.length){
+    const c = s[i];
+    if(c === " " || c === "\t"){ i++; continue; }
+    if(isDigit(c) || (c === "." && isDigit(s[i+1]))){
+      let j = i;
+      while(j < s.length && (isDigit(s[j]) || s[j] === ".")) j++;
+      out.push({ k:"num", v:parseFloat(s.slice(i,j)) });
+      i = j; continue;
+    }
+    if(isAlpha(c)){
+      let name = null;
+      for(const cand of Object.keys(FUNCS).concat(Object.keys(CONSTS))){
+        if(s.startsWith(cand, i) && (!name || cand.length > name.length)) name = cand;
+      }
+      if(name && FUNCS[name]){ out.push({ k:"fn", v:name, arity:FUNCS[name] }); i += name.length; continue; }
+      if(name && name in CONSTS){ out.push({ k:"num", v:CONSTS[name] }); i += name.length; continue; }
+      if(c === "x" || c === "y"){ out.push({ k:"var", v:c }); i++; continue; }
+      throw new SyntaxError("unknown:"+c);
+    }
+    if("+-*/^(),".includes(c)){ out.push({ k:c }); i++; continue; }
+    throw new SyntaxError("char:"+c);
+  }
+
+  /* implicit multiplication: 2x, xy, 2(x+1), (x+1)y, 3sin(x) */
+  const res = [];
+  for(let n = 0; n < out.length; n++){
+    const a = out[n], b = out[n+1];
+    res.push(a);
+    if(!b) break;
+    const aEnds = a.k === "num" || a.k === "var" || a.k === ")";
+    const bStarts = b.k === "num" || b.k === "var" || b.k === "fn" || b.k === "(";
+    if(aEnds && bStarts) res.push({ k:"*" });
+  }
+  return res;
+}
+
+function parse(src){
+  const ts = tokenize(src);
+  let p = 0;
+  const peek = () => ts[p];
+  const eat = k => { if(!ts[p] || ts[p].k !== k) throw new SyntaxError("expected:"+k); return ts[p++]; };
+
+  /* ^ binds tightest and is right-associative; unary minus sits below it so
+     -x^2 parses as -(x^2), matching every textbook and GeoGebra itself. */
+  function atom(){
+    const t = peek();
+    if(!t) throw new SyntaxError("eof");
+    if(t.k === "num"){ p++; return { t:"num", v:t.v }; }
+    if(t.k === "var"){ p++; return { t:"var", n:t.v }; }
+    if(t.k === "("){ p++; const e = expr(0); eat(")"); return e; }
+    if(t.k === "-"){ p++; return { t:"neg", a:unary() }; }
+    if(t.k === "+"){ p++; return unary(); }
+    if(t.k === "fn"){
+      p++; eat("(");
+      const args = [expr(0)];
+      while(peek() && peek().k === ","){ p++; args.push(expr(0)); }
+      eat(")");
+      if(args.length !== t.arity) throw new SyntaxError("arity:"+t.v);
+      return { t:"call", n:t.v, a:args };
+    }
+    throw new SyntaxError("token:"+t.k);
+  }
+  function unary(){
+    let base = atom();
+    if(peek() && peek().k === "^"){ p++; base = { t:"pow", a:base, b:unary() }; }
+    return base;
+  }
+  const PREC = { "+":1, "-":1, "*":2, "/":2 };
+  function expr(min){
+    let lhs = unary();
+    while(peek() && PREC[peek().k] !== undefined && PREC[peek().k] > min){
+      const op = ts[p++].k;
+      lhs = { t:"bin", o:op, a:lhs, b:expr(PREC[op]) };
+    }
+    return lhs;
+  }
+  const ast = expr(0);
+  if(p !== ts.length) throw new SyntaxError("trailing");
+  return ast;
+}
+
+function compile(n){
+  switch(n.t){
+    case "num": { const v = n.v; return () => v; }
+    case "var": return n.n === "x" ? (x) => x : (x,y) => y;
+    case "neg": { const a = compile(n.a); return (x,y) => -a(x,y); }
+    case "pow": {
+      const a = compile(n.a), b = compile(n.b);
+      if(n.b.t === "num"){ const k = n.b.v; return (x,y) => Math.pow(a(x,y), k); }
+      return (x,y) => Math.pow(a(x,y), b(x,y));
+    }
+    case "bin": {
+      const a = compile(n.a), b = compile(n.b);
+      switch(n.o){
+        case "+": return (x,y) => a(x,y) + b(x,y);
+        case "-": return (x,y) => a(x,y) - b(x,y);
+        case "*": return (x,y) => a(x,y) * b(x,y);
+        case "/": return (x,y) => a(x,y) / b(x,y);
+      }
+      break;
+    }
+    case "call": {
+      const A = n.a.map(compile), f = A[0], g = A[1];
+      switch(n.n){
+        case "sqrt":  return (x,y) => Math.sqrt(f(x,y));
+        case "ln": case "log": return (x,y) => Math.log(f(x,y));
+        case "log10": return (x,y) => Math.log10(f(x,y));
+        case "exp":   return (x,y) => Math.exp(f(x,y));
+        case "abs":   return (x,y) => Math.abs(f(x,y));
+        case "sin":   return (x,y) => Math.sin(f(x,y));
+        case "cos":   return (x,y) => Math.cos(f(x,y));
+        case "tan":   return (x,y) => Math.tan(f(x,y));
+        case "sinh":  return (x,y) => Math.sinh(f(x,y));
+        case "cosh":  return (x,y) => Math.cosh(f(x,y));
+        case "tanh":  return (x,y) => Math.tanh(f(x,y));
+        case "atan":  return (x,y) => Math.atan(f(x,y));
+        case "min":   return (x,y) => Math.min(f(x,y), g(x,y));
+        case "max":   return (x,y) => Math.max(f(x,y), g(x,y));
+        case "pow":   return (x,y) => Math.pow(f(x,y), g(x,y));
+        case "atan2": return (x,y) => Math.atan2(f(x,y), g(x,y));
+      }
+    }
+  }
+  throw new Error("compile");
+}
+
+const NUM = v => ({ t:"num", v });
+const isNum = (n,v) => n.t === "num" && n.v === v;
+function add(a,b){ if(isNum(a,0)) return b; if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v+b.v); return { t:"bin", o:"+", a, b }; }
+function sub(a,b){ if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v-b.v); return { t:"bin", o:"-", a, b }; }
+function mul(a,b){
+  if(isNum(a,0)||isNum(b,0)) return NUM(0);
+  if(isNum(a,1)) return b; if(isNum(b,1)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v*b.v);
+  return { t:"bin", o:"*", a, b };
+}
+function div(a,b){ if(isNum(a,0)) return NUM(0); if(isNum(b,1)) return a; return { t:"bin", o:"/", a, b }; }
+function powN(a,b){ if(isNum(b,1)) return a; if(isNum(b,0)) return NUM(1); return { t:"pow", a, b }; }
+class NonDifferentiable extends Error {}
+
+function diff(n, v){
+  switch(n.t){
+    case "num": return NUM(0);
+    case "var": return NUM(n.n === v ? 1 : 0);
+    case "neg": return { t:"neg", a:diff(n.a, v) };
+    case "bin":
+      if(n.o === "+") return add(diff(n.a,v), diff(n.b,v));
+      if(n.o === "-") return sub(diff(n.a,v), diff(n.b,v));
+      if(n.o === "*") return add(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v)));
+      if(n.o === "/") return div(sub(mul(diff(n.a,v), n.b), mul(n.a, diff(n.b,v))), powN(n.b, NUM(2)));
+      break;
+    case "pow": {
+      const da = diff(n.a, v);
+      if(n.b.t === "num") return mul(mul(NUM(n.b.v), powN(n.a, NUM(n.b.v - 1))), da);
+      const db = diff(n.b, v);
+      return mul(n, add(mul(db, { t:"call", n:"ln", a:[n.a] }), div(mul(n.b, da), n.a)));
+    }
+    case "call": {
+      const u = n.a[0], du = diff(u, v);
+      const C = (name, arg) => ({ t:"call", n:name, a:[arg] });
+      switch(n.n){
+        case "ln": case "log":  return div(du, u);
+        case "log10":           return div(du, mul(u, NUM(Math.LN10)));
+        case "exp":             return mul(n, du);
+        case "sqrt":            return div(du, mul(NUM(2), n));
+        case "sin":             return mul(C("cos", u), du);
+        case "cos":             return { t:"neg", a:mul(C("sin", u), du) };
+        case "sinh":            return mul(C("cosh", u), du);
+        case "cosh":            return mul(C("sinh", u), du);
+        case "tanh":            return div(du, powN(C("cosh", u), NUM(2)));
+        case "tan":             return div(du, powN(C("cos", u), NUM(2)));
+        case "atan":            return div(du, add(NUM(1), powN(u, NUM(2))));
+        case "pow":             return diff({ t:"pow", a:n.a[0], b:n.a[1] }, v);
+        default: throw new NonDifferentiable(n.n);   /* min, max, abs, atan2 */
+      }
+    }
+  }
+  throw new Error("diff");
+}
+
+/* Builds f and everything differentiated from it. The five second-order
+   partials are wanted for the second-derivative test; f_xy and f_yx are both
+   computed and their agreement is what the mixed-partials readout reports. */
+function buildField(src){
+  const ast = parse(src);
+  const f = compile(ast);
+  let fx, fy, fxx, fyy, fxy, fyx, exact = true;
+  try{
+    const ax = diff(ast, "x"), ay = diff(ast, "y");
+    fx = compile(ax); fy = compile(ay);
+    fxx = compile(diff(ax, "x")); fyy = compile(diff(ay, "y"));
+    fxy = compile(diff(ax, "y")); fyx = compile(diff(ay, "x"));
+  }catch(err){
+    if(!(err instanceof NonDifferentiable)) throw err;
+    /* abs, min and max have kinks, which is exactly the case a student
+       exploring "where is this not differentiable" wants to reach. Central
+       differences answer everywhere the symbolic route cannot. */
+    exact = false;
+    const h = 1e-5;
+    fx  = (x,y) => (f(x+h,y) - f(x-h,y)) / (2*h);
+    fy  = (x,y) => (f(x,y+h) - f(x,y-h)) / (2*h);
+    fxx = (x,y) => (f(x+h,y) - 2*f(x,y) + f(x-h,y)) / (h*h);
+    fyy = (x,y) => (f(x,y+h) - 2*f(x,y) + f(x,y-h)) / (h*h);
+    fxy = fyx = (x,y) => (f(x+h,y+h) - f(x+h,y-h) - f(x-h,y+h) + f(x-h,y-h)) / (4*h*h);
+  }
+  return { src, ast, f, fx, fy, fxx, fyy, fxy, fyx, exact };
+}
+
+/* ==========================================================================
+   2. Small helpers
+   ========================================================================== */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const fin = Number.isFinite;
+function fmt(v, d = 3){
+  if(!fin(v)) return "—";
+  const a = Math.abs(v);
+  if(a !== 0 && (a < 1e-3 || a >= 1e5)) return v.toExponential(1);
+  const s = v.toFixed(d);
+  return s === "-" + (0).toFixed(d) ? (0).toFixed(d) : s;   /* no "-0.000" */
+}
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function niceStep(range, target){
+  const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+
+/* ==========================================================================
+   3. The function families
+   --------------------------------------------------------------------------
+   The three branches of the GeoGebra original: an affine plane, a quadratic,
+   and whatever the student types. The quadratic is the one that changed. The
+   original's g was fixed at 3 - 0.1x^2 - 0.1y^2 with no slider reaching it,
+   while the label beside it advertised a0 - a1 x^2 - a2 y^2 - a3 xy. This
+   implements the advertised formula, so a3 stops being a dead slider and one
+   family covers the dome, the trough, the ridge and the saddle.
+   ========================================================================== */
+/* A term whose coefficient is zero is not part of the function, and a
+   coefficient of one is not worth printing. */
+function poly(terms){
+  let out = "";
+  for(const [c, sym] of terms){
+    if(Math.abs(c) < 1e-12) continue;
+    const mag = Math.abs(c), unit = sym && Math.abs(mag - 1) < 1e-12;
+    const num = unit ? "" : String(+mag.toFixed(4));
+    out += out === "" ? (c < 0 ? "−" : "") : (c < 0 ? " − " : " + ");
+    out += num + (num && sym ? "·" : "") + sym;
+  }
+  return "f(x, y) = " + (out || "0");
+}
+
+const FAMS = {
+  quad:  { params:["a0","a1","a2","a3"],
+           src: s => `${s.a0}-(${s.a1})*x^2-(${s.a2})*y^2-(${s.a3})*x*y`,
+           show: s => poly([[s.a0,""], [-s.a1,"x²"], [-s.a2,"y²"], [-s.a3,"x·y"]]) },
+  plane: { params:["a0","a1","a2"],
+           src: s => `${s.a0}+(${s.a1})*x+(${s.a2})*y`,
+           show: s => poly([[s.a0,""], [s.a1,"x"], [s.a2,"y"]]) },
+  custom:{ params:[],
+           src: s => s.customSrc,
+           show: s => `f(x, y) = ${s.customSrc}` }
+};
+const FAM_KEYS = ["quad", "plane", "custom"];
+
+const PRESETS = ["x*y", "x^2-y^2", "sin(x)*cos(y)", "exp(-(x^2+y^2)/4)",
+                 "x^2*y", "sqrt(x^2+y^2)", "abs(x)+abs(y)"];
+
+/* Two axes of control, as the GeoGebra original had them: WHICH variable is
+   being differentiated (wrtX, wrtY — the file's BoolePartialX and
+   BoolePartialY), and WHAT is drawn for it. The plane, the trace, the
+   staircase and the tangent for one variable all switch together. */
+const LAYERS = {
+  wrtX:"#FF9E2C", wrtY:"#5AA9FF",
+  surface: "#7FD4E0", planes:null, traces:null, steps:"#6FD3A0",
+  tangents:null, tanplane:"#8CE2EC", grad:"#FFD24A", grid:null, axes:null
+};
+const LAYER_KEYS = ["wrtX","wrtY","surface","planes","traces","steps",
+                    "tangents","tanplane","grad","grid","axes"];
+
+/* Each variable owns a temperature — x warm, y cool — and within it the
+   tangent is the hotter sibling of the plane and the trace it belongs to. The
+   two tangent arrows leave the same point in the same shape, so sharing one
+   colour, as they did, made the one thing the panel is about unreadable. */
+const MK = {
+  surfTop:"#7FD4E0", point:"#C15CFF",
+  tanX:"#FF4D6D", tanY:"#6E7BFF",
+  secant:"#6FD3A0", run:"#8CE2EC", rise:"#6FD3A0", grad:"#FFD24A",
+  planeX:"#FF9E2C", planeY:"#5AA9FF", traceX:"#FF9E2C", traceY:"#5AA9FF",
+  tanPlane:"#8CE2EC", axis:"#7C8B93"
+};
+
+const st = {
+  fam:"quad", slice:"x",
+  a0:3, a1:0.1, a2:0.1, a3:0,
+  customSrc:"x*y", F:null,
+  pmode:"hand",
+  xP:1, yP:2,
+  dx:2, dy:1.5,
+  x0:-4, x1:4, y0:-4, y1:4,
+  layers:{ wrtX:true, wrtY:true, surface:true, planes:true, traces:true,
+           steps:true, tangents:true, tanplane:false, grad:false,
+           grid:true, axes:true }
+};
+let LANG = "es";
+
+/* the camera, and the box the world is normalised into */
+const view = { az: -0.72, el: 0.52, dist: 4.2, ortho:false, canonical:"iso",
+               dragging:false, N_IDLE:56, N_DRAG:30 };
+const VIEWS = {
+  iso:{ az:-0.72, el:0.52, ortho:false, dist:4.2 },
+  xz: { az:-Math.PI/2, el:0,          ortho:true },
+  yz: { az:0,          el:0,          ortho:true },
+  xy: { az:-Math.PI/2, el:Math.PI/2,  ortho:true }
+};
+
+/* ==========================================================================
+   4. The model
+   --------------------------------------------------------------------------
+   Everything the two panels draw comes from here, so the 3D view and the
+   slice cannot disagree about what the derivative is.
+   ========================================================================== */
+let MODEL = null, KEY = "";
+
+function srcOf(){ return FAMS[st.fam].src(st); }
+
+function ensureModel(){
+  const k = st.fam + "|" + srcOf();
+  if(k === KEY && MODEL) return;
+  try{ MODEL = buildField(srcOf()); KEY = k; }
+  catch(_){ MODEL = null; KEY = k; }
+}
+
+/* the range of f over the domain, used to scale the box and the colour ramp */
+function zRange(){
+  const M = MODEL; if(!M) return { lo:0, hi:1 };
+  let lo = Infinity, hi = -Infinity;
+  const N = 41;
+  for(let j = 0; j < N; j++) for(let i = 0; i < N; i++){
+    const x = st.x0 + (st.x1-st.x0)*i/(N-1), y = st.y0 + (st.y1-st.y0)*j/(N-1);
+    const v = M.f(x,y);
+    if(fin(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
+  }
+  if(!fin(lo) || !fin(hi)){ lo = 0; hi = 1; }
+  if(hi - lo < 1e-9){ hi = lo + 1; }
+  return { lo, hi };
+}
+
+function solve(){
+  const M = MODEL;
+  if(!M) return null;
+  const x = st.xP, y = st.yP;
+  const z = M.f(x,y);
+  const fx = M.fx(x,y), fy = M.fy(x,y);
+  const zx = M.f(x + st.dx, y), zy = M.f(x, y + st.dy);
+  /* the secant slopes: the whole point of the increments */
+  const sx = Math.abs(st.dx) > 1e-12 ? (zx - z)/st.dx : NaN;
+  const sy = Math.abs(st.dy) > 1e-12 ? (zy - z)/st.dy : NaN;
+  const fxx = M.fxx(x,y), fyy = M.fyy(x,y), fxy = M.fxy(x,y), fyx = M.fyx(x,y);
+  const D = fxx*fyy - fxy*fxy;
+  const gn = Math.hypot(fx, fy);
+  return { x, y, z, fx, fy, zx, zy, sx, sy, fxx, fyy, fxy, fyx, D, gn,
+           ex: fin(sx) && fin(fx) ? sx - fx : NaN,
+           ey: fin(sy) && fin(fy) ? sy - fy : NaN };
+}
+
+/* ==========================================================================
+   5. The 3D view
+   --------------------------------------------------------------------------
+   Painter's algorithm on canvas 2D. A height field over a rectangle sorts
+   exactly by centroid depth, so no depth buffer is needed and there is no
+   shader or context-loss failure mode to handle.
+
+   Surface quads and every overlay go into ONE list keyed by depth and are
+   painted far to near together. Drawing the overlays afterwards would put the
+   tangent vectors in front of a hill they are standing behind.
+   ========================================================================== */
+
+/* world box: x and y map to [-1,1], z to [-0.62, 0.62] */
+function boxOf(){
+  const zr = zRange();
+  const sx = 2/((st.x1-st.x0)||1), sy = 2/((st.y1-st.y0)||1);
+  const sz = 1.24/((zr.hi-zr.lo)||1);
+  return {
+    zr, sz,
+    X: x => (x - st.x0)*sx - 1,
+    Y: y => (y - st.y0)*sy - 1,
+    Z: z => (z - zr.lo)*sz - 0.62,
+    Xi: X => st.x0 + (X + 1)/sx,
+    Yi: Y => st.y0 + (Y + 1)/sy,
+    floor: -0.62
+  };
+}
+
+function camera(w, h){
+  const { az, el, dist, ortho } = view;
+  const tgt = [0, 0, 0];
+  const eye = [
+    tgt[0] + dist*Math.cos(el)*Math.cos(az),
+    tgt[1] + dist*Math.cos(el)*Math.sin(az),
+    tgt[2] + dist*Math.sin(el)
+  ];
+  const sub = (a,b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+  const norm = a => { const l = Math.hypot(a[0],a[1],a[2]) || 1; return [a[0]/l,a[1]/l,a[2]/l]; };
+  const cross = (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+  const f = norm(sub(tgt, eye));
+  /* looking straight down, world-up is parallel to the view direction and the
+     usual cross product collapses; swing the reference so the top view comes
+     out with x to the right and y up */
+  const ref = Math.abs(f[2]) > 0.999 ? [0,1,0] : [0,0,1];
+  const r = norm(cross(f, ref));
+  const up = cross(r, f);
+  const focal = 2.7, m = Math.min(w, h);
+  const scale = ortho ? m*0.38 : m*0.46;
+  return {
+    eye, f, r, up, focal, scale, ortho, w, h,
+    project(x,y,z){
+      const dx = x-eye[0], dy = y-eye[1], dz = z-eye[2];
+      const cz = dx*f[0] + dy*f[1] + dz*f[2];
+      const cx = dx*r[0] + dy*r[1] + dz*r[2];
+      const cy = dx*up[0] + dy*up[1] + dz*up[2];
+      if(ortho) return [w/2 + cx*scale, h/2 - cy*scale, cz];
+      const k = focal / Math.max(cz, 0.05) * scale;
+      return [w/2 + cx*k, h/2 - cy*k, cz];
+    },
+    ray(mx, my){
+      if(ortho){
+        const a = (mx - w/2)/scale, b = -(my - h/2)/scale;
+        return { o:[eye[0]+a*r[0]+b*up[0], eye[1]+a*r[1]+b*up[1], eye[2]+a*r[2]+b*up[2]],
+                 d:[f[0], f[1], f[2]] };
+      }
+      const a = (mx - w/2)/(focal*scale), b = -(my - h/2)/(focal*scale);
+      return { o:[eye[0],eye[1],eye[2]],
+               d:[a*r[0]+b*up[0]+f[0], a*r[1]+b*up[1]+f[1], a*r[2]+b*up[2]+f[2]] };
+    }
+  };
+}
+
+let MESH = null, MESHKEY = "";
+function buildMesh(n){
+  const B = boxOf();
+  const key = `${srcOf()}|${st.x0},${st.x1},${st.y0},${st.y1}|${n}`;
+  if(MESH && MESHKEY === key) return MESH;
+  const M = MODEL;
+  const px = new Float32Array(n*n), py = new Float32Array(n*n), pz = new Float32Array(n*n);
+  const hh = new Float32Array(n*n), ok = new Uint8Array(n*n);
+  for(let j = 0; j < n; j++) for(let i = 0; i < n; i++){
+    const x = st.x0 + (st.x1-st.x0)*i/(n-1), y = st.y0 + (st.y1-st.y0)*j/(n-1);
+    const v = M ? M.f(x,y) : NaN;
+    const k = j*n + i;
+    px[k] = B.X(x); py[k] = B.Y(y);
+    pz[k] = fin(v) ? clamp(B.Z(v), -1.1, 1.1) : 0;
+    hh[k] = fin(v) ? clamp((v - B.zr.lo)/((B.zr.hi-B.zr.lo)||1), 0, 1) : 0;
+    ok[k] = fin(v) ? 1 : 0;
+  }
+  MESH = { n, px, py, pz, hh, ok }; MESHKEY = key;
+  return MESH;
+}
+
+/* A cool-to-warm ramp. It stays legible in both themes and shares no hue with
+   the marks drawn on top of it. */
+function surfRGB(t){
+  t = clamp(t, 0, 1);
+  const stops = [[0.00,[ 38, 70,110]], [0.25,[ 42,120,145]], [0.50,[ 96,168,150]],
+                 [0.75,[206,178,110]], [1.00,[224,132, 96]]];
+  let a = stops[0], b = stops[stops.length-1];
+  for(let i = 0; i < stops.length-1; i++)
+    if(t >= stops[i][0] && t <= stops[i+1][0]){ a = stops[i]; b = stops[i+1]; break; }
+  const u = (t - a[0])/((b[0]-a[0])||1);
+  return [a[1][0]+(b[1][0]-a[1][0])*u, a[1][1]+(b[1][1]-a[1][1])*u, a[1][2]+(b[1][2]-a[1][2])*u];
+}
+
+/* ---- the primitive list ---------------------------------------------------
+   Everything drawn in 3D becomes an item {z, paint}. Quads take their
+   centroid depth; a polyline takes the depth of its NEAREST point and is
+   emitted as one item rather than segment by segment, because a cased line
+   split into segments has each casing overpaint its neighbour's core and
+   comes out beaded. */
+function scene3d(cam, S){
+  const B = boxOf(), items = [];
+  const P = (x,y,z) => cam.project(B.X(x), B.Y(y), B.Z(z));
+  const push = (z, paint) => items.push({ z, paint });
+
+  const line = (pts, col, wd, dash, cas) => {
+    const scr = pts.map(p => P(p[0], p[1], p[2]));
+    let near = Infinity;
+    for(const s of scr) if(s[2] < near) near = s[2];
+    if(!fin(near)) return;
+    push(near, ctx => {
+      ctx.setLineDash(dash || []); ctx.lineJoin = "round"; ctx.lineCap = "round";
+      const path = () => { ctx.beginPath(); ctx.moveTo(scr[0][0], scr[0][1]);
+        for(let i = 1; i < scr.length; i++) ctx.lineTo(scr[i][0], scr[i][1]); };
+      if(cas !== false){ path(); ctx.strokeStyle = CAS(); ctx.lineWidth = wd + 2.6; ctx.stroke(); }
+      path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  };
+  const arrow = (a, b, col, wd) => {
+    const A = P(a[0],a[1],a[2]), Bp = P(b[0],b[1],b[2]);
+    const near = Math.min(A[2], Bp[2]);
+    if(!fin(near)) return;
+    push(near, ctx => {
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      const ang = Math.atan2(Bp[1]-A[1], Bp[0]-A[0]);
+      const L = Math.hypot(Bp[0]-A[0], Bp[1]-A[1]);
+      const hd = clamp(L*0.22, 5, 13);
+      const head = () => { ctx.beginPath();
+        ctx.moveTo(Bp[0], Bp[1]);
+        ctx.lineTo(Bp[0]-hd*Math.cos(ang-0.42), Bp[1]-hd*Math.sin(ang-0.42));
+        ctx.lineTo(Bp[0]-hd*Math.cos(ang+0.42), Bp[1]-hd*Math.sin(ang+0.42));
+        ctx.closePath(); };
+      const shaft = () => { ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(Bp[0],Bp[1]); };
+      shaft(); ctx.strokeStyle = CAS(); ctx.lineWidth = wd+2.6; ctx.stroke();
+      head();  ctx.fillStyle   = CAS(); ctx.strokeStyle = CAS(); ctx.lineWidth = 2.6;
+      ctx.stroke(); ctx.fill();
+      shaft(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+      head();  ctx.fillStyle = col; ctx.fill();
+    });
+  };
+  const dot = (p, col, r) => {
+    const A = P(p[0],p[1],p[2]);
+    if(!fin(A[2])) return;
+    push(A[2] - 0.02, ctx => {
+      ctx.fillStyle = CAS();            ctx.beginPath(); ctx.arc(A[0],A[1],r+4,0,7); ctx.fill();
+      ctx.fillStyle = css("--surface"); ctx.beginPath(); ctx.arc(A[0],A[1],r+2,0,7); ctx.fill();
+      ctx.fillStyle = col;              ctx.beginPath(); ctx.arc(A[0],A[1],r,0,7); ctx.fill();
+    });
+  };
+
+  /* ---- floor grid and axes ---- */
+  if(st.layers.grid){
+    const g = css("--rule-2"), nx = 8;
+    for(let i = 0; i <= nx; i++){
+      const x = st.x0 + (st.x1-st.x0)*i/nx, y = st.y0 + (st.y1-st.y0)*i/nx;
+      line([[x, st.y0, B.zr.lo],[x, st.y1, B.zr.lo]], g, 1, null, false);
+      line([[st.x0, y, B.zr.lo],[st.x1, y, B.zr.lo]], g, 1, null, false);
+    }
+  }
+  if(st.layers.axes){
+    const a = MK.axis;
+    if(st.y0 <= 0 && st.y1 >= 0) line([[st.x0,0,B.zr.lo],[st.x1,0,B.zr.lo]], a, 1.4, null, false);
+    if(st.x0 <= 0 && st.x1 >= 0) line([[0,st.y0,B.zr.lo],[0,st.y1,B.zr.lo]], a, 1.4, null, false);
+  }
+
+  /* ---- the surface ---- */
+  if(MODEL){
+    const n = view.dragging ? view.N_DRAG : view.N_IDLE;
+    const M = buildMesh(n);
+    /* Edge on, the trace curve lies INSIDE the surface and the surface hides
+       it — which is the one thing the X-Z and Y-Z buttons exist to show. In
+       those views the surface is a backdrop for the slice, not the subject.
+
+       Switching the surface off does not remove it either. Everything else on
+       this panel is drawn ON the surface, and a tangent plane floating in an
+       empty box says nothing; what the reader wants is to see through it, not
+       to lose the thing being cut. So it drops to a ghost and the marks show
+       through. */
+    const sideOn = view.ortho && (view.canonical === "xz" || view.canonical === "yz");
+    const alpha = !st.layers.surface ? 0.14
+                : sideOn ? 0.3
+                : (st.layers.tanplane || st.layers.traces ? 0.86 : 1);
+    for(let j = 0; j < n-1; j++) for(let i = 0; i < n-1; i++){
+      const k00 = j*n+i, k10 = k00+1, k01 = k00+n, k11 = k01+1;
+      if(!(M.ok[k00] && M.ok[k10] && M.ok[k01] && M.ok[k11])) continue;
+      const a = cam.project(M.px[k00], M.py[k00], M.pz[k00]);
+      const b = cam.project(M.px[k10], M.py[k10], M.pz[k10]);
+      const c = cam.project(M.px[k11], M.py[k11], M.pz[k11]);
+      const d = cam.project(M.px[k01], M.py[k01], M.pz[k01]);
+      const zc = (a[2]+b[2]+c[2]+d[2])/4;
+      if(!fin(zc)) continue;
+      /* flat shading from the quad's own normal, so a dome reads as a dome */
+      const ux = M.px[k10]-M.px[k00], uy = M.py[k10]-M.py[k00], uz = M.pz[k10]-M.pz[k00];
+      const vx = M.px[k01]-M.px[k00], vy = M.py[k01]-M.py[k00], vz = M.pz[k01]-M.pz[k00];
+      let nx2 = uy*vz-uz*vy, ny2 = uz*vx-ux*vz, nz2 = ux*vy-uy*vx;
+      const nl = Math.hypot(nx2,ny2,nz2) || 1;
+      const lam = Math.abs((nx2*0.35 + ny2*0.22 + nz2*0.91)/nl);
+      const t = (M.hh[k00]+M.hh[k10]+M.hh[k01]+M.hh[k11])/4;
+      const rgb = surfRGB(t);
+      const sh = 0.55 + 0.55*lam;
+      const col = `rgba(${clamp(rgb[0]*sh,0,255)|0},${clamp(rgb[1]*sh,0,255)|0},${clamp(rgb[2]*sh,0,255)|0},${alpha})`;
+      push(zc, ctx => {
+        ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
+        ctx.lineTo(c[0],c[1]); ctx.lineTo(d[0],d[1]); ctx.closePath();
+        ctx.fillStyle = col; ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = 0.6; ctx.stroke();
+      });
+    }
+  }
+
+  if(!S) return items;
+  const { x, y, z, fx, fy, zx, zy } = S;
+  const sampleN = 120;
+
+  /* ---- the two cutting planes ---- */
+  if(st.layers.planes){
+    const drawPlane = (along) => {
+      const lo = B.zr.lo, hi = B.zr.hi;
+      const corners = along === "x"
+        ? [[st.x0,y,lo],[st.x1,y,lo],[st.x1,y,hi],[st.x0,y,hi]]
+        : [[x,st.y0,lo],[x,st.y1,lo],[x,st.y1,hi],[x,st.y0,hi]];
+      const q = corners.map(p => P(p[0],p[1],p[2]));
+      const zc = (q[0][2]+q[1][2]+q[2][2]+q[3][2])/4;
+      if(!fin(zc)) return;
+      const tint = along === "x" ? "255,158,44" : "90,169,255";
+      push(zc, ctx => {
+        ctx.beginPath(); ctx.moveTo(q[0][0],q[0][1]);
+        for(let i = 1; i < 4; i++) ctx.lineTo(q[i][0],q[i][1]);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(${tint},.10)`; ctx.fill();
+        ctx.strokeStyle = `rgba(${tint},.5)`; ctx.lineWidth = 1; ctx.stroke();
+      });
+    };
+    if(st.layers.wrtX) drawPlane("x");
+    if(st.layers.wrtY) drawPlane("y");
+  }
+
+  /* ---- the trace curves: the whole point of the applet ---- */
+  if(st.layers.traces && MODEL){
+    const tx = [], ty = [];
+    for(let i = 0; i <= sampleN; i++){
+      const u = st.x0 + (st.x1-st.x0)*i/sampleN, v = MODEL.f(u, y);
+      if(fin(v)) tx.push([u, y, v]);
+      const w = st.y0 + (st.y1-st.y0)*i/sampleN, v2 = MODEL.f(x, w);
+      if(fin(v2)) ty.push([x, w, v2]);
+    }
+    if(st.layers.wrtX && tx.length > 1) line(tx, MK.traceX, 3);
+    if(st.layers.wrtY && ty.length > 1) line(ty, MK.traceY, 3);
+  }
+
+  /* ---- the tangent plane ---- */
+  if(st.layers.tanplane && fin(z) && fin(fx) && fin(fy)){
+    const r = Math.min(st.x1-st.x0, st.y1-st.y0)*0.3;
+    const cor = [[-r,-r],[r,-r],[r,r],[-r,r]].map(([u,v]) =>
+      P(x+u, y+v, z + fx*u + fy*v));
+    const zc = (cor[0][2]+cor[1][2]+cor[2][2]+cor[3][2])/4;
+    if(fin(zc)) push(zc, ctx => {
+      ctx.beginPath(); ctx.moveTo(cor[0][0],cor[0][1]);
+      for(let i = 1; i < 4; i++) ctx.lineTo(cor[i][0],cor[i][1]);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(140,226,236,.20)"; ctx.fill();
+      ctx.strokeStyle = MK.tanPlane; ctx.lineWidth = 1.4; ctx.stroke();
+    });
+  }
+
+  /* ---- the finite-difference staircase ----
+     run along the axis at constant height, then rise to the surface. The
+     secant is the hypotenuse, and its slope is what the readout calls
+     delta f / delta x. */
+  if(st.layers.steps && fin(z)){
+    if(st.layers.wrtX && fin(zx) && Math.abs(st.dx) > 1e-9){
+      line([[x,y,z],[x+st.dx,y,z]], MK.run, 2, [5,4]);
+      line([[x+st.dx,y,z],[x+st.dx,y,zx]], MK.rise, 2, [5,4]);
+      arrow([x,y,z],[x+st.dx,y,zx], MK.secant, 2.4);
+      dot([x+st.dx,y,zx], MK.secant, 3.6);
+    }
+    if(st.layers.wrtY && fin(zy) && Math.abs(st.dy) > 1e-9){
+      line([[x,y,z],[x,y+st.dy,z]], MK.run, 2, [5,4]);
+      line([[x,y+st.dy,z],[x,y+st.dy,zy]], MK.rise, 2, [5,4]);
+      arrow([x,y,z],[x,y+st.dy,zy], MK.secant, 2.4);
+      dot([x,y+st.dy,zy], MK.secant, 3.6);
+    }
+  }
+
+  /* ---- the tangent directions, drawn at the size of the derivative ----
+     The direction is the true tangent, (1, 0, f_x) and (0, 1, f_y), so the
+     arrow never reverses and never collapses. The LENGTH carries the size of
+     the derivative, through a tanh that saturates, so a slope of 40 draws a
+     long arrow rather than one off the edge of the panel.
+
+     Measured in the normalised box, because that is what gets projected:
+     fixing the run alone — which is what unit-run vectors do — leaves the
+     rise proportional to the slope and therefore unbounded, and a partial of
+     30 would still have thrown the head out of the picture. And the floor of
+     0.35 keeps a visible flat arrow where the derivative is zero, which is the
+     one place a student most wants to see one. The original scaled them by
+     f_x and f_y themselves, so the arrow reversed with the sign and vanished
+     at a critical point. */
+  const SXb = 2/((st.x1-st.x0)||1), SYb = 2/((st.y1-st.y0)||1);
+  const boxLen = v => 0.62*(0.35 + 0.65*Math.tanh(Math.abs(v)/2.5));
+  /* the world step along (ux, uy) that gives the arrow that box length */
+  const vstep = (ux, uy, slope, mag) =>
+    boxLen(mag)/(Math.hypot(ux*SXb, uy*SYb, slope*B.sz) || 1);
+
+  if(st.layers.tangents && fin(z) && fin(fx) && fin(fy)){
+    if(st.layers.wrtX){
+      const k = vstep(1, 0, fx, fx);
+      arrow([x,y,z], [x+k, y, z+fx*k], MK.tanX, 2.6);
+    }
+    if(st.layers.wrtY){
+      const k = vstep(0, 1, fy, fy);
+      arrow([x,y,z], [x, y+k, z+fy*k], MK.tanY, 2.6);
+    }
+  }
+
+  /* ---- the gradient, on the floor where it lives ---- */
+  if(st.layers.grad && fin(fx) && fin(fy)){
+    const g = Math.hypot(fx, fy);
+    if(g > 1e-9){
+      const ux = fx/g, uy = fy/g;
+      /* the same saturating length, so the three vectors can be compared */
+      const kf = vstep(ux, uy, 0, g);
+      arrow([x, y, B.zr.lo], [x + ux*kf, y + uy*kf, B.zr.lo], MK.grad, 2.6);
+      line([[x,y,B.zr.lo],[x,y,z]], MK.grad, 1, [2,4]);
+      /* the same direction lifted onto the tangent plane: the way uphill */
+      const kl = vstep(ux, uy, g, g);
+      arrow([x,y,z], [x + ux*kl, y + uy*kl, z + g*kl], MK.grad, 2.2);
+    }
+  }
+
+  if(fin(z)){
+    line([[x,y,B.zr.lo],[x,y,z]], MK.point, 1, [2,4]);
+    dot([x,y,z], MK.point, 5);
+  }
+  return items;
+}
+
+const CAS = () => document.documentElement.getAttribute("data-theme") === "light"
+              ? "rgba(255,255,255,.85)" : "rgba(6,9,14,.62)";
+
+function setupCanvas(cv){
+  const dpr = Math.min(devicePixelRatio||1, 2), r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if(cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+  return { ctx, w, h };
+}
+
+function drawSurface(S){
+  const cv = $("cSurface");
+  const { ctx, w, h } = setupCanvas(cv);
+  if(!MODEL){
+    ctx.fillStyle = css("--ink-3"); ctx.font = `13px ${css("--f-ui")}`;
+    ctx.textAlign = "center"; ctx.fillText(T().errParse, w/2, h/2);
+    return;
+  }
+  const cam = camera(w, h);
+  const items = scene3d(cam, S);
+  items.sort((a,b) => b.z - a.z);          /* far to near */
+  for(const it of items) it.paint(ctx);
+
+  /* axis letters, painted last: they are labels on the picture, not in it */
+  if(st.layers.axes){
+    const B = boxOf();
+    ctx.font = `italic 13px ${css("--f-display")}`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const lab = (p, s) => {
+      const q = cam.project(B.X(p[0]), B.Y(p[1]), B.Z(p[2]));
+      if(!fin(q[2]) || q[2] <= 0.05) return;
+      ctx.lineWidth = 3.5; ctx.strokeStyle = css("--surface"); ctx.strokeText(s, q[0], q[1]);
+      ctx.fillStyle = css("--ink-2"); ctx.fillText(s, q[0], q[1]);
+    };
+    lab([st.x1, st.y0, B.zr.lo], "x");
+    lab([st.x0, st.y1, B.zr.lo], "y");
+    lab([st.x0, st.y0, B.zr.hi], "z");
+  }
+}
+
+/* Ray-march the pointer ray against the height field, then bisect. Crossings
+   count in both directions, because in a side projection the ray runs level
+   with the terrain and can surface from underneath it. */
+function pick3d(mx, my, w, h){
+  if(!MODEL) return null;
+  const cam = camera(w, h), B = boxOf();
+  const { o, d } = cam.ray(mx, my);
+  const dl = Math.hypot(d[0],d[1],d[2]) || 1;
+  const dir = [d[0]/dl, d[1]/dl, d[2]/dl];
+  const gap = t => {
+    const wx = o[0]+dir[0]*t, wy = o[1]+dir[1]*t, wz = o[2]+dir[2]*t;
+    if(wx < -1.02 || wx > 1.02 || wy < -1.02 || wy > 1.02) return null;
+    const v = MODEL.f(B.Xi(wx), B.Yi(wy));
+    if(!fin(v)) return null;
+    return wz - clamp(B.Z(v), -1.1, 1.1);
+  };
+  let prev = null, prevT = 0;
+  const T0 = Math.max(0.05, cam.ortho ? 0.05 : 0.2), T1 = view.dist + 3;
+  const steps = 320;
+  for(let i = 0; i <= steps; i++){
+    const t = T0 + (T1-T0)*i/steps;
+    const g = gap(t);
+    if(g !== null && prev !== null && ((prev > 0) !== (g > 0))){
+      let a = prevT, b = t;
+      for(let k = 0; k < 40; k++){
+        const m = (a+b)/2, gm = gap(m);
+        if(gm === null) break;
+        if((gap(a) > 0) === (gm > 0)) a = m; else b = m;
+      }
+      const t2 = (a+b)/2;
+      const wx = o[0]+dir[0]*t2, wy = o[1]+dir[1]*t2;
+      return [clamp(B.Xi(wx), st.x0, st.x1), clamp(B.Yi(wy), st.y0, st.y1)];
+    }
+    if(g !== null){ prev = g; prevT = t; }
+  }
+  return null;
+}
+
+/* ==========================================================================
+   6. The slice
+   --------------------------------------------------------------------------
+   The original applet only ever drew the 3D view, so the trace curve stayed a
+   wire in space and the student never met it as what it actually is: an
+   ordinary function of one variable, with an ordinary derivative. This panel
+   draws exactly that, with the secant and the tangent on it.
+   ========================================================================== */
+function plot2d(cv, xmin, xmax, ymin, ymax, xlab, ylab){
+  const { ctx, w, h } = setupCanvas(cv);
+  const P = { l:52, r:22, t:16, b:34 };
+  const bx = { x0:P.l, y0:P.t, x1:w-P.r, y1:h-P.b };
+  const sx = (xmax-xmin)||1, sy = (ymax-ymin)||1;
+  const SXr = v => bx.x0 + ((v-xmin)/sx)*(bx.x1-bx.x0);
+  const SYr = v => bx.y1 - ((v-ymin)/sy)*(bx.y1-bx.y0);
+  const SX = v => clamp(SXr(v), bx.x0-4e4, bx.x1+4e4);
+  const SY = v => clamp(SYr(v), bx.y0-4e4, bx.y1+4e4);
+
+  const gx = niceStep(sx, 7), gy = niceStep(sy, 5);
+  const gx0 = Math.ceil((xmin-1e-9)/gx)*gx, gy0 = Math.ceil((ymin-1e-9)/gy)*gy;
+  if(st.layers.grid){
+    ctx.strokeStyle = css("--rule-2"); ctx.lineWidth = 1; ctx.beginPath();
+    for(let v=gx0; v<xmax-1e-9; v+=gx) if(v>xmin+1e-9){ ctx.moveTo(SXr(v),bx.y0); ctx.lineTo(SXr(v),bx.y1); }
+    for(let v=gy0; v<ymax-1e-9; v+=gy) if(v>ymin+1e-9){ ctx.moveTo(bx.x0,SYr(v)); ctx.lineTo(bx.x1,SYr(v)); }
+    ctx.stroke();
+  }
+  const ax = SYr(clamp(0, ymin, ymax)), ay = SXr(clamp(0, xmin, xmax));
+  ctx.strokeStyle = css("--rule"); ctx.lineWidth = 1; ctx.beginPath();
+  ctx.moveTo(ay,bx.y0); ctx.lineTo(ay,bx.y1); ctx.moveTo(bx.x0,ax); ctx.lineTo(bx.x1,ax); ctx.stroke();
+
+  ctx.fillStyle = css("--ink-3"); ctx.font = `11px ${css("--f-mono")}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for(let v=gx0; v<=xmax+1e-9; v+=gx) ctx.fillText(fmt(v, gx<1?1:0), SXr(v), bx.y1+6);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for(let v=gy0; v<=ymax+1e-9; v+=gy) ctx.fillText(fmt(v, gy<1?1:0), bx.x0-6, SYr(v));
+  ctx.fillStyle = css("--ink-2"); ctx.font = `italic 13px ${css("--f-display")}`;
+  ctx.textAlign = "right"; ctx.textBaseline = "top"; ctx.fillText(xlab, bx.x1, bx.y1+16);
+  ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(ylab, bx.x0-44, bx.y0-2);
+  return { ctx, bx, SX, SY, w, h, xmin, xmax, ymin, ymax };
+}
+function poly2(ctx, pts, col, wd, dash){
+  if(pts.length < 2) return;
+  ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.setLineDash(dash || []);
+  const path = () => { ctx.beginPath(); let pen = false;
+    for(const p of pts){ if(!p){ pen = false; continue; }
+      if(!pen){ ctx.moveTo(p[0],p[1]); pen = true; } else ctx.lineTo(p[0],p[1]); } };
+  path(); ctx.strokeStyle = CAS(); ctx.lineWidth = wd+2.6; ctx.stroke();
+  path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+  ctx.setLineDash([]);
+}
+function dot2(ctx, X, Y, col, r){
+  r = r || 4.5;
+  ctx.fillStyle = CAS();             ctx.beginPath(); ctx.arc(X,Y,r+4,0,7); ctx.fill();
+  ctx.fillStyle = css("--surface");  ctx.beginPath(); ctx.arc(X,Y,r+2,0,7); ctx.fill();
+  ctx.fillStyle = col;               ctx.beginPath(); ctx.arc(X,Y,r,0,7); ctx.fill();
+}
+
+function drawSlice(S){
+  const cv = $("cSlice");
+  if(!MODEL || !S){ const {ctx,w,h} = setupCanvas(cv);
+    ctx.fillStyle = css("--ink-3"); ctx.font = `13px ${css("--f-ui")}`;
+    ctx.textAlign = "center"; ctx.fillText(T().errParse, w/2, h/2); return; }
+
+  const t = T(), alongX = st.slice === "x";
+  const tanCol = alongX ? MK.tanX : MK.tanY;
+  const u0 = alongX ? st.x0 : st.y0, u1 = alongX ? st.x1 : st.y1;
+  const uP = alongX ? S.x : S.y, du = alongX ? st.dx : st.dy;
+  const slope = alongX ? S.fx : S.fy, sec = alongX ? S.sx : S.sy;
+  const g = alongX ? (u => MODEL.f(u, S.y)) : (u => MODEL.f(S.x, u));
+
+  /* the frame follows the curve over the domain, plus the secant's far end */
+  let lo = Infinity, hi = -Infinity;
+  const N = 240, pts = [];
+  for(let i = 0; i <= N; i++){
+    const u = u0 + (u1-u0)*i/N, v = g(u);
+    if(fin(v)){ pts.push([u,v]); if(v < lo) lo = v; if(v > hi) hi = v; } else pts.push(null);
+  }
+  const far = g(uP + du);
+  if(fin(far)){ lo = Math.min(lo, far); hi = Math.max(hi, far); }
+  if(!fin(lo) || !fin(hi)){ lo = 0; hi = 1; }
+  const pad = ((hi-lo)||1)*0.12;
+  const V = plot2d(cv, u0, u1, lo-pad, hi+pad,
+                   alongX ? "x" : "y",
+                   alongX ? "f(x, y\u209A)" : "f(x\u209A, y)");
+  const ctx = V.ctx;
+  ctx.save(); ctx.beginPath();
+  ctx.rect(V.bx.x0, V.bx.y0, V.bx.x1-V.bx.x0, V.bx.y1-V.bx.y0); ctx.clip();
+
+  /* the run and the rise, as a right triangle under the secant */
+  if(st.layers.steps && fin(S.z) && fin(far) && Math.abs(du) > 1e-9){
+    ctx.fillStyle = "rgba(111,211,160,.16)";
+    ctx.beginPath();
+    ctx.moveTo(V.SX(uP), V.SY(S.z));
+    ctx.lineTo(V.SX(uP+du), V.SY(S.z));
+    ctx.lineTo(V.SX(uP+du), V.SY(far));
+    ctx.closePath(); ctx.fill();
+    poly2(ctx, [[V.SX(uP),V.SY(S.z)],[V.SX(uP+du),V.SY(S.z)]], MK.run, 2, [5,4]);
+    poly2(ctx, [[V.SX(uP+du),V.SY(S.z)],[V.SX(uP+du),V.SY(far)]], MK.rise, 2, [5,4]);
+  }
+
+  /* the curve */
+  poly2(ctx, pts.map(p => p && [V.SX(p[0]), V.SY(p[1])]),
+        alongX ? MK.traceX : MK.traceY, 3);
+
+  /* the secant, drawn right across the frame so its slope can be read */
+  if(st.layers.steps && fin(sec) && fin(S.z)){
+    const a = [u0, S.z + sec*(u0-uP)], b = [u1, S.z + sec*(u1-uP)];
+    poly2(ctx, [[V.SX(a[0]),V.SY(a[1])],[V.SX(b[0]),V.SY(b[1])]], MK.secant, 2, [7,5]);
+  }
+  /* the tangent */
+  if(st.layers.tangents && fin(slope) && fin(S.z)){
+    const a = [u0, S.z + slope*(u0-uP)], b = [u1, S.z + slope*(u1-uP)];
+    poly2(ctx, [[V.SX(a[0]),V.SY(a[1])],[V.SX(b[0]),V.SY(b[1])]], tanCol, 2.6);
+  }
+  if(st.layers.steps && fin(far) && Math.abs(du) > 1e-9)
+    dot2(ctx, V.SX(uP+du), V.SY(far), MK.secant, 4);
+  if(fin(S.z)) dot2(ctx, V.SX(uP), V.SY(S.z), MK.point, 5);
+  ctx.restore();
+
+  /* the two slopes, written where they are drawn */
+  ctx.font = `600 11px ${css("--f-mono")}`;
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  const tag = (s, col, yy) => {
+    ctx.lineWidth = 3.5; ctx.strokeStyle = css("--surface"); ctx.strokeText(s, V.bx.x0+6, yy);
+    ctx.fillStyle = col; ctx.fillText(s, V.bx.x0+6, yy);
+  };
+  if(st.layers.tangents && fin(slope)) tag(`${t.sTan} ${fmt(slope,3)}`, tanCol, V.bx.y0+12);
+  if(st.layers.steps && fin(sec))      tag(`${t.sSec} ${fmt(sec,3)}`,  MK.secant, V.bx.y0+28);
+}
+
+/* ==========================================================================
+   7. Readouts and the verdict
+   ========================================================================== */
+function rows(el, list){
+  el.innerHTML = list.map(([lab,val,cls]) =>
+    '<div class="ro"><div class="lab">'+lab+'</div><div class="val '+(cls||"")+'">'+val+'</div></div>').join("");
+}
+
+/* The second-derivative test, run on exact second partials wherever the
+   expression is differentiable twice. */
+function classify(S){
+  const t = 1e-4;
+  if(!S || !MODEL || !fin(S.z)) return "Err";
+  /* f is defined here but its derivative is not: the apex of a cone is the
+     standard case, and it is a different situation from a broken expression. */
+  if(!fin(S.fx) || !fin(S.fy)) return "NoDeriv";
+  if(st.fam === "plane" || (st.fam === "quad" && Math.abs(st.a1) < 1e-9 &&
+      Math.abs(st.a2) < 1e-9 && Math.abs(st.a3) < 1e-9)) return "Linear";
+  if(Math.hypot(S.fx, S.fy) < t){
+    /* The second-derivative test needs second derivatives. Where the partials
+       came from central differences the second ones are a difference of
+       differences across a kink, which is noise; claiming a classification
+       from it would be inventing an answer. */
+    if(!MODEL.exact) return "CritNum";
+    if(!fin(S.D)) return "Crit";
+    if(S.D > 1e-9) return S.fxx < 0 ? "Max" : "Min";
+    if(S.D < -1e-9) return "Saddle";
+    return "Crit";
+  }
+  const rel = Math.max(
+    fin(S.ex) ? Math.abs(S.ex)/(Math.abs(S.fx)+0.5) : 0,
+    fin(S.ey) ? Math.abs(S.ey)/(Math.abs(S.fy)+0.5) : 0);
+  return rel > 0.08 ? "Far" : "Close";
+}
+
+function paint(S){
+  const t = T();
+  if(!MODEL || !S){ rows($("ro-surface"),[]); rows($("ro-slice"),[]); }
+  else{
+    rows($("ro-surface"), [
+      ["x<sub>P</sub>", fmt(S.x,2)],
+      ["y<sub>P</sub>", fmt(S.y,2)],
+      ["f(P)", fmt(S.z,3)],
+      ["∂f/∂x", fmt(S.fx,3)],
+      ["∂f/∂y", fmt(S.fy,3)],
+      ["‖∇f‖", fmt(S.gn,3), S.gn < 1e-4 ? "is-warn" : ""]
+    ]);
+    const alongX = st.slice === "x";
+    const sec = alongX ? S.sx : S.sy, slope = alongX ? S.fx : S.fy;
+    const err = alongX ? S.ex : S.ey, d = alongX ? st.dx : st.dy;
+    rows($("ro-slice"), [
+      [alongX ? "Δx" : "Δy", fmt(d,3)],
+      [t.roSec, fmt(sec,3)],
+      [t.roTan, fmt(slope,3)],
+      [t.roErr, fmt(err,3), fin(err) && Math.abs(err) < 1e-6 ? "is-good"
+                          : fin(err) && Math.abs(err) > 0.2 ? "is-warn" : ""],
+      ["f<sub>xy</sub>", MODEL.exact ? fmt(S.fxy,3) : "—"],
+      ["D", MODEL.exact ? fmt(S.D,3) : "—"]
+    ]);
+  }
+  const kind = classify(S);
+  const cls = { Linear:" is-good", Max:" is-good", Min:" is-good", Saddle:" is-warn",
+                Crit:" is-warn", CritNum:" is-warn", NoDeriv:" is-crit",
+                Far:" is-warn", Close:"", Err:" is-crit" }[kind] || "";
+  $("verdict").className = "verdict" + cls;
+  $("v-title").textContent = t["v"+kind];
+  $("v-text").textContent  = t["v"+kind+"T"];
+  $("fam-hint").textContent = t.famHint[st.fam];
+  $("layer-hint").textContent = t.layerHint;
+  $("pmode-hint").textContent = t.pmHint[st.pmode];
+  $("fam-formula").textContent = FAMS[st.fam].show(st) +
+    (MODEL && !MODEL.exact ? "\n" + t.numericNote : "");
+}
+
+function render(){
+  ensureModel();
+  const S = solve();
+  drawSurface(S);
+  drawSlice(S);
+  paint(S);
+}
+
+/* ==========================================================================
+   8. Strings
+   ========================================================================== */
+const STR = {
+es:{
+  docTitle:"Derivadas Parciales",
+  title:"Derivadas Parciales",
+  sub:"Una derivada parcial es la pendiente de la curva que queda al cortar la superficie con un plano que deja fija la otra variable. Esa rebanada, dibujada al lado, es una función de una sola variable.",
+  dark:"Oscuro", light:"Claro",
+  gFam:"Función", gCustom:"Expresión", gParams:"Parámetros", gPoint:"El punto P",
+  gDelta:"Incrementos", gDomain:"Dominio", gLayers:"Capas",
+  fams:{ quad:"Cuadrática", plane:"Plano", custom:"Personalizada" },
+  famHint:{
+    quad:"Un paraboloide con término cruzado. Con a₁ y a₂ del mismo signo es una cúpula o un cuenco; con signos opuestos, una silla de montar. a₃ la inclina.",
+    plane:"Un plano. Las dos parciales son constantes, el plano tangente es la propia función, y la secante coincide con la tangente para cualquier incremento, por grande que sea.",
+    custom:"Escriba f(x, y). Las parciales se derivan de forma simbólica, y también las segundas, así que el criterio del hessiano es exacto."
+  },
+  pmHand:"A mano", pmSlider:"Con deslizadores",
+  pmHint:{
+    hand:"Arrastre el punto morado sobre la superficie. Arrastrando fuera de él se gira la vista.",
+    slider:"El punto lo fijan los dos deslizadores. Arrastrarlo en la superficie queda desactivado."
+  },
+  shrink:"Δ → 0", resetD:"Restablecer",
+  deltaHint:"El incremento con el que se mide la pendiente por secante. Llévelo a cero y mire la secante caer sobre la tangente.",
+  layers:{ wrtX:"y fija: f(x, y<sub>P</sub>) → ∂f/∂x",
+           wrtY:"x fija: f(x<sub>P</sub>, y) → ∂f/∂y",
+           surface:"Superficie opaca", planes:"Planos de corte", traces:"Curvas de corte",
+           steps:"Variaciones (secante)", tangents:"Tangentes", tanplane:"Plano tangente",
+           grad:"Gradiente", grid:"Retícula", axes:"Ejes" },
+  layerHint:"Las dos primeras eligen respecto a qué variable se deriva; las demás, qué se dibuja para ella. Al apagar «Superficie opaca» la superficie no desaparece: queda translúcida, para ver a través de ella lo que está dibujado encima.",
+  vpSurface:"La superficie z = f(x, y)", vpSlice:"La rebanada",
+  sliceX:"y = y<sub>P</sub>", sliceY:"x = x<sub>P</sub>",
+  sTan:"tangente", sSec:"secante",
+  roSec:"Δf/Δ", roTan:"Derivada", roErr:"Error",
+  legSurface:"Superficie", legTraceX:"f(x, y\u209A)", legTraceY:"f(x\u209A, y)",
+  legSec:"Secante", legTan:"Tangente", legTanX:"∂f/∂x", legTanY:"∂f/∂y", legPoint:"P",
+  legCurve:"Curva de corte", legRun:"Δ (base)", legRise:"Δf (altura)",
+  numericNote:"Con abs, min o max no hay derivada simbólica: se usan diferencias centradas.",
+  vLinear:"El plano tangente es la función",
+  vLinearT:"Con una función lineal las dos parciales son constantes y no dependen del punto. La secante y la tangente coinciden exactamente para cualquier incremento: el error es cero por grande que sea Δ. Es el único caso en que aproximar por la tangente no cuesta nada, y por eso la aproximación lineal de cualquier otra función se mide contra éste.",
+  vMax:"Máximo local",
+  vMaxT:"Las dos parciales son cero y el criterio de la segunda derivada lo confirma: D = f_xx·f_yy − f_xy² > 0 con f_xx < 0. El plano tangente es horizontal y la superficie se curva hacia abajo en toda dirección.",
+  vMin:"Mínimo local",
+  vMinT:"Las dos parciales son cero y D > 0 con f_xx > 0. El plano tangente es horizontal y la superficie se curva hacia arriba en toda dirección.",
+  vSaddle:"Punto de silla",
+  vSaddleT:"Las dos parciales son cero, pero D < 0. Sube en una dirección y baja en otra, así que no es ni máximo ni mínimo. Que ambas parciales se anulen no basta: es exactamente el error que el criterio del hessiano existe para atrapar.",
+  vCrit:"Punto crítico, sin clasificar",
+  vCritT:"Las dos parciales se anulan, pero D ≈ 0 y el criterio de la segunda derivada no decide. Hace falta mirar más de cerca, o derivar una vez más.",
+  vFar:"La secante todavía no es la tangente",
+  vFarT:"Con este incremento la pendiente de la secante y la derivada no coinciden. La diferencia es el error de la aproximación lineal, y encoge con Δ. Pulse «Δ → 0» y mire la secante girar hasta apoyarse sobre la tangente.",
+  vClose:"La secante ya es casi la tangente",
+  vCloseT:"Con un incremento pequeño la pendiente de la secante y la derivada casi coinciden. Eso es lo que dice la definición: la derivada es el límite del cociente Δf/Δx cuando Δx tiende a cero.",
+  vCritNum:"Punto crítico, sin criterio disponible",
+  vCritNumT:"Las dos parciales se anulan, pero esta expresión tiene un quiebre y sus derivadas se estiman con diferencias centradas. Las segundas serían una diferencia de diferencias sobre el quiebre, es decir ruido, así que el criterio del hessiano no se aplica y D se deja en blanco en vez de inventar una clasificación.",
+  vNoDeriv:"Aquí no hay derivada",
+  vNoDeriv2:"",
+  vNoDerivT:"La función está definida en este punto, pero sus parciales no. Es el vértice de un cono: por mucho que se acerque el incremento, el cociente Δf/Δx no tiende a ningún número. Estar definida no implica ser derivable, y éste es el ejemplo con el que suele enseñarse.",
+  vErr:"Sin función",
+  vErrT:"La expresión no se entiende, o la función no está definida en este punto.",
+  errParse:"No se entiende la expresión.", errVars:"Sólo se admiten las variables x e y.",
+  foot:"Traducido del applet de GeoGebra «Partial Derivatives». Sintaxis: + − * / ^ ( ), sqrt ln log exp abs sin cos tan sinh cosh tanh atan min max, constantes e y pi. La multiplicación implícita funciona: 2xy = 2*x*y. Las parciales primeras y segundas se derivan de forma simbólica; con abs, min o max se pasa a diferencias centradas."
+},
+en:{
+  docTitle:"Partial Derivatives",
+  title:"Partial Derivatives",
+  sub:"A partial derivative is the slope of the curve left when you cut the surface with a plane that holds the other variable fixed. That slice, drawn beside it, is a function of one variable.",
+  dark:"Dark", light:"Light",
+  gFam:"Function", gCustom:"Expression", gParams:"Parameters", gPoint:"The point P",
+  gDelta:"Increments", gDomain:"Domain", gLayers:"Layers",
+  fams:{ quad:"Quadratic", plane:"Plane", custom:"Custom" },
+  famHint:{
+    quad:"A paraboloid with a cross term. With a₁ and a₂ of the same sign it is a dome or a bowl; with opposite signs, a saddle. a₃ tilts it.",
+    plane:"A plane. Both partials are constant, the tangent plane is the function itself, and the secant equals the tangent for any increment, however large.",
+    custom:"Type f(x, y). The partials are differentiated symbolically, and so are the second ones, so the Hessian test is exact."
+  },
+  pmHand:"By hand", pmSlider:"With sliders",
+  pmHint:{
+    hand:"Drag the purple point over the surface. Dragging anywhere else orbits the view.",
+    slider:"The point is set by the two sliders. Dragging it on the surface is switched off."
+  },
+  shrink:"Δ → 0", resetD:"Reset",
+  deltaHint:"The increment the secant slope is measured over. Take it to zero and watch the secant fall onto the tangent.",
+  layers:{ wrtX:"y fixed: f(x, y<sub>P</sub>) → ∂f/∂x",
+           wrtY:"x fixed: f(x<sub>P</sub>, y) → ∂f/∂y",
+           surface:"Opaque surface", planes:"Cutting planes", traces:"Trace curves",
+           steps:"Increments (secant)", tangents:"Tangents", tanplane:"Tangent plane",
+           grad:"Gradient", grid:"Grid", axes:"Axes" },
+  layerHint:"The first two choose which variable is being differentiated; the rest, what gets drawn for it. Switching off “Opaque surface” does not remove the surface: it goes translucent, so you can see through it to what is drawn on it.",
+  vpSurface:"The surface z = f(x, y)", vpSlice:"The slice",
+  sliceX:"y = y<sub>P</sub>", sliceY:"x = x<sub>P</sub>",
+  sTan:"tangent", sSec:"secant",
+  roSec:"Δf/Δ", roTan:"Derivative", roErr:"Error",
+  legSurface:"Surface", legTraceX:"f(x, y\u209A)", legTraceY:"f(x\u209A, y)",
+  legSec:"Secant", legTan:"Tangent", legTanX:"∂f/∂x", legTanY:"∂f/∂y", legPoint:"P",
+  legCurve:"Trace curve", legRun:"Δ (run)", legRise:"Δf (rise)",
+  numericNote:"With abs, min or max there is no symbolic derivative: central differences are used.",
+  vLinear:"The tangent plane is the function",
+  vLinearT:"With a linear function both partials are constant and do not depend on the point. Secant and tangent agree exactly for any increment: the error is zero however large Δ gets. It is the one case where approximating by the tangent costs nothing, which is why every other function's linear approximation is measured against it.",
+  vMax:"Local maximum",
+  vMaxT:"Both partials vanish and the second-derivative test confirms it: D = f_xx·f_yy − f_xy² > 0 with f_xx < 0. The tangent plane is horizontal and the surface curves downward in every direction.",
+  vMin:"Local minimum",
+  vMinT:"Both partials vanish and D > 0 with f_xx > 0. The tangent plane is horizontal and the surface curves upward in every direction.",
+  vSaddle:"Saddle point",
+  vSaddleT:"Both partials vanish, but D < 0. It rises in one direction and falls in another, so it is neither a maximum nor a minimum. Both partials vanishing is not enough — that is exactly the mistake the Hessian test exists to catch.",
+  vCrit:"Critical point, unclassified",
+  vCritT:"Both partials vanish, but D ≈ 0 and the second-derivative test does not decide. It needs a closer look, or one more derivative.",
+  vFar:"The secant is not the tangent yet",
+  vFarT:"At this increment the secant slope and the derivative do not agree. The difference is the error of the linear approximation, and it shrinks with Δ. Press “Δ → 0” and watch the secant swing until it lies on the tangent.",
+  vClose:"The secant is nearly the tangent",
+  vCloseT:"At a small increment the secant slope and the derivative almost agree. That is what the definition says: the derivative is the limit of the quotient Δf/Δx as Δx goes to zero.",
+  vCritNum:"Critical point, no test available",
+  vCritNumT:"Both partials vanish, but this expression has a kink and its derivatives are estimated by central differences. The second ones would be a difference of differences across the kink — noise — so the Hessian test does not apply, and D is left blank rather than inventing a classification.",
+  vNoDeriv:"There is no derivative here",
+  vNoDeriv2:"",
+  vNoDerivT:"The function is defined at this point but its partials are not. This is the apex of a cone: however small the increment gets, the quotient Δf/Δx approaches no number at all. Being defined does not make a function differentiable, and this is the example that is usually taught with.",
+  vErr:"No function",
+  vErrT:"The expression does not parse, or the function is undefined at this point.",
+  errParse:"That expression does not parse.", errVars:"Only the variables x and y are allowed.",
+  foot:"Translated from the GeoGebra applet “Partial Derivatives”. Syntax: + − * / ^ ( ), sqrt ln log exp abs sin cos tan sinh cosh tanh atan min max, constants e and pi. Implicit multiplication works: 2xy = 2*x*y. First and second partials are differentiated symbolically; with abs, min or max it falls back to central differences."
+}};
+const T = () => STR[LANG];
+
+/* ==========================================================================
+   9. Controls
+   ========================================================================== */
+function readCustom(){
+  const t = T();
+  if(st.fam !== "custom"){ $("f-err").textContent = ""; return; }
+  const src = $("f-expr").value.trim();
+  try{
+    buildField(src);
+    st.customSrc = src; KEY = "";
+    $("f-expr").setAttribute("aria-invalid","false"); $("f-err").textContent = "";
+  }catch(err){
+    $("f-expr").setAttribute("aria-invalid","true");
+    $("f-err").textContent = /unknown/i.test(err.message) ? t.errVars : t.errParse;
+  }
+}
+function buildFams(){
+  const t = T();
+  $("fams").innerHTML = FAM_KEYS.map((k,i) =>
+    '<button type="button" data-fam="'+k+'" aria-pressed="'+(k===st.fam)+'">'+
+    '<span class="n">'+(i+1)+'</span><span>'+t.fams[k]+'</span></button>').join("");
+  $("fams").querySelectorAll("[data-fam]").forEach(b => b.addEventListener("click", () => {
+    st.fam = b.dataset.fam; KEY = "";
+    buildFams(); syncParams(); readCustom(); render();
+  }));
+}
+function buildPresets(){
+  $("presets").innerHTML = PRESETS.map(p =>
+    '<button type="button" class="chip" data-p="'+p+'" aria-pressed="'+(p===st.customSrc)+'">'+p+'</button>').join("");
+  $("presets").querySelectorAll("[data-p]").forEach(b => b.addEventListener("click", () => {
+    $("f-expr").value = b.dataset.p; readCustom(); buildPresets(); render();
+  }));
+}
+function buildLayers(){
+  const t = T();
+  $("layers").innerHTML = LAYER_KEYS.map(k => {
+    const c = LAYERS[k];
+    return '<label class="check"><input type="checkbox" data-l="'+k+'" '+(st.layers[k]?"checked":"")+'>'+
+      (c ? '<i class="swatch" style="background:'+c+'"></i>' : '') +
+      '<span>'+t.layers[k]+'</span></label>';
+  }).join("");
+  $("layers").querySelectorAll("input").forEach(cb => cb.addEventListener("change", () => {
+    const k = cb.dataset.l;
+    st.layers[k] = cb.checked;
+    /* the slice panel should not go on drawing a coordinate function the
+       surface panel has just been told to stop showing */
+    if(!cb.checked && k === "wrtX" && st.slice === "x" && st.layers.wrtY) setSlice("y");
+    if(!cb.checked && k === "wrtY" && st.slice === "y" && st.layers.wrtX) setSlice("x");
+    render();
+  }));
+}
+function buildLegends(){
+  const t = T();
+  const leg = (c,l) => '<span><i style="background:'+c+'"></i>'+l+'</span>';
+  $("legend-surface").innerHTML =
+    leg(MK.traceX, t.legTraceX) + leg(MK.traceY, t.legTraceY) +
+    leg(MK.secant, t.legSec) +
+    leg(MK.tanX, t.legTanX) + leg(MK.tanY, t.legTanY) + leg(MK.point, t.legPoint);
+  $("legend-slice").innerHTML =
+    leg(st.slice === "x" ? MK.traceX : MK.traceY, t.legCurve) +
+    leg(MK.run, t.legRun) + leg(MK.rise, t.legRise) +
+    leg(MK.secant, t.legSec) +
+    leg(st.slice === "x" ? MK.tanX : MK.tanY, t.legTan);
+}
+function syncParams(){
+  const on = new Set(FAMS[st.fam].params);
+  document.querySelectorAll(".slider-row[data-p]").forEach(r => { r.hidden = !on.has(r.dataset.p); });
+  $("g-params").hidden = on.size === 0;
+  $("g-custom").hidden = st.fam !== "custom";
+}
+function bind(id, key, after){
+  const s = $(id), b = $(id+"-v");
+  const set = v => {
+    v = parseFloat(v); if(!fin(v)) return;
+    v = clamp(v, parseFloat(s.min), parseFloat(s.max));
+    st[key] = v; s.value = v; b.value = +v.toFixed(3);
+    KEY = ""; MESHKEY = "";
+    if(after) after();
+    render();
+  };
+  s.addEventListener("input", () => set(s.value));
+  b.addEventListener("change", () => set(b.value));
+  b.value = st[key]; s.value = st[key];
+}
+/* The domain is a rectangle, so the low end must stay below the high one and
+   the point must stay inside whatever is left. */
+function clampDomain(){
+  if(st.x1 - st.x0 < 1){ st.x1 = st.x0 + 1; $("x1").value = st.x1; $("x1-v").value = st.x1; }
+  if(st.y1 - st.y0 < 1){ st.y1 = st.y0 + 1; $("y1").value = st.y1; $("y1-v").value = st.y1; }
+  setP(clamp(st.xP, st.x0, st.x1), clamp(st.yP, st.y0, st.y1));
+}
+function setP(x, y){
+  st.xP = clamp(x, st.x0, st.x1); st.yP = clamp(y, st.y0, st.y1);
+  const sx = $("xP"), sy = $("yP");
+  sx.min = st.x0; sx.max = st.x1; sy.min = st.y0; sy.max = st.y1;
+  sx.value = st.xP; sy.value = st.yP;
+  $("xP-v").value = +st.xP.toFixed(2); $("yP-v").value = +st.yP.toFixed(2);
+}
+
+/* The Δ → 0 animation. It is the demonstration the applet exists for, so it
+   runs on a clock rather than asking the student to drag two sliders down in
+   step and notice what happens on the way. */
+let shrinking = 0;
+function shrinkDelta(){
+  if(shrinking){ cancelAnimationFrame(shrinking); shrinking = 0; return; }
+  const x0 = st.dx, y0 = st.dy, t0 = performance.now(), dur = 1700;
+  const step = now => {
+    const u = clamp((now - t0)/dur, 0, 1);
+    /* geometric, not linear: the interesting part of the approach to zero is
+       the last decade, and a linear ramp spends almost no time there */
+    const k = Math.pow(0.004, u);
+    st.dx = x0*k; st.dy = y0*k;
+    $("dx").value = st.dx; $("dx-v").value = +st.dx.toFixed(3);
+    $("dy").value = st.dy; $("dy-v").value = +st.dy.toFixed(3);
+    render();
+    shrinking = u < 1 ? requestAnimationFrame(step) : 0;
+  };
+  shrinking = requestAnimationFrame(step);
+}
+
+function attachSurface(){
+  const cv = $("cSurface");
+  let mode = null, lastX = 0, lastY = 0;
+  const local = ev => {
+    const r = cv.getBoundingClientRect();
+    return [ev.clientX - r.left, ev.clientY - r.top, r.width, r.height];
+  };
+  cv.addEventListener("pointerdown", ev => {
+    const [mx,my,w,h] = local(ev);
+    cv.setPointerCapture(ev.pointerId);
+    /* grabbing the marker drags the point; anywhere else orbits */
+    const cam = camera(w,h), B = boxOf();
+    const S = solve();
+    let onPoint = false;
+    if(st.pmode === "hand" && S && fin(S.z)){
+      const p = cam.project(B.X(S.x), B.Y(S.y), B.Z(S.z));
+      onPoint = p[2] > 0.05 && Math.hypot(p[0]-mx, p[1]-my) < 20;
+    }
+    mode = onPoint ? "point" : "orbit";
+    lastX = ev.clientX; lastY = ev.clientY;
+    view.dragging = true;
+    if(mode === "point"){ const hit = pick3d(mx,my,w,h); if(hit) setP(hit[0], hit[1]); }
+    render();
+  });
+  cv.addEventListener("pointermove", ev => {
+    if(!mode) return;
+    if(mode === "orbit"){
+      view.az -= (ev.clientX - lastX)*0.008;
+      view.el = clamp(view.el + (ev.clientY - lastY)*0.006, -0.4, Math.PI/2);
+      lastX = ev.clientX; lastY = ev.clientY;
+      if(view.canonical){ view.canonical = null; syncViewButtons(); }
+    }else{
+      const [mx,my,w,h] = local(ev);
+      const hit = pick3d(mx,my,w,h); if(hit) setP(hit[0], hit[1]);
+    }
+    render();
+  });
+  const end = ev => {
+    if(!mode) return;
+    mode = null; view.dragging = false;
+    try{ cv.releasePointerCapture(ev.pointerId); }catch(_){}
+    render();
+  };
+  cv.addEventListener("pointerup", end);
+  cv.addEventListener("pointercancel", end);
+  cv.addEventListener("wheel", ev => {
+    ev.preventDefault();
+    view.dist = clamp(view.dist*(1 + Math.sign(ev.deltaY)*0.08), 2.0, 12);
+    render();
+  }, { passive:false });
+  cv.addEventListener("keydown", ev => {
+    let h = true;
+    if(ev.key === "ArrowLeft") view.az -= 0.08;
+    else if(ev.key === "ArrowRight") view.az += 0.08;
+    else if(ev.key === "ArrowUp") view.el = clamp(view.el + 0.06, -0.4, Math.PI/2);
+    else if(ev.key === "ArrowDown") view.el = clamp(view.el - 0.06, -0.4, Math.PI/2);
+    else if(ev.key === "+" || ev.key === "=") view.dist = clamp(view.dist*0.92, 2.0, 12);
+    else if(ev.key === "-") view.dist = clamp(view.dist*1.08, 2.0, 12);
+    else h = false;
+    if(h){ ev.preventDefault();
+      if(view.canonical){ view.canonical = null; syncViewButtons(); }
+      render(); }
+  });
+}
+function setSlice(which){
+  st.slice = which;
+  document.querySelectorAll("#slice-seg [data-sl]").forEach(o =>
+    o.setAttribute("aria-pressed", String(o.dataset.sl === which)));
+  buildLegends();
+}
+function syncViewButtons(){
+  document.querySelectorAll("#view-seg [data-view]").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.view === view.canonical)));
+}
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = LANG;
+  document.title = t.docTitle;
+  $("h-title").textContent = t.title; $("h-sub").textContent = t.sub;
+  document.querySelectorAll("[data-t]").forEach(el => {
+    const v = t[el.dataset.t]; if(v !== undefined) el.textContent = v;
+  });
+  $("vp-surface-title").textContent = t.vpSurface;
+  $("vp-slice-title").textContent = t.vpSlice;
+  document.querySelector("#slice-seg [data-sl=x]").innerHTML = t.sliceX;
+  document.querySelector("#slice-seg [data-sl=y]").innerHTML = t.sliceY;
+  $("th-dark").textContent = t.dark; $("th-light").textContent = t.light;
+  $("foot").textContent = t.foot;
+  $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
+  $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));
+  buildFams(); buildPresets(); buildLayers(); buildLegends(); syncParams(); readCustom(); render();
+  try{ localStorage.setItem("pd.lang", LANG); }catch(_){}
+}
+function setTheme(th){
+  document.documentElement.setAttribute("data-theme", th);
+  $("th-dark").setAttribute("aria-pressed", String(th==="dark"));
+  $("th-light").setAttribute("aria-pressed", String(th==="light"));
+  try{ localStorage.setItem("pd.theme", th); }catch(_){}
+  render();
+}
+
+["a0","a1","a2","a3"].forEach(id => bind(id, id));
+bind("dx","dx"); bind("dy","dy");
+bind("xP","xP", () => { st.xP = clamp(st.xP, st.x0, st.x1); });
+bind("yP","yP", () => { st.yP = clamp(st.yP, st.y0, st.y1); });
+["x0","x1","y0","y1"].forEach(id => bind(id, id, clampDomain));
+
+$("f-expr").addEventListener("input", () => { readCustom(); buildPresets(); render(); });
+$("f-expr").addEventListener("change", () => { readCustom(); buildPresets(); render(); });
+$("btn-shrink").addEventListener("click", shrinkDelta);
+$("btn-reset-d").addEventListener("click", () => {
+  if(shrinking){ cancelAnimationFrame(shrinking); shrinking = 0; }
+  st.dx = 2; st.dy = 1.5;
+  $("dx").value = 2; $("dx-v").value = 2; $("dy").value = 1.5; $("dy-v").value = 1.5;
+  render();
+});
+document.querySelectorAll("#pmode-seg [data-pm]").forEach(b => b.addEventListener("click", () => {
+  st.pmode = b.dataset.pm;
+  document.querySelectorAll("#pmode-seg [data-pm]").forEach(o =>
+    o.setAttribute("aria-pressed", String(o === b)));
+  render();
+}));
+document.querySelectorAll("#slice-seg [data-sl]").forEach(b =>
+  b.addEventListener("click", () => { setSlice(b.dataset.sl); render(); }));
+document.querySelectorAll("#view-seg [data-view]").forEach(b => b.addEventListener("click", () => {
+  const v = VIEWS[b.dataset.view];
+  view.az = v.az; view.el = v.el; view.ortho = v.ortho;
+  if(v.dist) view.dist = v.dist;
+  view.canonical = b.dataset.view;
+  syncViewButtons(); render();
+}));
+$("lg-es").addEventListener("click", () => { LANG="es"; applyLang(); });
+$("lg-en").addEventListener("click", () => { LANG="en"; applyLang(); });
+$("th-dark").addEventListener("click", () => setTheme("dark"));
+$("th-light").addEventListener("click", () => setTheme("light"));
+attachSurface();
+new ResizeObserver(() => render()).observe(document.querySelector(".viewports"));
+window.addEventListener("keydown", ev => {
+  if(ev.target.tagName === "INPUT") return;
+  if(ev.key >= "1" && ev.key <= "3"){
+    st.fam = FAM_KEYS[+ev.key - 1]; KEY = "";
+    buildFams(); syncParams(); readCustom(); render();
+  }
+});
+
+let lang0 = "es", theme0 = "dark";
+try{ lang0 = localStorage.getItem("pd.lang")||"es"; theme0 = localStorage.getItem("pd.theme")||"dark"; }catch(_){}
+const qs = new URLSearchParams(location.search);
+if(qs.get("lang") === "en" || qs.get("lang") === "es") lang0 = qs.get("lang");
+LANG = lang0;
+document.documentElement.setAttribute("data-theme", theme0);
+$("th-dark").setAttribute("aria-pressed", String(theme0==="dark"));
+$("th-light").setAttribute("aria-pressed", String(theme0==="light"));
+setP(st.xP, st.yP);
+applyLang();
+</script>
+</body>
+</html>

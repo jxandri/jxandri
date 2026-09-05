@@ -4,6 +4,8 @@ A standalone rewrite of the GeoGebra applet *Max. Utilidad — Rest. Presupuesta
 No Lineal* as a single self-contained HTML file. No build step, no dependencies,
 no network at runtime.
 
+**Manual:** [`dist/Nonlinear-Budget-Guia.pdf`](../dist/Nonlinear-Budget-Guia.pdf) (español) · [`dist/Nonlinear-Budget-Guide.pdf`](../dist/Nonlinear-Budget-Guide.pdf) (English)
+
 Seven schemes bend the budget line in different places, and the question in every
 one is the same: where does the best affordable bundle land, and does it land on
 the fold?

@@ -1,0 +1,41 @@
+%% Sections shared by every manual, English edition.
+%% Pulled in with \input{common-en}. The only thing that differs between
+%% applets is \appletfolder, which is also the folder name and the path on the site.
+
+\section{Publishing it for a class}
+
+Any static host will do: GitHub Pages, Netlify, a university web directory,
+even a shared folder served over HTTP. The only thing to upload is the
+\code{index.html} file, inside a folder named however you want the address to
+read.
+
+The repository ships a GitHub Actions workflow
+(\code{.github/workflows/pages.yml}) that publishes every applet at once on each
+push to the default branch. To switch it on, in the repository:
+\emph{Settings\,$\rightarrow$\,Pages\,$\rightarrow$\,Source: GitHub Actions}.
+That is the one step the workflow cannot do for itself, because creating a Pages
+site needs administration rights that a \code{GITHUB\_TOKEN} is never granted.
+
+\begin{amnote}
+To hand the applet to students without reliable internet, send them the
+\code{index.html} file directly. It weighs less than a photograph and opens with
+a double-click.
+\end{amnote}
+
+\section{Licence and provenance}
+
+The application code is MIT. Use it, change it and pass it on, in class or out
+of it, with attribution.
+
+This applet is a standalone rewrite of an original GeoGebra applet. The rewrite
+is not a literal translation: where the original had a construction error, a
+division by zero reachable with its own sliders, or a dead object inherited from
+whatever applet it was copied from, this version fixes it and says so. The
+section \emph{Changes from the GeoGebra original} lists those changes one by
+one.
+
+Everything is hand-written and dependency-free: the expression parser, the
+symbolic differentiation, the level-curve tracing and the drawing. In
+particular there is no \code{eval}, so what a student types into a text box
+cannot become code, and a strict content security policy does not break the
+page.

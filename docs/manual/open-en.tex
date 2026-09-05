@@ -1,0 +1,52 @@
+%% Sections shared by every manual, English edition.
+%% Pulled in with \input{common-en}. The only thing that differs between
+%% applets is \appletfolder, which is also the folder name and the path on the site.
+
+\section{Opening it}
+
+There is nothing to install. The whole application is one \code{index.html}
+file: it downloads no libraries, calls no server, and stores nothing outside
+your browser.
+
+\subsection{The three ways}
+
+\begin{description}
+\item[Double-click the file.] The quickest route. Find
+  \code{\appletfolder/index.html} and open it. The browser shows it straight off the
+  disk, with an address beginning \code{file://}. It works offline from the
+  first moment.
+\item[From the web.] If someone has published it, the address ends in
+  \code{/\appletfolder/}. Once the page has loaded you can disconnect: it needs the
+  network for nothing else.
+\item[Served from a folder.] For a class, putting the folder on any static
+  server is enough. With Python installed:
+  \begin{quote}\code{python3 -m http.server 8000}\end{quote}
+  then \code{http://localhost:8000/\appletfolder/} in the browser.
+\end{description}
+
+\begin{amnote}
+Saving the page with \key{Ctrl}\,+\,\key{S} (or \key{Cmd}\,+\,\key{S} on a
+Mac) leaves a copy of your own that still works offline and that can travel on a
+memory stick or go out by email.
+\end{amnote}
+
+\subsection{Language and theme}
+
+Two pairs of buttons sit at the top right.
+
+\begin{ctrltable}{Control & What it does}
+ES / EN & Switches the whole interface between Spanish and English on the spot.
+          Nothing is recomputed, so you can switch mid-explanation without
+          losing the state you had. \\
+Dark / Light & Switches the theme. Dark is the original design; light exists
+          for projectors and for printing. \\
+\end{ctrltable}
+
+Both choices are remembered in the browser, so next time it opens the way you
+left it.
+
+\subsection{Which browser}
+
+Any reasonably recent one: Chrome, Edge, Firefox or Safari, on a computer,
+tablet or phone. On a narrow screen the panels stack one above the other
+instead of sitting side by side. No account, no permissions, no extensions.

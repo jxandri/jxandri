@@ -54,7 +54,7 @@ await mkdir(site, { recursive: true });
  *   /                       the landing page
  *   /gradient-peaks/        the calculus sandbox, Border Run and the campus
  *   /gradient-peaks/guide/  the illustrated manual, English and Spanish
- *   /consumer-optimum/      …and the four GeoGebra applets
+ *   /consumer-optimum/      …and the seven GeoGebra applets
  */
 const copies = [
   ['landing/index.html', 'index.html'],
@@ -64,6 +64,20 @@ const copies = [
   ['demand-functions/index.html', 'demand-functions/index.html'],
   ['nonlinear-budget/index.html', 'nonlinear-budget/index.html'],
   ['labor-tax/index.html', 'labor-tax/index.html'],
+  ['firm-supply/index.html', 'firm-supply/index.html'],
+  ['partial-derivatives/index.html', 'partial-derivatives/index.html'],
+  ['climbing-robot/index.html', 'climbing-robot/index.html'],
+  // Each applet's manual travels with the applet, in both languages.
+  ['dist/Consumer-Optimum-Guia.pdf',  'consumer-optimum/Consumer-Optimum-Guia.pdf'],
+  ['dist/Consumer-Optimum-Guide.pdf', 'consumer-optimum/Consumer-Optimum-Guide.pdf'],
+  ['dist/Demand-Functions-Guia.pdf',  'demand-functions/Demand-Functions-Guia.pdf'],
+  ['dist/Demand-Functions-Guide.pdf', 'demand-functions/Demand-Functions-Guide.pdf'],
+  ['dist/Nonlinear-Budget-Guia.pdf',  'nonlinear-budget/Nonlinear-Budget-Guia.pdf'],
+  ['dist/Nonlinear-Budget-Guide.pdf', 'nonlinear-budget/Nonlinear-Budget-Guide.pdf'],
+  ['dist/Labour-Tax-Guia.pdf',  'labor-tax/Labour-Tax-Guia.pdf'],
+  ['dist/Labour-Tax-Guide.pdf', 'labor-tax/Labour-Tax-Guide.pdf'],
+  ['dist/Firm-Supply-Guia.pdf',  'firm-supply/Firm-Supply-Guia.pdf'],
+  ['dist/Firm-Supply-Guide.pdf', 'firm-supply/Firm-Supply-Guide.pdf'],
   // The one-file builds, offered as downloads: a student can keep a copy that
   // opens off a memory stick with no connection at all.
   ['dist/Gradient-Peaks.html', 'gradient-peaks/Gradient-Peaks-offline.html'],
