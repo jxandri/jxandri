@@ -497,6 +497,82 @@ const fmt = v => Number.isFinite(v) ? (Math.abs(v) < 1e-4 && v !== 0 ? v.toExpon
     return O.every((v, j) => Math.abs(v - w[j]) < 1e-12);
   }));
 
+  /* ------------------------------------- choosing the allocation by hand */
+  console.log('\n--- by hand ---');
+
+  await page.click('#g3-lvl-basic');
+  await page.waitForTimeout(150);
+  const lvB = await ev(() => [...document.querySelectorAll('#g3-layers input')].map(i => i.dataset.g3));
+  ok('the basic level offers the Pareto set', lvB.includes('pareto'));
+  ok('and withholds the contract curve and the core surfaces',
+     !lvB.includes('contract') && !lvB.includes('lensA') && !lvB.includes('lensB'),
+     lvB.join(' '));
+  await page.click('#g3-lvl-advanced');
+  await page.waitForTimeout(150);
+  const lvA = await ev(() => [...document.querySelectorAll('#g3-layers input')].map(i => i.dataset.g3));
+  ok('the advanced level adds all three',
+     lvA.includes('contract') && lvA.includes('lensA') && lvA.includes('lensB'),
+     lvA.join(' '));
+
+  await page.click('#g3-mode-hand');
+  await page.waitForTimeout(300);
+  const seed = await ev(() => {
+    const G = window.__edgeworth3;
+    return { mode:G.g3.mode, xHand:G.g3.xHand.slice(), gap:G.g3.now.gap,
+             weightHidden: document.getElementById('t3-g-weight').parentElement.hidden };
+  });
+  ok('the hand mode seeds from where the weight had put it', seed.mode === 'hand');
+  ok('so it starts efficient, with the two rates still agreeing',
+     seed.gap < 1e-9, seed.gap.toExponential(1));
+  ok('and the weight slider steps aside', seed.weightHidden);
+
+  const drag = await ev(async () => {
+    const G = window.__edgeworth3;
+    const cv = document.getElementById('c3');
+    const r = cv.getBoundingClientRect();
+    const az0 = G.g3.az, el0 = G.g3.el;
+    const cam = G.g3Cam(G.g3, r.width, r.height);
+    const q = cam.project(G.g3.now.xA);
+    cv.dispatchEvent(new PointerEvent('pointerdown',
+      { clientX:r.left+q[0], clientY:r.top+q[1], bubbles:true, pointerId:1 }));
+    cv.dispatchEvent(new PointerEvent('pointermove',
+      { clientX:r.left+q[0]+90, clientY:r.top+q[1]-60, bubbles:true, pointerId:1 }));
+    cv.dispatchEvent(new PointerEvent('pointerup', { bubbles:true, pointerId:1 }));
+    await new Promise(z => requestAnimationFrame(() => requestAnimationFrame(z)));
+    const O = G.g3Tot(G.g3);
+    return { xHand:G.g3.xHand.slice(), gap:G.g3.now.gap, O,
+             moved: az0 !== G.g3.az || el0 !== G.g3.el,
+             inside: G.g3.xHand.every((v, j) => v >= -1e-9 && v <= O[j] + 1e-9),
+             sums: G.g3.now.xA.map((v, j) => v + G.g3.now.xB[j] - O[j]) };
+  });
+  ok('dragging the allocation does not orbit the camera', !drag.moved);
+  ok('it stays inside the cube', drag.inside, JSON.stringify(drag.xHand.map(v => +v.toFixed(3))));
+  ok('and the two bundles still exhaust the cube',
+     drag.sums.every(v => Math.abs(v) < 1e-9), drag.sums.map(v => v.toExponential(1)).join(' '));
+  ok('off the Pareto set the two marginal rates disagree', drag.gap > 1e-3,
+     'gap ' + drag.gap.toFixed(4));
+
+  // Both agents are Cobb-Douglas here, and the closed form reads the price off
+  // the WEIGHT rather than off the bundle: handed a bundle nobody optimised it
+  // would report a zero gap wherever the pointer dropped it.
+  const cd = await ev(() => {
+    const G = window.__edgeworth3;
+    const O = G.g3Tot(G.g3);
+    const x = [O[0]*0.15, O[1]*0.8, O[2]*0.5];
+    return { shortcut: G.g3PricesAt(G.g3, 0.5, x, O).gap,
+             honest:   G.g3PricesAt(G.g3, 0.5, x, O, false).gap };
+  });
+  ok('the Cobb-Douglas shortcut is not taken for a hand-picked bundle',
+     cd.shortcut === 0 && cd.honest > 1e-3,
+     'shortcut ' + cd.shortcut + ' vs honest ' + cd.honest.toFixed(4));
+
+  await page.click('#g3-mode-pareto');
+  await page.waitForTimeout(250);
+  const back = await ev(() => ({ mode:window.__edgeworth3.g3.mode,
+                                 gap:window.__edgeworth3.g3.now.gap }));
+  ok('going back to the weight restores an efficient allocation',
+     back.mode === 'pareto' && back.gap < 1e-9, back.gap.toExponential(1));
+
   /* ------------------------------------------------------------- languages */
   console.log('\n--- both languages ---');
   await page.click('#lang-en');
@@ -509,7 +585,7 @@ const fmt = v => Number.isFinite(v) ? (Math.abs(v) < 1e-4 && v !== 0 ? v.toExpon
   }));
   ok('the tab is in English', en.tab === 'Three goods', en.tab);
   ok('so are the rail headings',
-    en.head.join('|') === 'Endowments|Preferences|Productive sector|Pareto weight|Layers',
+    en.head.join('|') === 'Endowments|Preferences|Productive sector|Allocation|Pareto weight|Level|Layers',
     en.head.join('|'));
   ok('and the readout', en.keys[0] === 'Totals' && en.keys.includes('Transfer to A'), en.keys[0]);
   ok('and nothing is left undefined', !/undefined/.test(en.note + en.keys.join('') + en.head.join('')));

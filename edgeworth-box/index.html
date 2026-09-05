@@ -858,6 +858,15 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       </div>
 
       <div class="group">
+        <h2 id="t3-g-mode">Reparto</h2>
+        <div class="seg seg-wide" role="group" aria-label="Reparto">
+          <button type="button" id="g3-mode-pareto" aria-pressed="true">Óptimo</button>
+          <button type="button" id="g3-mode-hand" aria-pressed="false">A mano</button>
+        </div>
+        <p class="note" id="t3-mode-note">—</p>
+      </div>
+
+      <div class="group">
         <h2 id="t3-g-weight">Peso de Pareto</h2>
         <div class="slider-row">
           <span class="k">ζ<sub>A</sub></span>
@@ -869,7 +878,12 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
       </div>
 
       <div class="group">
-        <h2 id="t3-g-show">Capas</h2>
+        <h2 id="t3-g-level">Nivel</h2>
+        <div class="seg seg-wide" role="group" aria-label="Nivel">
+          <button type="button" id="g3-lvl-basic" aria-pressed="true">Básico</button>
+          <button type="button" id="g3-lvl-advanced" aria-pressed="false">Avanzado</button>
+        </div>
+        <h2 id="t3-g-show" style="margin-top:6px">Capas</h2>
         <div class="checks" id="g3-layers"></div>
         <div class="slider-row" style="margin-top:8px">
           <span class="k">L</span>
@@ -3115,6 +3129,7 @@ const MAP_DEFS = [["gains","mapGains"], ["ua","mapUA"], ["ub","mapUB"], ["none",
 const G3_LAYERS = [
   ["box",      "g3lBox"],
   ["pareto",   "g3lPareto"],
+  ["contract", "g3lContract"],
   ["indiA",    "g3lIndiA"],
   ["indiB",    "g3lIndiB"],
   ["lensA",    "g3lLensA"],
@@ -3275,9 +3290,13 @@ const STR = {
     g3WeightNote:"ζ<sub>A</sub> recorre el conjunto de Pareto. Con ζ = 0 A no recibe nada; con ζ = 1 se lo lleva todo.",
     g3Reset:"Reencuadrar",
     g3Empty:"Alguna dotación total es cero: no hay cubo que repartir.",
+    g3gMode:"Reparto", g3mPareto:"Óptimo", g3mHand:"A mano",
+    g3ModeNotePareto:"El peso ζ coloca el reparto sobre el conjunto de Pareto: siempre eficiente.",
+    g3ModeNoteHand:"Arrastra el punto Q por el cubo. Fuera del conjunto de Pareto las dos superficies se cortan en vez de tocarse, y el volumen entre ellas es lo que queda por repartir.",
+    g3lContract:"Curva de contrato",
     g3lBox:"Cubo y rejilla", g3lPareto:"Conjunto de Pareto",
     g3lIndiA:"Superficie de indiferencia de A", g3lIndiB:"Superficie de indiferencia de B",
-    g3lLensA:"A a través de ω", g3lLensB:"B a través de ω",
+    g3lLensA:"Núcleo: A a través de ω", g3lLensB:"Núcleo: B a través de ω",
     g3lBudget:"Plano de presupuesto", g3lSetA:"Conjunto de A", g3lSetB:"Conjunto de B",
     g3lPrice:"Vector de precios", g3lTangents:"Direcciones de intercambio", g3lError:"Error de mercado",
     g3rTotals:"Totales", g3rPrices:"Precios", g3rPnorm:"Precios (suman 100)",
@@ -3442,9 +3461,13 @@ const STR = {
     g3WeightNote:"ζ<sub>A</sub> sweeps the Pareto set. At ζ = 0 A gets nothing; at ζ = 1 A gets everything.",
     g3Reset:"Reframe",
     g3Empty:"One of the totals is zero: there is no cube to divide.",
+    g3gMode:"Allocation", g3mPareto:"Optimal", g3mHand:"By hand",
+    g3ModeNotePareto:"The weight ζ places the allocation on the Pareto set: always efficient.",
+    g3ModeNoteHand:"Drag the point Q around the cube. Off the Pareto set the two surfaces cut through each other instead of touching, and the volume between them is what is still to be divided.",
+    g3lContract:"Contract curve",
     g3lBox:"Cube and grid", g3lPareto:"Pareto set",
     g3lIndiA:"A's indifference surface", g3lIndiB:"B's indifference surface",
-    g3lLensA:"A through ω", g3lLensB:"B through ω",
+    g3lLensA:"Core: A through ω", g3lLensB:"Core: B through ω",
     g3lBudget:"Budget plane", g3lSetA:"A's set", g3lSetB:"B's set",
     g3lPrice:"Price vector", g3lTangents:"Trade directions", g3lError:"Market error",
     g3rTotals:"Totals", g3rPrices:"Prices", g3rPnorm:"Prices (summing to 100)",
@@ -3948,6 +3971,13 @@ function applyLang(){
   $("t3-g-pref").textContent   = t.g3gPref;
   $("t3-g-weight").textContent = t.g3gWeight;
   $("t3-g-show").textContent   = t.g3gShow;
+  $("t3-g-mode").textContent   = t.g3gMode;
+  $("t3-g-level").textContent  = t.gLevel;
+  $("g3-mode-pareto").textContent = t.g3mPareto;
+  $("g3-mode-hand").textContent   = t.g3mHand;
+  $("g3-lvl-basic").textContent    = t.lvBasic;
+  $("g3-lvl-advanced").textContent = t.lvAdvanced;
+  paintG3ModeNote();
   $("t3-endow-a").innerHTML    = t.g3EndowA;
   $("t3-endow-b").innerHTML    = t.g3EndowB;
   $("t3-ua").innerHTML         = t.g3uA;
@@ -4012,9 +4042,61 @@ function paintG3EndowNote(){
   $("t3-endow-note").innerHTML = T().g3EndowNote(fmt(O[0], 2), fmt(O[1], 2), fmt(O[2], 2));
 }
 
+/* Which layers this level offers. The contract curve and the two surfaces
+   through the endowment are the advanced trio here, exactly as in the
+   two-good box: each needs an endowment and a blocking argument before it
+   says anything at all. */
+function g3LayersFor(){
+  return G3_LAYERS.filter(([k]) =>
+    (k === "contract" || k === "lensA" || k === "lensB") ? g3.level === "advanced" : true);
+}
+
+function paintG3ModeNote(){
+  if(!$("t3-mode-note")) return;
+  $("t3-mode-note").textContent =
+    g3.mode === "hand" ? T().g3ModeNoteHand : T().g3ModeNotePareto;
+}
+
+/* Choosing the allocation by hand is the point of the whole diagram: an
+   inefficient bundle is where the two indifference surfaces CROSS rather than
+   touch, and the volume between them is what is still on the table. The
+   weight slider can only ever produce efficient bundles, so it can never show
+   that. Entering the mode seeds the bundle from wherever the weight had put
+   it, so the picture does not jump before the student has moved anything. */
+function g3SetMode(m){
+  if(m === "hand"){
+    const r = g3.now || g3Solved(g3);
+    g3.xHand = r.xA.slice();
+  }
+  g3.mode = m;
+  $("g3-mode-pareto").setAttribute("aria-pressed", m === "pareto");
+  $("g3-mode-hand").setAttribute("aria-pressed", m === "hand");
+  $("t3-g-weight").parentElement.hidden = m === "hand";
+  paintG3ModeNote();
+  g3Invalidate();
+}
+
+function g3SetLevel(v){
+  g3.level = v;
+  $("g3-lvl-basic").setAttribute("aria-pressed", v === "basic");
+  $("g3-lvl-advanced").setAttribute("aria-pressed", v === "advanced");
+  buildG3Layers();
+  g3Render();
+}
+
+/* Moving the allocation changes neither preferences nor the cube, so the
+   Pareto sweep behind it stands: re-running 160 optimisations on every
+   pointer move would make the drag unusable and would compute the same
+   answer each time. */
+function g3TouchPoint(){
+  g3.now = null;
+  g3Readout();
+  g3Render();
+}
+
 function buildG3Layers(){
   const t = T();
-  $("g3-layers").innerHTML = G3_LAYERS.map(([k, lbl]) =>
+  $("g3-layers").innerHTML = g3LayersFor().map(([k, lbl]) =>
     `<label class="check"><input type="checkbox" data-g3="${k}"${g3.layers[k] ? " checked" : ""}>` +
     `<span>${t[lbl]}</span></label>`).join("");
   $("g3-layers").querySelectorAll("input[data-g3]").forEach(cb => {
@@ -4913,8 +4995,11 @@ const g3 = {
   prod: { on:false, out:2, z:1.2, m:0.35, n:0.35, theta:0.5, t:[0.5, 0.5] },
   N: [1, 1.3333333333333333, 1.3333333333333333],
   az: -0.72, el: 0.34, dist: 1,
+  /* "pareto" lets the weight place the allocation on the efficient set;
+     "hand" lets the pointer put it anywhere in the cube, efficient or not */
+  mode: "pareto", xHand: null, level: "basic",
   layers: {
-    box:true, pareto:true, indiA:true, indiB:true, budget:true,
+    box:true, pareto:true, contract:false, indiA:true, indiB:true, budget:true,
     setA:false, setB:false, lensA:false, lensB:false,
     price:true, tangents:true, error:true, free:false
   },
@@ -5150,9 +5235,14 @@ function g3Pareto(s, z, seed){
    two agents' weighted log-gradients are equal and either one is the price;
    on a face of the cube — where perfect substitutes usually land — they need
    not be, and the midpoint is reported with the gap beside it. */
-function g3PricesAt(s, z, xA, box){
+function g3PricesAt(s, z, xA, box, efficient){
   const O = box || g3Tot(s);
-  if(g3BothCD(s) && !g3ProdOn(s)){
+  /* The closed form reads the price off the WEIGHT, which is only the price
+     supporting this bundle when the bundle is the one that weight would have
+     chosen. Hand the same shortcut a bundle picked by pointer and it reports
+     a perfectly supported allocation with a zero gap wherever you drop it —
+     the one number the hand mode exists to make non-zero. */
+  if(g3BothCD(s) && !g3ProdOn(s) && efficient !== false){
     const A = g3CDExp(s, "A"), B = g3CDExp(s, "B");
     const p = [0, 1, 2].map(j => O[j] > 0 ? (z*A[j] + (1 - z)*B[j]) / O[j] : 0);
     return { p, gap: 0 };
@@ -5170,6 +5260,32 @@ function g3PricesAt(s, z, xA, box){
    at which prices, and the transfer that turns endowments into that income.
    The two transfers are equal and opposite because A's and B's bundles add up
    to the box — which is the arithmetic the source file's B-demands break. */
+/* The weight that balances the two agents' marginal valuations at a bundle.
+   Away from the Pareto set the two gradients are not parallel and no weight
+   makes them equal; the honest choice is the one that at least makes them the
+   same LENGTH, so the averaged price sits squarely between the two claims
+   rather than being dragged towards whichever agent's utility happens to be
+   steeply scaled. At an efficient bundle the gradients are parallel already
+   and the gap this reports is zero, as it should be. */
+function g3HandZeta(s, xA, O){
+  const ga = g3GL(s, "A", xA), gb = g3GL(s, "B", g3Sub(O, xA));
+  const na = Math.hypot(ga[0], ga[1], ga[2]), nb = Math.hypot(gb[0], gb[1], gb[2]);
+  if(!(na > 0) || !(nb > 0)) return 0.5;
+  return nb / (na + nb);
+}
+
+/* An allocation chosen by hand rather than by the planner. Everything the
+   readouts and the surfaces need is the same report — the only difference is
+   that nothing guarantees this bundle is efficient, so the price gap it
+   carries is generally not zero. That gap IS the lesson. */
+function g3AtHand(s){
+  const O = g3Tot(s);
+  const raw = s.xHand || [O[0]/2, O[1]/2, O[2]/2];
+  const xA = [0,1,2].map(j => clamp(raw[j], 0, O[j]));
+  return g3Report(s, g3HandZeta(s, xA, O), O, xA,
+                  g3ProdOn(s) ? ((s.now && s.now.t) || s.prod.t) : null, false);
+}
+
 function g3At(s, z, seed){
   let O, xA, t = null;
   if(g3ProdOn(s)){
@@ -5179,8 +5295,15 @@ function g3At(s, z, seed){
     O = g3Endow(s);
     xA = g3Pareto(s, z, seed && seed.xA);
   }
+  return g3Report(s, z, O, xA, t, true);
+}
+
+/* Prices, incomes, transfers and utilities at a bundle, however it was
+   arrived at. Split out of g3At so that a hand-picked allocation reports
+   exactly what an efficient one does. */
+function g3Report(s, z, O, xA, t, efficient){
   const xB = g3Sub(O, xA);
-  const { p, gap } = g3PricesAt(s, z, xA, O);
+  const { p, gap } = g3PricesAt(s, z, xA, O, efficient);
   const sum = p[0] + p[1] + p[2];
 
   /* With a firm, wealth is the endowment plus a share of the profit, and it
@@ -5342,6 +5465,18 @@ function g3Cam(s, w, h){
   const R = Math.min(w, h) * 0.55 * s.dist * dist;
   return {
     O, span,
+    /* The two world directions the screen's axes run along. Dragging a point
+       in three dimensions with a two-dimensional pointer is underdetermined,
+       and the one choice that never surprises is to move it in the plane
+       facing the camera: what you see is what moves. */
+    right: [ca, sa, 0],
+    up:    [-se*sa, se*ca, ce],
+    pan(dpx, dpy, depth){
+      const f = depth > 0.05 ? 1/depth : 20;
+      const k = span / (R * f);
+      const a = dpx * k, b = -dpy * k;
+      return [ca*a + (-se*sa)*b, sa*a + (se*ca)*b, ce*b];
+    },
     project(p){
       const x = (p[0] - c[0])/span, y = (p[1] - c[1])/span, z = (p[2] - c[2])/span;
       const X  =  ca*x + sa*y;
@@ -5529,7 +5664,13 @@ const g3RGB = hex => {
 function g3Render(){
   const cv = $("c3"); if(!cv) return;
   const { ctx, w, h } = setupCanvas(cv);
-  const s = g3, L = s.layers;
+  const s = g3;
+  /* as in the two-good box: what the level withholds is off however its own
+     switch is set, and turning the level back up restores it untouched */
+  const g3avail = new Set(g3LayersFor().map(([k]) => k));
+  const L = {};
+  for(const [k] of G3_LAYERS) L[k] = s.layers[k] && g3avail.has(k);
+  L.free = s.layers.free;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = css("--sunk"); ctx.fillRect(0, 0, w, h);
 
@@ -5544,7 +5685,7 @@ function g3Render(){
   const sc  = g3Scene();
   /* solved in g3Sync, not here: orbiting the cube must not re-run the
      optimisation, and with a typed utility it would run it 160 times a frame */
-  const r   = s.now || (s.now = g3At(s, s.zeta));
+  const r   = s.now || (s.now = g3Solved(s));
   const V   = g3Corners(O);
   const rule = css("--rule"), ink = css("--ink"), ink3 = css("--ink-3");
 
@@ -5590,7 +5731,8 @@ function g3Render(){
       sc.poly(q, g3Shade(q, g3RGB(MARK.B), 0.5), null, 0, 0);
 
   /* and through the endowment: between these two lies every reallocation both
-     agents would agree to, which is the lens of the two-good box in 3-D */
+     agents would agree to, which is the lens of the two-good box in 3-D. They
+     are what the core MEANS, so they carry its name in the layer list. */
   const uAw = g3UA(s, s.a), uBw = g3UB(s, s.b);
   if(L.lensA)
     for(const q of g3Sheet(O, (x1, x2) => g3IndiA(s, uAw, x1, x2), 26))
@@ -5603,6 +5745,16 @@ function g3Render(){
   if(L.pareto){
     const pts = s.curve || (s.curve = g3Curve(s, 160));
     sc.line(pts, MARK.contract, 2.6, null, -20);
+  }
+
+  /* and the stretch of it neither agent would refuse from their endowments:
+     the contract curve, which in three goods is a sub-arc of the same locus */
+  if(L.contract){
+    const pts = s.curve || (s.curve = g3Curve(s, 160));
+    const ir = pts.filter(x =>
+      g3UA(s, x) >= uAw - 1e-9 * (1 + Math.abs(uAw)) &&
+      g3UB(s, g3Sub(O, x)) >= uBw - 1e-9 * (1 + Math.abs(uBw)));
+    if(ir.length > 1) sc.line(ir, MARK.core, 7, null, -18);
   }
 
   /* vectors at Q: the price normal, and the two directions along the budget
@@ -5660,7 +5812,7 @@ const g3N = (v, d) => {
 const g3V = (v, d) => "(" + v.map(x => g3N(x, d)).join(", ") + ")";
 
 function g3Readout(){
-  const t = T(), s = g3, r = s.now || (s.now = g3At(s, s.zeta));
+  const t = T(), s = g3, r = s.now || (s.now = g3Solved(s));
   const rows = [
     [t.g3rTotals,  g3V(r.O, 2)],
     [t.g3rPrices,  g3V(r.p, 4)],
@@ -5703,8 +5855,13 @@ function g3Readout(){
 }
 
 /* --- recompute + render ---------------------------------------------------- */
+/* The current allocation, however this tab is being driven. */
+function g3Solved(s){
+  return s.mode === "hand" ? g3AtHand(s) : g3At(s, s.zeta);
+}
+
 function g3Sync(){
-  g3.now = g3At(g3, g3.zeta);
+  g3.now = g3Solved(g3);
   g3.curve = g3Curve(g3, 160);
   g3.negishi = g3Negishi(g3);
   paintG3EndowNote();
@@ -5889,6 +6046,11 @@ function g3Boot(){
     $("g3zeta-v").value = g3.zeta.toFixed(4);
     g3Invalidate();
   });
+  for(const [id, m] of [["g3-mode-pareto","pareto"], ["g3-mode-hand","hand"]])
+    $(id).addEventListener("click", () => g3SetMode(m));
+  for(const [id, v] of [["g3-lvl-basic","basic"], ["g3-lvl-advanced","advanced"]])
+    $(id).addEventListener("click", () => g3SetLevel(v));
+
   $("g3-reset-view").addEventListener("click", () => {
     g3.az = -0.72; g3.el = 0.34; g3.dist = 1; g3Render();
   });
@@ -5897,10 +6059,33 @@ function g3Boot(){
   const cv = $("c3");
   cv.addEventListener("pointerdown", e => {
     cv.setPointerCapture(e.pointerId);
-    g3.drag = { x: e.clientX, y: e.clientY, az: g3.az, el: g3.el };
+    const rc = cv.getBoundingClientRect();
+    /* grabbing the allocation itself takes precedence over orbiting, but only
+       in the mode where the allocation is the student's to place */
+    if(g3.mode === "hand"){
+      const cam = g3Cam(g3, rc.width, rc.height);
+      const rep = g3.now || (g3.now = g3Solved(g3));
+      const q = cam.project(rep.xA);
+      if(Math.hypot(q[0] - (e.clientX - rc.left), q[1] - (e.clientY - rc.top)) <= 18){
+        g3.drag = { kind:"point", x:e.clientX, y:e.clientY,
+                    at:rep.xA.slice(), depth:q[2] };
+        cv.style.cursor = "grabbing";
+        return;
+      }
+    }
+    g3.drag = { kind:"orbit", x: e.clientX, y: e.clientY, az: g3.az, el: g3.el };
   });
   cv.addEventListener("pointermove", e => {
     if(!g3.drag) return;
+    if(g3.drag.kind === "point"){
+      const rc = cv.getBoundingClientRect();
+      const cam = g3Cam(g3, rc.width, rc.height);
+      const d = cam.pan(e.clientX - g3.drag.x, e.clientY - g3.drag.y, g3.drag.depth);
+      const O = g3Tot(g3);
+      g3.xHand = [0,1,2].map(j => clamp(g3.drag.at[j] + d[j], 0, O[j]));
+      g3TouchPoint();
+      return;
+    }
     g3.az = g3.drag.az + (e.clientX - g3.drag.x)*0.008;
     g3.el = clamp(g3.drag.el - (e.clientY - g3.drag.y)*0.008, -1.45, 1.45);
     g3Render();
