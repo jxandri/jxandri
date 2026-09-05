@@ -687,6 +687,12 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
         <h2 id="t-g-map">Mapa</h2>
         <div class="chips" id="map-chips"></div>
         <div class="legend"><canvas id="colorbar" width="150" height="8" aria-hidden="true"></canvas><span id="t-bar">bajo → alto</span></div>
+        <h2 id="t-g-level" style="margin-top:6px">Nivel</h2>
+        <div class="seg seg-wide" role="group" aria-label="Nivel">
+          <button type="button" id="lvl-basic" aria-pressed="true">Básico</button>
+          <button type="button" id="lvl-advanced" aria-pressed="false">Avanzado</button>
+        </div>
+        <p class="note" id="t-level-note">—</p>
         <h2 id="t-g-show" style="margin-top:6px">Capas</h2>
         <div class="checks" id="layer-checks"></div>
       </div>
@@ -1604,7 +1610,13 @@ function supportAt(st, x, y){
         : Number.isFinite(mA) ? mA : mB;
   if(!(p > 0) || !Number.isFinite(p)) return null;
 
-  const prod = productionAt(st, x, y);
+  /* With one consumer the firm is not told what to make by anyone else's
+     residual utility: it maximises profit at the price the consumer's own
+     marginal rate announces. That is what makes the constraint REACH the
+     frontier — the line is tangent to the frontier at the point the firm
+     picks — and it sits strictly above the allocation whenever the allocation
+     is not the optimum, which is exactly the gain still on the table. */
+  const prod = hasFirm(st) && !hasB(st) ? firmAt(st, p) : productionAt(st, x, y);
   const Wx = prod ? prod.X : st.Wx, Wy = prod ? prod.Y : st.Wy;
   const xA = x, yA = y, xB = Wx - x, yB = Wy - y;
 
@@ -2438,7 +2450,12 @@ function drawBox(st){
   const ink = css("--ink"), ink2 = css("--ink-2"), ink3 = css("--ink-3");
   const rule = css("--rule"), surf = css("--surface");
   const halo = dark ? "rgba(10,16,19,.78)" : "rgba(255,255,255,.85)";
-  const L = st.layers;
+  /* A layer this model or this level does not offer is off, whatever its own
+     switch still remembers — so coming back up to the advanced level restores
+     exactly the layers that were on when you left it. */
+  const avail = new Set(layersFor().map(([k]) => k));
+  const L = {};
+  for(const [k] of LAYER_DEFS) L[k] = st.layers[k] && avail.has(k);
 
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = surf; ctx.fillRect(0, 0, w, h);
@@ -2490,22 +2507,54 @@ function drawBox(st){
     }
   }
 
-  /* --- the contract curve, and the core marked on it --- */
-  if(L.contract && st.contract.length > 1){
-    const path = (from, to) => () => {
-      for(let i = from; i <= to; i++){
-        const p = st.contract[i];
-        i === from ? ctx.moveTo(SX(p.x), SY(p.y)) : ctx.lineTo(SX(p.x), SY(p.y));
-      }
-    };
-    if(L.core && hasCore(st) && st.core.n > 1){
-      ctx.save();
-      ctx.globalAlpha = 0.35; ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.beginPath(); path(st.core.from, st.core.to)();
-      ctx.strokeStyle = MARK.core; ctx.lineWidth = 9; ctx.stroke();
-      ctx.restore();
+  /* --- the Pareto set, the contract curve and the core ---
+     Three switches, because they are three claims. The Pareto set is the
+     efficiency locus and needs no endowment to state. The contract curve is
+     the stretch of it neither party would refuse starting from ω. The core is
+     drawn as what MAKES that stretch what it is: the two indifference curves
+     through ω, whose lens the contract curve is the efficient spine of. */
+  const cpath = (from, to) => () => {
+    for(let i = from; i <= to; i++){
+      const p = st.contract[i];
+      i === from ? ctx.moveTo(SX(p.x), SY(p.y)) : ctx.lineTo(SX(p.x), SY(p.y));
     }
-    cased(ctx, path(0, st.contract.length - 1), MARK.contract, 2, MARK.casing);
+  };
+
+  /* the core's two curves go down first, so the loci land on top of them */
+  if(L.core && hasCore(st)){
+    const omega = (lv, field, colour) => {
+      if(!Number.isFinite(lv) || !field) return;
+      const segs = marchingSquares(field, lv);
+      ctx.save(); ctx.setLineDash([6, 3]);
+      cased(ctx, () => segsPath(ctx, segs, SX, SY), colour, 1.6, MARK.casing);
+      ctx.restore();
+    };
+    omega(st.core.uAe, st.fA, MARK.A);
+    omega(st.core.uBe, st.fB, MARK.B);
+  }
+
+  if(L.pareto && st.contract.length > 1)
+    cased(ctx, cpath(0, st.contract.length - 1), MARK.contract, 2, MARK.casing);
+
+  /* One consumer, one efficient allocation — and a polyline through a single
+     vertex draws nothing at all, which is why the Robinson optimum used to be
+     invisible however hard you looked for it. It gets a mark of its own. */
+  if(L.pareto && st.contract.length === 1){
+    const q = st.contract[0];
+    ctx.save();
+    ctx.beginPath(); ctx.arc(SX(q.x), SY(q.y), 9, 0, Math.PI*2);
+    ctx.strokeStyle = MARK.casing; ctx.lineWidth = 4.4; ctx.stroke();
+    ctx.strokeStyle = MARK.contract; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+    dot(ctx, SX(q.x), SY(q.y), 3.4, MARK.contract, MARK.casing);
+  }
+
+  if(L.contract && hasCore(st) && st.core.n > 1){
+    ctx.save();
+    ctx.globalAlpha = 0.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath(); cpath(st.core.from, st.core.to)();
+    ctx.strokeStyle = MARK.core; ctx.lineWidth = 9; ctx.stroke();
+    ctx.restore();
   }
 
   /* --- offer curves --- */
@@ -2561,6 +2610,46 @@ function drawBox(st){
     }
   }
 
+  /* --- the tangent at the allocation, which IS a budget constraint ---
+     The line through a bundle with slope −MRS is the budget line that bundle
+     would be chosen under. Drawing one per agent is the point: away from the
+     contract curve they are two different lines, and the angle between them
+     is the trade still worth making. They fuse into one line exactly when the
+     allocation is efficient, and that line is then the supporting price. */
+  if(L.tangent){
+    const chord = (x0, y0, m) => {
+      if(!Number.isFinite(x0) || !Number.isFinite(y0) || !Number.isFinite(m)) return null;
+      const hit = [];
+      const add = (x, y) => {
+        if(x < -1e-9 || x > st.Wx + 1e-9 || y < -1e-9 || y > st.Wy + 1e-9) return;
+        for(const q of hit) if(Math.hypot(q[0] - x, q[1] - y) < 1e-9) return;
+        hit.push([clamp(x, 0, st.Wx), clamp(y, 0, st.Wy)]);
+      };
+      add(0, y0 + m*x0);
+      add(st.Wx, y0 - m*(st.Wx - x0));
+      if(Math.abs(m) > 1e-12){ add(x0 + y0/m, 0); add(x0 - (st.Wy - y0)/m, st.Wy); }
+      let a = null, b = null, bd = -1;
+      for(const p of hit) for(const q of hit){
+        const d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+        if(d > bd){ bd = d; a = p; b = q; }
+      }
+      return bd > 1e-9 ? [a, b] : null;
+    };
+    const drawT = (P, m, colour) => {
+      const c = chord(P[0], P[1], m);
+      if(!c) return;
+      ctx.save(); ctx.setLineDash([7, 4]);
+      cased(ctx, () => { ctx.moveTo(SX(c[0][0]), SY(c[0][1])); ctx.lineTo(SX(c[1][0]), SY(c[1][1])); },
+            colour, 1.7, MARK.casing);
+      ctx.restore();
+    };
+    drawT(st.PA, mrsA(st, st.PA[0], st.PA[1]), MARK.A);
+    /* with one consumer the second rate to show is the firm's, read on the
+       frontier directly above the allocation */
+    if(hasB(st)) drawT(st.PB, mrsB(st, st.PB[0], st.PB[1]), MARK.B);
+    else drawT(st.PA, mrt(st, st.PA[0], ppfY(st, st.PA[0])), MARK.frontier);
+  }
+
   /* --- the frontier itself, and where on it the firm is producing --- */
   if(hasFirm(st)){
     cased(ctx, () => {
@@ -2592,8 +2681,16 @@ function drawBox(st){
      are the two sides of it. Each set has its own switch, because the point a
      student has to see is that they meet exactly on the line. */
   if(L.swt && st.swt){
-    const S = st.swt, p = S.p, m = S.incA;
-    const bx = S.Wx, by = S.Wy;
+    /* Two consumers get the planner's line — the income each is to be given,
+       with a transfer making up the difference. One consumer gets the market's
+       line: income IS the firm's profit, there is nobody to transfer from, and
+       drawing it through the allocation instead would draw a constraint the
+       economy never imposed. */
+    const S = st.swt, p = S.p, m = hasB(st) ? S.incA : S.ownA;
+    /* Two consumers divide a sub-box, and the budget sets are the two sides
+       of the line inside it. One consumer divides nothing with anybody: what
+       he can afford is everything under the line, full stop. */
+    const bx = hasB(st) ? S.Wx : st.Wx, by = hasB(st) ? S.Wy : st.Wy;
     /* A's set is everything under the line inside the sub-box, B's is
        everything over it — the same line, seen from the two origins */
     const lineY = x => m - p * x;
@@ -2724,11 +2821,20 @@ function drawFrames(st, ctx, r, C){
    8. Copy, in both languages the applet is likely to be used in
    ========================================================================== */
 
-/* [key, string key, default on] */
+/* [key, string key, default on]
+
+   Pareto set, contract curve and core are three different objects, not one
+   curve under three names. The Pareto set is every efficient allocation and
+   knows nothing about who owns what; the contract curve is the stretch of it
+   both would actually sign given ω; the core is drawn as what DEFINES it —
+   the two indifference curves through ω and the lens they bound. Only the
+   first is offered at the basic level. */
 const LAYER_DEFS = [
   ["lens",     "lLens",     true ],
   ["families", "lFamilies", true ],
   ["curves",   "lCurves",   true ],
+  ["tangent",  "lTangent",  false],
+  ["pareto",   "lPareto",   true ],
   ["contract", "lContract", true ],
   ["core",     "lCore",     true ],
   ["price",    "lPrice",    true ],
@@ -2801,6 +2907,10 @@ const STR = {
     mAuctionD:"Anuncia un precio; cada uno pide lo que quiere; busca el que vacía el mercado.",
 
     lLens:"Conjunto de mejoras", lFamilies:"Familias de indiferencia",
+    gLevel:"Nivel", lvBasic:"Básico", lvAdvanced:"Avanzado",
+    levelNoteBasic:"Sólo eficiencia de Pareto: qué repartos son eficientes y cuánto queda todavía por repartir.",
+    levelNoteAdvanced:"Añade la curva de contrato y el núcleo, que sólo significan algo una vez que hay una dotación de la que partir.",
+    lPareto:"Óptimos de Pareto", lTangent:"Tangente en el reparto",
     lCurves:"Curvas por el reparto", lContract:"Curva de contrato",
     lCore:"Núcleo", lPrice:"Recta de precios",
     lDemands:"Demandas", lOffer:"Curvas de oferta", lOptimum:"Equilibrio walrasiano",
@@ -2955,6 +3065,10 @@ const STR = {
     mAuctionD:"Announce a price, let each one demand what they like, hunt for the price that clears.",
 
     lLens:"Improving set", lFamilies:"Indifference families",
+    gLevel:"Level", lvBasic:"Basic", lvAdvanced:"Advanced",
+    levelNoteBasic:"Pareto efficiency only: which allocations are efficient, and how much is still on the table.",
+    levelNoteAdvanced:"Adds the contract curve and the core, which mean nothing until there is an endowment to start from.",
+    lPareto:"Pareto set", lTangent:"Tangent at the allocation",
     lCurves:"Curves through the allocation", lContract:"Contract curve",
     lCore:"Core", lPrice:"Price line",
     lDemands:"Demands", lOffer:"Offer curves", lOptimum:"Walrasian equilibrium",
@@ -3210,7 +3324,7 @@ const st = {
   uP:{ a:NaN, b:NaN },
   logp:0, p:1,
 
-  map:"gains", method:"free", mode:"explore",
+  map:"gains", method:"free", mode:"explore", level:"basic",
   layers:Object.fromEntries(LAYER_DEFS.map(([k,,d]) => [k, d])),
 
   levelIdx:0, unlocked:1, score:0, bests:{}, checked:false, playing:false
@@ -3492,6 +3606,10 @@ function applyLang(){
   $("t-g-price").textContent  = t.gPrice;
   $("t-g-map").textContent    = t.gMap;
   $("t-g-show").textContent   = t.gShow;
+  $("t-g-level").textContent  = t.gLevel;
+  $("lvl-basic").textContent    = t.lvBasic;
+  $("lvl-advanced").textContent = t.lvAdvanced;
+  paintLevelNote();
 
   $("t-pref-note").innerHTML  = t.prefNote;
   $("t-price-note").innerHTML = t.priceNote;
@@ -3703,7 +3821,10 @@ function buildMapChips(){
 /* Which layers this model has anything to draw for. */
 function layersFor(){
   return LAYER_DEFS.filter(([k]) => {
-    if(k === "core") return hasCore(st);
+    /* the contract curve and the core are the advanced pair: they are the
+       ones that need an endowment and a blocking argument to make sense, and
+       a first course stops at "is this allocation efficient?" */
+    if(k === "contract" || k === "core") return st.level === "advanced" && hasCore(st);
     if(k === "price" || k === "demands") return !hasFirm(st) && st.method === "auction";
     if(k === "offer" || k === "optimum") return !hasFirm(st);
     if(k === "production") return hasFirm(st);
@@ -3798,6 +3919,23 @@ function onModelChange(){
 function onPointChange(){ syncState(); syncScrubFromState(); render(); }
 
 /* ---- the scrubber ------------------------------------------------------- */
+function paintLevelNote(){
+  $("t-level-note").textContent =
+    st.level === "advanced" ? T().levelNoteAdvanced : T().levelNoteBasic;
+}
+
+/* Basic stops at "is this efficient?". Advanced adds the two objects that
+   need an endowment before they say anything: the stretch of the Pareto set
+   both would sign, and the curves that decide which stretch that is. */
+function setLevel(v){
+  st.level = v;
+  $("lvl-basic").setAttribute("aria-pressed", v === "basic");
+  $("lvl-advanced").setAttribute("aria-pressed", v === "advanced");
+  paintLevelNote();
+  buildLayers();
+  render();
+}
+
 function paintModelNote(){
   const t = T();
   $("t-model-note").textContent =
@@ -5494,6 +5632,9 @@ function boot(){
     st.p = Math.pow(10, st.logp);
     pushPrice(); setMethod("auction");
   });
+
+  for(const [id, v] of [["lvl-basic","basic"], ["lvl-advanced","advanced"]])
+    $(id).addEventListener("click", () => setLevel(v));
 
   $("mode-explore").addEventListener("click", () => setMode("explore"));
   $("mode-challenge").addEventListener("click", () => setMode("challenge"));

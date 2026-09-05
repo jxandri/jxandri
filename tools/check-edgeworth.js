@@ -781,6 +781,158 @@ const { chromium } = require('playwright-core');
   await setPrefs(['cd',{a:0.5}], ['cd',{a:0.5}], [6,2,2,6]);
 
 
+  // --- Pareto set, contract curve and core are three separate objects ------
+  await p.evaluate(() => {
+    const E = window.__edgeworth;
+    E.setModel('exchange'); E.setMethod('free');
+  });
+  await p.click('#lvl-basic');
+  await p.waitForTimeout(150);
+  const lvBasic = await p.evaluate(() =>
+    [...document.querySelectorAll('#layer-checks input')].map(i => i.dataset.layer));
+  say('the basic level offers the Pareto set', lvBasic.includes('pareto'));
+  say('and withholds the contract curve and the core',
+      !lvBasic.includes('contract') && !lvBasic.includes('core'), lvBasic.join(' '));
+
+  await p.click('#lvl-advanced');
+  await p.waitForTimeout(150);
+  const lvAdv = await p.evaluate(() =>
+    [...document.querySelectorAll('#layer-checks input')].map(i => i.dataset.layer));
+  say('the advanced level adds both',
+      lvAdv.includes('contract') && lvAdv.includes('core') && lvAdv.includes('pareto'),
+      lvAdv.join(' '));
+
+  // Each of the three draws on its own: turning one off must not take the
+  // others with it, which is exactly what nesting the core inside the
+  // contract block used to do.
+  const inkOf = async layers => p.evaluate(async ls => {
+    const E = window.__edgeworth, st = E.st;
+    for(const k of Object.keys(st.layers)) st.layers[k] = false;
+    for(const k of ls) st.layers[k] = true;
+    E.render();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const cv = document.getElementById('cbox');
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    const seen = new Set();
+    for(let i = 0; i < d.length; i += 4) seen.add(d[i] + ',' + d[i+1] + ',' + d[i+2]);
+    return seen.size;
+  }, layers);
+
+  const nNone = await inkOf([]);
+  const nPar  = await inkOf(['pareto']);
+  const nCon  = await inkOf(['contract']);
+  const nCore = await inkOf(['core']);
+  say('the Pareto set draws with contract and core off',   nPar  > nNone, nPar + ' vs ' + nNone);
+  say('the contract curve draws with Pareto and core off', nCon  > nNone, nCon + ' vs ' + nNone);
+  say('the core draws with Pareto and contract off',       nCore > nNone, nCore + ' vs ' + nNone);
+
+  // The core's two curves are the ones through the ENDOWMENT: the levels they
+  // are traced at must follow omega and ignore where the allocation sits.
+  const lv = () => p.evaluate(() => {
+    const { st } = window.__edgeworth;
+    return [st.core.uAe, st.core.uBe];
+  });
+  const [a0, b0] = await lv();
+  say('the core is traced at the utilities the endowment gives',
+      Math.abs(a0 - (await p.evaluate(() => window.__edgeworth.st.uA(6, 2)))) < 1e-9 &&
+      Math.abs(b0 - (await p.evaluate(() => window.__edgeworth.st.uB(2, 6)))) < 1e-9,
+      a0.toFixed(4) + ' / ' + b0.toFixed(4));
+
+  await p.evaluate(() => { const E = window.__edgeworth; E.st.P = [1.2, 6.4]; E.syncState(); E.render(); });
+  const [a1, b1] = await lv();
+  say('which the allocation cannot move', a1 === a0 && b1 === b0);
+
+  await p.evaluate(() => window.__edgeworth.moveEndowment([3.1, 5.2]));
+  const [a2, b2] = await lv();
+  say('and the endowment can', Math.abs(a2 - a0) > 1e-6 && Math.abs(b2 - b0) > 1e-6,
+      a2.toFixed(4) + ' / ' + b2.toFixed(4));
+  await p.evaluate(() => window.__edgeworth.moveEndowment([6, 2]));
+
+  // --- Robinson: the optimum is drawn, and the constraint reaches the PPF --
+  const robFix = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    E.setModel('robinson');
+    for(const k of Object.keys(st.layers)) st.layers[k] = false;
+    st.layers.pareto = true;
+    st.P = [3.2, 3.2];
+    E.syncState(); E.render();
+    const q = st.contract[0];
+    const s = E.supportAt(st, st.P[0], st.P[1]);
+    return {
+      n: st.contract.length, q,
+      mrsAtOpt: E.st.uAx(q.x, q.y) / E.st.uAy(q.x, q.y),
+      mrtAtOpt: E.mrt(st, q.x, q.y),
+      prodOnPPF: Math.abs(s.Wy - E.ppfY(st, s.Wx)),
+      mrtAtProd: E.mrt(st, s.Wx, s.Wy),
+      p: s.p, income: s.ownA, profit: s.profit,
+      valueAtP: s.p * st.P[0] + st.P[1]
+    };
+  });
+  say('Robinson has exactly one efficient allocation', robFix.n === 1);
+  say('and it is where MRS meets MRT',
+      Math.abs(robFix.mrsAtOpt - robFix.mrtAtOpt) < 1e-3,
+      'MRS ' + robFix.mrsAtOpt.toFixed(4) + ' vs MRT ' + robFix.mrtAtOpt.toFixed(4));
+  say('the firm produces ON the frontier', robFix.prodOnPPF < 1e-6, robFix.prodOnPPF.toExponential(1));
+  say('where MRT equals the announced price',
+      Math.abs(robFix.mrtAtProd - robFix.p) / robFix.p < 1e-6,
+      'MRT ' + robFix.mrtAtProd.toFixed(5) + ' vs p ' + robFix.p.toFixed(5));
+  say('so the constraint lies above an inefficient allocation',
+      robFix.income > robFix.valueAtP + 1e-6,
+      'income ' + robFix.income.toFixed(3) + ' vs spent ' + robFix.valueAtP.toFixed(3));
+
+  // and it is actually on screen: the single point used to draw nothing,
+  // because a polyline through one vertex has no segments.
+  const robInk = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    const shot = on => {
+      st.layers.pareto = on; E.render();
+      return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => {
+        const cv = document.getElementById('cbox');
+        const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+        const seen = new Set();
+        for(let i = 0; i < d.length; i += 4) seen.add(d[i] + ',' + d[i+1] + ',' + d[i+2]);
+        r(seen.size);
+      })));
+    };
+    const off = await shot(false), on = await shot(true);
+    return { off, on };
+  });
+  say('and the lone optimum is visibly drawn', robInk.on > robInk.off,
+      robInk.on + ' vs ' + robInk.off);
+
+  // --- the tangent at the allocation --------------------------------------
+  const tan = await p.evaluate(async () => {
+    const E = window.__edgeworth, st = E.st;
+    E.setModel('exchange'); E.setMethod('free');
+    for(const k of Object.keys(st.layers)) st.layers[k] = false;
+    st.P = [2.0, 6.0];                      // deliberately off the contract curve
+    E.syncState();
+    const shot = on => {
+      st.layers.tangent = on; E.render();
+      return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => {
+        const cv = document.getElementById('cbox');
+        const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+        const seen = new Set();
+        for(let i = 0; i < d.length; i += 4) seen.add(d[i] + ',' + d[i+1] + ',' + d[i+2]);
+        r(seen.size);
+      })));
+    };
+    const off = await shot(false), on = await shot(true);
+    const s = E.st;
+    return { off, on,
+      mA: s.uAx(s.P[0], s.P[1]) / s.uAy(s.P[0], s.P[1]),
+      mB: s.uBx(s.Wx - s.P[0], s.Wy - s.P[1]) / s.uBy(s.Wx - s.P[0], s.Wy - s.P[1]) };
+  });
+  say('the tangent layer draws', tan.on > tan.off, tan.on + ' vs ' + tan.off);
+  say('and off the contract curve the two rates really do differ',
+      Math.abs(tan.mA - tan.mB) > 1e-3, tan.mA.toFixed(3) + ' vs ' + tan.mB.toFixed(3));
+
+  await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    st.layers.lens = true; st.layers.curves = true; st.layers.pareto = true;
+    E.setModel('exchange'); E.render();
+  });
+
   // --- language ------------------------------------------------------------
   await p.click('#lang-en');
   await p.waitForTimeout(200);
