@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manuales · Applets de Microeconomía</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%2314181B%22%2F%3E%3Crect%20x%3D%227%22%20y%3D%226%22%20width%3D%2218%22%20height%3D%2220%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22%237C8B93%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M11%2012h10M11%2016h10M11%2020h6%22%20stroke%3D%22%233DBBFF%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
+<style>
+:root{
+  --paper:#E9ECEE; --surface:#FFFFFF; --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
+  --rule:#CBD4D8; --rule-2:#E1E7EA; --accent:#0E6E78; --accent-ink:#0A4F57;
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1215; --surface:#151C20; --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+    --rule:#2A353B; --rule-2:#212B30; --accent:#4CC6D4; --accent-ink:#8CE2EC;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1215; --surface:#151C20; --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30; --accent:#4CC6D4; --accent-ink:#8CE2EC;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-ui);
+     font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased}
+.wrap{max-width:760px; margin:0 auto; padding:44px 20px 70px}
+h1{font-family:var(--f-display); font-size:30px; font-weight:600; margin:0 0 6px; letter-spacing:-.01em}
+.sub{margin:0 0 30px; color:var(--ink-2); max-width:60ch}
+.cards{display:grid; gap:14px}
+@media (min-width:640px){ .cards{grid-template-columns:1fr 1fr} }
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:4px;
+      padding:20px; display:flex; flex-direction:column; gap:8px}
+.lang{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.14em;
+      text-transform:uppercase; color:var(--accent-ink)}
+.card h2{font-family:var(--f-display); font-size:19px; font-weight:600; margin:0}
+.card p{margin:0; color:var(--ink-2); font-size:13.5px}
+.meta{font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3); margin-top:2px}
+.btn{display:inline-block; margin-top:8px; align-self:flex-start; text-decoration:none;
+     background:var(--accent); color:#fff; border-radius:3px; padding:8px 15px;
+     font-size:13.5px; font-weight:600}
+:root[data-theme="dark"] .btn{color:#08171A}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .btn{color:#08171A} }
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+.back{display:block; margin-top:30px; padding-top:18px; border-top:1px solid var(--rule-2);
+      font-size:13.5px; color:var(--accent-ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Manuales</h1>
+  <p class="sub">Guía completa de los cinco applets de microeconomía, en español y
+  en inglés. Escrita para quien nunca ha usado uno: cada paso está detallado y no
+  hace falta programar nada. &mdash; Complete guide to the five microeconomics
+  applets, in Spanish and English.</p>
+
+  <div class="cards">
+    <article class="card">
+      <span class="lang">Español</span>
+      <h2>Los Applets de Microeconomía</h2>
+      <p>Manual completo: qué muestra cada applet, los primeros cinco minutos de
+      cada uno, ejercicios para clase y cómo publicarlos.</p>
+      <span class="meta">PDF · 19 páginas</span>
+      <a class="btn" href="Applets-Microeconomia-Manual.pdf">Abrir el manual</a>
+    </article>
+
+    <article class="card">
+      <span class="lang">English</span>
+      <h2>The Microeconomics Applets</h2>
+      <p>Complete manual: what each applet shows, your first five minutes with
+      each, classroom exercises, and how to publish them.</p>
+      <span class="meta">PDF · 18 pages</span>
+      <a class="btn" href="Microeconomics-Applets-Manual.pdf">Open the manual</a>
+    </article>
+  </div>
+
+  <a class="back" href="../">&larr; Volver a los applets / Back to the applets</a>
+</div>
+</body>
+</html>
