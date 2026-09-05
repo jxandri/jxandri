@@ -30,9 +30,9 @@ is a reconciliation against the original's own choices — its utility
 functions, its slider ranges, its labelling. Paste the graph's expression list
 and those can be matched.
 
-## Three economies
+## Four economies
 
-A toggle at the top of the rail switches the model. All three are one picture
+A toggle at the top of the rail switches the model. The first three are one picture
 with the corner of the box rounded by different amounts, because the firm's
 technology is written as a frontier rather than as a production function:
 
@@ -414,13 +414,136 @@ bundle and utility, both marginal rates and the gap between them, and, under
 the planner, the weight, the supporting price, both transfers and the Negishi
 weight.
 
+## Two countries, and the gains from trade
+
+The fourth model is two Robinson economies side by side, each with its own
+frontier and its own tastes, and a switch between a shut border and an open
+one.
+
+Under **autarky** each country produces the point of its own frontier it likes
+best and eats exactly that. Under **free trade** a single world price appears,
+each country produces where its own marginal rate of transformation meets that
+price, and the two then trade what they made.
+
+That last sentence is an exchange economy whose endowments are the two
+production points, which is why the model needs almost no machinery of its own:
+settle where the countries start and the box, the contract curve, the core, the
+offer curves and the Walrasian equilibrium are the ones drawn everywhere else.
+So this model answers *no* to `hasFirm` — the frontier does not replace the
+corner of the box here, two frontiers meet inside it — and inherits the
+exchange apparatus rather than duplicating it. The world price is one
+bisection: dearer x is made in greater quantity and wanted in smaller, so the
+excess demand for it falls monotonically.
+
+Both frontiers are drawn, A's from its origin and B's from the far corner with
+both axes backwards, exactly as B's indifference curves already are. Under
+autarky they **cross**, and the angle between them is comparative advantage
+nobody is exploiting; under free trade they are **tangent**, which is the
+consumption tangency argument applied one level up. The old autarky bundles
+stay marked, so the move is visible rather than asserted.
+
+The gains from trade are the **core, read against autarky**. A country can
+always shut the border again, so autarky is the outside option individual
+rationality has to beat — not the value of whatever it happened to produce for
+the world price. Everything both countries prefer to staying home is the core,
+and free trade lands inside it. On the default pair of technologies the checks
+record the whole argument: two marginal rates of transformation of 0.33 and
+3.00 under autarky leaving 8.7% of the box unclaimed, then both equal to the
+world price, both markets clearing to 1e-9, world output up in *both* goods,
+and both countries lifted from 4.49 to 6.12.
+
+The first visit to the model sets a pair of technologies with a comparative
+advantage in them and gives both countries the same tastes. That is not
+decoration: if the country that is good at x is also the one that wants x,
+autarky already gives it roughly what it wanted and the gains from trade are a
+rounding error. The lesson wants countries that want the same things and are
+good at different ones. Both sets of dials stay the student's afterwards.
+
+## Three objects, not one curve under three names
+
+The Pareto set, the contract curve and the core used to be one switch and one
+polyline. They are three different claims, and they now have three switches:
+
+| Object | What it is | Needs an endowment? |
+| --- | --- | --- |
+| **Pareto set** | every efficient allocation | no |
+| **Contract curve** | the stretch of it neither would refuse from ω | yes |
+| **Core** | the two indifference curves through ω, and the lens they bound | yes |
+
+The core is drawn as what *makes* the contract curve what it is rather than as
+a second copy of it, which is also what the box needs in order to say anything
+at all about why that stretch and not another. In the three-good tab the same
+three appear, the core as the two indifference *surfaces* through ω.
+
+A **level switch** sits above them. *Basic* offers Pareto efficiency alone,
+which is where a first course stops; *advanced* adds the two objects that only
+mean something once there is an endowment to start from. A layer the level or
+the model does not offer is off however its own switch is set, so coming back
+up restores exactly what was on before.
+
+The core is found by **crossing, not by counting**. It used to collect the
+traced points that happened to clear both floors, so a core narrower than the
+spacing of those points read as no core at all — which is precisely what a
+small gain from trade looks like, and says the opposite of the truth. Since
+`u_A` rises along the traced curve and `u_B` falls, each floor bites at one end
+and the interval between the two crossings is the core, drawn as the segment it
+is however short. A check builds a case whose core contains no traced point at
+all and confirms it is still reported and still has something to draw.
+
+## Choosing the allocation yourself
+
+Both tabs let the allocation be placed by hand, which is the only way to show
+an allocation that is **not** efficient — where the two indifference curves
+cross rather than touch, and the region caught between them is what is still on
+the table. The weight slider and the Pareto sweep can only ever produce
+efficient allocations, so neither can show that.
+
+In the cube, dragging a point in three dimensions with a two-dimensional
+pointer is underdetermined; the choice that never surprises is to move it in
+the plane facing the camera, so what you see is what moves. A grab within 18px
+of the allocation takes precedence over orbiting, but only in the mode where
+the allocation is the student's to place.
+
+Two toggles go with it: the indifference curve (or surface) the allocation sits
+on, and the **tangent** at it — the budget constraint that bundle would be
+chosen under at that agent's own marginal rates. There is one per agent. Away
+from the contract curve they are two different lines, and the angle between
+them is the trade still worth making; they fuse into one exactly when the
+allocation is efficient, and the line they fuse into is the supporting price.
+In the cube they are two planes through the same bundle, and the reported gap
+is how far from parallel the two gradients are.
+
+This exposed a real defect in the three-good tab. With both agents
+Cobb-Douglas the price comes from a closed form that reads it off the *weight*
+rather than off the bundle and returns a zero gap by construction — correct
+when the bundle is the one that weight would have chosen, and nonsense for a
+bundle picked by pointer. It reported a perfectly supported allocation wherever
+you dropped it. The shortcut is now taken only where it is true.
+
+## Robinson, and a constraint that reaches the frontier
+
+Robinson was drawing neither of the two things it exists to show.
+
+Its efficient set is a single allocation, and a polyline through one vertex has
+no segments, so the optimum was **invisible** however hard you looked for it.
+It has a mark of its own now.
+
+And the constraint never reached the frontier: it was drawn through the
+allocation at the consumer's own marginal rate, so it hung in mid-air inside
+the production set. The firm now answers the price that rate announces, which
+puts the line tangent to the frontier at the point the firm picks and strictly
+above the allocation whenever the allocation is not the optimum — which is
+precisely the gain still on the table. Its budget set is no longer clipped to a
+sub-box it shares with a second consumer who does not exist.
+
 ## Layers
 
 Lens of gains, both families of indifference curves, the two curves through the
-allocation, the contract curve, the core marked on it, the price line through
-the endowment, each person's demand at the announced price, both offer curves,
-and the Walrasian equilibria. The map behind them can show the lens (the
-default), A's utility, B's utility, or nothing.
+allocation, the tangent at it, the Pareto set, the contract curve, the core,
+the price line through the endowment, each person's demand at the announced
+price, both offer curves, the Walrasian equilibria, and — in the two-country
+model — both production frontiers and both autarky points. The map behind them
+can show the lens (the default), A's utility, B's utility, or nothing.
 
 The gains map is this applet's own, and it is the default because the question
 the box exists to ask is not "how high is utility here" but "who is better off
@@ -537,7 +660,7 @@ it owns. The improving set is cross-checked against the utility closures
 themselves by Monte Carlo, so a bug in the grid or in the bilinear read cannot
 agree with itself.
 
-`tools/check-edgeworth3.js` does the same for the three-good tab, now 129
+`tools/check-edgeworth3.js` does the same for the three-good tab, now 141
 checks. Because the
 GeoGebra file stores the value of every object it defines, twenty of those
 values are used directly as expected results — the demands, all three prices

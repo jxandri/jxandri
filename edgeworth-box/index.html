@@ -5715,10 +5715,27 @@ function g3Render(){
       const sol = g3HalfSolid(O, nrm, rhs, false); cap = cap || sol.cap;
       for(const f of sol.faces) sc.poly(f, g3Shade(f, g3RGB(MARK.B), 0.17), null, 0, 0);
     }
-    if(L.budget){
+    if(L.budget && s.mode !== "hand"){
       if(!cap) cap = g3HalfSolid(O, nrm, rhs, true).cap;
       if(cap) sc.poly(cap, `rgba(255,197,61,.20)`, MARK.budget, 2, 0);
     }
+  }
+
+  /* With the allocation placed by hand there is no single budget plane to
+     draw, because the two agents do not agree on one. Each gets its own: the
+     plane tangent to that agent's indifference surface at the bundle, which
+     is the budget constraint the bundle would be chosen under at that agent's
+     own marginal rates. Both pass through the bundle, and they fuse into one
+     plane exactly when the allocation is efficient — the three-dimensional
+     statement of the two-good tangency, and the thing the gap measures. */
+  if(L.budget && s.mode === "hand"){
+    const plane = (n, col) => {
+      if(!n.every(Number.isFinite) || !n.some(v => Math.abs(v) > 1e-12)) return;
+      const cp = g3HalfSolid(O, n, g3Dot(n, r.xA), true).cap;
+      if(cp) sc.poly(cp, g3Shade(cp, g3RGB(col), 0.14), col, 1.6, 0);
+    };
+    plane(g3GL(s, "A", r.xA), MARK.A);
+    plane(g3GL(s, "B", g3Sub(O, r.xA)), MARK.B);
   }
 
   /* indifference surfaces through the Pareto allocation */
