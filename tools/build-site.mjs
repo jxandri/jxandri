@@ -54,7 +54,7 @@ await mkdir(site, { recursive: true });
  *   /                       the landing page
  *   /gradient-peaks/        the calculus sandbox, Border Run and the campus
  *   /gradient-peaks/guide/  the illustrated manual, English and Spanish
- *   /consumer-optimum/      …and the six GeoGebra applets
+ *   /consumer-optimum/      …and the seven GeoGebra applets
  */
 const copies = [
   ['landing/index.html', 'index.html'],
@@ -66,6 +66,7 @@ const copies = [
   ['labor-tax/index.html', 'labor-tax/index.html'],
   ['firm-supply/index.html', 'firm-supply/index.html'],
   ['partial-derivatives/index.html', 'partial-derivatives/index.html'],
+  ['climbing-robot/index.html', 'climbing-robot/index.html'],
   // Each applet's manual travels with the applet, in both languages.
   ['dist/Consumer-Optimum-Guia.pdf',  'consumer-optimum/Consumer-Optimum-Guia.pdf'],
   ['dist/Consumer-Optimum-Guide.pdf', 'consumer-optimum/Consumer-Optimum-Guide.pdf'],

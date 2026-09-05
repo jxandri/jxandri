@@ -11,6 +11,7 @@ name: Deploy applets to GitHub Pages
 #   /labor-tax/          the income-tax applet        (labor-tax/)
 #   /firm-supply/        the firm-and-supply applet   (firm-supply/)
 #   /partial-derivatives/ the partial-derivatives applet (partial-derivatives/)
+#   /climbing-robot/     the robot-and-zoom applet    (climbing-robot/)
 #
 # ONE-TIME SETUP: Settings -> Pages -> Build and deployment -> Source:
 # "GitHub Actions". Until that is done every run fails at configure-pages.
@@ -75,6 +76,9 @@ jobs:
           mkdir -p _site/partial-derivatives
           cp partial-derivatives/index.html _site/partial-derivatives/index.html
 
+          mkdir -p _site/climbing-robot
+          cp climbing-robot/index.html _site/climbing-robot/index.html
+
           # each applet's manual, in both languages, next to the applet
           for pdf in Consumer-Optimum-Guia.pdf Consumer-Optimum-Guide.pdf; do
             if [ -f "dist/$pdf" ]; then cp "dist/$pdf" "_site/consumer-optimum/$pdf"; fi
@@ -126,7 +130,8 @@ jobs:
             _site/nonlinear-budget/index.html \
             _site/labor-tax/index.html \
             _site/firm-supply/index.html \
-            _site/partial-derivatives/index.html
+            _site/partial-derivatives/index.html \
+            _site/climbing-robot/index.html
           do
             if [ ! -s "$f" ]; then
               echo "::error::missing or empty: $f"
