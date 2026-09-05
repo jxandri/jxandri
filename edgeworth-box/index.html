@@ -660,6 +660,23 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
           <button type="button" id="rg-trade" aria-pressed="false">Libre comercio</button>
         </div>
         <p class="note" id="t-trade-note">—</p>
+        <h2 id="t-g-techa" style="margin-top:6px">Tecnología de A</h2>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agA)">F<sub>x</sub></span>
+          <input type="range" id="ax" min="2" max="20" step="0.5" value="12" aria-label="Máximo de x de A">
+          <input class="v" id="ax-v" inputmode="decimal" aria-label="Máximo de x de A (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agA)">F<sub>y</sub></span>
+          <input type="range" id="ay" min="2" max="20" step="0.5" value="4" aria-label="Máximo de y de A">
+          <input class="v" id="ay-v" inputmode="decimal" aria-label="Máximo de y de A (valor)">
+        </div>
+        <div class="slider-row">
+          <span class="k" style="color:var(--agA)">c<sub>A</sub></span>
+          <input type="range" id="ac" min="1" max="8" step="0.05" value="1.6" aria-label="Curvatura de A">
+          <input class="v" id="ac-v" inputmode="decimal" aria-label="Curvatura de A (valor)">
+        </div>
+        <p class="note" id="t-tech-note">—</p>
         <h2 id="t-g-techb" style="margin-top:6px">Tecnología de B</h2>
         <div class="slider-row">
           <span class="k" style="color:var(--agB)">G<sub>x</sub></span>
@@ -726,6 +743,11 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
           <button type="button" id="lvl-advanced" aria-pressed="false">Avanzado</button>
         </div>
         <p class="note" id="t-level-note">—</p>
+        <h2 id="t-g-fit" style="margin-top:6px">Encuadre</h2>
+        <div class="seg seg-wide" role="group" aria-label="Encuadre">
+          <button type="button" id="fit-fill" aria-pressed="true">Ajustar</button>
+          <button type="button" id="fit-true" aria-pressed="false">Proporción real</button>
+        </div>
         <h2 id="t-g-show" style="margin-top:6px">Capas</h2>
         <div class="checks" id="layer-checks"></div>
       </div>
@@ -1507,7 +1529,10 @@ function residualField(st, n){
    ========================================================================== */
 
 /* A technology in the shape the frontier functions already read. */
-const techA = st => ({ Fx:st.Fx, Fy:st.Fy, Fc:st.Fc });
+/* Country A's technology is its own state, not the single firm's. Sharing it
+   meant that visiting this model rewrote the frontier the production and
+   Robinson economies use, and left them with a 12x4 box for good. */
+const techA = st => ({ Fx:st.Ax, Fy:st.Ay, Fc:st.Ac });
 const techB = st => ({ Fx:st.Gx, Fy:st.Gy, Fc:st.Gc });
 
 /* Where a country settles when it must consume what it produces: its own
@@ -2472,6 +2497,15 @@ const viewBox = {
   rect(w, h, st){
     const p = this.pad;
     const aw = Math.max(10, w - p.l - p.r), ah = Math.max(10, h - p.t - p.b);
+    /* Letterboxing to the economy's own proportions is honest about scale and
+       hopeless to read: a 12x4 technology becomes a strip across the middle of
+       the panel with most of the panel left empty. Stretching the two axes
+       independently is an affine map, and an affine map preserves tangency,
+       crossing, betweenness, convexity and every other claim this diagram
+       makes. All it changes is the APPARENT slope of a line — and both axes
+       are ticked with their own numbers, which give that away already. So
+       clarity is the default and true proportions are one click away. */
+    if(st.fit !== "true") return { x0:p.l, y0:p.t, x1:p.l + aw, y1:p.t + ah };
     const ar = (st.Wx > 0 && st.Wy > 0) ? st.Wx / st.Wy : 1;
     let bw = aw, bh = bw / ar;
     if(bh > ah){ bh = ah; bw = bh * ar; }
@@ -3195,6 +3229,7 @@ const STR = {
     mAuctionD:"Anuncia un precio; cada uno pide lo que quiere; busca el que vacía el mercado.",
 
     lLens:"Conjunto de mejoras", lFamilies:"Familias de indiferencia",
+    gFit:"Encuadre", fitFill:"Ajustar", fitTrue:"Proporción real",
     gLevel:"Nivel", lvBasic:"Básico", lvAdvanced:"Avanzado",
     levelNoteBasic:"Sólo eficiencia de Pareto: qué repartos son eficientes y cuánto queda todavía por repartir.",
     levelNoteAdvanced:"Añade la curva de contrato y el núcleo, que sólo significan algo una vez que hay una dotación de la que partir.",
@@ -3367,6 +3402,7 @@ const STR = {
     mAuctionD:"Announce a price, let each one demand what they like, hunt for the price that clears.",
 
     lLens:"Improving set", lFamilies:"Indifference families",
+    gFit:"Frame", fitFill:"Fit panel", fitTrue:"True scale",
     gLevel:"Level", lvBasic:"Basic", lvAdvanced:"Advanced",
     levelNoteBasic:"Pareto efficiency only: which allocations are efficient, and how much is still on the table.",
     levelNoteAdvanced:"Adds the contract curve and the core, which mean nothing until there is an endowment to start from.",
@@ -3620,8 +3656,13 @@ const st = {
 
   wAx:6, wAy:2, wBx:2, wBy:6, Wx:8, Wy:8,
   model:"exchange", Fx:8, Fy:8, Fc:2, theta:0.5,
-  /* B's technology, and whether the border is open */
-  Gx:5, Gy:10, Gc:2, regime:"autarky", twoc:null, twocInit:false,
+  /* the two countries' technologies, and whether the border is open. A better
+     at x and B better at y, so there is a comparative advantage to exploit */
+  Ax:12, Ay:4,  Ac:1.6,
+  Gx:4,  Gy:12, Gc:1.6,
+  regime:"autarky", twoc:null, twocInit:false,
+  /* letterbox to the economy's true proportions, or fill the panel */
+  fit:"fill",
   lam:0.5, negishi:null, swt:null,
 
   fA:null, fB:null, fieldKey:"", famA:null, famB:null, famKey:"",
@@ -3925,7 +3966,9 @@ function applyLang(){
   $("mdl-robinson").textContent   = t.mdlRobinson;
   $("mdl-twocountry").textContent = t.mdlTwoCountry;
   $("t-g-trade").textContent      = t.gTrade;
+  $("t-g-techa").textContent      = t.gTechA;
   $("t-g-techb").textContent      = t.gTechB;
+  $("t-tech-note").innerHTML      = t.techNote;
   $("rg-autarky").textContent     = t.rgAutarky;
   $("rg-trade").textContent       = t.rgTrade;
   $("t-m-planner").textContent    = t.mPlanner;
@@ -3937,6 +3980,9 @@ function applyLang(){
   $("t-g-map").textContent    = t.gMap;
   $("t-g-show").textContent   = t.gShow;
   $("t-g-level").textContent  = t.gLevel;
+  $("t-g-fit").textContent    = t.gFit;
+  $("fit-fill").textContent   = t.fitFill;
+  $("fit-true").textContent   = t.fitTrue;
   $("lvl-basic").textContent    = t.lvBasic;
   $("lvl-advanced").textContent = t.lvAdvanced;
   paintLevelNote();
@@ -4342,6 +4388,16 @@ function landOnRegime(){
   syncState(); syncScrubFromState(); render();
 }
 
+/* Whether the box is drawn at its own proportions or stretched to fill the
+   panel. Stretching is affine, so nothing the diagram claims survives less
+   well for it — only the apparent slope of a line changes. */
+function setFit(v){
+  st.fit = v;
+  $("fit-fill").setAttribute("aria-pressed", v === "fill");
+  $("fit-true").setAttribute("aria-pressed", v === "true");
+  render();
+}
+
 function paintLevelNote(){
   $("t-level-note").textContent =
     st.level === "advanced" ? T().levelNoteAdvanced : T().levelNoteBasic;
@@ -4710,17 +4766,14 @@ function applyModelUI(){
   for(const [id, k] of [["mdl-exchange","exchange"],["mdl-production","production"],
                         ["mdl-robinson","robinson"],["mdl-twocountry","twocountry"]])
     $(id).setAttribute("aria-pressed", m === k);
-  /* two countries need A's technology too, so that group serves both models
-     and only its heading changes; the profit share belongs to neither */
-  $("g-firm").hidden = !hasFirm(st) && !isTwoC(st);
+  $("g-firm").hidden = !hasFirm(st);
   $("g-trade").hidden = !isTwoC(st);
   /* endowments are an OUTPUT here — what each country produced — so the
      sliders that would set them by hand have nothing to set */
   $("g-endow").hidden = hasFirm(st) || isTwoC(st);
-  $("row-theta").hidden = !hasB(st) || isTwoC(st);
-  $("t-g-firm").textContent = isTwoC(st) ? T().gTechA : T().gFirm;
-  $("t-firm-note").innerHTML = isTwoC(st) ? T().techNote : T().firmNote;
-  for(const [id, k] of [["gx","Gx"],["gy","Gy"],["gc","Gc"]]){
+  $("row-theta").hidden = !hasB(st);
+  for(const [id, k] of [["ax","Ax"],["ay","Ay"],["ac","Ac"],
+                        ["gx","Gx"],["gy","Gy"],["gc","Gc"]]){
     $(id).value = st[k]; $(id + "-v").value = st[k];
   }
   for(const [id, v] of [["rg-autarky","autarky"],["rg-trade","trade"]])
@@ -4744,15 +4797,14 @@ function setModel(m){
      open on its own degenerate case. So the first visit sets a pair with a
      comparative advantage in it — A better at x, B better at y — and after
      that the sliders are the student's. */
+  /* Tastes alike, technologies opposed — otherwise the country that is good
+     at x is also the one that wants x, autarky already gives it roughly what
+     it wanted, and the gains from trade are a rounding error. The lesson wants
+     countries that want the same things and are good at different ones. The
+     technologies are this model's own defaults; only the tastes are borrowed,
+     so only they are set, and only on the first visit. */
   if(m === "twocountry" && !st.twocInit){
     st.twocInit = true;
-    st.Fx = 12; st.Fy = 4;  st.Fc = 1.6;
-    st.Gx = 4;  st.Gy = 12; st.Gc = 1.6;
-    /* Tastes alike, technologies opposed — otherwise the country that is good
-       at x is also the one that wants x, autarky already gives it roughly
-       what it wanted, and the gains from trade are a rounding error. The
-       lesson wants countries that want the same things and are good at
-       different ones. Both sets of dials stay the student's afterwards. */
     setFamily("a", "cd", { a:0.5 });
     setFamily("b", "cd", { a:0.5 });
     buildFamilies();
@@ -6165,7 +6217,8 @@ function boot(){
     st.negishi = negishiSolve(st); syncState(); render();
   });
 
-  for(const [id, key] of [["gx","Gx"],["gy","Gy"],["gc","Gc"]])
+  for(const [id, key] of [["ax","Ax"],["ay","Ay"],["ac","Ac"],
+                          ["gx","Gx"],["gy","Gy"],["gc","Gc"]])
     bindNum(id, id + "-v", key, scheduleModel);
   for(const [id, v] of [["rg-autarky","autarky"],["rg-trade","trade"]])
     $(id).addEventListener("click", () => setRegime(v));
@@ -6217,6 +6270,8 @@ function boot(){
 
   for(const [id, v] of [["lvl-basic","basic"], ["lvl-advanced","advanced"]])
     $(id).addEventListener("click", () => setLevel(v));
+  for(const [id, v] of [["fit-fill","fill"], ["fit-true","true"]])
+    $(id).addEventListener("click", () => setFit(v));
 
   $("mode-explore").addEventListener("click", () => setMode("explore"));
   $("mode-challenge").addEventListener("click", () => setMode("challenge"));
@@ -6277,7 +6332,7 @@ function boot(){
     st, render, syncState, recomputeModel, recomputeUtilities,
     marketAt, demandAt, paretoSet, findEquilibria, nearestOnCurve, inLens, setMethod,
     setFamily, applyPrefs, applyPreset, exprOf, lensShare, FAMILIES, PRESETS,
-    setModel, paretoAtWeight, supportAt, negishiSolve, weightFor, moveEndowment,
+    setModel, setFit, paretoAtWeight, supportAt, negishiSolve, weightFor, moveEndowment,
     ppfY, ppfX, mrt, firmAt, hasFirm, hasB, bUtilAt,
     isTwoC, techA, techB, autarkyOn, firmOn, worldAt, worldPrice,
     twoCountrySetup, setRegime, landOnRegime, coreOf, corePath, setLevel

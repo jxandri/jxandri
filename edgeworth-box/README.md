@@ -536,6 +536,26 @@ above the allocation whenever the allocation is not the optimum — which is
 precisely the gain still on the table. Its budget set is no longer clipped to a
 sub-box it shares with a second consumer who does not exist.
 
+## Framing
+
+Letterboxing the box to the economy's own proportions is honest about scale and
+hopeless to read: a 14x4 technology becomes a strip across the middle of the
+panel with three quarters of the panel left empty, which is where the
+production and Robinson economies spent most of their time.
+
+Stretching the two axes independently is an affine map, and an affine map
+preserves tangency, crossing, betweenness and convexity — every claim this
+diagram makes. All it changes is the *apparent* slope of a line, and both axes
+are ticked with their own numbers, which give that away already. So **Ajustar /
+Fit panel** is the default and **Proporción real / True scale** is one click
+away. On a 14x4 economy the fitted frame is 3.4 times taller: 249px of drawn
+height becomes 846px.
+
+Each of the two countries also has its own technology dials. They used to
+borrow the single firm's, so a visit to the two-country model rewrote the
+frontier the production and Robinson economies draw and left them with a 12x4
+box for good.
+
 ## Layers
 
 Lens of gains, both families of indifference curves, the two curves through the

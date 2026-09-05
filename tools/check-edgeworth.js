@@ -1013,7 +1013,7 @@ const { chromium } = require('playwright-core');
     const E = window.__edgeworth, st = E.st;
     E.setFamily('a', 'cd', { a:0.75 });
     E.setFamily('b', 'cd', { a:0.25 });
-    st.Fx = 10; st.Fy = 5; st.Fc = 2;
+    st.Ax = 10; st.Ay = 5;  st.Ac = 2;
     st.Gx = 5;  st.Gy = 10; st.Gc = 2;
     E.applyPrefs(); E.recomputeModel(); E.syncState();
     const C = st.contract, c = st.core;
@@ -1040,7 +1040,67 @@ const { chromium } = require('playwright-core');
         return Math.abs(E.st.wAx - before[0]) < 1e-12 && Math.abs(E.st.wAy - before[1]) < 1e-12;
       }));
 
-  await p.evaluate(() => window.__edgeworth.setModel('exchange'));
+  // Country A's technology is the two-country model's own. It used to be the
+  // single firm's, so a visit here rewrote the frontier the production and
+  // Robinson economies draw and left them with a 12x4 box for good.
+  const bleed = await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    E.setModel('exchange');
+    st.Fx = 8; st.Fy = 8; st.Fc = 2;
+    E.setModel('twocountry');
+    const during = [st.Ax, st.Ay];
+    E.setModel('production');
+    return { firm:[st.Fx, st.Fy, st.Fc], box:[st.Wx, st.Wy], during };
+  });
+  say('visiting the two-country model leaves the firm’s technology alone',
+      bleed.firm[0] === 8 && bleed.firm[1] === 8,
+      'F = ' + bleed.firm.join(', ') + '  box ' + bleed.box.map(v => v.toFixed(1)).join('x'));
+
+  // --- framing -------------------------------------------------------------
+  // A 12x4 technology letterboxed into a square panel is a strip with most of
+  // the panel empty. Stretching is affine, so every claim the diagram makes
+  // survives it; only the apparent slope of a line changes.
+  const inkBox = () => p.evaluate(async () => {
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const cv = document.getElementById('cbox');
+    const ctx = cv.getContext('2d');
+    const { width:w, height:h } = cv;
+    const d = ctx.getImageData(0, 0, w, h).data;
+    // the panel background is whatever the very first pixel is
+    const b = [d[0], d[1], d[2]];
+    let x0 = w, x1 = -1, y0 = h, y1 = -1;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const o = (y*w + x)*4;
+      if(Math.abs(d[o]-b[0]) + Math.abs(d[o+1]-b[1]) + Math.abs(d[o+2]-b[2]) < 12) continue;
+      if(x < x0) x0 = x; if(x > x1) x1 = x;
+      if(y < y0) y0 = y; if(y > y1) y1 = y;
+    }
+    return { w:x1 - x0, h:y1 - y0 };
+  });
+  await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    E.setModel('production');
+    st.Fx = 14; st.Fy = 4; st.Fc = 2;
+    E.applyPrefs(); E.recomputeModel(); E.syncState();
+  });
+  await p.evaluate(() => window.__edgeworth.setFit('true'));
+  const trueBox = await inkBox();
+  await p.evaluate(() => window.__edgeworth.setFit('fill'));
+  const fillBox = await inkBox();
+  say('at true scale a 14x4 economy is drawn 14:4',
+      Math.abs((trueBox.w / trueBox.h) - 14/4) / (14/4) < 0.12,
+      (trueBox.w / trueBox.h).toFixed(2) + ' vs ' + (14/4).toFixed(2));
+  say('and fitting the panel makes it nearly square',
+      Math.abs((fillBox.w / fillBox.h) - 1) < 0.2,
+      (fillBox.w / fillBox.h).toFixed(2));
+  say('which is what buys the height back', fillBox.h > trueBox.h * 2,
+      trueBox.h + 'px -> ' + fillBox.h + 'px');
+
+  await p.evaluate(() => {
+    const E = window.__edgeworth, st = E.st;
+    st.Fx = 8; st.Fy = 8; st.Fc = 2;
+    E.setModel('exchange');
+  });
   await p.waitForTimeout(300);
 
   // --- language ------------------------------------------------------------
