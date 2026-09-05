@@ -377,9 +377,19 @@ button:disabled { opacity: .45; cursor: default; }
 
 /* ------------------------------------------------------- overlays ------ */
 
+/*
+ * A notice, not a shutter.
+ *
+ * It covers the whole viewport so that the message is unmissable, and while it
+ * took pointer events that meant it also took the press — so the two gestures
+ * that do not need the pointer at all, dragging to look and dragging the
+ * explorer, were dead for as long as it was up. The canvas underneath knows
+ * what to do with a press: a click asks for the pointer, a drag does the thing
+ * you dragged. Let them all through.
+ */
 #click-catch {
   position: fixed; inset: 0; z-index: 4; display: grid; place-items: center;
-  background: rgba(6, 9, 14, .35); cursor: pointer;
+  background: rgba(6, 9, 14, .35); pointer-events: none;
 }
 
 .cc-inner {

@@ -209,6 +209,23 @@ behaves: your mouse now turns your head instead of moving a pointer.</p>
 Press <kbd>Space</kbd> to rise and <kbd>Ctrl</kbd> to descend. Hold <kbd>Shift</kbd> to go faster.</p>
 
 <div class="key">
+  <span class="label">If the pointer never disappears</span>
+  <p>Capturing the mouse is the one thing on this page a browser is entitled to refuse, and some
+  do: Safari in certain windows, and any page that embeds this one in a frame without granting it.
+  You lose nothing. <strong>Hold the right button and drag</strong> and your head turns exactly as
+  it would with the pointer captured; the keyboard and a gamepad were never affected. A short
+  message says so the first time a request is turned down, so you are not left clicking a scene
+  that will not move.</p>
+</div>
+
+<p><strong>Hold the left button and drag</strong> to pick the explorer up and carry them. They
+follow the cursor across the surface and land wherever you let go — which beats holding <kbd>W</kbd>
+for two kilometres when you want to look at the other side of a mountain. It works on every kind of
+surface, and it is not a change to <code>f</code>: standing somewhere else is standing somewhere
+else, and every readout is recomputed from the new point exactly as it is after a step taken on
+foot.</p>
+
+<div class="key">
   <span class="label">The single most important key</span>
   <p><kbd>Esc</kbd> gives you your mouse pointer back. If you ever feel trapped, press
   <kbd>Esc</kbd>. Nothing is lost. Click the scene again to resume looking around.</p>
@@ -501,6 +518,15 @@ the other watching the height readout and you have solved the constrained proble
 highest reading you can find is the number the optimiser prints. It works for a curved constraint
 as readily as a straight one — the curve is read out of whatever inequality is in the box, so a
 circle or a Cobb–Douglas budget set ropes you just as well.</p>
+<p>Which curve, though? A feasible set is usually a conjunction — the consumer problem ships as
+<code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code>, and that has three boundary lines, not
+one. The rope takes the constraint that <em>binds</em>: it finds the constrained maximum and ropes
+you to the curve that maximum stands on, which for the consumer problem is the budget line and not
+the vertical axis. And it ropes you to the <em>connected section</em> of that curve through the
+answer, so a constraint whose boundary passes through the window more than once — a hyperbola, say
+— gives you the branch the optimum is on and not the other one. Walk to the end of it and you
+stop: the section ends where the frontier leaves the window, and there is nothing beyond it to
+walk on.</p>
 <p><strong>Level curves only inside the feasible set</strong> (in Map &amp; terrain) stops every
 contour exactly at the constraint. That is how an economics textbook draws indifference curves over
 a budget set — the curves live inside the feasible region, and the one that just touches the

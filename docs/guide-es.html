@@ -213,6 +213,23 @@ para volar. <kbd>Espacio</kbd> sube y <kbd>Ctrl</kbd> baja. Mantenga <kbd>Shift<
 más rápido.</p>
 
 <div class="key">
+  <span class="label">Si el puntero nunca desaparece</span>
+  <p>Capturar el ratón es lo único de esta página que un navegador puede legítimamente negar, y
+  algunos lo niegan: Safari en ciertas ventanas, y cualquier página que incruste esta en un marco
+  sin concedérselo. No pierde nada. <strong>Mantenga el botón derecho y arrastre</strong> y su
+  cabeza girará igual que con el puntero capturado; el teclado y el mando nunca se vieron
+  afectados. Un mensaje breve lo advierte la primera vez que se rechaza la solicitud, para que
+  usted no se quede haciendo clic en una escena que no se mueve.</p>
+</div>
+
+<p><strong>Mantenga el botón izquierdo y arrastre</strong> para levantar al explorador y llevarlo.
+Sigue al cursor por la superficie y aterriza donde usted suelte, lo que es mejor que mantener
+<kbd>W</kbd> durante dos kilómetros cuando quiere mirar el otro lado de un cerro. Funciona en toda
+clase de superficie, y no es un cambio en <code>f</code>: estar parado en otro sitio es estar
+parado en otro sitio, y cada lectura se recalcula desde el punto nuevo igual que tras un paso dado
+a pie.</p>
+
+<div class="key">
   <span class="label">La tecla más importante de todas</span>
   <p><kbd>Esc</kbd> le devuelve el puntero del ratón. Si en algún momento se siente atrapado,
   presione <kbd>Esc</kbd>. No se pierde nada. Vuelva a hacer clic en la escena para seguir
@@ -509,6 +526,15 @@ empujar en cualquier dirección lo desliza a lo largo de la línea y empujar dir
 no hace nada. Recórrala de un extremo al otro mirando la lectura de altura y habrá resuelto el
 problema restringido a pie: la lectura más alta que encuentre es el número que imprime el
 optimizador. Funciona igual con una restricción curva que con una recta.</p>
+<p>¿Cuál curva, sin embargo? Un conjunto factible suele ser una conjunción —el problema del
+consumidor viene como <code>x&gt;=0 &amp;&amp; y&gt;=0 &amp;&amp; x+y&lt;=2</code>, y eso tiene
+tres rectas de borde, no una—. La cuerda toma la restricción que <em>liga</em>: busca el máximo
+restringido y lo ata a la curva sobre la que ese máximo se encuentra, que en el problema del
+consumidor es la recta presupuestaria y no el eje vertical. Y lo ata a la <em>sección conexa</em>
+de esa curva que pasa por la respuesta, de modo que una restricción cuyo borde atraviesa la ventana
+más de una vez —una hipérbola, por ejemplo— le da la rama donde está el óptimo y no la otra.
+Camine hasta el extremo y se detiene: la sección termina donde la frontera sale de la ventana, y
+más allá no hay nada por donde caminar.</p>
 <p><strong>Curvas de nivel solo dentro del conjunto factible</strong> (en Mapa y terreno) detiene
 cada curva exactamente en la restricción. Así dibuja un libro de economía las curvas de
 indiferencia sobre un conjunto presupuestario: las curvas viven dentro de la región factible, y la

@@ -22,7 +22,7 @@ import {
 import { photoFor } from './borders-photos.js';
 import { Decorations } from './decor.js';
 import {
-  buildContours, chooseLevels, DerivativeGizmo, TangentPlane,
+  buildContours, chooseLevels, traceZeroSet, DerivativeGizmo, TangentPlane,
   maximize, OptimumMarker, LevelCurveGizmo, TangentLineGizmo, traceLevelCurve,
 } from './analysis.js';
 import {
@@ -300,11 +300,14 @@ world.add(decorations.group);
 
 /* ------------------------------------------------------------ the build */
 
-function setMessage(text) {
+let messageTimer = 0;
+function setMessage(text, ms) {
   const el = $('r-msg');
+  clearTimeout(messageTimer);
   if (!text) { el.hidden = true; return; }
   el.textContent = text;
   el.hidden = false;
+  if (ms) messageTimer = setTimeout(() => { el.hidden = true; }, ms);
 }
 
 /** Remove every object that only makes sense for a graph of a function. */
@@ -1284,14 +1287,96 @@ function applyRail() {
   if (!player) return;
   // Same reasoning as the contour clipping: the rope follows the constraint
   // itself, not the visibility of the walls drawn on it.
-  const g = state.rail && hasConstraint() ? railFor(state.feasSrc) : null;
-  player.onRail = g;
+  //
+  // Which constraint, and which piece of it, are both decided by where the
+  // constrained maximum is — so it is found first and then used twice.
+  const on = state.rail && hasConstraint() && field;
+  const best = on ? bestPoint() : null;
+  const g = on ? railFor(state.feasSrc, best) : null;
+  player.onRail = g ? { g, path: railPath(g, best) } : null;
   // Stepping onto the rope should not leave you standing off it.
   if (g && isFinite(player.x)) {
     const saved = { x: player.x, y: player.y };
     player.snapToRail && player.snapToRail();
     if (!isFinite(player.height())) { player.x = saved.x; player.y = saved.y; }
   }
+}
+
+/**
+ * The walkable frontier: one arc, the one the answer is on.
+ *
+ * "Walk the frontier" has to mean walking *the* frontier of this problem, and
+ * a constraint formula's zero set is not automatically one curve. It can pass
+ * through the window more than once, it can have branches the feasible set
+ * never touches, and projecting onto it by Newton — which is all the rope used
+ * to do — lands on whichever piece happens to be nearest. A student could be
+ * roped to a stretch of curve nowhere near the optimum, and could cross to
+ * another stretch by walking past a place where two come close.
+ *
+ * So the arc is worked out once, when the rope goes on: find the constrained
+ * maximum, and trace the connected piece of the frontier through it. Walking
+ * is then confined to that piece and stops at its ends.
+ *
+ * The optimiser is run here whether or not the student is *showing* the
+ * optimum. Which section of the frontier is the right one is a fact about the
+ * problem, not about what happens to be drawn — tying it to the display toggle
+ * would make the rope's behaviour depend on a checkbox that has nothing to do
+ * with it.
+ */
+function railPath(g, best) {
+  if (!field) return null;
+  // From the optimum first. If the frontier through it runs just outside the
+  // window — a maximum that sits at a corner of the *domain* rather than on
+  // the constraint — there is no arc to trace there, and the piece under the
+  // explorer's own feet is the honest second choice.
+  for (const from of [best, { x: player.x, y: player.y }]) {
+    if (!from || !isFinite(from.x)) continue;
+    const traced = traceZeroSet(field, g, from.x, from.y);
+    if (traced) return traced.pts;
+  }
+
+  // Neither point could be pulled onto the curve — the gradient vanishes
+  // there, or Newton walked out of the window. Sweep the domain for the
+  // closest thing to a point on the frontier that has a usable gradient, and
+  // trace from that. A coarse grid is enough: the trace only needs a seed.
+  const N = 60;
+  const h = Math.max(1e-6, (field.xmax - field.xmin) * 1e-5);
+  let seed = null, bestD = Infinity;
+  for (let j = 0; j <= N; j++) {
+    const y = field.ymin + ((field.ymax - field.ymin) * j) / N;
+    for (let i = 0; i <= N; i++) {
+      const x = field.xmin + ((field.xmax - field.xmin) * i) / N;
+      const v = g(x, y);
+      if (!isFinite(v)) continue;
+      const gx = (g(x + h, y) - g(x - h, y)) / (2 * h);
+      const gy = (g(x, y + h) - g(x, y - h)) / (2 * h);
+      const m = Math.hypot(gx, gy);
+      if (!(m > 1e-9)) continue;
+      const d = Math.abs(v) / m;
+      if (d < bestD) { bestD = d; seed = { x, y }; }
+    }
+  }
+  if (seed) {
+    const traced = traceZeroSet(field, g, seed.x, seed.y);
+    if (traced) return traced.pts;
+  }
+  return null;
+}
+
+/**
+ * The constrained maximum, whether or not it is being shown.
+ *
+ * Which section of which frontier the rope follows is a fact about the
+ * problem, not about what happens to be drawn; tying it to the optimiser's
+ * display toggle would make the rope's behaviour depend on a checkbox that has
+ * nothing to do with it. The answer already on screen is reused when there is
+ * one, and otherwise this costs a coarse sweep and a few restarts, once, when
+ * the rope goes on.
+ */
+function bestPoint() {
+  if (state.showOpt && optimum && isFinite(optimum.x)) return optimum;
+  const m = maximize(field, predicate, { coarse: 140, restarts: 6 });
+  return m && isFinite(m.x) ? m : null;
 }
 
 /** Is there a constraint at all — as opposed to a constraint being *drawn*? */
@@ -1613,22 +1698,110 @@ function toggleCheckbox(id) {
   el.dispatchEvent(new Event('change'));
 }
 
+/**
+ * The mouse, when the browser will not give us the pointer.
+ *
+ * Pointer lock is the good way to look around — the cursor disappears and the
+ * movement is unbounded, so you can spin through four turns without running
+ * off the edge of the screen — and it is the one thing on this page that a
+ * browser or an embedding page is entitled to refuse. Safari refuses it in
+ * some frames; a cross-origin iframe without `allow="pointer-lock"` refuses
+ * it; a user can dismiss the permission. Until now a refusal left the mouse
+ * doing *nothing*, with no hint that anything had been denied, which is
+ * exactly the report this was written for: "the mouse doesn't seem to work".
+ *
+ * So the pointer is no longer load-bearing. Three gestures, and only the first
+ * of them needs anything granted:
+ *
+ *   click (no drag)   ask for the pointer; look around as before
+ *   left drag         pick the explorer up and carry them
+ *   right drag        turn the head — the same gesture as pointer-lock look
+ *
+ * `moved` is what separates a click from a drag: a press that never travels
+ * more than a few pixels is a click, and asks for the pointer on release.
+ */
+const DRAG_SLOP = 4;              // pixels before a press becomes a drag
+const drag = { on: false, mode: null, x: 0, y: 0, moved: 0, button: -1 };
+
+function dragTo(cx, cy) {
+  const dx = cx - drag.x, dy = cy - drag.y;
+  drag.x = cx; drag.y = cy;
+  drag.moved += Math.abs(dx) + Math.abs(dy);
+  if (drag.moved < DRAG_SLOP) return;
+  if (drag.mode === 'look') mouseLook(dx, dy);
+  else if (drag.mode === 'carry') carryTo(cx, cy);
+}
+
+function endDrag() {
+  drag.on = false;
+  drag.mode = null;
+  if (carrying) dropExplorer();
+}
+
 canvas.addEventListener('mousedown', (e) => {
   if (e.button === 2) rightDown = true;
-  // On a surface with no explorer placed yet, a left click means "stand here",
-  // not "give me the mouse". Taking the pointer as well would hide the cursor
-  // the moment you tried to aim the next one.
-  const placing = state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE;
   // Reaching for the scene while the Border Run card is up *is* the answer to
   // the card: they would rather look at the mountain. Take it down, so the
   // mouse is not captured behind a dialogue whose buttons it can no longer
   // reach. (The card itself lets clicks through — see game.css — so this
   // fires wherever on the scene they clicked.)
   if (game && game.screen === 'offer') game.dismiss();
-  if (!pointerLocked && !(placing && e.button === 0)) canvas.requestPointerLock();
+  if (pointerLocked) return;              // already captured; nothing to drag
+
+  drag.on = true;
+  drag.button = e.button;
+  drag.x = e.clientX; drag.y = e.clientY;
+  drag.moved = 0;
+  // Left carries the explorer, right turns the head. A left press that turns
+  // out to be a click and not a drag asks for the pointer on the way up.
+  drag.mode = e.button === 0 ? 'carry' : 'look';
+  if (drag.mode === 'carry') liftExplorer();
 });
-window.addEventListener('mouseup', (e) => { if (e.button === 2) rightDown = false; });
+
+window.addEventListener('mouseup', (e) => {
+  if (e.button === 2) rightDown = false;
+  if (!drag.on || e.button !== drag.button) return;
+  const wasClick = drag.moved < DRAG_SLOP;
+  const mode = drag.mode;
+  endDrag();
+  // A click, not a drag: the old gesture, which is still the best one where
+  // the browser allows it.
+  //
+  // On a surface with no explorer placed yet, a left click means "stand here",
+  // not "give me the mouse" — taking the pointer as well would hide the cursor
+  // the moment you tried to aim the next one.
+  const placing = state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE;
+  if (wasClick && mode === 'carry' && !placing && !pointerLocked) askForPointer();
+});
+window.addEventListener('blur', endDrag);
+canvas.addEventListener('mouseleave', () => { if (drag.mode === 'carry') endDrag(); });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+/**
+ * Ask for the pointer, and notice if the answer is no.
+ *
+ * requestPointerLock returns a promise in current browsers and rejects when
+ * the request is denied; in older ones it fires pointerlockerror. Either way
+ * the point is the same — say so, once, rather than leaving a student
+ * clicking a scene that will not turn.
+ */
+let pointerRefused = false;
+function askForPointer() {
+  try {
+    const r = canvas.requestPointerLock();
+    if (r && typeof r.catch === 'function') r.catch(() => notePointerRefused());
+  } catch (err) {
+    notePointerRefused();
+  }
+}
+
+function notePointerRefused() {
+  if (pointerRefused) return;
+  pointerRefused = true;
+  setMessage(t('msg.nopointer'), 7000);
+}
+
+document.addEventListener('pointerlockerror', notePointerRefused);
 
 /**
  * The wheel moves the camera; the wheel with a modifier held resizes the
@@ -1686,7 +1859,8 @@ canvas.addEventListener('wheel', (e) => {
   applyCamZoom(state.camZoom * Math.exp(-steps * (e.ctrlKey ? 1.6 : 0.6)));
 }, { passive: false });
 
-$('click-catch').addEventListener('click', () => canvas.requestPointerLock());
+// The overlay itself is inert now — it lets the press reach the canvas, which
+// asks for the pointer on a click of its own accord.
 
 /**
  * Click the surface to stand on it.
@@ -1702,6 +1876,78 @@ $('click-catch').addEventListener('click', () => canvas.requestPointerLock());
  */
 const picker = new THREE.Raycaster();
 const pickPt = new THREE.Vector2();
+
+/**
+ * Pick the explorer up and put them down somewhere else.
+ *
+ * Hold the left button and drag: the explorer is lifted off the ground and
+ * follows the cursor across the surface, landing wherever it is released. It is
+ * the one thing the mouse could not do — walking somewhere far away meant
+ * holding W across a two-kilometre hillside — and it is the natural gesture for
+ * it, so it is now the left button's job on every kind of surface.
+ *
+ * Two details make it feel like carrying rather than teleporting. The explorer
+ * is raised a little while held, so you can see the ground under them and know
+ * that they are off it; and the drop is the *release*, so a drag that wanders
+ * over ground you did not mean can be corrected before you let go.
+ *
+ * Nothing here touches f. Standing somewhere else is not a change to the
+ * surface, and every readout is recomputed from the new point exactly as it is
+ * after a step taken on foot.
+ */
+let carrying = false;
+
+function liftExplorer() {
+  if (state.surfaceKind === 'graph') {
+    if (!player || !surface) return;
+  } else if (!walker || !altSurface) return;
+  carrying = true;
+  if (canvas.style) canvas.style.cursor = 'grabbing';
+}
+
+function dropExplorer() {
+  carrying = false;
+  if (canvas.style) canvas.style.cursor = '';
+  // Landing from a carry is a view change on the surfaces that open in the
+  // drone: you asked to stand somewhere, so stand there.
+  if (state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE) setMode(MODE_THIRD);
+  setMessage('');
+}
+
+/** Where on the surface is the cursor? Sets the explorer there. */
+function carryTo(cx, cy) {
+  if (!carrying) return;
+  const r = canvas.getBoundingClientRect();
+  pickPt.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  picker.setFromCamera(pickPt, camera);
+
+  if (state.surfaceKind === 'graph') {
+    if (!player || !field || !surface) return;
+    // The detail rings are a second, finer copy of the ground drawn over the
+    // first, and near the explorer they are what the ray meets. Offer both, and
+    // take whichever the ray hits first.
+    const targets = [surface.mesh];
+    if (surfaceDetail) for (const ring of surfaceDetail.rings) {
+      if (ring.mesh.visible) targets.push(ring.mesh);
+    }
+    const hit = picker.intersectObjects(targets, false)[0];
+    if (!hit) return;
+    const mx = field.mathX(hit.point.x), my = field.mathY(hit.point.z);
+    if (!field.inDomain(mx, my) || !isFinite(field.height(mx, my))) return;
+    player.x = mx; player.y = my;
+    // A carried explorer must not drag the frontier rail with them: the rail
+    // is a constraint on walking, and being placed is not walking. It is
+    // reapplied the moment they are put down and take their first step.
+    if (player.mode === MODE_DRONE) setMode(MODE_THIRD);
+    return;
+  }
+
+  if (!walker || !altSurface) return;
+  const hit = picker.intersectObject(altSurface, false)[0];
+  if (!hit) return;
+  if (walker.placeAtUV && hit.uv) walker.placeAtUV(hit.uv.x, hit.uv.y);
+  else if (walker.placeAtWorld) walker.placeAtWorld(hit.point);
+}
 canvas.addEventListener('pointerdown', (e) => {
   if (state.surfaceKind === 'graph' || !walker || !altSurface || pointerLocked) return;
   if (e.button !== 0) return;
@@ -1726,46 +1972,40 @@ document.addEventListener('pointerlockchange', () => {
   $('crosshair').hidden = !(pointerLocked && first);
 });
 
-document.addEventListener('mousemove', (e) => {
-  // Escape gives the mouse back; moving it after that means you have stopped
-  // flying and started reading the instruments. Light the compass up.
-  if (!pointerLocked) { compassState.emphasis = 2.2; return; }
-  const dx = e.movementX || 0, dy = e.movementY || 0;
+/**
+ * Turn the head by a mouse movement, from wherever that movement came from.
+ *
+ * Two things call this: the pointer-lock path, which reads `movementX` off a
+ * captured pointer, and the drag path, which differences the cursor's position
+ * between two events. They are the same gesture and must stay the same
+ * gesture, so there is one body and two callers rather than two bodies.
+ *
+ * All it adds over the shared applyLook — which the keys, the sticks and a
+ * dragged finger go through too — is the mouse's own special case: in
+ * directional-derivative mode the mouse steers the direction vector u, and
+ * looking around means holding the right button.
+ */
+const MOUSE_LOOK_RATE = 0.0022;             // radians per pixel
 
-  if (state.surfaceKind !== 'graph') {
-    if (altView.mode === MODE_DRONE || !walker) {
-      // Flying around a torus, the mouse aims the camera exactly as it aims
-      // the explorer's head — two angles, and between them every direction on
-      // the unit sphere with the aircraft at its centre.
-      altCam.yaw -= dx * 0.0022;
-      altCam.pitch = Math.max(-ALT_PITCH_LIM, Math.min(ALT_PITCH_LIM, altCam.pitch - dy * 0.0022));
-      return;
-    }
-    // Turning is a rotation of the heading *in the tangent plane*, which is
-    // the only thing "turn left" can mean on a surface with no fixed up. It is
-    // the same gesture in both views on purpose: in third person the camera
-    // rides behind the heading, so steering the explorer swings the camera
-    // round with them, and changing view does not change what the mouse does.
-    walker.turn(-dx * 0.0022);
-    if (altView.mode === MODE_FIRST) {
-      altView.pitch = Math.max(-1.4, Math.min(1.4, altView.pitch - dy * 0.0022));
-    } else {
-      altView.camPitch = clampCamPitch(altView.camPitch + dy * 0.0022);
-    }
-    return;
-  }
-  if (!player) return;
-
-  // In directional-derivative mode the mouse steers the direction vector u.
-  // Hold the right button to look around instead.
-  if (state.showDir && !rightDown) {
+function mouseLook(dx, dy) {
+  if (state.surfaceKind === 'graph' && player && state.showDir && !rightDown) {
     state.dirAngle -= dx * 0.006;
     while (state.dirAngle > Math.PI) state.dirAngle -= Math.PI * 2;
     while (state.dirAngle < -Math.PI) state.dirAngle += Math.PI * 2;
-    player.look(0, dy);
-  } else {
-    player.look(dx, dy);
+    player.look(0, dy, MOUSE_LOOK_RATE);
+    return;
   }
+  applyLook(dx, dy, MOUSE_LOOK_RATE);
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (pointerLocked) { mouseLook(e.movementX || 0, e.movementY || 0); return; }
+
+  // No captured pointer. Dragging is the fallback — see the mousedown handler
+  // — and outside a drag, moving the mouse after Escape means you have stopped
+  // flying and started reading the instruments, so light the compass up.
+  if (drag.on) { dragTo(e.clientX, e.clientY); return; }
+  compassState.emphasis = 2.2;
 });
 
 /* --- touch: left half drives, right half looks --------------------------- */
@@ -2312,26 +2552,83 @@ function updatePeakCard() {
  * the first comparison wins, which is the right answer for a budget line and
  * an honest limitation everywhere else.
  */
-function railFor(src) {
-  if (typeof src !== 'string' || !src.trim()) return null;
-  let depth = 0;
+function railParts(src) {
+  if (typeof src !== 'string' || !src.trim()) return [];
+  // Split on top-level && — a feasible set is usually a conjunction, and each
+  // conjunct has a frontier of its own.
+  const clauses = [];
+  let depth = 0, start = 0;
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
     if (c === '(') depth++;
     else if (c === ')') depth--;
-    else if (depth === 0 && (c === '<' || c === '>')) {
-      const skip = src[i + 1] === '=' ? 2 : 1;
-      const lhs = src.slice(0, i), rhs = src.slice(i + skip);
-      try {
-        const L = compile(lhs, ['x', 'y']);
-        const R = compile(rhs, ['x', 'y']);
-        const g = (x, y) => L(x, y) - R(x, y);
-        if (!isFinite(g(0.3, 0.4))) return null;
-        return g;
-      } catch { return null; }
+    else if (depth === 0 && c === '&' && src[i + 1] === '&') {
+      clauses.push(src.slice(start, i));
+      start = i + 2;
+      i++;
     }
   }
-  return null;
+  clauses.push(src.slice(start));
+
+  const out = [];
+  for (const clause of clauses) {
+    let d = 0;
+    for (let i = 0; i < clause.length; i++) {
+      const c = clause[i];
+      if (c === '(') d++;
+      else if (c === ')') d--;
+      else if (d === 0 && (c === '<' || c === '>')) {
+        const skip = clause[i + 1] === '=' ? 2 : 1;
+        try {
+          const L = compile(clause.slice(0, i), ['x', 'y']);
+          const R = compile(clause.slice(i + skip), ['x', 'y']);
+          const g = (x, y) => L(x, y) - R(x, y);
+          if (isFinite(g(0.3, 0.4))) out.push(g);
+        } catch { /* a clause we cannot read is a clause we cannot walk */ }
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Which curve is "the frontier"?
+ *
+ * A feasible set is nearly always a conjunction — the consumer problem ships
+ * as `x>=0 && y>=0 && x+y<=2` — and it has as many boundary curves as it has
+ * clauses. The rope used to take the *first* comparison in the string, which
+ * for that example is `x >= 0`: switching "walk the frontier" on roped the
+ * explorer to the vertical axis and let them walk up and down it, nowhere near
+ * the budget line and nowhere near the answer. It was reading the constraint
+ * as a piece of text rather than asking which constraint binds.
+ *
+ * The binding one is the one the constrained optimum stands on, so that is the
+ * test: evaluate every clause's g at the optimum and take the one that is zero
+ * there. If none is — an interior maximum, no constraint binding at all — take
+ * whichever comes closest, which is the frontier the student is most likely to
+ * have meant.
+ */
+function railFor(src, at) {
+  const parts = railParts(src);
+  if (!parts.length) return null;
+  if (parts.length === 1 || !at || !isFinite(at.x)) return parts[0];
+
+  // Scale each residual by the constraint's own gradient, so clauses measured
+  // in different units are compared as distances to their own curve rather
+  // than as raw numbers.
+  const h = Math.max(1e-6, (field ? field.xmax - field.xmin : 1) * 1e-5);
+  let best = null, bestD = Infinity;
+  for (const g of parts) {
+    const v = g(at.x, at.y);
+    if (!isFinite(v)) continue;
+    const gx = (g(at.x + h, at.y) - g(at.x - h, at.y)) / (2 * h);
+    const gy = (g(at.x, at.y + h) - g(at.x, at.y - h)) / (2 * h);
+    const m = Math.hypot(gx, gy);
+    const d = m > 1e-12 ? Math.abs(v) / m : Math.abs(v);
+    if (d < bestD) { bestD = d; best = g; }
+  }
+  return best || parts[0];
 }
 
 /** Show each formula's explanatory note exactly when it is the one loaded. */

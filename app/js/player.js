@@ -637,13 +637,59 @@ export class Player {
    * they stand, so switching the toggle on does not leave them beside it.
    */
   snapToRail() {
-    const g = this.onRail;
-    if (!g) return;
+    if (!this.onRail) return;
     const f = this.field;
-    let px = this.x, py = this.y;
-    for (let k = 0; k < 24; k++) {
+    const p = this._toRail(this.x, this.y);
+    if (!p) return;
+    this.x = Math.max(f.xmin, Math.min(f.xmax, p[0]));
+    this.y = Math.max(f.ymin, Math.min(f.ymax, p[1]));
+  }
+
+  /**
+   * Put a point on the rope.
+   *
+   * Two stages, and both are needed. First the nearest point of the *traced
+   * arc* — the one piece of the frontier that this problem is about, worked
+   * out in main.js from where the constrained optimum lies. Clamping to a
+   * polyline is what confines the walk to that piece and what stops it at the
+   * piece's ends, instead of letting Newton wander onto some other branch of
+   * the same formula's zero set. Then a couple of Newton steps to polish, so
+   * the explorer stands on g = 0 exactly rather than on the chord between two
+   * traced samples.
+   *
+   * With no arc — a constraint that could not be traced — this falls back to
+   * Newton alone, which is what the rope always did.
+   */
+  _toRail(x, y) {
+    const rail = this.onRail;
+    if (!rail) return null;
+    const g = rail.g;
+    const f = this.field;
+    let px = x, py = y;
+
+    const path = rail.path;
+    if (path && path.length >= 4) {
+      let bestD = Infinity, bx = px, by = py;
+      for (let i = 0; i + 3 < path.length; i += 2) {
+        const ax = path[i], ay = path[i + 1];
+        const cx = path[i + 2], cy = path[i + 3];
+        const ex = cx - ax, ey = cy - ay;
+        const len2 = ex * ex + ey * ey;
+        // Parameter of the foot of the perpendicular, clamped to the segment —
+        // which at the two ends of the arc is exactly what stops the walk.
+        const t = len2 > 1e-18
+          ? Math.max(0, Math.min(1, ((px - ax) * ex + (py - ay) * ey) / len2))
+          : 0;
+        const qx = ax + ex * t, qy = ay + ey * t;
+        const d = (px - qx) * (px - qx) + (py - qy) * (py - qy);
+        if (d < bestD) { bestD = d; bx = qx; by = qy; }
+      }
+      px = bx; py = by;
+    }
+
+    for (let k = 0; k < 8; k++) {
       const v = g(px, py);
-      if (!isFinite(v) || Math.abs(v) < 1e-10) break;
+      if (!isFinite(v) || Math.abs(v) < 1e-11) break;
       const h = Math.max(1e-6, (f.xmax - f.xmin) * 1e-5);
       const gx = (g(px + h, py) - g(px - h, py)) / (2 * h);
       const gy = (g(px, py + h) - g(px, py - h)) / (2 * h);
@@ -652,10 +698,7 @@ export class Player {
       px -= gx * (v / m2);
       py -= gy * (v / m2);
     }
-    if (isFinite(px) && isFinite(py)) {
-      this.x = Math.max(f.xmin, Math.min(f.xmax, px));
-      this.y = Math.max(f.ymin, Math.min(f.ymax, py));
-    }
+    return (isFinite(px) && isFinite(py)) ? [px, py] : null;
   }
 
   _updateWalk(dt, input) {
@@ -692,27 +735,18 @@ export class Player {
     // hand — the maximum you can reach is the one the optimiser prints, and
     // you got there on foot rather than being teleported.
     //
-    // Projection is by a few Newton steps along the constraint's own gradient,
-    // which handles a curved frontier as readily as a straight one: g is
-    // whatever the feasible-set formula says, so this works for a budget line,
-    // a circle, or anything else a student types.
+    // Projection is onto the traced arc and then along the constraint's own
+    // gradient, which handles a curved frontier as readily as a straight one:
+    // g is whatever the feasible-set formula says, so this works for a budget
+    // line, a circle, or anything else a student types. The arc is the reason
+    // "the frontier" is a definite thing: it is the connected piece the
+    // constrained optimum lies on, so the walk cannot wander onto a different
+    // branch of the same zero set, and it stops where the piece stops.
     if (this.onRail) {
-      const g = this.onRail;
-      let px = cx, py = cy;
-      for (let k = 0; k < 12; k++) {
-        const v = g(px, py);
-        if (!isFinite(v) || Math.abs(v) < 1e-9) break;
-        const h = Math.max(1e-6, (f.xmax - f.xmin) * 1e-5);
-        const gx = (g(px + h, py) - g(px - h, py)) / (2 * h);
-        const gy = (g(px, py + h) - g(px, py - h)) / (2 * h);
-        const m2 = gx * gx + gy * gy;
-        if (!(m2 > 1e-18)) break;
-        px -= gx * (v / m2);
-        py -= gy * (v / m2);
-      }
-      if (isFinite(px) && isFinite(py)) {
-        cx = Math.max(f.xmin, Math.min(f.xmax, px));
-        cy = Math.max(f.ymin, Math.min(f.ymax, py));
+      const p = this._toRail(cx, cy);
+      if (p) {
+        cx = Math.max(f.xmin, Math.min(f.xmax, p[0]));
+        cy = Math.max(f.ymin, Math.min(f.ymax, p[1]));
       }
     }
 

@@ -317,6 +317,95 @@ export function traceLevelCurve(field, x0, y0, options) {
   return pts;
 }
 
+/**
+ * The same walk, along the zero set of an arbitrary g rather than a level set
+ * of f: the *frontier* through a point.
+ *
+ * This is what "walk the frontier" needs in order to mean what a student
+ * expects. A constraint formula's zero set is not one curve — the
+ * <em>section</em> of it that matters is the connected arc the constrained
+ * optimum lies on, and the rest of the set, wherever else in the window it
+ * happens to pass, is not part of the problem. Newton projection alone cannot
+ * tell those apart: it lands on whatever branch is nearest, so an explorer
+ * roped to "the frontier" could be put down on a piece of curve nowhere near
+ * the answer, and could hop to another piece by walking past a pinch.
+ *
+ * Tracing gives the arc explicitly, and once you have it you can also stop at
+ * its ends rather than sliding along an extension of it that does not exist.
+ *
+ * @param field  for the domain, and for refusing ground where f is undefined
+ * @param g      the constraint, as g(x, y) whose zero set is the frontier
+ * @returns { pts: [x, y, …], closed } or null
+ */
+export function traceZeroSet(field, g, x0, y0, options) {
+  const o = options || {};
+  const span = Math.min(field.xmax - field.xmin, field.ymax - field.ymin);
+  const step = o.step || span / 500;
+  const maxSteps = o.maxSteps || 3000;
+  const h = Math.max(1e-9, span * 1e-5);
+
+  const grad = (x, y) => [
+    (g(x + h, y) - g(x - h, y)) / (2 * h),
+    (g(x, y + h) - g(x, y - h)) / (2 * h),
+  ];
+
+  // Start exactly on the curve, whatever was handed in.
+  let sx = x0, sy = y0;
+  for (let k = 0; k < 40; k++) {
+    const v = g(sx, sy);
+    if (!isFinite(v) || Math.abs(v) < 1e-12) break;
+    const [gx, gy] = grad(sx, sy);
+    const m2 = gx * gx + gy * gy;
+    if (!(m2 > 1e-18)) break;
+    sx -= gx * (v / m2);
+    sy -= gy * (v / m2);
+  }
+  if (!isFinite(sx) || !isFinite(sy) || !field.inDomain(sx, sy)) return null;
+
+  const forward = [];
+  const backward = [];
+  let closed = false;
+
+  for (const dir of [1, -1]) {
+    const out = dir > 0 ? forward : backward;
+    let px = sx, py = sy;
+    for (let i = 0; i < maxSteps; i++) {
+      const [gx, gy] = grad(px, py);
+      const gm = Math.hypot(gx, gy);
+      if (!isFinite(gm) || gm < 1e-12) break;
+
+      // Along the tangent — perpendicular to the constraint's gradient — then
+      // pulled back onto g = 0, exactly as the level-curve trace does.
+      px += dir * (-gy / gm) * step;
+      py += dir * (gx / gm) * step;
+      for (let k = 0; k < 2; k++) {
+        const [cx, cy] = grad(px, py);
+        const cm2 = cx * cx + cy * cy;
+        if (!(cm2 > 1e-18)) break;
+        const err = g(px, py);
+        if (!isFinite(err)) break;
+        px -= cx * (err / cm2);
+        py -= cy * (err / cm2);
+      }
+
+      // The window's edge is the end of the walk: a frontier that leaves the
+      // plot has left the problem the student was given.
+      if (!field.inDomain(px, py) || !isFinite(field.height(px, py))) break;
+      out.push(px, py);
+
+      if (i > 8 && Math.hypot(px - sx, py - sy) < step * 0.75) { closed = true; break; }
+    }
+    if (closed) break;              // a loop needs tracing only one way round
+  }
+
+  const pts = [];
+  for (let i = backward.length - 2; i >= 0; i -= 2) pts.push(backward[i], backward[i + 1]);
+  pts.push(sx, sy);
+  for (let i = 0; i < forward.length; i += 2) pts.push(forward[i], forward[i + 1]);
+  if (pts.length < 6) return null;
+  return { pts, closed };
+}
+
 /** The contour through the player, redrawn as they move. */
 export class LevelCurveGizmo {
   constructor(field, maxQuads = 900) {

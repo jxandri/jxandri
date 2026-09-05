@@ -298,8 +298,9 @@ const STRINGS = {
     'dial.sizereset': 'Back to 1 : 1 — the explorer 1.8 m tall',
 
     'sat.caption': 'Sentinel-2 · height washed over',
+    'msg.nopointer': 'This browser will not hand over the mouse pointer here. Hold the right button and drag to look around; hold the left button to pick the explorer up and carry them.',
     'cc.click': 'Click to look around',
-    'cc.esc': 'Esc releases the mouse',
+    'cc.esc': 'Esc releases the mouse · or drag: right to look, left to carry the explorer',
     'loading': 'Building the terrain…',
 
     'msg.undefinedFrac': 'f is undefined on {pct}% of the domain',
@@ -608,8 +609,9 @@ const STRINGS = {
     'dial.sizereset': 'Volver a 1 : 1 — el explorador de 1,8 m',
 
     'sat.caption': 'Sentinel-2 · altura superpuesta',
+    'msg.nopointer': 'Este navegador no entrega aquí el puntero del ratón. Mantenga el botón derecho y arrastre para mirar alrededor; mantenga el izquierdo para levantar al explorador y llevarlo.',
     'cc.click': 'Haga clic para mirar alrededor',
-    'cc.esc': 'Esc suelta el ratón',
+    'cc.esc': 'Esc suelta el ratón · o arrastre: derecho para mirar, izquierdo para llevar al explorador',
     'loading': 'Construyendo el terreno…',
 
     'msg.undefinedFrac': 'f no está definida en el {pct}% del dominio',
