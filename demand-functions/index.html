@@ -1175,8 +1175,12 @@ document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventL
 
 new ResizeObserver(()=>render()).observe(document.querySelector(".viewports"));
 
-let lang0="es", theme0="dark";
-try{ lang0=localStorage.getItem("demanda.lang")||"es"; theme0=localStorage.getItem("demanda.theme")||"dark"; }catch(_){}
+/* A host that has already chosen a theme for the reader — an embedding page,
+   an artifact frame — has said something, so honour it until the reader uses
+   the toggle. Standalone there is nothing stamped and dark is the design. */
+const stamped=document.documentElement.getAttribute("data-theme");
+let lang0="es", theme0=(stamped==="light"||stamped==="dark")?stamped:"dark";
+try{ lang0=localStorage.getItem("demanda.lang")||"es"; theme0=localStorage.getItem("demanda.theme")||theme0; }catch(_){}
 LANG=lang0;
 readCustom();
 syncParams();

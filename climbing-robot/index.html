@@ -2530,8 +2530,12 @@ window.addEventListener("keydown", ev => {
   else if(ev.key === "c" || ev.key === "C") climb();
 });
 
-let lang0 = "es", theme0 = "dark";
-try{ lang0 = localStorage.getItem("cr.lang")||"es"; theme0 = localStorage.getItem("cr.theme")||"dark"; }catch(_){}
+/* A host that has already chosen a theme for the reader — an embedding page,
+   an artifact frame — has said something, so honour it until the reader uses
+   the toggle. Standalone there is nothing stamped and dark is the design. */
+const stamped = document.documentElement.getAttribute("data-theme");
+let lang0 = "es", theme0 = (stamped === "light" || stamped === "dark") ? stamped : "dark";
+try{ lang0 = localStorage.getItem("cr.lang")||"es"; theme0 = localStorage.getItem("cr.theme")||theme0; }catch(_){}
 const qs = new URLSearchParams(location.search);
 if(qs.get("lang") === "en" || qs.get("lang") === "es") lang0 = qs.get("lang");
 if(qs.get("mode") === "3d") st.mode = "3d";
