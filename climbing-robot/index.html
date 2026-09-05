@@ -245,7 +245,7 @@ footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid
           <button type="button" class="btn" id="btn-zoom-out" data-t="zoomOut">Alejar del todo</button>
           <button type="button" class="btn" id="btn-zoom-1" data-t="zoomOne">×1</button>
         </div>
-        <label class="check"><input type="checkbox" id="geo" checked><span data-t="geoOn">Alcance geodésico (sobre la superficie)</span></label>
+
         <p class="hint" data-t="zoomHint">La rueda del ratón sobre cualquiera de los dos paneles mueve este dial. d es a la vez lo que el robot alcanza a ver y el incremento con el que mide la pendiente.</p>
       </div>
 
@@ -688,29 +688,12 @@ const Z1 = OUT/SPAN;
 const dOf = z => D0 * Math.pow(10, OUT - SPAN*clamp(z, 0, 1));
 const zOf = d => clamp((OUT - Math.log10(d/D0))/SPAN, 0, 1);
 
-/* The terrain panel follows the robot in. Its window is a fixed multiple of
-   what the robot can see, so the robot keeps its size on screen while the
-   scale around it shrinks — which is the demonstration, and it has to happen
-   on the panel the robot is standing on and not only in the inset. Eight, so
-   the sight radius is always an eighth of the terrain panel and the zoom
-   window beside it is one more factor of eight closer.
-
-   Until the window is smaller than the domain it stays the whole domain, so
-   turning the dial from rest still starts from the overview. */
-const ZW = 8;
-let REACH = null;
+/* The wide panels always show the whole terrain. The zoom lives in the
+   right-hand panel alone: one picture that holds still to point at, and one
+   that goes in. Moving both at once left nothing to measure the magnification
+   against. */
 function windowOf(){
-  /* the ground radius the robot actually reaches, once solve() has measured
-     it; before the first frame the flat guess will do */
-  const r = fin(REACH) && REACH > 0 ? REACH : dOf(st.zoom);
-  const fullX = (st.x1 - st.x0)/2, fullY = (st.y1 - st.y0)/2;
-  const full = is1d() ? fullX : Math.min(fullX, fullY);
-  const W = Math.min(full, ZW*r);
-  const zoomed = W < full - 1e-12;
-  if(!zoomed) return { W:full, zoomed:false, x0:st.x0, x1:st.x1, y0:st.y0, y1:st.y1 };
-  const cx = clamp(is1d() ? st.p : st.rx, st.x0+W, st.x1-W);
-  const cy = clamp(st.ry, st.y0+W, st.y1-W);
-  return { W, zoomed:true, x0:cx-W, x1:cx+W, y0:cy-W, y1:cy+W };
+  return { W:(st.x1-st.x0)/2, zoomed:false, x0:st.x0, x1:st.x1, y0:st.y0, y1:st.y1 };
 }
 
 /* A term whose coefficient is zero is not part of the function, and a
@@ -803,7 +786,7 @@ const st = {
   a0:8.1, a1:0.1, a2:0.145, a3:0,
   src1:"x^3-3*x", src3:"sin(x)*cos(y)*3",
   p:0.6, rx:1.4, ry:1.1,
-  zoom:Z1, step:0.28, geo:true, theta:0,
+  zoom:Z1, step:0.28, theta:0,
   x0:-2, x1:8, y0:-5, y1:5,
   fence:false, cLo:-0.8, cHi:2.3, s:2,
   trail:[],
@@ -825,79 +808,6 @@ const FAMS = () => is1d() ? FAMS1 : FAMS3;
 const FAM_KEYS = () => is1d() ? FAM1_KEYS : FAM3_KEYS;
 const famOf = () => is1d() ? st.fam1 : st.fam3;
 const PRESETS = () => is1d() ? PRESETS1 : PRESETS3;
-
-/* ==========================================================================
-   3b. How far the robot can actually walk
-   --------------------------------------------------------------------------
-   The robot can walk a distance d over the ground it is standing on, not d
-   across the map. On a slope those are not the same: climbing costs more
-   surface length per step of ground, so the set it can reach is squashed
-   along the gradient and stretched across it. That set is the geodesic ball
-   of radius d, and it is an ellipse rather than a disc.
-
-   For each direction u it solves L(t) = d, where L is the arc length of the
-   surface curve lying above the straight ground ray:
-
-       L(t) = INTEGRAL from 0 to t of sqrt(1 + (grad f(P + r u) . u)^2) dr
-
-   by Newton from the flat-ground guess. Walking straight over the ground is
-   not exactly a geodesic, so this is a slight under-estimate of the true
-   ball; the two agree to the order that this applet is about, and the
-   difference vanishes with d. Turning "Alcance geodésico" off measures the
-   radius on the map instead, which is what the GeoGebra originals did.
-   ========================================================================== */
-function reachRay(M, x, y, ux, uy, d){
-  const speed = t => {
-    const gx = M.fx(x + t*ux, y + t*uy), gy = M.fy(x + t*ux, y + t*uy);
-    const sl = (fin(gx) ? gx : 0)*ux + (fin(gy) ? gy : 0)*uy;
-    return Math.sqrt(1 + sl*sl);
-  };
-  const L = t => {                       /* Simpson, eight panels */
-    const n = 8; let acc = 0;
-    for(let i = 0; i <= n; i++){
-      const v = speed(t*i/n);
-      if(!fin(v)) return NaN;
-      acc += (i === 0 || i === n ? 1 : (i % 2 ? 4 : 2))*v;
-    }
-    return acc*t/(3*n);
-  };
-  const s0 = speed(0);
-  let t = d/(fin(s0) && s0 > 1e-12 ? s0 : 1);
-  for(let k = 0; k < 3; k++){
-    const sp = speed(t), Lt = L(t);
-    if(!fin(sp) || !fin(Lt) || sp < 1e-12) break;
-    const nt = clamp(t - (Lt - d)/sp, d/50, d*50);
-    if(!fin(nt) || nt <= 0) break;
-    t = nt;
-  }
-  return fin(t) && t > 0 ? clamp(t, d/50, d*50) : d;
-}
-
-const BALL_J = 48;
-let BALL = null, BALLKEY = "";
-function ballOf(M, x, y, d){
-  const key = `${srcOf()}|${x}|${y}|${d}|${st.geo}|${st.mode}`;
-  if(BALL && BALLKEY === key) return BALL;
-  const R = new Float64Array(BALL_J);
-  let rMax = 0, rMin = Infinity;
-  for(let j = 0; j < BALL_J; j++){
-    const a = 2*Math.PI*j/BALL_J;
-    const t = st.geo ? reachRay(M, x, y, Math.cos(a), Math.sin(a), d) : d;
-    R[j] = t;
-    if(t > rMax) rMax = t;
-    if(t < rMin) rMin = t;
-  }
-  BALL = { R, J:BALL_J, rMax, rMin,
-    /* the reach in an arbitrary direction, interpolated between spokes */
-    at(a){
-      let u = (a/(2*Math.PI))*BALL_J;
-      u = ((u % BALL_J) + BALL_J) % BALL_J;
-      const i0 = Math.floor(u), i1 = (i0+1) % BALL_J, w = u - i0;
-      return R[i0]*(1-w) + R[i1]*w;
-    }};
-  BALLKEY = key;
-  return BALL;
-}
 
 /* ==========================================================================
    4. The model
@@ -938,17 +848,7 @@ function zRange(){
     if(fin(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
   }
   if(!fin(lo) || !fin(hi)){ lo = 0; hi = 1; }
-  /* Once the panel is following the robot in, the vertical scale has to
-     shrink with the window. Auto-fitting it would stretch the relief back up
-     to fill the panel at every magnification and nothing would ever flatten. */
-  if(w.zoomed){
-    const fp = M.f(st.rx, st.ry);
-    if(fin(fp)){
-      const half = Math.max((hi-lo)/2*1.14, 0.4375*w.W);
-      lo = fp - half; hi = fp + half;
-    }
-  }
-  if(hi - lo < 1e-300) hi = lo + 1e-300;
+  if(hi - lo < 1e-9) hi = lo + 1;
   ZR = { lo, hi }; ZRKEY = key;
   return ZR;
 }
@@ -971,10 +871,7 @@ function solve(){
     const fp = f(p);
     S.p = p; S.fp = fp;
     S.fx = M.fx(p, 0);
-    /* how far along the ground the robot gets for d of walking, each way */
-    S.tR = st.geo ? reachRay(M, p, 0,  1, 0, d) : d;
-    S.tL = st.geo ? reachRay(M, p, 0, -1, 0, d) : d;
-    S.reach = Math.max(S.tR, S.tL);
+    S.tR = S.tL = S.reach = d;
     const fR = f(p + S.tR), fL = f(p - S.tL);
     /* the robot looks both ways; what it reports is the forward difference,
        which is what the GeoGebra original built and what someone who takes a
@@ -1003,26 +900,23 @@ function solve(){
     const fp = f(x, y);
     S.x = x; S.y = y; S.fp = fp;
     S.fx = M.fx(x, y); S.fy = M.fy(x, y);
-    const B = S.ball = ballOf(M, x, y, d);
-    S.reach = B.rMax; S.rMin = B.rMin;
-    /* aspect of the ball: 1 on the flat, and the more the ground tilts the
-       more it flattens across the gradient */
-    S.aspect = B.rMin > 0 ? B.rMax/B.rMin : Infinity;
-    const tx = B.R[0], ty = B.R[BALL_J/4];
-    S.tRx = tx; S.tRy = ty;
-    S.mx = (f(x + tx, y) - fp)/tx;
-    S.my = (f(x, y + ty) - fp)/ty;
+    /* the patch the robot can see is a square in x and y: the same
+       neighbourhood the GeoGebra original's ROBOTFUN and FiniteTangent used */
+    S.reach = S.tRx = S.tRy = S.tu = d;
+    S.mx = (f(x + d, y) - fp)/d;
+    S.my = (f(x, y + d) - fp)/d;
     S.meas = Math.hypot(S.mx, S.my);
     S.jump = Math.max(
-      Math.abs((f(x+tx,y)-fp)/tx - (fp-f(x-B.R[BALL_J/2],y))/B.R[BALL_J/2]),
-      Math.abs((f(x,y+ty)-fp)/ty - (fp-f(x,y-B.R[3*BALL_J/4]))/B.R[3*BALL_J/4]));
+      Math.abs((f(x+d,y)-fp)/d - (fp-f(x-d,y))/d),
+      Math.abs((f(x,y+d)-fp)/d - (fp-f(x,y-d))/d));
     S.gn = Math.hypot(S.fx, S.fy);
     S.tx = fin(S.fx) ? S.fx : S.mx;
     S.ty = fin(S.fy) ? S.fy : S.my;
     /* the directional derivative, in the direction the dial is pointing */
     const a = st.theta*Math.PI/180, ca = Math.cos(a), sa = Math.sin(a);
     S.ux = ca; S.uy = sa;
-    S.tu = B.at(a);
+    /* the direction ray reaches the edge of the square, not a circle inside it */
+    S.tu = d/Math.max(Math.abs(ca), Math.abs(sa), 1e-9);
     S.du = (fin(S.fx) && fin(S.fy)) ? S.fx*ca + S.fy*sa : NaN;
     S.duMeas = (f(x + S.tu*ca, y + S.tu*sa) - fp)/S.tu;
     S.gradAngle = S.gn > 1e-12 ? Math.atan2(S.fy, S.fx)*180/Math.PI : NaN;
@@ -1030,22 +924,18 @@ function solve(){
        corners reach 1.41 times further than its sides and would report a
        deviation from a neighbourhood the robot cannot get to */
     let dev = 0;
-    const NR = 14;
-    for(let j = 0; j < BALL_J; j++){
-      const th = 2*Math.PI*j/BALL_J, cx = Math.cos(th), cy = Math.sin(th);
-      for(let i = 1; i <= NR; i++){
-        const r = B.R[j]*i/NR, hx = r*cx, hy = r*cy;
-        const v = f(x+hx, y+hy);
-        if(!fin(v)) continue;
-        const e = Math.abs(v - (fp + S.tx*hx + S.ty*hy));
-        if(e > dev) dev = e;
-      }
+    const N = 26;
+    for(let j = 0; j <= N; j++) for(let i = 0; i <= N; i++){
+      const hx = -d + 2*d*i/N, hy = -d + 2*d*j/N;
+      const v = f(x+hx, y+hy);
+      if(!fin(v)) continue;
+      const e = Math.abs(v - (fp + S.tx*hx + S.ty*hy));
+      if(e > dev) dev = e;
     }
     S.dev = dev;
     S.nf = noiseFloor(fp);
   }
   S.ratio = S.reach > 0 ? S.dev/S.reach : NaN;
-  REACH = S.reach;
   /* the half-height the zoom window is drawn over: enough to hold the
      reference line at any slope, and proportional to the reach so shrinking d
      really is a zoom. It has to come from the reference slopes rather than the
@@ -1252,24 +1142,8 @@ function drawWide1(S){
   }
   if(fin(S.fp)){ lo = Math.min(lo, S.fp); hi = Math.max(hi, S.fp); }
   if(!fin(lo) || !fin(hi)){ lo = 0; hi = 1; }
-  let ylo, yhi;
-  if(win.zoomed && fin(S.fp)){
-    /* Once the panel follows the robot in, the vertical scale has to shrink
-       with the window. Auto-fitting it would stretch the relief back up to
-       fill the panel at every magnification, and a summit would stay a
-       parabola for ever. */
-    const half = Math.max((hi-lo)/2*1.14, 0.4375*win.W);
-    ylo = S.fp - half; yhi = S.fp + half;
-  }else{
-    const pad = ((hi-lo)||1)*0.14; ylo = lo - pad; yhi = hi + pad;
-  }
-  /* Twelve decades of zoom outrun any fixed number of decimals, so once the
-     window is following the robot the axes are labelled as distances from it
-     rather than as absolute coordinates nobody could read. */
-  const opt = win.zoomed ? { tick:v => sgnLen(v - S.p), tickY:v => sgnLen(v - S.fp) } : {};
-  const V = plot2d(cv, win.x0, win.x1, ylo, yhi,
-                   win.zoomed ? "x − x\u1D63" : "x",
-                   win.zoomed ? "f − f(x\u1D63)" : "f(x)", opt);
+  const pad = ((hi-lo)||1)*0.14;
+  const V = plot2d(cv, win.x0, win.x1, lo-pad, hi+pad, "x", "f(x)");
   const ctx = V.ctx;
   ctx.save(); ctx.beginPath();
   ctx.rect(V.bx.x0, V.bx.y0, V.bx.x1-V.bx.x0, V.bx.y1-V.bx.y0); ctx.clip();
@@ -1348,7 +1222,6 @@ function drawWide1(S){
     MK.tangent, V.bx.x0+8, V.bx.y0+12);
   if(st.layers.measured && fin(S.meas))
     tag(ctx, `${t.sMeas} ${fmt(S.meas,3)}`, MK.measured, V.bx.x0+8, V.bx.y0+28);
-  tag(ctx, "±" + asLength(win.W), css("--ink-3"), V.bx.x1-6, V.bx.y0+12, "right");
 }
 
 /* ---- 3D ---------------------------------------------------------------- */
@@ -1602,28 +1475,28 @@ function drawWide3(S){
   /* what the robot can reach, and the tangent plane over exactly that
      footprint: the original's ROBOTFUN and FiniteTangent, with the square
      patch replaced by the ball the robot can actually walk to */
-  const B4 = S.ball;
-  const ringPt = (j, k) => {
-    const th = 2*Math.PI*j/B4.J, r = B4.R[j]*(k === undefined ? 1 : k);
-    return [S.x + r*Math.cos(th), S.y + r*Math.sin(th)];
-  };
-  const scrW = Math.abs(cam.project(B.X(S.x+S.reach), B.Y(S.y), B.Z(S.fp))[0] -
-                        cam.project(B.X(S.x-S.reach), B.Y(S.y), B.Z(S.fp))[0]);
+  const d = S.d;
+  const CORNERS = [[-1,-1],[1,-1],[1,1],[-1,1]];
+  const scrW = Math.abs(cam.project(B.X(S.x+d), B.Y(S.y), B.Z(S.fp))[0] -
+                        cam.project(B.X(S.x-d), B.Y(S.y), B.Z(S.fp))[0]);
   const kArrow = win.W*0.30/Math.hypot(1, S.gnRef);
-  if(st.layers.sight && scrW > 3){
+  const cornersOK = CORNERS.every(([a,b]) => fin(M.f(S.x+a*d, S.y+b*d)));
+  if(st.layers.sight && cornersOK && scrW > 3){
+    /* the outline of the square patch, walked corner to corner in order: an
+       XOR over the corner index draws a bow-tie */
     const ring = [];
-    for(let j = 0; j <= B4.J; j++){
-      const q = ringPt(j % B4.J), v = M.f(q[0], q[1]);
-      if(fin(v)) ring.push(W(q[0], q[1], v));
+    const K = 18;
+    for(let i = 0; i <= 4*K; i++){
+      const s2 = i/K, side = Math.floor(s2) % 4, u = s2 - Math.floor(s2);
+      const p0 = CORNERS[side], p1 = CORNERS[(side+1)%4];
+      const hx = (p0[0] + (p1[0]-p0[0])*u)*d, hy = (p0[1] + (p1[1]-p0[1])*u)*d;
+      const v = M.f(S.x+hx, S.y+hy);
+      if(fin(v)) ring.push(W(S.x+hx, S.y+hy, v));
     }
     if(ring.length > 3) pa.line(ring, MK.sight, 2.2);
     if(st.layers.tangent && fin(S.tx) && fin(S.ty)){
-      const disc = [];
-      for(let j = 0; j < B4.J; j++){
-        const q = ringPt(j);
-        disc.push(W(q[0], q[1], S.fp + S.tx*(q[0]-S.x) + S.ty*(q[1]-S.y)));
-      }
-      pa.poly(disc, "rgba(255,77,109,.20)", MK.tangent, 1.6);
+      const TP = (a,b) => W(S.x+a*d, S.y+b*d, S.fp + S.tx*a*d + S.ty*b*d);
+      pa.quad([TP(-1,-1), TP(1,-1), TP(1,1), TP(-1,1)], "rgba(255,77,109,.22)", MK.tangent);
     }
   }
 
@@ -1688,7 +1561,6 @@ function drawWide3(S){
     lab([win.x1, win.y0, B.zr.lo], "x"); lab([win.x0, win.y1, B.zr.lo], "y");
     lab([win.x0, win.y0, B.zr.hi], "z");
   }
-  tag(ctx, "±" + asLength(win.W), css("--ink-3"), w-10, 16, "right");
 }
 
 /* Ray-march the pointer ray against the height field, then bisect. Crossings
@@ -1830,99 +1702,120 @@ function drawZoom3(S){
   const { ctx, w, h } = setupCanvas(cv);
   if(!M || !S || !fin(S.fp)){ ctx.fillStyle = css("--ink-3"); ctx.font = `13px ${css("--f-ui")}`;
     ctx.textAlign = "center"; ctx.fillText(t.errParse, w/2, h/2); return; }
-  const H = S.H, B4 = S.ball, R = S.reach;
+  const H = S.H, d = S.d;
   const cam = camera(w, h, view.az, view.el, 3.4, false), pa = painter(cam);
-  /* ground offsets in units of the ball's widest reach, so the whole ball
-     fills the box whatever shape the slope has squashed it into */
-  const Wz = (hx, hy, v) => [hx/R, hy/R, clamp((v - S.fp)/H, -1.25, 1.25)*0.62];
-  const NR = view.dragging ? 8 : 16, J = B4.J;
+  /* ground offsets in units of d, height in units of H: the patch fills the
+     box whatever the magnification, which is what makes the flattening
+     visible rather than scaled away */
+  const Wz = (hx, hy, v) => [hx/d, hy/d, clamp((v - S.fp)/H, -1.25, 1.25)*0.62];
+  const Tz = (hx, hy) => [hx/d, hy/d, clamp((S.tx*hx + S.ty*hy)/H, -1.25, 1.25)*0.62];
+  const n = view.dragging ? 25 : 45;
 
-  /* the patch, in polar coordinates over the ball rather than on a square
-     grid, coloured by how far it is from the tangent plane. Fully flat comes
-     out a uniform neutral; a bowl or a saddle keeps its colours until the
-     zoom takes them away. */
-  const cScale = 0.22;
   /* the constraint, in offsets from the robot: hx + hy >= fence */
   const fenceOn = st.fence && st.layers.fence;
   const fenceC = st.s - (S.x + S.y);
-  const barred = (hx, hy) => fenceOn && (hx + hy) < fenceC;
-  const pt = (j, i) => {
-    const th = 2*Math.PI*j/J, r = B4.R[j % J]*i/NR;
-    const hx = r*Math.cos(th), hy = r*Math.sin(th);
-    const v = M.f(S.x+hx, S.y+hy);
-    if(!fin(v)) return null;
-    return { p:Wz(hx, hy, v), rel:(v - (S.fp + S.tx*hx + S.ty*hy))/H };
-  };
-  for(let j = 0; j < J; j++) for(let i = 0; i < NR; i++){
-    const a = pt(j, i), b = pt(j, i+1), c = pt(j+1, i+1), dd = pt(j+1, i);
-    if(!a || !b || !c || !dd) continue;
-    const rel = (a.rel + b.rel + c.rel + dd.rel)/4;
+
+  /* the patch, coloured by how far it is from the tangent plane. Fully flat
+     comes out a uniform neutral; a bowl or a saddle keeps its colours until
+     the zoom takes them away. */
+  const cScale = 0.22;
+  let zz = new Float64Array(n*n), rr = new Float64Array(n*n), okk = new Uint8Array(n*n);
+  for(let j = 0; j < n; j++) for(let i = 0; i < n; i++){
+    const hx = -d + 2*d*i/(n-1), hy = -d + 2*d*j/(n-1);
+    const v = M.f(S.x+hx, S.y+hy), k = j*n+i;
+    okk[k] = fin(v) ? 1 : 0;
+    if(!fin(v)) continue;
+    zz[k] = v;
+    rr[k] = (v - (S.fp + S.tx*hx + S.ty*hy))/H;
+  }
+  const U = i => -d + 2*d*i/(n-1);
+  for(let j = 0; j < n-1; j++) for(let i = 0; i < n-1; i++){
+    const k00 = j*n+i, k10 = k00+1, k01 = k00+n, k11 = k01+1;
+    if(!(okk[k00] && okk[k10] && okk[k01] && okk[k11])) continue;
+    const c = [ Wz(U(i),   U(j),   zz[k00]), Wz(U(i+1), U(j),   zz[k10]),
+                Wz(U(i+1), U(j+1), zz[k11]), Wz(U(i),   U(j+1), zz[k01]) ];
+    const rel = (rr[k00]+rr[k10]+rr[k01]+rr[k11])/4;
     const rgb = devRGB(rel/cScale);
-    const th0 = 2*Math.PI*j/J, rr = B4.R[j]*(i+0.5)/NR;
-    if(barred(rr*Math.cos(th0), rr*Math.sin(th0))){
+    if(fenceOn && (U(i)+0.5*(U(1)-U(0))) + (U(j)+0.5*(U(1)-U(0))) < fenceC){
       rgb[0] = rgb[0]*0.45 + 228*0.55; rgb[1] = rgb[1]*0.45 + 112*0.55;
-      rgb[2] = rgb[2]*0.45 + 92*0.55;
+      rgb[2] = rgb[2]*0.45 +  92*0.55;
     }
-    const q = [a.p, b.p, c.p, dd.p];
-    const ux = q[1][0]-q[0][0], uy = q[1][1]-q[0][1], uz = q[1][2]-q[0][2];
-    const vx = q[3][0]-q[0][0], vy = q[3][1]-q[0][1], vz = q[3][2]-q[0][2];
+    /* flat shading, so a bowl still reads as a bowl before it flattens */
+    const ux = c[1][0]-c[0][0], uy = c[1][1]-c[0][1], uz = c[1][2]-c[0][2];
+    const vx = c[3][0]-c[0][0], vy = c[3][1]-c[0][1], vz = c[3][2]-c[0][2];
     const nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
     const nl = Math.hypot(nx,ny,nz) || 1;
     const sh = 0.62 + 0.5*Math.abs((nx*0.35 + ny*0.22 + nz*0.91)/nl);
-    pa.quad(q, `rgba(${clamp(rgb[0]*sh,0,255)|0},${clamp(rgb[1]*sh,0,255)|0},${clamp(rgb[2]*sh,0,255)|0},0.97)`,
+    pa.quad(c, `rgba(${clamp(rgb[0]*sh,0,255)|0},${clamp(rgb[1]*sh,0,255)|0},${clamp(rgb[2]*sh,0,255)|0},0.97)`,
             null);
   }
 
-  const TP = (hx, hy) => [hx/R, hy/R, clamp((S.tx*hx + S.ty*hy)/H, -1.25, 1.25)*0.62];
-  const ring = k => {
-    const out = [];
-    for(let j = 0; j <= J; j++){
-      const th = 2*Math.PI*(j % J)/J, r = B4.R[j % J]*k;
-      out.push([r*Math.cos(th), r*Math.sin(th)]);
-    }
-    return out;
-  };
-  /* the tangent plane over exactly the same footprint */
+  /* the tangent plane over exactly the same square */
   if(st.layers.tangent){
-    pa.poly(ring(1).slice(0, J).map(q => TP(q[0], q[1])), "rgba(255,77,109,.18)", MK.tangent, 1.6);
-    for(const k of [0.33, 0.66])
-      pa.line(ring(k).map(q => TP(q[0], q[1])), "rgba(255,77,109,.5)", 1, null, false);
-    for(let j = 0; j < J; j += 6){
-      const th = 2*Math.PI*j/J, r = B4.R[j];
-      pa.line([TP(0,0), TP(r*Math.cos(th), r*Math.sin(th))], "rgba(255,77,109,.5)", 1, null, false);
+    pa.quad([Tz(-d,-d), Tz(d,-d), Tz(d,d), Tz(-d,d)], "rgba(255,77,109,.18)", MK.tangent);
+    for(let i = 0; i <= 6; i++){
+      const u = -d + 2*d*i/6;
+      pa.line([Tz(u,-d), Tz(u,d)], "rgba(255,77,109,.5)", 1, null, false);
+      pa.line([Tz(-d,u), Tz(d,u)], "rgba(255,77,109,.5)", 1, null, false);
     }
   }
-  /* the boundary of what the robot can reach, lifted onto the surface */
+  /* the edge of the patch, lifted onto the surface */
   if(st.layers.sight){
-    const edge = [];
-    for(let j = 0; j <= J; j++){
-      const q = ring(1)[j], v = M.f(S.x+q[0], S.y+q[1]);
-      if(fin(v)) edge.push(Wz(q[0], q[1], v));
+    const CORNERS = [[-1,-1],[1,-1],[1,1],[-1,1]], ring = [];
+    for(let s2 = 0; s2 <= 4; s2++){
+      const a = CORNERS[s2 % 4], b = CORNERS[(s2+1) % 4];
+      for(let i = 0; i < 16; i++){
+        const u = i/16, hx = (a[0]+(b[0]-a[0])*u)*d, hy = (a[1]+(b[1]-a[1])*u)*d;
+        const v = M.f(S.x+hx, S.y+hy);
+        if(fin(v)) ring.push(Wz(hx, hy, v));
+      }
     }
-    if(edge.length > 3) pa.line(edge, MK.sight, 2.2);
+    if(ring.length > 3) pa.line(ring, MK.sight, 2.2);
   }
-  /* the two partials and the chosen direction, on the ball itself */
+
+  /* --- the derivatives, here as well as on the terrain -------------------
+     They are what the magnified patch is for: at this scale the surface and
+     its tangent plane are the same picture, and these are the numbers that
+     picture is made of. Each is drawn twice — the cut it is the slope of,
+     laid across the patch, and the tangent vector itself with unit run. */
   const cutAlong = (ux, uy, reach, col, wd) => {
     const cut = [];
-    for(let i = -NR*2; i <= NR*2; i++){
-      const r = reach*i/(NR*2), hx = r*ux, hy = r*uy;
+    for(let i = -40; i <= 40; i++){
+      const r = reach*i/40, hx = r*ux, hy = r*uy;
       const v = M.f(S.x+hx, S.y+hy);
-      if(fin(v)) cut.push(Wz(hx, hy, v));
+      if(fin(v) && Math.abs(hx) <= d*1.001 && Math.abs(hy) <= d*1.001) cut.push(Wz(hx, hy, v));
     }
     if(cut.length > 1) pa.line(cut, col, wd);
   };
-  if(st.layers.partX) cutAlong(1, 0, S.tRx, MK.partX, 2.2);
-  if(st.layers.partY) cutAlong(0, 1, S.tRy, MK.partY, 2.2);
-  if(st.layers.dir && fin(S.du)) cutAlong(S.ux, S.uy, S.tu, MK.dir, 2.4);
-  /* and the fence itself, lifted onto the surface, where it crosses the ball */
+  /* unit run, scaled to eight tenths of the patch: the arrow keeps its
+     direction when the slope goes negative and does not vanish where the
+     derivative is zero */
+  const K = 0.8*d;
+  const vec = (ux, uy, slope, col) => {
+    if(!fin(slope)) return;
+    pa.arrow([0,0,0], [K*ux/d, K*uy/d, clamp(slope*K/H, -1.25, 1.25)*0.62], col, 2.6);
+  };
+  if(st.layers.partX){ cutAlong(1, 0, d, MK.partX, 2.2); vec(1, 0, S.tx, MK.partX); }
+  if(st.layers.partY){ cutAlong(0, 1, d, MK.partY, 2.2); vec(0, 1, S.ty, MK.partY); }
+  if(st.layers.dir && fin(S.du)){
+    cutAlong(S.ux, S.uy, S.tu, MK.dir, 2.4);
+    vec(S.ux, S.uy, S.du, MK.dir);
+  }
+  /* the gradient: on the floor of the box where it lives, and lifted as the
+     direction of steepest ascent */
+  if(st.layers.grad && fin(S.tx) && fin(S.ty) && S.gnRef > 1e-12){
+    const gx = S.tx/S.gnRef, gy = S.ty/S.gnRef;
+    cutAlong(gx, gy, d/Math.max(Math.abs(gx), Math.abs(gy)), MK.grad, 2);
+    vec(gx, gy, S.gnRef, MK.grad);
+  }
+  /* and the fence, lifted onto the surface where it crosses the patch */
   if(fenceOn){
     let run = [];
-    for(let i = 0; i <= 120; i++){
-      const u = (-1.5 + 3*i/120)*R;
+    for(let i = 0; i <= 160; i++){
+      const u = (-2 + 4*i/160)*d;
       const hx = fenceC/2 + u, hy = fenceC/2 - u;
-      const rr = Math.hypot(hx, hy);
       const v = M.f(S.x+hx, S.y+hy);
-      if(rr <= B4.at(Math.atan2(hy, hx)) && fin(v)) run.push(Wz(hx, hy, v));
+      if(Math.abs(hx) <= d && Math.abs(hy) <= d && fin(v)) run.push(Wz(hx, hy, v));
       else { if(run.length > 1) pa.line(run, MK.fence, 2.6); run = []; }
     }
     if(run.length > 1) pa.line(run, MK.fence, 2.6);
@@ -1939,17 +1832,21 @@ function drawZoom3(S){
   S.devPx = S.dev*pxPerUnit; S.pxFloor = S.nf*pxPerUnit;
   S.pictureNoisy = S.pxFloor > 0.5;
 
-  tag(ctx, S.noTangent ? t.noTangent : `∂f/∂x ${fmt(S.fx,4)}   ∂f/∂y ${fmt(S.fy,4)}`,
-      MK.tangent, 12, 16);
-  if(st.layers.dir && fin(S.du))
-    tag(ctx, `D\u1D64f ${fmt(S.du,4)}  (${Math.round(st.theta)}°)`, MK.dir, 12, 32);
+  /* every number the panel draws, written in the colour it is drawn in */
+  let ty = 16;
+  const line = (txt, col) => { tag(ctx, txt, col, 12, ty); ty += 16; };
+  if(S.noTangent) line(t.noTangent, MK.tangent);
+  else{
+    if(st.layers.partX) line(`∂f/∂x  ${fmt(S.fx,4)}`, MK.partX);
+    if(st.layers.partY) line(`∂f/∂y  ${fmt(S.fy,4)}`, MK.partY);
+    if(st.layers.dir)   line(`D\u1D64f  ${fmt(S.du,4)}   (${Math.round(st.theta)}°)`, MK.dir);
+    if(st.layers.grad)  line(`‖∇f‖  ${fmt(S.gn,4)}`, MK.grad);
+  }
   tag(ctx, S.pictureNoisy ? t.belowFloor
         : `${t.gapPx} ${S.exactZero || S.devPx < 0.01 ? "<0.01" : fmt(S.devPx,2)} px`,
       S.pictureNoisy ? css("--warn") : (S.exactZero || S.devPx < 0.35 ? css("--good") : MK.tangent),
       w-12, 16, "right");
-  tag(ctx, `r ${asLength(R)}` + (st.geo && fin(S.aspect) && S.aspect > 1.02
-        ? `   ${t.squash} ${fmt(S.aspect,2)}×` : ""),
-      css("--ink-3"), w-12, 32, "right");
+  tag(ctx, "±" + asLength(d), css("--ink-3"), w-12, 32, "right");
 }
 
 /* ==========================================================================
@@ -2020,7 +1917,6 @@ function paint(S){
     const corner = !!(S.ct && S.ct.corner);
     rows($("ro-zoom"), [
       ["d", asLength(S.d)],
-      ["r", asLength(S.reach)],
       [t.roMag, magStr(S.mag)],
       [t.roGap, S.exactZero ? "0" : S.noisy ? "< " + asLength(S.nf*4) : asLength(S.dev)],
       [t.roGapPx, S.exactZero ? "0" : !fin(S.devPx) ? "—"
@@ -2077,7 +1973,7 @@ es:{
     "3d":"El robot camina sobre la superficie z = f(x, y). Arrástrelo sobre ella; arrastrando fuera de él se gira la vista."
   },
   zoomGo:"Acercar al límite", zoomOut:"Alejar del todo",
-  zoomHint:"La rueda del ratón sobre cualquiera de los dos paneles mueve este dial, y los dos paneles se acercan con él: el robot conserva su tamaño y la escala a su alrededor se encoge. El dial gira en los dos sentidos, de ×0,1 a ×10¹². d es la distancia que el robot puede caminar; r es lo que eso avanza sobre el mapa.",
+  zoomHint:"La rueda del ratón sobre cualquiera de los dos paneles mueve este dial, y el panel de la derecha se acerca con él: el robot conserva su tamaño y la escala a su alrededor se encoge. El dial gira en los dos sentidos, de ×0,1 a ×10¹². d es a la vez lo que el robot alcanza a ver y el incremento con el que mide la pendiente.",
   fams:{ hill:"Una colina", line:"Una rampa recta", range:"Una cordillera",
          tent:"Una arista", custom1:"Personalizada",
          quad:"Cuadrática", plane:"Un plano", ridge:"Tres cerros",
@@ -2109,15 +2005,13 @@ es:{
   gDir:"Dirección",
   zoomOne:"×1",
   alignGrad:"Hacia el gradiente",
-  geoOn:"Alcance geodésico (sobre la superficie)",
-  squash:"achatada",
   fenceMark:"valla",
   dirHint:"La derivada direccional es la pendiente del corte en esa dirección. Es máxima cuando θ apunta como el gradiente, y cero perpendicular a él.",
 
   vpWide:"El terreno", vpZoom:"Lo que ve el robot",
   sTrue:"verdadera", sMeas:"medida", gapPx:"separación", belowFloor:"por debajo del límite de la aritmética",
   roTrue:"Verdadera", roMeas:"Medida", roMissed:"Se equivoca en",
-  roMag:"Aumento", roGap:"Separación", roGapPx:"En píxeles", roRatio:"Separación / r",
+  roMag:"Aumento", roGap:"Separación", roGapPx:"En píxeles", roRatio:"Separación / d",
   roJump:"Salto izq/der",
   legTerrain:"Terreno", legSight:"Alcance", legMeas:"Pendiente medida", legTan:"Tangente",
   legGrad:"Gradiente", legTrail:"Rastro", legRobot:"Robot", legGap:"Separación",
@@ -2140,7 +2034,7 @@ es:{
   errParse:"No se entiende la expresión.",
   errVars:"Sólo se admiten las variables x e y.",
   errY:"En el mundo 2D sólo se admite la variable x.",
-  foot:"Traducido de los applets de GeoGebra «Climbing Mountain 1D» y «Lagrangian in R2». Sintaxis: + − * / ^ ( ), sqrt ln log exp abs sin cos tan sinh cosh tanh atan min max pow, constantes e y pi. La multiplicación implícita funciona: 2xy = 2*x*y. Una unidad del dominio es un kilómetro. El dial abarca doce órdenes de magnitud, de 1,5 km a 1,5 nm, que es hasta donde la aritmética de doble precisión permite llegar sin mentir."
+  foot:"Traducido de los applets de GeoGebra «Climbing Mountain 1D» y «Lagrangian in R2». Sintaxis: + − * / ^ ( ), sqrt ln log exp abs sin cos tan sinh cosh tanh atan min max pow, constantes e y pi. La multiplicación implícita funciona: 2xy = 2*x*y. Una unidad del dominio es un kilómetro. El dial abarca trece órdenes de magnitud, de 15 km a 1,5 nm; la punta de ese recorrido es hasta donde la aritmética de doble precisión permite llegar sin mentir."
 },
 en:{
   docTitle:"The Climbing Robot",
@@ -2155,7 +2049,7 @@ en:{
     "3d":"The robot walks on the surface z = f(x, y). Drag it over the surface; dragging anywhere else orbits the view."
   },
   zoomGo:"Zoom to the limit", zoomOut:"All the way out",
-  zoomHint:"The mouse wheel over either panel turns this dial, and both panels move in with it: the robot keeps its size and the scale around it shrinks. The dial turns both ways, from ×0.1 to ×10¹². d is how far the robot can walk; r is how far that gets it across the map.",
+  zoomHint:"The mouse wheel over either panel turns this dial, and the right-hand panel moves in with it: the robot keeps its size and the scale around it shrinks. The dial turns both ways, from ×0.1 to ×10¹². d is both how far the robot can see and the increment its slope is measured over.",
   fams:{ hill:"A hill", line:"A straight ramp", range:"A mountain range",
          tent:"A ridge", custom1:"Custom",
          quad:"Quadratic", plane:"A plane", ridge:"Three peaks",
@@ -2187,15 +2081,13 @@ en:{
   gDir:"Direction",
   zoomOne:"×1",
   alignGrad:"Point at the gradient",
-  geoOn:"Geodesic reach (measured on the surface)",
-  squash:"squashed",
   fenceMark:"fence",
   dirHint:"The directional derivative is the slope of the slice along that direction. It is largest when θ points along the gradient, and zero across it.",
 
   vpWide:"The terrain", vpZoom:"What the robot sees",
   sTrue:"true", sMeas:"measured", gapPx:"gap", belowFloor:"below the arithmetic floor",
   roTrue:"True", roMeas:"Measured", roMissed:"Off by",
-  roMag:"Magnification", roGap:"Gap", roGapPx:"In pixels", roRatio:"Gap / r",
+  roMag:"Magnification", roGap:"Gap", roGapPx:"In pixels", roRatio:"Gap / d",
   roJump:"Left/right jump",
   legTerrain:"Terrain", legSight:"Sight radius", legMeas:"Measured slope", legTan:"Tangent",
   legGrad:"Gradient", legTrail:"Trail", legRobot:"Robot", legGap:"Gap",
@@ -2218,7 +2110,7 @@ en:{
   errParse:"That expression does not parse.",
   errVars:"Only the variables x and y are allowed.",
   errY:"In the 2D world only the variable x is allowed.",
-  foot:"Translated from the GeoGebra applets “Climbing Mountain 1D” and “Lagrangian in R2”. Syntax: + − * / ^ ( ), sqrt ln log exp abs sin cos tan sinh cosh tanh atan min max pow, constants e and pi. Implicit multiplication works: 2xy = 2*x*y. One unit of the domain is one kilometre. The dial spans twelve orders of magnitude, from 1.5 km down to 1.5 nm, which is as far as double-precision arithmetic goes without lying."
+  foot:"Translated from the GeoGebra applets “Climbing Mountain 1D” and “Lagrangian in R2”. Syntax: + − * / ^ ( ), sqrt ln log exp abs sin cos tan sinh cosh tanh atan min max pow, constants e and pi. Implicit multiplication works: 2xy = 2*x*y. One unit of the domain is one kilometre. The dial spans thirteen orders of magnitude, from 15 km down to 1.5 nm; the far end of that is as far as double-precision arithmetic goes without lying."
 }};
 const T = () => STR[LANG];
 
@@ -2299,7 +2191,10 @@ function buildLegends(){
     leg(MK.grad, t.legGrad) + leg(MK.trail, t.legTrail) + leg(MK.robot, t.legRobot);
   $("legend-zoom").innerHTML =
     leg(MK.curve, t.legTerrain) + leg(MK.tangent, t.legTan) +
-    leg("rgba(255,77,109,.45)", t.legGap) + leg(MK.measured, t.legMeas) +
+    leg("rgba(255,77,109,.45)", t.legGap) +
+    (is1d() ? leg(MK.measured, t.legMeas)
+            : leg(MK.partX, "∂f/∂x") + leg(MK.partY, "∂f/∂y") +
+              leg(MK.dir, "D\u1D64f") + leg(MK.grad, "∇f")) +
     leg(MK.sight, t.legSight);
 }
 /* Which controls belong to which world, and which are only meaningful once
@@ -2601,7 +2496,6 @@ $("zoom").addEventListener("input", () => {
 $("btn-zoom").addEventListener("click", () => zoomTo(st.zoom > 0.97 ? Z1 : 1));
 $("btn-zoom-out").addEventListener("click", () => zoomTo(st.zoom < 0.01 ? Z1 : 0));
 $("btn-zoom-1").addEventListener("click", () => zoomTo(Z1));
-$("geo").addEventListener("change", () => { st.geo = $("geo").checked; BALLKEY = ""; render(); });
 $("btn-step").addEventListener("click", () => {
   if(!st.trail.length) st.trail = is1d() ? [[st.p, MODEL ? MODEL.f(st.p,0) : 0]] : [[st.rx, st.ry]];
   oneStep(); render();
