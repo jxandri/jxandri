@@ -19,3 +19,6 @@ dist/package/
 # Assembled upload folder and its archive — rebuildable with tools/build-site.mjs
 dist/site/
 dist/jxandri-*.zip
+
+# Artifact-ready copies, rebuildable with tools/build-artifacts.mjs
+dist/artifacts/

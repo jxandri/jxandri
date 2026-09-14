@@ -1,0 +1,400 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[english]{babel}
+\manuallang{en}
+
+\appletname{Consumer Optimum}
+\appletsub{Two goods, monotone preferences and a linear budget constraint. The
+2D diagram and the 3D surface are the same thing seen two ways: move something
+in either and the other follows.}
+\appletdir{consumer-optimum}
+
+\begin{document}
+\manualtitlepage{Applet manual · Introductory Microeconomics · Universidad de los Andes\\
+Translated from the GeoGebra applet “Maximización de Utilidad, Curvas de Nivel y…”.\\
+MIT licensed. It opens in a browser; there is nothing to install.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{What this is}
+
+The consumer's problem is taught in two dimensions: indifference curves and a
+budget line. But utility is a function of two variables, and indifference
+curves are its level curves. The familiar diagram is the view from directly
+above a surface.
+
+This applet shows both views at once and keeps them coupled. Drag the bundle in
+the plane and it moves on the surface; drag it on the surface and it moves in
+the plane. The orthographic X--Z projection turns ``find the best affordable
+bundle'' into ``find the top of this hill''.
+
+\figher[1.0]{panels}{The two panels. Left: the textbook diagram, with the
+utility map underneath. Right: the same function as a surface
+$z = u(x, y)$, with the budget line lifted onto it.}
+
+\begin{amkey}
+The budget curve lifted onto the surface is the object that joins the two
+views. Its highest point \emph{is} the optimum. Seeing it as a hill with a
+summit takes the mystery out of the tangency condition.
+\end{amkey}
+
+\subsection{Who it is for}
+
+The consumer-choice topic, and any course where the level curves of a function
+of two variables need to stop being an abstract drawing. It also carries a
+challenge mode with six preference families, scoring and saved progress, which
+works well as homework.
+
+\input{open-en}
+
+% ==========================================================================
+\section{The screen}
+
+\fig[1.0]{interface}{The whole screen.}
+
+\begin{description}
+\item[Mode.] \ui{Explore} or \ui{Challenges}, top right.
+\item[Preferences.] The $u(x, y)$ box and six shortcuts.
+\item[Budget constraint.] $p_x$, $p_y$, $m$.
+\item[Graphical method.] Which of the three ways of hunting for the optimum is
+  active.
+\item[Layers.] Fourteen, described below.
+\item[Domain.] How far the axes run, with a button to fit them to the budget.
+\end{description}
+
+Under the two panels sits a slider whose meaning changes with the chosen
+method, and at the foot of each panel a row of readouts.
+
+\subsection{The readouts}
+
+\begin{ctrltable}{Readout & What it is}
+$x$, $y$ & The coordinates of the bundle $P$. \\
+$u(P)$ & Utility at $P$. \\
+Spend & What is spent against what is available, $p_x x + p_y y$ against
+  $m$. \\
+MRS & The marginal rate of substitution at $P$, $u_x/u_y$, reported
+  positive. \\
+$p_x/p_y$ & The relative price. At an interior optimum the two agree. \\
+Gap & How far $P$ is from being the optimum, with a label: \emph{tangency},
+  \emph{near} or \emph{far}. \\
+max u & The utility of the true optimum. The number to reach. \\
+\end{ctrltable}
+
+\begin{amnote}
+The MRS is reported positive, as $u_x/u_y$, and compared directly against
+$p_x/p_y$. The GeoGebra original displayed $-u_x/u_y$ under a label reading
+$u_x/u_y$, which made the two numbers impossible to compare by eye.
+\end{amnote}
+
+% ==========================================================================
+\section{The three graphical methods}
+
+\begin{description}
+\item[Pick the bundle.] $P$ moves along the budget line, and the slider below
+  runs it from $x = 0$ to $x = m/p_x$. The task is to climb while the colour
+  under $P$ keeps getting lighter.
+\item[Raise the level curve.] $P$ stays put and the slider raises the level
+  $u$. The task is to find the level at which the curve stops cutting the line
+  twice and stops cutting it at all: there it grazes at a single point.
+\item[Free point.] $P$ moves anywhere in the quadrant, inside or outside the
+  feasible set. Useful for talking about unaffordable bundles and about ones
+  that leave money unspent.
+\end{description}
+
+Both panels are draggable under all three methods. In 3D the pointer is
+ray-marched into the height field, so the bundle lands where the cursor
+visually touches the terrain.
+
+\fig[1.0]{optimum}{With the \ui{Show optimum} layer and the tangent switched
+on.}
+
+% ==========================================================================
+\section{The camera}
+
+Four buttons above the 3D panel. Three are true \textbf{orthographic}
+projections --- no perspective divide --- so parallel edges stay parallel and
+equal world steps are equal screen steps.
+
+\begin{ctrltable}{Button & Projects onto, and which axes end up on screen}
+X--Z & The plane $y = 0$: $x$ right, $u$ up. \\
+X--Y & The plane $z = 0$: $x$ right, $y$ up. \\
+Y--Z & The plane $x = 0$: $y$ right, $u$ up. \\
+3D & None: free perspective, with orbit and zoom. \\
+\end{ctrltable}
+
+\fig[0.62]{xz}{The X--Z projection. The lifted budget curve projects to a
+single arch whose peak is the optimum.}
+
+\ui{X--Z} is the one to reach for: ``find the best affordable bundle'' becomes
+``find the top of this hill''. \ui{X--Y} reproduces the 2D diagram exactly,
+which makes the correspondence between the two panels concrete. In both side
+views an indifference curve, being a level set, projects to a horizontal line.
+
+\fig[0.62]{xy}{The X--Y projection. It is the 2D diagram, drawn by the 3D
+engine.}
+
+Dragging or arrow-keying away from a canonical view releases the button but
+keeps the projection type. Dragging the bundle works in every view: the app
+uses only the coordinates the active projection can express, so a horizontal
+drag in \ui{Y--Z} moves along $y$ rather than along the collapsed $x$ axis.
+
+% ==========================================================================
+\section{The layers}
+
+\begin{ctrltable}{Layer & What it draws}
+Utility map & The field $u$ under a colour ramp. \\
+Background contours & Level curves at regular intervals. \\
+Level curve & The curve at the level the slider is set to. \\
+Curve through P & The indifference curve through the bundle. \\
+Feasible set & Veils what cannot be afforded. \\
+3D slice & The budget line lifted onto the surface. \\
+Tangent at P & The tangent to the indifference curve at $P$. \\
+Gradient & $\nabla u$ at $P$. \\
+Partials & $u_x$ and $u_y$ separately. \\
+Cutting plane & The vertical plane over the budget line. \\
+Floor grid & The ground grid in 3D. \\
+Affordable only & Clips the surface to the feasible set. \\
+Show optimum & Reveals the true optimum. \\
+Leave a trail & Keeps the level curves swept so far. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Special cases}
+
+The six preference shortcuts cover the cases a course needs. Two are worth
+looking at slowly, because they break the tangency condition.
+
+\fig[1.0]{complements}{Perfect complements, \code{min(2x,y)}. The indifference
+curve has an elbow and there is no tangent to match.}
+
+\fig[1.0]{substitutes}{Perfect substitutes, \code{2x+3y}. With
+$p_x/p_y = 2/3$ the budget line and the indifference curves are parallel: the
+whole line is optimal.}
+
+\begin{amnote}
+At the opening prices ($p_x = 2$, $p_y = 3$) the \code{2x+3y} shortcut gives
+exactly $\text{MRS} = p_x/p_y$. It is the degenerate case where the consumer is
+indifferent between every affordable bundle, and it is worth showing before it
+turns up unannounced in an exam.
+\end{amnote}
+
+% ==========================================================================
+\section{Challenge mode}
+
+\fig[1.0]{challenge}{Challenge mode.}
+
+Six levels, each with its own preference family and with prices and income
+generated afresh on every attempt:
+
+\begin{ctrltable}{Level & Family and task}
+1 & Cobb--Douglas. Place $P$ on the optimal bundle. \\
+2 & Asymmetric Cobb--Douglas. Raise the level curve until it grazes. \\
+3 & Perfect substitutes. Place $P$. \\
+4 & Perfect complements. Place $P$. \\
+5 & Quasilinear. Raise the level curve. \\
+6 & CES. Place $P$. \\
+\end{ctrltable}
+
+While a challenge is live, prices, income and the utility function are locked.
+Checking an answer reveals the optimum, scores the attempt, and explains
+\emph{which} optimality condition applied: tangency, a kink, or a corner.
+Progress is kept in the browser.
+
+\begin{amnote}
+Alternating the task between ``place the bundle'' and ``raise the curve'' is
+deliberate: they are the two graphical methods on the syllabus, and a student
+who only practises one does not recognise the other in an exam.
+\end{amnote}
+
+% ==========================================================================
+\section{Classroom activities}
+
+\begin{activity}{The two views are one}
+\amset Opening values ($u = x^{0.5}y^{0.5}$, $p_x = 2$, $p_y = 3$, $m = 24$).
+Method \ui{Pick the bundle}.
+\amexp Drag $P$ in the 2D panel and watch it move in the 3D one. Then drag it
+in the 3D panel and watch it move in the 2D one.
+\par\smallskip
+Set the camera to \ui{X--Y}: the right panel becomes the left one. It is the
+shortest proof that an indifference curve is a level curve.
+\end{activity}
+
+\begin{activity}{Finding the summit}
+\amset Camera on \ui{X--Z}, method \ui{Pick the bundle}.
+\amexp The lifted budget curve projects to an arch. Move the slider and watch
+$u(P)$ rise to a maximum and fall again.
+\par\smallskip
+The \ui{max u} readout says $4.899$, which is $\sqrt{24}$. The optimum is at
+$x^\ast = 6$, $y^\ast = 4$. Check it against the Cobb--Douglas formula
+$x^\ast = \alpha m/p_x$ and see that the number matches the top of the arch.
+\end{activity}
+
+\begin{activity}{Tangency, found two ways}
+\amset Method \ui{Pick the bundle}; then \ui{Raise the level curve}.
+\amexp With the first method, climb the line while the colour under $P$ keeps
+lightening: the \ui{Gap} readout falls until it says \emph{tangency}.
+\par\smallskip
+With the second, raise $u$ until the curve stops cutting the line twice. The
+level at which it grazes is the same $4.899$. Both syllabus methods give the
+same number, and the class should see it in the same minute.
+\end{activity}
+
+\begin{activity}{MRS against relative price}
+\amset Opening values, \ui{Tangent at P} layer on.
+\amexp With $P$ away from the optimum, \ui{MRS} $= 1.33$ and
+$p_x/p_y = 0.67$: the tangent is steeper than the budget line. Move $P$ until
+the two numbers agree.
+\par\smallskip
+There is the first-order condition, read as two numbers chasing each other.
+Switch on \ui{Gradient} and \ui{Partials} to see where the MRS comes from.
+\end{activity}
+
+\begin{activity}{An optimum with no tangency}
+\amset \ui{Complementarios / Complements} shortcut, \code{min(2x,y)}.
+\amexp The \ui{max u} readout gives $6.000$, at $x^\ast = 3$, $y^\ast = 6$. But
+the MRS at the elbow is undefined: the readout gives $0.00$ and no tangent
+matches anything.
+\par\smallskip
+Ask how the optimum is found, then. The answer is that you solve $2x = y$
+together with the budget line, and the tangency condition plays no part. It is
+the case that breaks the recipe.
+\end{activity}
+
+\begin{activity}{Every bundle ties}
+\amset \ui{Sustitutos / Substitutes} shortcut, \code{2x+3y}, opening prices.
+\amexp $\text{MRS} = 2/3$ and $p_x/p_y = 2/3$: equal. The budget line and the
+indifference curves are parallel, so \emph{any} bundle on the line is optimal.
+\par\smallskip
+Move $p_x$ slightly either way and the optimum jumps to an axis. That is corner
+demand, and this is the only setting where you can watch it at the tipping
+point.
+\end{activity}
+
+\begin{activity}{What cannot be afforded}
+\amset Method \ui{Free point}. \ui{Feasible set} layer on.
+\amexp Drag $P$ outside the veil. The \ui{Spend} readout passes $24.0$ and the
+applet does not stop you: the bundle exists, it just cannot be paid for.
+\par\smallskip
+Then drag it inwards, leaving money unspent. With monotone preferences that is
+never optimal, and you can see why: there is always a bundle to the north-east
+with more colour on it.
+\end{activity}
+
+\begin{activity}{Challenges as homework}
+\amset \ui{Challenges} mode.
+\amexp All six levels generate fresh prices and income on every attempt, so the
+answer cannot be memorised. On checking, the applet explains which condition
+applied in that case.
+\par\smallskip
+It is a one-session assignment that marks itself. Progress is kept in the
+student's browser, so ask for a screenshot of the score.
+\end{activity}
+
+% ==========================================================================
+\section{Expression syntax}
+
+\begin{ctrltable}{Element & What is allowed}
+Operators & \code{+ - * / \^{} ( )} \\
+Functions & \code{sqrt ln log log10 exp abs min max sin cos tan} \\
+Constants & \code{e}, \code{pi} \\
+Implicit multiplication & \code{2xy} is \code{2*x*y};
+  \code{x\^{}(1/3)y\^{}(2/3)} parses as expected \\
+Associativity & \code{\^{}} binds to the right and tighter than unary minus:
+  \code{-x\^{}2} is $-(x^2)$ \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{How it is built}
+
+Everything is hand-rolled so the page stays self-contained.
+
+\begin{ctrltable}{Piece & Approach}
+Expression language & Tokeniser $\rightarrow$ Pratt parser $\rightarrow$
+  closure tree. No \code{eval} or \code{new Function}, so a strict content
+  security policy cannot break it. \\
+Partial derivatives & Symbolic differentiation over the tree, with constant
+  folding. Falls back to central differences when the expression contains
+  \code{min}, \code{max} or \code{abs} --- exactly the kink cases. \\
+Level curves & Marching squares over a $141\times141$ sampled field, with
+  saddle disambiguation and NaN-cell skipping. \\
+Optimum & Dense scan then golden-section refinement along the budget line, then
+  classification into interior, kink or corner. Robust where a first-order
+  condition finds nothing. \\
+3D surface & Painter's algorithm on canvas 2D. A height field sorts exactly by
+  centroid depth, so no depth buffer is needed and there is no context-loss
+  failure mode. \\
+3D picking & Ray-march the unprojected pointer ray against the height field,
+  then bisect. Crossings count in both directions, since in a side projection
+  the ray runs level with the terrain and can surface from underneath it. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Changes from the GeoGebra original}
+
+\begin{description}
+\item[Colour ramp.] The original tinted level curves with three piecewise-linear
+  channel functions (\code{redfun}, \code{greenfun}, \code{bluefun}). The
+  replacement runs blue and green at the bottom, yellow and orange through the
+  middle, then bright red into crimson and deep brown at the top. Because the
+  top end darkens, height is not recoverable from lightness alone up there ---
+  the colour bar and the numeric readouts carry that instead, and every curve
+  drawn on the map gets a white casing so it stays legible against the dark
+  browns.
+\item[Marks.] The bundle, the budget line, the tangent, the gradient, the
+  partials and the revealed optimum are fixed bright hues with a dark casing,
+  none of them reusing a hue the ramp passes through.
+\item[Colour range.] \code{uMIN}/\code{uMAX} were read off two domain corners.
+  For $\ln(x) + y$ that lower corner is $-\infty$ and the ramp collapses. The
+  rewrite takes the 2nd percentile of the sampled field.
+\item[Domain.] The $x_C$, $y_C$ sliders reached $-10$, which puts
+  \code{sqrt(x)} and \code{ln(x)} outside their domain. The quadrant is now
+  clamped to $x, y \ge 0$.
+\item[Budget parametrisation.] $x_s$ ranged over $[x_C, x_G]$ rather than
+  $[0, m/p_x]$, so the ``bundle'' could sit at negative $x$ with $y$ above the
+  budget line. It is now parametrised by $t \in [0, m/p_x]$.
+\item[Prices.] $p_X$ and $p_Y$ sliders started at 0, making
+  $y_s = (m - p_X x)/p_Y$ and the domain $m/p_X$ divide by zero. Both are now
+  bounded below by $0.2$.
+\item[MRS labelling.] The original displayed $-f_x/f_y$ under a label reading
+  \code{RMS :=}\allowbreak\ \code{(du/dx)/(du/dy)}. MRS is now reported positive as $f_x/f_y$
+  and
+  compared directly against $p_x/p_y$, with the tangency gap as its own
+  readout.
+\item[Dead objects.] \code{afin}, \code{text1} (referring to
+  $a_0, a_1, a_2$, which do not exist in the file), \code{BooleFuncion},
+  \code{BooleTransparente}, \code{BooleMostrarVar},
+  \code{BooleIntersecciones}, \code{BooleTangent}, \code{BooleTanPlane},
+  \code{s}, \code{Impl}, \code{Boole} and \code{DX} were leftovers from the
+  applet this was copied from. None were carried over.
+\end{description}
+
+% ==========================================================================
+\section{Accessibility}
+
+Both canvases are keyboard-operable: arrow keys move the bundle or the level,
+and \key{+} and \key{-} zoom the 3D view. Light and dark themes are designed
+separately, and both respond to the system setting. Numbers are tabular. Motion
+respects \code{prefers-reduced-motion}.
+
+% ==========================================================================
+\section{Troubleshooting}
+
+\begin{ctrltable}{Symptom & What is happening}
+The map is all one colour & The function has a $-\infty$ inside the drawn
+  domain. Raise the domain minimum or change the expression. \\
+I cannot drag in 3D & Check you are not in \ui{Challenges} mode with the
+  controls locked. Otherwise dragging works in all four views. \\
+The surface comes out in pieces & The function is undefined over part of the
+  quadrant. That is correct: there is no ground there. \\
+The camera button switches itself off & You dragged away from the canonical
+  view. The projection type is kept; press it again to recentre. \\
+I lost my challenge score & It is kept in the browser. In a private window, or
+  after clearing site data, it starts from zero. \\
+\end{ctrltable}
+
+\input{tail-en}
+
+\end{document}

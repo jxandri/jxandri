@@ -1,0 +1,373 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[english]{babel}
+\manuallang{en}
+
+\appletname{Non-Linear Budget Constraints}
+\appletsub{Seven subsidy schemes bend the budget line in different places. The
+question is the same in every one: where does the best affordable bundle land,
+and does it land on the fold?}
+\appletdir{nonlinear-budget}
+
+\begin{document}
+\manualtitlepage{Applet manual · Introductory Microeconomics · Universidad de los Andes\\
+Translated from the GeoGebra applet “Max. Utilidad — Rest. Presupuestaria No Lineal”.\\
+MIT licensed. It opens in a browser; there is nothing to install.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{What this is}
+
+A textbook budget constraint is a straight line. Almost no public programme
+leaves one straight. A quota of free milk, a discount on the first few units, a
+place at a state school that is forfeited the moment you buy a private one:
+each bends the frontier somewhere different, and the optimum can land exactly
+on the fold.
+
+This applet carries seven schemes, the ability to compare two at once, and an
+optimum computed in a way that actually finds folds.
+
+\figher[1.0]{kink}{A non-exclusive in-kind subsidy. The first $x_s$ units are
+free, and beyond that the market price applies: the frontier has a flat stretch
+and then a kink.}
+
+\begin{amkey}
+The comparison that matters is between an in-kind subsidy and the cash transfer
+that costs the funder exactly the same. If the quota does not bind, the two
+tie. If it binds, cash wins, and the applet measures by how much.
+\end{amkey}
+
+\subsection{Who it is for}
+
+The budget-constraint topic, and any public-economics class discussing in-kind
+transfers against cash. It assumes indifference curves and the idea of an
+optimum; it assumes no calculus.
+
+\input{open-en}
+
+% ==========================================================================
+\section{The seven schemes}
+
+With price $p_x$, income $m$, quota $x_s$ and subsidy rate $s$:
+
+\begin{ctrltable}{No. and name & Frontier}
+0 · Simple constraint & The usual line. \\
+1 · In-kind subsidy, non-exclusive & Flat to $x_s$, then the market rate: a
+  kink. \\
+2 · Partial in-kind, non-exclusive & Price $(1-s)p_x$ to $x_s$, then $p_x$: a
+  shallower kink. \\
+3 · Exclusive subsidy (state schools) & Take $x_s$ free \emph{or} buy at $p_x$:
+  a vertical drop. \\
+4 · Partial exclusive & A discount on the first $x_s$ units, forfeited entirely
+  if you exceed the quota. \\
+5 · Cash equivalent (full) & Income $m + p_x x_s$, straight. \\
+6 · Cash equivalent (partial) & Income $m + s\,p_x x_s$, straight. \\
+\end{ctrltable}
+
+Scheme 1 pairs with 5, and 2 with 6: the same cost to whoever funds the
+programme, with no strings attached. Putting one against the other is what the
+\ui{Compare with} control is for, and it is the point of the applet.
+
+\begin{amnote}
+With $s < 0$ the subsidy turns into a tax of rate $\tau = -s$ on the first
+$x_s$ units. The slider reaches $-1$, so the same seven schemes also serve for
+talking about selective taxes.
+\end{amnote}
+
+\subsection{Kink versus notch}
+
+Schemes 1 and 2 produce a \textbf{kink}: the frontier changes slope but does
+not break. Schemes 3 and 4 produce a \textbf{notch}: exceeding the quota
+forfeits the whole subsidy, so the frontier falls vertically and there are
+bundles no amount of spending reaches.
+
+\fig[1.0]{drop}{An exclusive subsidy. The frontier drops vertically at $x_s$:
+one more unit of $x$ costs the whole quota.}
+
+% ==========================================================================
+\section{The screen}
+
+\fig[1.0]{interface}{The whole screen.}
+
+\begin{description}
+\item[Scheme.] All seven, numbered 0 to 6.
+\item[Compare with.] Draws a second scheme behind the first, and switches on
+  the \ui{Cash advantage} readout.
+\item[Preferences.] Seven families, the last one writable.
+\item[Prices and income.] $p_x$, $p_y$, $m$.
+\item[The programme.] The quota $x_s$ and the rate $s$.
+\item[View.] Heat gradient, substitution panel, axes.
+\item[Layers.] What gets drawn.
+\end{description}
+
+\subsection{The two panels}
+
+\begin{description}
+\item[Plane $(x, y)$.] The utility map under a topographic ramp, everything out
+  of reach veiled over, the chosen scheme's frontier, the compared one behind
+  it, the indifference curve through the optimum, and the vertices.
+\item[Utility along the constraint.] $u(x, f(x))$ as $x$ runs along the
+  frontier. Its peak \emph{is} the optimum, so ``find the best affordable
+  bundle'' becomes ``find the top of this curve''. On schemes 3 and 4 the curve
+  visibly breaks in two: that gap is the forfeited subsidy.
+\end{description}
+
+\fig[0.62]{drop-path}{Utility along the constraint under an exclusive scheme.
+The gap between the two arcs is exactly the forfeited subsidy.}
+
+\subsection{The dark theme}
+
+\fig[0.95]{dark}{The plane and the substitution panel in the dark theme.}
+
+% ==========================================================================
+\section{How the optimum is found}
+
+A first-order condition is the wrong instrument here. On these frontiers the
+best bundle is very often at a vertex, where the slope is undefined and no
+tangency holds; and on the exclusive schemes it sits at the right-hand end of
+the first piece with a strictly worse point immediately to its right.
+
+\begin{enumerate}
+\item Every piece of the frontier is scanned densely.
+\item The best interior sample on each piece is refined by golden section.
+\item \emph{Every vertex is tested explicitly}, from both sides of every join.
+\item Whichever wins is the optimum. Where it came from is what classifies it
+  as a tangency, a kink, a corner, or the edge of a drop.
+\end{enumerate}
+
+\begin{ctrltable}{Kind of optimum & What it means}
+Tangency & Interior to a piece: the MRS equals the relative price prevailing
+  there. The fold is not biting. \\
+Kink & Exactly at the elbow. To the left the constraint is too flat and to the
+  right too steep: best to stay at the fold. The consumer takes the quota
+  exactly. \\
+Corner & On an axis: it pays to spend everything on one good. \\
+Edge of the drop & On an exclusive scheme, pinned at the edge. One more unit
+  would leave the consumer strictly worse off. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{The preferences}
+
+\begin{ctrltable}{Family & Form}
+Cobb--Douglas & $x^{a} y^{1-a}$ \\
+Perfect substitutes & $a x + (1-a) y$ \\
+Perfect complements & $\min(a x, (1-a) y)$ \\
+Quasilinear & $8a\ln x + y$ \\
+Generalised CES & $\bigl[\tfrac{1}{2a} + \tfrac{1}{2(1-a)}\bigr]^{-1}
+   (a x^{\rho} + (1-a) y^{\rho})^{1/\rho}$ \\
+X inferior & $\ln(x - \underline{x}) - \tfrac{1}{1-\beta}\ln(\bar y - y)$ \\
+Custom & Whatever you type \\
+\end{ctrltable}
+
+One weight $a$ runs through all of them: the exponent in Cobb--Douglas, the
+relative value in the linear and Leontief cases, the share in the CES.
+
+\begin{amnote}
+Two notes on the generalised CES. Its leading factor is written internally as
+$2a(1-a)$, which it equals identically: the literal $1/(2a) + 1/(2(1-a))$
+divides by zero at both ends of the slider, while $2a(1-a)$ simply goes to zero
+there. Being a positive constant it rescales utility without touching
+preferences or the optimum. And at $\rho = 0$ the CES is undefined while its
+limit is Cobb--Douglas, so a slider resting on zero emits that limit rather
+than dividing by it.
+\end{amnote}
+
+\fig[1.0]{complements}{Perfect complements over an in-kind subsidy. With
+Leontief preferences the optimum is always at the elbow of the indifference
+curve, and here it competes with the elbow of the frontier as well.}
+
+% ==========================================================================
+\section{The controls}
+
+\begin{ctrltable}{Slider & What it is}
+$p_x$, $p_y$ & Prices, bounded below at $0.2$. \\
+$m$ & Income. \\
+$x_s$ & The programme's quota. It is clamped to what the income can actually
+  buy, so the allowance never exceeds the budget. \\
+$s$ & The subsidy rate, $-1$ to $1$. Negative is a tax. \\
+$a$, $\rho$, $\beta$, $\underline{x}$, $\bar y$ & Parameters of the chosen
+  preference family; only the ones that family uses appear. \\
+\end{ctrltable}
+
+\subsection{View}
+
+\begin{description}
+\item[Heat gradient.] Turn it off and the background goes plain. The
+  indifference curves keep their height colour at all times: with the map
+  showing it agrees with the ground underneath, and with the map off it is the
+  only reading of height left.
+\item[Substitution panel.] The utility-along-the-constraint reading is a
+  supporting view, so it takes the smaller share of the width and can be
+  dismissed entirely, giving the plane the full frame.
+\item[Axes.] Fixed by default, set by the $x \le$ and $y \le$ boxes. An axis
+  that refits on every slider move renumbers as you drag, and then two settings
+  cannot be compared by eye --- which is the whole point of putting a scheme
+  and its cash equivalent on one picture. Auto-fit stays available, and a
+  warning appears if a frontier runs outside a fixed frame rather than being
+  silently cropped.
+\end{description}
+
+\subsection{Layers}
+
+\begin{ctrltable}{Layer & What it draws}
+Background contours & Level curves of utility. \\
+Feasible set & Veils what cannot be afforded. \\
+Curve through the optimum & The indifference curve passing through it. \\
+Optimum & The chosen point. \\
+Vertices & The elbows and edges of the frontier. \\
+Compared set & The frontier of the scheme being compared against. \\
+Grid & The background rule. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Classroom activities}
+
+\begin{activity}{The usual line}
+\amset Scheme \ui{0 · Simple constraint}, opening values.
+\amexp $x^\ast = 0.69$, $y^\ast = 2.18$, utility $1.539$, cost $0.00$. The kind
+of optimum is \ui{Tangency}: the textbook case.
+\par\smallskip
+It is the baseline the next six schemes are read against. Write it on the board
+before going on.
+\end{activity}
+
+\begin{activity}{When the quota does not bite}
+\amset Scheme \ui{1 · In-kind subsidy, non-exclusive}, opening values. Set
+\ui{Compare with} to \ui{5 · Cash equivalent (full)}.
+\amexp $x^\ast = 0.96$, $y^\ast = 3.05$, utility $2.158$, cost $3.50$. The
+\ui{Cash advantage} reads $0.000$ and the verdict says ``Cash and in-kind
+tie''.
+\par\smallskip
+Look at why: the optimum lands on the stretch where both frontiers coincide.
+The quota $x_s = 0.92$ is smaller than what this consumer was going to buy
+anyway, so the programme hands over money and nothing else. An in-kind subsidy
+that does not constrain \emph{is} a cash transfer.
+\end{activity}
+
+\begin{activity}{When the quota does bite}
+\amset As above, but raise $x_s$ to $2.20$.
+\amexp $x^\ast = 2.20$ exactly --- the whole quota, not one unit more ---
+$y^\ast = 3.11$, utility $2.801$, cost $8.36$. The kind of optimum changes to
+\ui{Kink} and the \ui{Cash advantage} rises to $+0.217$.
+\par\smallskip
+At the same cost of $8.36$, cash reaches a higher indifference curve. Ask why a
+government would then pick in-kind. The answers --- paternalism, targeting,
+externalities from the subsidised good --- are precisely the ones this model
+does not contain, which is why it is worth raising them here.
+\end{activity}
+
+\begin{activity}{A notch instead of a kink}
+\amset Scheme \ui{3 · Exclusive subsidy (state schools)}, opening values.
+\amexp The frontier falls vertically at $x_s$: the \ui{Drop at $x_s$} readout
+gives $-1.25$. The kind of optimum is \ui{Edge of the drop}.
+\par\smallskip
+Switch on the \ui{Substitution panel}. The utility-along-the-constraint curve
+breaks into two arcs that do not touch, and the gap between them is exactly the
+subsidy forfeited by crossing. Ask what happens to a family that needs barely
+one unit more than the quota.
+\end{activity}
+
+\begin{activity}{Tax instead of subsidy}
+\amset Scheme \ui{2 · Partial in-kind, non-exclusive}. Take $s$ down to $-0.6$.
+\amexp The fold reverses: the first $x_s$ units now cost more, and the frontier
+is \emph{concave} instead of convex. The optimum moves away from $x$.
+\par\smallskip
+It is a selective tax on the first few units, and the same picture explains it.
+Ask which real tax schemes look like this.
+\end{activity}
+
+\begin{activity}{Preferences that always end at the elbow}
+\amset \ui{Perfect complements} preferences, scheme \ui{1 · In-kind subsidy}.
+\amexp With Leontief the optimum is always at the elbow of the indifference
+curve. Move $x_s$: as long as the consumer's elbow is to the right of the
+quota, the whole subsidy is taken up and then buying continues.
+\par\smallskip
+Compare with \ui{Perfect substitutes}, where the optimum jumps from one axis to
+the other the moment the relative price crosses the marginal rate of
+substitution. The two extreme cases bracket the intuition.
+\end{activity}
+
+\begin{activity}{Fixed axes are not a whim}
+\amset Any scheme with \ui{Compare with} active. Tick and untick \ui{Fit the
+axes automatically} while moving $m$.
+\amexp With automatic axes the numbers change at every step and the two
+frontiers appear to sit still. With fixed axes you can see which one moves and
+by how much.
+\par\smallskip
+That is why the axes are fixed by default: comparison is the object of the
+applet, and a comparison whose scale moves on its own is not one.
+\end{activity}
+
+\begin{activity}{Build the case where in-kind wins}
+\amset Free rein.
+\amexp You cannot, and that is the exercise. Whatever the preferences, cash of
+the same cost always reaches an indifference curve at least as high, because
+the feasible set under cash contains the one under in-kind.
+\par\smallskip
+The most that can be achieved is a tie, and the tie happens exactly when the
+quota does not bind. Letting the class try for five minutes is worth more than
+stating it.
+\end{activity}
+
+% ==========================================================================
+\section{Expression syntax}
+
+\begin{ctrltable}{Element & What is allowed}
+Operators & \code{+ - * / \^{} ( )} \\
+Functions & \code{sqrt ln log log10 exp abs sin cos tan min max} \\
+Constants & \code{e}, \code{pi} \\
+Implicit multiplication & \code{2xy} is \code{2*x*y} \\
+Associativity & \code{\^{}} binds to the right and tighter than unary minus:
+  \code{-x\^{}2} is $-(x^2)$ \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Changes from the GeoGebra original}
+
+\begin{description}
+\item[Discontinuities are modelled, not approximated.] The original wrote
+  schemes 3 and 4 as single \code{If[...]} functions, which GeoGebra draws with
+  a connecting segment across the jump. Each scheme here is a list of separate
+  pieces, so the drop stays a drop and the utility profile breaks where it
+  should.
+\item[Colour range.] \code{uMIN := U(0.001, 0.001)} is undefined for the
+  Stone-Geary utility, whose domain needs $x > \underline{x}$; the ramp
+  collapsed to a single colour for the whole ``x inferior'' example. The
+  rewrite takes the 2nd percentile of the sampled field.
+\item[\code{uMAX}] used the same x-derived value for both coordinates, and
+  exceeded $\bar y$ often enough to return \code{NaN}. Same fix.
+\item[Prices.] $p_X$ and $p_Y$ sliders started at 0, making $I/p_Y$ and the
+  whole construction divide by zero. Both are bounded below by $0.2$.
+\item[$x_s$ and $\underline{x}$] are clamped to what the income can actually
+  buy, so the allowance can never exceed the budget and the Stone-Geary utility
+  stays defined.
+\item[Dead objects.] \code{pXlow} and \code{pXhigh} were computed from a
+  formula that returns large negative numbers for every setting the sliders
+  allow, and were displayed nowhere. Not carried over.
+\item[The cash comparison is computed], not left for the reader to eyeball: the
+  cost of each scheme and the utility difference against the equal-cost cash
+  transfer are readouts.
+\end{description}
+
+% ==========================================================================
+\section{Troubleshooting}
+
+\begin{ctrltable}{Symptom & What is happening}
+A warning that the frontier runs off & The axes are fixed and the drawing does
+  not fit. Raise $x \le$ or $y \le$, or tick auto-fit. \\
+The plane is plain & The \ui{Heat gradient} is off. The curves keep their
+  height colour regardless. \\
+Cash advantage reads ``---'' & There is no scheme in \ui{Compare with}. \\
+The optimum ignores $s$ & The quota is not binding: the optimum falls outside
+  the subsidised stretch. Raise $x_s$. \\
+Utility comes out \code{NaN} & In the ``X inferior'' family the domain needs
+  $x > \underline{x}$ and $y < \bar y$. Adjust those two sliders. \\
+\end{ctrltable}
+
+\input{tail-en}
+
+\end{document}

@@ -1,0 +1,621 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[english]{babel}
+\manuallang{en}
+
+\appletname{Profit, Costs and Supply}
+\appletsub{The competitive firm's short-run problem, and the supply curve that
+comes out of it. Two panels drawn to the same scale, because they are the same
+curve.}
+\appletdir{firm-supply}
+
+\begin{document}
+\manualtitlepage{Applet manual · Introductory Microeconomics · Universidad de los Andes\\
+Translated from the GeoGebra applet “Beneficios y Costos”.\\
+MIT licensed. It opens in a browser; there is nothing to install.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{What this is}
+
+A competitive firm in the short run has exactly one degree of freedom: how much
+to produce. Capital is fixed, the price is handed to it, and all it can do is
+pick the quantity $q$ that maximises profit
+\[
+  \pi(q) \;=\; p\,q \;-\; c(q).
+\]
+
+That is the problem. The firm's supply curve is the \emph{answer} to that
+problem, solved once for every possible price. They are two different objects,
+and in almost every textbook they appear in two different figures on two
+different pages, joined by a sentence saying that marginal cost ``is'' the
+supply curve, which the student has to take on trust.
+
+This applet puts them side by side and to the same scale. The left panel is
+the problem; the right one is its answer. Marginal cost is drawn in both, in the
+same coordinates, and in the supply panel it is laid over the supply curve as a
+red dashed line. Above the shutdown price the dashes fall exactly on top.
+Nothing has to be taken on trust.
+
+\figher[1.0]{panels}{The two panels at the opening settings. Left: the problem,
+with marginal, average and average variable cost. Right: the firm's supply
+curve in the $(q, p)$ plane. Both axes are the same in both panels, so marginal
+cost occupies the same place in each.}
+
+\begin{amkey}
+Marginal cost and inverse supply are not similar curves: above the bottom of
+average variable cost they are the same curve, point for point. The whole
+applet is built so that this can be seen rather than asserted.
+\end{amkey}
+
+\subsection{Who it is for}
+
+A first course in microeconomics, at the session where profit maximisation
+turns into the supply curve. It assumes the student has already met total,
+average and marginal cost, and knows what an optimum is. It assumes no calculus
+beyond the idea of a slope.
+
+\input{open-en}
+
+% ==========================================================================
+\section{The screen}
+
+\fig[1.0]{interface}{The whole screen. Controls down the left; the verdict
+along the top; the two panels with their readouts below.}
+
+Left to right, top to bottom:
+
+\begin{description}
+\item[The control rail.] Picks the cost function, moves its parameters, sets
+  the price, decides what the firm panel shows and which layers are drawn.
+  Every slider has a numeric box beside it: drag, or type the exact number.
+\item[The verdict.] The coloured band under the title. It names which case the
+  firm is in --- profit, loss, shutdown, break-even, capacity, no optimum ---
+  and explains why. It changes on its own as you move anything.
+\item[The firm panel] (left). Either the marginal curves or the totals,
+  depending on the \ui{Firm panel} switch.
+\item[The supply panel] (right). The inverse supply curve in the $(q, p)$ plane,
+  with the shutdown price, the break-even price and the current price.
+\item[The readouts.] The row of numbers under each panel. They are the same
+  values that are drawn, written to three decimals for when the eye is not
+  enough.
+\end{description}
+
+\subsection{Dragging to change the price}
+
+In any panel whose vertical axis \emph{is} the price --- the supply panel
+always, the firm panel when it is showing marginals --- you can drag with the
+mouse or a finger and the price follows the pointer. It is the natural way to
+read a supply curve: pick a price, see what quantity comes out.
+
+In the totals view the vertical axis is money, not money per unit, and the
+panel does not answer the pointer.
+
+\subsection{Keyboard}
+
+\begin{ctrltable}{Key & What it does}
+\key{1} \key{2} \key{3} \key{4} & Pick the cost function. \\
+\key{m} & Firm panel to marginals. \\
+\key{t} & Firm panel to totals. \\
+\end{ctrltable}
+
+\subsection{The dark theme}
+
+Dark is the original design; light is there for projectors and for printing.
+The two were designed separately --- it is not an inversion of the colours.
+
+\fig[0.95]{dark}{The same two panels in the dark theme.}
+
+% ==========================================================================
+\section{The model}
+
+\subsection{Costs}
+
+Everything starts from a total cost function $c(q)$: what it costs to produce
+$q$ units when the capital is already paid for. The rest follow from it.
+
+\begin{align*}
+  \text{Fixed cost}          &&  F   &= c(0) \\
+  \text{Variable cost}       &&  VC(q) &= c(q) - F \\
+  \text{Marginal cost}       &&  MC(q) &= c'(q) \\
+  \text{Average cost}        &&  AC(q) &= \frac{c(q)}{q} \\
+  \text{Average variable cost}&& AVC(q) &= \frac{c(q) - F}{q}
+\end{align*}
+
+Fixed cost is read as the limit of $c(q)$ as $q$ falls to zero from above. In
+the families that start from a production function that limit is $r\bar K$, the
+rental on the fixed capital: it is paid whatever is produced.
+
+\subsection{The problem}
+
+\[
+  \max_{q \,\ge\, 0} \;\; \pi(q) \;=\; p\,q - c(q).
+\]
+
+If the maximum is interior, the first-order condition gives
+$MC(q^\ast) = p$, and the second-order condition requires marginal cost to be
+\emph{rising} there. Both matter: on a cubic cost curve the equation
+$MC(q) = p$ has two roots and one of them is a \emph{minimum} of profit.
+
+But $q^\ast = 0$ is a candidate too, and not a limiting case of the other one:
+it is a corner, with profit $\pi(0) = -F$. The firm produces only if producing
+beats closing.
+
+\subsection{The shutdown price}
+
+Comparing the two:
+\[
+  p\,q - c(q) \;>\; -F
+  \quad\Longleftrightarrow\quad
+  p\,q \;>\; c(q) - F = VC(q)
+  \quad\Longleftrightarrow\quad
+  p \;>\; AVC(q).
+\]
+
+Fixed cost drops out of the comparison. It is already sunk, and a decision that
+takes it into account is a decision taken wrongly. Out of this comes the
+\textbf{shutdown price}:
+\[
+  \underline{p} \;=\; \min_{q > 0} AVC(q),
+\]
+and the rule everybody recites: the firm produces as long as the price covers
+average variable cost, even when it does not cover average total cost.
+
+\subsection{The break-even price}
+
+\[
+  p_{be} \;=\; \min_{q>0} AC(q).
+\]
+The price at which profit is exactly zero. Above it there is profit; below it
+there are losses --- which may still be worth taking, as long as the price
+stays above $\underline{p}$.
+
+\subsection{Supply}
+
+\[
+  q^\ast(p) \;=\;
+  \begin{cases}
+    0 & \text{if } p < \underline{p},\\[2pt]
+    \text{the root of } MC(q) = p \text{ on the rising branch} & \text{if } p > \underline{p}.
+  \end{cases}
+\]
+
+At $p = \underline{p}$ the firm is indifferent, and supply \textbf{jumps}: it
+goes from zero to the quantity $\underline{q}$ that minimises average variable
+cost, without passing through the values in between. That jump is not a
+technicality. It is why the supply curve of a firm with fixed costs does not
+reach the origin.
+
+\subsection{Producer surplus}
+
+\[
+  PS \;=\; \int_0^{q^\ast}\!\bigl(p - MC(q)\bigr)\,dq
+       \;=\; p\,q^\ast - VC(q^\ast)
+       \;=\; \pi + F.
+\]
+
+One number written three ways, and the applet draws two of them: in the left
+panel as the area between $p$ and marginal cost, and in the right as the area
+between the price axis and the supply curve, from $\underline{p}$ up to $p$.
+The two regions have different shapes --- with a jump they cannot coincide ---
+and exactly the same area.
+
+\begin{amnote}
+Producer surplus and profit are the same thing only when there is no fixed
+cost. With $F > 0$ the surplus is always larger, by exactly $F$.
+\end{amnote}
+
+% ==========================================================================
+\section{The four cost functions}
+
+Picked with the four buttons at the top of the rail, or with \key{1} to
+\key{4}. Each brings its own sliders.
+
+\subsection{1 · Quadratic / power}
+
+\[
+  c(q) = F + a\,q^{k}, \qquad k > 1.
+\]
+The textbook shape. Marginal cost, $MC = a k q^{k-1}$, rises from zero, so
+average variable cost has no interior minimum: its infimum is zero and is
+approached only in the limit. The consequence: \textbf{this firm never shuts
+down}. At any positive price it is worth producing something.
+
+\begin{ctrltable}{Slider & What it is}
+$F$ & Fixed cost. Raises or lowers average cost without touching marginal
+      cost. \\
+$a$ & Scale of variable cost. \\
+$k$ & Curvature. With $k$ near 1 marginal cost is nearly constant and the
+      problem stops having a solution; with $k$ large it rises very fast and
+      supply goes vertical. \\
+\end{ctrltable}
+
+\subsection{2 · Custom}
+
+Type $c(q)$ into the text box. Marginal cost is obtained by differentiating the
+expression \emph{symbolically}, not numerically, so it is exact. The one
+supplied by default,
+\[
+  c(q) = 0.1\,q^{3} - 0.5\,q^{2} + 2q,
+\]
+is the textbook cubic: no fixed cost, U-shaped average variable cost with
+minimum $1.375$ at $q = 2.5$, and therefore a strictly positive shutdown price
+and a visible jump in supply.
+
+\fig[1.0]{cubic}{The cubic at $p = 1.6$. The supply panel shows all three
+pieces of the curve: flat against the price axis below $1.375$, the
+discontinuous jump, and the rising branch that coincides with marginal cost.}
+
+\subsection{3 · Cobb--Douglas production}
+
+In the short run capital is fixed at $\bar K$ and the only variable factor is
+labour. Starting from
+\[
+  f(K, l) = b\,\bigl(K^{\beta} l^{1-\beta}\bigr)^{s},
+\]
+invert it for the labour needed to produce $q$,
+\[
+  l(q) = \Bigl(\frac{q}{b\,\bar K^{\beta s}}\Bigr)^{\!e}, \qquad
+  e = \frac{1}{(1-\beta)s},
+\]
+and price it at the wage $w$:
+\[
+  c(q) \;=\; r\bar K \;+\; w\,b^{-e}\,\bar K^{-\beta/(1-\beta)}\,q^{\,e}.
+\]
+
+Everything turns on $e$. With $e > 1$ there are diminishing returns to the
+variable factor, marginal cost rises, and the problem has a solution. With
+$e \le 1$ marginal cost does not rise, every extra unit adds profit, and there
+is no optimal quantity. The applet says so instead of drawing something
+meaningless.
+
+\fig[0.8]{no-optimum}{The verdict when $e \le 1$: no optimum, and what to move
+so that there is one.}
+
+\begin{ctrltable}{Slider & What it is}
+$b$ & Total factor productivity. \\
+$\beta$ & Capital's elasticity. It enters $e$. \\
+$s$ & Returns to scale of the Cobb--Douglas. It enters $e$. \\
+$w$ & The wage. Scales all of variable cost. \\
+$r$ & The rental on capital. It is the fixed cost, $F = r\bar K$. \\
+$\bar K$ & The fixed capital. It is what makes the short run short. \\
+\end{ctrltable}
+
+\subsection{4 · Logistic log-CD production}
+
+The same idea, with a production function that \emph{saturates}:
+\[
+  g(K, l) = \frac{b\,K^{\gamma}}{1 + e^{-s(\ln f - m)}},
+\]
+whose ceiling is $\bar Q = b\,\bar K^{\gamma}$ however much labour is hired.
+Inverting it,
+\[
+  c(q) \;=\; r\bar K \;+\; w\,e^{m/(1-\beta)}\,\bar K^{-\beta/(1-\beta)}
+             \left(\frac{q}{\bar Q - q}\right)^{\!e},
+  \qquad 0 < q < \bar Q .
+\]
+
+Marginal cost blows up as $\bar Q$ is approached, and the supply curve has a
+vertical asymptote there. It is the honest picture of what a fixed capital
+means: however far the price rises, there is a quantity this plant cannot pass.
+
+\fig[1.0]{capacity}{The logistic family at $p = 3.2$. The capacity
+$\bar Q = b\bar K^{\gamma}$ is marked by a grey vertical, and marginal cost
+climbs towards it without ever arriving.}
+
+% ==========================================================================
+\section{The controls}
+
+\subsection{Price}
+
+A slider from 0 to 10, with a numeric box for an exact value. Under it a
+sentence says where the price stands relative to the shutdown and break-even
+prices. It can also be moved by dragging inside any panel whose vertical axis
+is the price.
+
+\subsection{Firm panel}
+
+\begin{ctrltable}{View & What it draws}
+Marginals & $MC$, $AC$ and $AVC$, in money per unit. That is the same unit as
+  the price, so this panel shares \emph{both} axes with the supply panel and
+  the two figures are comparable pixel for pixel. \\
+Totals & $c(q)$, revenue $pq$ and profit $\pi(q)$, in money. The vertical axis
+  is no longer the supply panel's; the quantity axis still is. The pill in the
+  panel header says which of the two cases you are in. \\
+\end{ctrltable}
+
+\subsection{The layers}
+
+The list changes with the view, because not every layer makes sense in both.
+
+\subsubsection{In marginals}
+
+\begin{ctrltable}{Layer & What it draws}
+Marginal cost & $MC(q)$, in red. It also appears laid over the supply panel. \\
+Average cost & $AC(q)$, in gold. Its minimum is the break-even price. \\
+Average variable cost & $AVC(q)$, in orange. Its minimum is the shutdown
+  price. \\
+Price line & The horizontal at $p$. \\
+Variable-cost area & The region under $MC$ out to $q^\ast$, which is
+  $VC(q^\ast)$. \\
+Producer surplus area & The region between $p$ and $MC$ out to $q^\ast$. \\
+Optimum & The point $(q^\ast, p)$, its vertical, and the profit rectangle
+  between $p$ and $AC(q^\ast)$ --- green for profit, red for a loss. \\
+Break-even point & Marks the minima of $AC$ and of $AVC$. \\
+Grid & The background rule. \\
+\end{ctrltable}
+
+\fig[1.0]{areas}{Both areas switched on at once, with the cubic at $p = 1.6$.
+On the left the surplus measured as the integral of $p - MC$ with respect to
+quantity; on the right the same number as the integral of $q$ with respect to
+price.}
+
+\subsubsection{In totals}
+
+\begin{ctrltable}{Layer & What it draws}
+Total cost & $c(q)$, with a dotted horizontal at the fixed cost. \\
+Total revenue & The line $pq$. \\
+Profit & $\pi(q) = pq - c(q)$. Its maximum is at $q^\ast$. \\
+Variable cost & $c(q) - F$, the same curve dropped. \\
+Tangent of slope $p$ & The line tangent to $c(q)$ at $q^\ast$. It is parallel
+  to the revenue line: there is the first-order condition, drawn. \\
+Optimum & The vertical segment between $c(q^\ast)$ and $pq^\ast$, whose length
+  \emph{is} the profit. \\
+Break-even point & The quantities where $\pi(q) = 0$. \\
+\end{ctrltable}
+
+\fig[1.0]{totals}{The totals view with the cubic at $p = 1.6$. The dotted
+tangent touches the cost curve exactly where its slope equals the price, and
+the vertical segment at $q^\ast$ measures the profit.}
+
+% ==========================================================================
+\section{How the optimum is found}
+
+Worth knowing, because the applet does not do what the GeoGebra original did
+and the difference shows in the interesting cases.
+
+\textbf{It does not solve $MC = p$.} That equation has two roots on a cubic
+cost curve, and one of them is a minimum of profit. With any non-convex cost
+function the global optimum can additionally sit at a corner, where no
+first-order condition finds it.
+
+What it does instead is maximise profit directly:
+
+\begin{enumerate}
+\item Bound the range from above, by finding the point past which marginal cost
+  has overtaken the price and is still rising.
+\item Scan that range with 700 points and keep the best.
+\item Refine that neighbourhood by golden section.
+\item Compare the result against shutting down, which gives $\pi(0) = -F$.
+  Shutting down is a candidate in its own right, not a limiting case.
+\end{enumerate}
+
+The supply curve is traced the same way: a full maximisation at each of 140
+prices. It is the only way the jump comes out. Inverting $MC = p$ would never
+produce it, because below the shutdown price the answer is zero and at the
+shutdown price it leaps.
+
+\begin{amnote}
+The minimum of average variable cost is searched over a geometric ladder, not a
+linear one: what decides whether the firm ever shuts down is the shape of the
+curve near zero, and a uniform mesh over five orders of magnitude resolves
+nothing there. If the minimum lands on an end of the ladder then there is no
+minimum --- the curve is still falling --- and the applet reports that there is
+no shutdown price instead of quoting the smallest value it happened to sample.
+\end{amnote}
+
+% ==========================================================================
+\section{The verdict}
+
+The band at the top names the case and explains it. There are six.
+
+\begin{ctrltable}{Verdict & When}
+Produces at a profit & $p > p_{be}$. The price beats minimum average cost. \\
+Produces at a loss & $\underline{p} < p < p_{be}$. And is right to: closing
+  would cost the whole fixed cost. \\
+Zero profit & $p = p_{be}$, the bottom of average cost. \\
+Shuts down & $p < \underline{p}$. The optimum is $q^\ast = 0$ and the loss is
+  exactly $F$. \\
+Against the capacity & The optimum is practically at $\bar Q$. Only the
+  logistic family reaches this. \\
+No optimum & Marginal cost never overtakes the price over any range worth
+  drawing. \\
+\end{ctrltable}
+
+\fig[1.0]{shutdown}{Shutdown, with the cubic at $p = 1.15$. The supply curve
+lies flat against the price axis, $q^\ast$ is shown in red, and the verdict
+explains why producing would be worse than not producing.}
+
+% ==========================================================================
+\section{Classroom activities}
+
+Each one starts from the opening settings unless it says otherwise. If you get
+lost, reload the page.
+
+\begin{activity}{The two curves are one}
+\amset Cost function \ui{Quadratic / power}, opening values, $p = 2$. Switch
+\ui{Marginal cost} on if it is off.
+\amexp The red curve in the left panel and the cyan one in the right occupy the
+same place on the screen. Move $p$: the purple point travels along both at once
+and always at the same height. Raise $a$ or $k$ and both steepen together.
+\par\smallskip
+Ask the class why the right panel has no average cost curve drawn in bold:
+because average cost plays no part in the decision of \emph{how much} to
+produce, only in whether the business is worth being in at all.
+\end{activity}
+
+\begin{activity}{Manufacturing a shutdown price}
+\amset Choose \ui{Custom}. The default expression is the cubic.
+\amexp $AVC$ is now U-shaped with minimum $1.375$, and supply no longer starts
+at the origin: there is a stretch flat against the price axis and a jump.
+\par\smallskip
+Take the price down to $1.30$ and then up to $1.40$. The quantity goes from $0$
+to $2.55$ in one step. Ask: what quantity does the firm produce when
+$p = 1.375$ exactly? The honest answer is that it does not care, and that is
+why supply there is not a function but a correspondence.
+\end{activity}
+
+\begin{activity}{Producing at a loss}
+\amset Cubic. This cubic has $F = 0$, so its shutdown and break-even prices
+coincide at $1.375$ and there is no loss band. Give it a fixed cost: type
+\code{1+0.1q\^{}3-0.5q\^{}2+2q} into the box. Set $p = 1.6$.
+\amexp The shutdown price is still $1.375$ --- fixed cost does not touch
+average variable cost --- but break-even rises to $1.733$. There is now a band
+of prices between them, and $1.6$ is inside it.
+\par\smallskip
+The \ui{Profit} readout shows $-0.394$ in red, and still the optimum is to
+produce $2.869$. Ask why it does not close. Closing would cost the whole fixed
+cost, $-1$; producing loses only $0.394$. Sweep the price across the whole band
+$1.375 < p < 1.733$: profit is negative throughout and producing stays best.
+\end{activity}
+
+\begin{activity}{Surplus measured twice}
+\amset Cubic, $p = 1.6$. Switch on \ui{Producer surplus area}.
+\amexp Two shaded regions of clearly different shapes appear, one in each
+panel. The \ui{Surplus} readout gives $0.606$, and it is both of theirs.
+\par\smallskip
+Check it with the numbers in the left panel: $q^\ast = 2.869$,
+$\text{revenue} = p\,q^\ast = 4.59$, $c(q^\ast) = 3.98$. Since $F = 0$ here,
+variable cost is the whole cost, and $PS = 4.59 - 3.98 = 0.61$. It matches both
+areas.
+\par\smallskip
+Ask why the two regions are not the same shape if they measure the same thing.
+Because one integrates $p - MC$ with respect to quantity and the other
+integrates $q^\ast$ with respect to price; with a jump at the shutdown price
+they cannot be the same region, but the fundamental theorem of calculus says
+they have the same area.
+\end{activity}
+
+\begin{activity}{The first-order condition, drawn}
+\amset Cubic, $p = 1.6$, firm panel on \ui{Totals}.
+\amexp The dotted tangent to total cost at $q^\ast$ is parallel to the revenue
+line. Move the price: the revenue line pivots, and the point of tangency slides
+along the cost curve to wherever the slope matches again.
+\par\smallskip
+The vertical segment at $q^\ast$ is the profit. Switch on \ui{Break-even point}
+and the two quantities appear at which that segment has zero length.
+\end{activity}
+
+\begin{activity}{Two roots, one optimum}
+\amset Cubic, $p = 1.6$, \ui{Marginals} view.
+\amexp The price line cuts marginal cost \emph{twice}. The purple point is on
+the right-hand crossing, where $MC$ is rising.
+\par\smallskip
+Ask what happens at the other one. It is the solution of $MC = p$ that a
+student would get by solving the equation without checking the second
+derivative, and it is a minimum of profit: producing that quantity is the worst
+the firm can do among those that cover variable cost. Switch to \ui{Totals} to
+see it as a valley in the profit curve.
+\end{activity}
+
+\begin{activity}{Capacity}
+\amset \ui{Logistic log-CD production} family, opening values.
+\amexp The grey vertical marks $\bar Q = b\bar K^{\gamma}$. Push the price to
+the top of its slider: the quantity grows by less and less, and the
+\ui{Elasticity} readout approaches zero.
+\par\smallskip
+Now raise $\bar K$ and the capacity moves right. That is exactly the long-run
+exercise the short run forbids: the only way to produce past $\bar Q$ is to
+change plant.
+\end{activity}
+
+\begin{activity}{When there is no optimum}
+\amset \ui{Cobb--Douglas production} family. Take $\beta$ down to $0.05$ and
+$s$ up to $2$.
+\amexp The formula in the rail shows $e = 0.526$, and the verdict changes to
+``No optimum''. Every readout in the supply panel turns into a dash.
+\par\smallskip
+Marginal cost is falling: each extra unit costs less than the last and sells
+for the same price. Ask what would happen to such a firm in a competitive
+market. The answer --- that it would grow until it stopped being competitive
+--- is the argument for why diminishing returns are not a technical assumption
+but the condition for the model to mean anything.
+\end{activity}
+
+% ==========================================================================
+\section{Expression syntax}
+
+In the cost box the variable is \code{q}. \code{x} is accepted too, because
+that is what GeoGebra called it.
+
+\begin{ctrltable}{Element & What is allowed}
+Operators & \code{+ - * / \^{} ( )} \\
+Functions & \code{sqrt ln log log10 exp abs sin cos tan min max pow} \\
+Constants & \code{e}, \code{pi} \\
+Implicit multiplication & \code{2q}, \code{3(q+1)}, \code{2sqrt(q)} \\
+Associativity & \code{\^{}} binds to the right and tighter than unary minus:
+  \code{-q\^{}2} is $-(q^2)$ \\
+\end{ctrltable}
+
+Marginal cost is differentiated symbolically. Where the expression has a kink
+--- \code{min}, \code{max}, \code{abs} --- there is no symbolic derivative to
+be had and it falls back to a central difference, which is what the picture
+shows anyway.
+
+\begin{amwatch}
+Typing a decreasing cost function, or one with constant marginal cost, lands
+you in the ``No optimum'' case. That is not a failure of the applet: that
+problem has no solution.
+\end{amwatch}
+
+% ==========================================================================
+\section{Changes from the GeoGebra original}
+
+\begin{description}
+\item[Two panels instead of one.] The original drew total cost, revenue,
+  profit, marginal cost and average cost on one pair of axes. Money and money
+  per unit share no scale, so the marginal curves were unreadable next to the
+  totals. They are separated here, and the marginal panel is locked to the
+  supply panel's scale.
+\item[The supply curve, which was not there.] Along with the shutdown price,
+  the break-even price, the jump between them, and the elasticity.
+\item[The optimum is a maximisation, not an intersection.] The original
+  intersected \code{Eq: CM(x) = p} with the axis and used the result as the
+  right end of a \code{Max[Beneficios, 0, x(A)]}. With non-monotone marginal
+  cost that bracket is the wrong one, and when $MC = p$ has no root the whole
+  chain returned \code{NaN} and the applet went blank.
+\item[Shutting down is a candidate.] The original always compared against an
+  interior maximum. Here $\pi(0) = -F$ competes with it, which is what makes
+  the shutdown price exist.
+\item[An infimum is not a minimum.] Average variable cost that merely decreases
+  towards zero has no minimum, so there is no shutdown price. Reporting the
+  smallest sampled value gave a shutdown price of $7.7\times10^{-4}$.
+\item[Sliders bounded away from division by zero.] $\beta = 1$ divides by
+  $1-\beta$; $\bar K = 0$ raises zero to a negative power; $w = 0$ and $a = 0$
+  make cost constant; $k = 1$ makes marginal cost constant. All were reachable
+  in the original.
+\item[$m$ widened] from $[0, 1]$ to $[-1, 2]$, where it actually moves the cost
+  level enough to see.
+\item[Bilingual, and with a verdict.] Every state of the problem is named and
+  explained, because the shapes on their own do not say which of the six cases
+  a student is looking at.
+\item[Dead objects not carried over.] \code{AreaProfi}, \code{CM2} (a copy of
+  \code{CM}), \code{eq1}, \code{A}, \code{prueba} and \code{prueba2} were
+  plumbing for the GeoGebra construction rather than objects with meaning.
+\end{description}
+
+% ==========================================================================
+\section{Troubleshooting}
+
+\begin{ctrltable}{Symptom & What is happening}
+The panels are empty & The cost expression does not parse. The red message
+  under the box says whether it is a syntax problem or a variable problem. \\
+Everything reads ``$\infty$'' or a dash & You are in the ``No optimum'' case.
+  Raise $k$, or $s$, or $\beta$, or switch family. \\
+The scales stop matching & The firm panel is on \ui{Totals}. The pill in its
+  header says so. Go back to \ui{Marginals}. \\
+The axis moves while I drag the price & Deliberate: axes are rounded to round
+  numbers and step in jumps, so that two settings can be compared by eye
+  instead of renumbering continuously. \\
+The price ignores the mouse & You are dragging inside the totals panel, whose
+  vertical axis is money. Use the supply panel or the slider. \\
+The language or theme was lost & They are kept in the browser. In a private
+  window, or after clearing site data, they go back to their defaults. \\
+\end{ctrltable}
+
+\input{tail-en}
+
+\end{document}

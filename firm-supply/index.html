@@ -1,0 +1,1430 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beneficios, Costos y Oferta</title>
+<meta name="description" content="El problema de la empresa competitiva en el corto plazo, y la curva de oferta que sale de él. Dos paneles a la misma escala.">
+<style>
+/* Dark is the design here, not a variant of it. Light is an explicit opt-out
+   for projectors and printed handouts, chosen from the header. */
+:root{
+  color-scheme:dark;
+  --paper:#0D1215; --surface:#151C20; --panel:#192126; --sunk:#0F171A;
+  --ink:#E7EEF1; --ink-2:#A3B4BC; --ink-3:#6D7F87;
+  --rule:#2A353B; --rule-2:#212B30;
+  --accent:#4CC6D4; --accent-soft:#173238; --accent-ink:#8CE2EC;
+  --btn-ink:#08171A; --crit:#E4705C; --good:#6FD3A0; --warn:#FF9E2C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  --f-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --f-ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#E9ECEE; --surface:#FFFFFF; --panel:#F3F6F7; --sunk:#DFE5E8;
+  --ink:#14181B; --ink-2:#48555C; --ink-3:#7C8B93;
+  --rule:#CBD4D8; --rule-2:#E1E7EA;
+  --accent:#0E6E78; --accent-soft:#D3E7E9; --accent-ink:#0A4F57;
+  --btn-ink:#FFFFFF; --crit:#A93726; --good:#1B6E48; --warn:#9A5B00;
+  --shadow:0 1px 2px rgba(20,24,27,.06), 0 8px 24px -14px rgba(20,24,27,.28);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-ui); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased}
+button,input,select{font:inherit; color:inherit}
+.shell{max-width:1500px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--rule)}
+.masthead h1{margin:0; font-family:var(--f-display); font-size:26px; font-weight:600; letter-spacing:-.01em}
+.masthead p{margin:2px 0 0; color:var(--ink-2); font-size:13px; max-width:74ch}
+.head-actions{display:flex; align-items:center; gap:8px}
+
+.console{display:grid; grid-template-columns:clamp(210px,22vw,310px) minmax(0,1fr);
+  gap:12px; align-items:start}
+@media (max-width:680px){.console{grid-template-columns:1fr}}
+
+.rail{display:flex; flex-direction:column; gap:12px; background:var(--surface);
+  border:1px solid var(--rule); border-radius:3px; padding:16px; box-shadow:var(--shadow)}
+.group{display:flex; flex-direction:column; gap:8px}
+.group[hidden]{display:none}
+.group+.group{border-top:1px solid var(--rule-2); padding-top:12px}
+.group>h2{margin:0; font-size:10.5px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.hint{margin:0; font-size:12px; color:var(--ink-3); line-height:1.4}
+
+.scen{display:flex; flex-direction:column; gap:4px}
+.scen button{appearance:none; cursor:pointer; text-align:left; display:flex; gap:8px;
+  align-items:baseline; border:1px solid var(--rule); background:var(--panel);
+  color:var(--ink-2); border-radius:3px; padding:6px 9px; font-size:12.5px; line-height:1.3}
+.scen button:hover{border-color:var(--accent); color:var(--accent-ink)}
+.scen button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent);
+  color:var(--accent-ink); font-weight:600}
+.scen .n{font-family:var(--f-mono); font-size:11px; opacity:.75; flex:none; width:1.1em}
+.scen button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.slider-row{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px}
+.slider-row .k{font-family:var(--f-mono); font-size:12.5px; color:var(--ink-2); width:2.4em}
+.slider-row .v{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12.5px;
+  text-align:right; width:4.2em; background:transparent; border:0;
+  border-bottom:1px dotted var(--rule); padding:1px 2px}
+.slider-row .v:focus{outline:none; border-bottom-color:var(--accent); background:var(--sunk)}
+.slider-row[hidden]{display:none}
+input[type=range]{appearance:none; -webkit-appearance:none; width:100%; height:20px;
+  background:transparent; cursor:pointer; margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-moz-range-track{height:3px; background:var(--rule); border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px;
+  margin-top:-5.5px; border-radius:50%; background:var(--accent); border:2px solid var(--surface)}
+input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid var(--surface)}
+input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+input[type=range]#p{height:24px}
+input[type=range]#p::-webkit-slider-thumb{width:17px; height:17px; margin-top:-7px}
+input[type=range]#p::-moz-range-thumb{width:17px; height:17px}
+
+.text-in{width:100%; padding:7px 9px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--sunk); font-family:var(--f-mono); font-size:12.5px; color:var(--ink)}
+.text-in:focus{outline:none; border-color:var(--accent)}
+.text-in[aria-invalid="true"]{border-color:var(--crit)}
+.err{margin:0; font-size:12px; color:var(--crit); min-height:1em}
+.formula{font-family:var(--f-mono); font-size:12px; color:var(--ink-2);
+  background:var(--sunk); border:1px solid var(--rule-2); border-radius:3px;
+  padding:8px 10px; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.5}
+.formula[hidden]{display:none}
+
+.check{display:flex; gap:7px; align-items:flex-start; font-size:12.5px; color:var(--ink-2);
+  cursor:pointer; line-height:1.3}
+.check input{accent-color:var(--accent); margin:1px 0 0; flex:none}
+.checks{display:grid; grid-template-columns:1fr 1fr; gap:5px 9px}
+.checks.auto{grid-template-columns:1fr}
+.swatch{width:9px; height:9px; border-radius:2px; display:inline-block; flex:none; margin-top:3px}
+
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.seg button{appearance:none; cursor:pointer; background:var(--panel); color:var(--ink-2);
+  border:0; padding:5px 11px; font-size:12px; white-space:nowrap}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--btn-ink); font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+
+.viewports{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start}
+@media (max-width:1000px){.viewports{grid-template-columns:1fr}}
+.vp{background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden}
+.vp-head{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:9px 12px; border-bottom:1px solid var(--rule-2); flex-wrap:wrap}
+.vp-head h2{margin:0; font-family:var(--f-mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+.pill{font-family:var(--f-mono); font-size:10px; letter-spacing:.05em; padding:2px 8px;
+  border-radius:20px; border:1px solid var(--rule); color:var(--ink-3)}
+.pill.on{border-color:var(--accent); color:var(--accent-ink); background:var(--accent-soft)}
+.vp canvas{display:block; width:100%; height:clamp(320px,50vh,540px); touch-action:none; cursor:crosshair}
+.legend{display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--ink-2);
+  font-family:var(--f-mono); padding:7px 12px; border-top:1px solid var(--rule-2)}
+.legend span{display:inline-flex; align-items:center; gap:4px}
+.legend i{width:9px; height:9px; border-radius:2px; display:inline-block}
+
+.readouts{display:grid; grid-template-columns:repeat(auto-fit,minmax(84px,1fr));
+  border-top:1px solid var(--rule-2)}
+.ro{padding:8px 12px; border-right:1px solid var(--rule-2)}
+.ro:last-child{border-right:0}
+.ro .lab{font-family:var(--f-mono); font-size:9.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3)}
+.ro .val{font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:15px; color:var(--ink); margin-top:1px}
+.ro .val.is-good{color:var(--good)}
+.ro .val.is-crit{color:var(--crit)}
+.ro .val.is-warn{color:var(--warn)}
+
+.verdict{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent);
+  border-radius:3px; padding:11px 14px; box-shadow:var(--shadow)}
+.verdict h3{margin:0 0 3px; font-size:13px; font-weight:700; color:var(--accent-ink)}
+.verdict p{margin:0; font-size:12.5px; color:var(--ink-2); max-width:96ch}
+.verdict.is-warn{border-left-color:var(--warn)} .verdict.is-warn h3{color:var(--warn)}
+.verdict.is-crit{border-left-color:var(--crit)} .verdict.is-crit h3{color:var(--crit)}
+.verdict.is-good{border-left-color:var(--good)} .verdict.is-good h3{color:var(--good)}
+
+footer{color:var(--ink-3); font-size:12px; padding-top:6px; border-top:1px solid var(--rule-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <h1 id="h-title">Beneficios, Costos y Oferta</h1>
+      <p id="h-sub">El problema de la empresa competitiva en el corto plazo. El panel izquierdo es el
+         problema; el derecho es su respuesta a cada precio. Dibujados a la misma escala, porque
+         son la misma curva.</p>
+    </div>
+    <div class="head-actions">
+      <div class="seg" id="lang-seg">
+        <button type="button" id="lg-es" aria-pressed="true">ES</button>
+        <button type="button" id="lg-en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" id="theme-seg">
+        <button type="button" id="th-dark" aria-pressed="true">Oscuro</button>
+        <button type="button" id="th-light" aria-pressed="false">Claro</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="console">
+    <aside class="rail">
+
+      <div class="group">
+        <h2 data-t="gFam">Función de costos</h2>
+        <div class="scen" id="fams"></div>
+        <p class="hint" id="fam-hint"></p>
+        <div class="formula" id="fam-formula"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gCustom">Expresión</h2>
+        <input class="text-in" id="c-expr" value="0.1q^3-0.5q^2+2q" spellcheck="false" aria-label="c(q)">
+        <p class="err" id="c-err"></p>
+        <p class="hint" data-t="customHint">Costo total c(q). La variable es q. El costo fijo se lee como c(0).</p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gParams">Parámetros</h2>
+        <div class="slider-row" data-p="F"><span class="k">F</span><input type="range" id="F" min="0" max="3" step="0.05" value="1.9"><input class="v" id="F-v"></div>
+        <div class="slider-row" data-p="a"><span class="k">a</span><input type="range" id="a" min="0.02" max="0.5" step="0.005" value="0.125"><input class="v" id="a-v"></div>
+        <div class="slider-row" data-p="k"><span class="k">k</span><input type="range" id="k" min="1.05" max="4" step="0.01" value="2.08"><input class="v" id="k-v"></div>
+        <div class="slider-row" data-p="b"><span class="k">b</span><input type="range" id="b" min="0.05" max="3" step="0.01" value="1.98"><input class="v" id="b-v"></div>
+        <div class="slider-row" data-p="beta"><span class="k">β</span><input type="range" id="beta" min="0.05" max="0.95" step="0.005" value="0.465"><input class="v" id="beta-v"></div>
+        <div class="slider-row" data-p="s"><span class="k">s</span><input type="range" id="s" min="0.05" max="2" step="0.005" value="0.547"><input class="v" id="s-v"></div>
+        <div class="slider-row" data-p="gam"><span class="k">γ</span><input type="range" id="gam" min="0" max="1" step="0.005" value="0.67"><input class="v" id="gam-v"></div>
+        <div class="slider-row" data-p="m"><span class="k">m</span><input type="range" id="m" min="-1" max="2" step="0.01" value="0.41"><input class="v" id="m-v"></div>
+        <div class="slider-row" data-p="w"><span class="k">w</span><input type="range" id="w" min="0.05" max="1" step="0.005" value="0.28"><input class="v" id="w-v"></div>
+        <div class="slider-row" data-p="r"><span class="k">r</span><input type="range" id="r" min="0" max="1" step="0.005" value="0.39"><input class="v" id="r-v"></div>
+        <div class="slider-row" data-p="k0"><span class="k">K̄</span><input type="range" id="k0" min="0.2" max="8" step="0.05" value="5"><input class="v" id="k0-v"></div>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gPrice">Precio</h2>
+        <div class="slider-row"><span class="k">p</span><input type="range" id="p" min="0" max="10" step="0.01" value="2"><input class="v" id="p-v"></div>
+        <p class="hint" id="price-hint"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gView">Panel de la empresa</h2>
+        <div class="seg" id="view-seg">
+          <button type="button" data-v="marg" aria-pressed="true" data-t="viewMarg">Marginales</button>
+          <button type="button" data-v="tot" aria-pressed="false" data-t="viewTot">Totales</button>
+        </div>
+        <p class="hint" id="view-hint"></p>
+      </div>
+
+      <div class="group">
+        <h2 data-t="gLayers">Capas</h2>
+        <div class="checks auto" id="layers"></div>
+      </div>
+
+    </aside>
+
+    <div style="display:flex; flex-direction:column; gap:12px; min-width:0">
+      <div class="verdict" id="verdict">
+        <h3 id="v-title">—</h3>
+        <p id="v-text">—</p>
+      </div>
+
+      <div class="viewports">
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp-firm-title">El problema de la empresa</h2>
+            <span class="pill" id="pill-firm">—</span>
+          </div>
+          <canvas id="cFirm" aria-label="Problema de la empresa"></canvas>
+          <div class="legend" id="legend-firm"></div>
+          <div class="readouts" id="ro-firm"></div>
+        </section>
+
+        <section class="vp">
+          <div class="vp-head">
+            <h2 id="vp-supply-title">Oferta de la empresa</h2>
+            <span class="pill on" id="pill-supply">q ↔ p</span>
+          </div>
+          <canvas id="cSupply" aria-label="Curva de oferta inversa"></canvas>
+          <div class="legend" id="legend-supply"></div>
+          <div class="readouts" id="ro-supply"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ==========================================================================
+   1. Expression language
+   --------------------------------------------------------------------------
+   Tokeniser -> Pratt parser -> AST -> closure tree, plus symbolic
+   differentiation so that a typed cost function has an exact marginal cost
+   rather than a difference quotient. No eval(), because a strict CSP would
+   kill the page silently and because student text should never be code.
+   ========================================================================== */
+
+const FUNCS = {
+  sqrt:1, ln:1, log:1, log10:1, exp:1, abs:1, sin:1, cos:1, tan:1,
+  min:2, max:2, pow:2
+};
+const CONSTS = { e:Math.E, pi:Math.PI, "π":Math.PI };
+
+function tokenize(src){
+  const s = String(src).replace(/−/g,"-").replace(/[×⋅]/g,"*").replace(/÷/g,"/");
+  const out = [];
+  let i = 0;
+  const isDigit = c => c >= "0" && c <= "9";
+  const isAlpha = c => /[A-Za-zα-ω]/.test(c);
+
+  while(i < s.length){
+    const c = s[i];
+    if(c === " " || c === "\t"){ i++; continue; }
+
+    if(isDigit(c) || (c === "." && isDigit(s[i+1]))){
+      let j = i;
+      while(j < s.length && (isDigit(s[j]) || s[j] === ".")) j++;
+      out.push({ k:"num", v:parseFloat(s.slice(i,j)) });
+      i = j; continue;
+    }
+
+    if(isAlpha(c)){
+      let name = null;
+      for(const cand of Object.keys(FUNCS).concat(Object.keys(CONSTS))){
+        if(s.startsWith(cand, i) && (!name || cand.length > name.length)) name = cand;
+      }
+      if(name && FUNCS[name]){ out.push({ k:"fn", v:name, arity:FUNCS[name] }); i += name.length; continue; }
+      if(name && name in CONSTS){ out.push({ k:"num", v:CONSTS[name] }); i += name.length; continue; }
+      /* q is the quantity; x is accepted because that is what GeoGebra called it */
+      if(c === "q" || c === "x"){ out.push({ k:"var" }); i++; continue; }
+      throw new SyntaxError("unknown:"+c);
+    }
+
+    if("+-*/^(),".includes(c)){ out.push({ k:c }); i++; continue; }
+    throw new SyntaxError("char:"+c);
+  }
+
+  /* implicit multiplication: 2q, 2(q+1), (q+1)q, 3sqrt(q) */
+  const res = [];
+  for(let n = 0; n < out.length; n++){
+    const a = out[n], b = out[n+1];
+    res.push(a);
+    if(!b) break;
+    const aEnds = a.k === "num" || a.k === "var" || a.k === ")";
+    const bStarts = b.k === "num" || b.k === "var" || b.k === "fn" || b.k === "(";
+    if(aEnds && bStarts) res.push({ k:"*" });
+  }
+  return res;
+}
+
+function parse(src){
+  const ts = tokenize(src);
+  let p = 0;
+  const peek = () => ts[p];
+  const eat = k => { if(!ts[p] || ts[p].k !== k) throw new SyntaxError("expected:"+k); return ts[p++]; };
+
+  /* ^ binds tightest and is right-associative; unary minus sits below it so
+     -q^2 parses as -(q^2), matching every textbook and GeoGebra itself. */
+  function atom(){
+    const t = peek();
+    if(!t) throw new SyntaxError("eof");
+    if(t.k === "num"){ p++; return { t:"num", v:t.v }; }
+    if(t.k === "var"){ p++; return { t:"var" }; }
+    if(t.k === "("){ p++; const e = expr(0); eat(")"); return e; }
+    if(t.k === "-"){ p++; return { t:"neg", a:unary() }; }
+    if(t.k === "+"){ p++; return unary(); }
+    if(t.k === "fn"){
+      p++; eat("(");
+      const args = [expr(0)];
+      while(peek() && peek().k === ","){ p++; args.push(expr(0)); }
+      eat(")");
+      if(args.length !== t.arity) throw new SyntaxError("arity:"+t.v);
+      return { t:"call", n:t.v, a:args };
+    }
+    throw new SyntaxError("token:"+t.k);
+  }
+  function unary(){
+    let base = atom();
+    if(peek() && peek().k === "^"){ p++; base = { t:"pow", a:base, b:unary() }; }
+    return base;
+  }
+  const PREC = { "+":1, "-":1, "*":2, "/":2 };
+  function expr(min){
+    let lhs = unary();
+    while(peek() && PREC[peek().k] !== undefined && PREC[peek().k] > min){
+      const op = ts[p++].k;
+      lhs = { t:"bin", o:op, a:lhs, b:expr(PREC[op]) };
+    }
+    return lhs;
+  }
+  const ast = expr(0);
+  if(p !== ts.length) throw new SyntaxError("trailing");
+  return ast;
+}
+
+function compile(n){
+  switch(n.t){
+    case "num": { const v = n.v; return () => v; }
+    case "var": return q => q;
+    case "neg": { const a = compile(n.a); return q => -a(q); }
+    case "pow": {
+      const a = compile(n.a), b = compile(n.b);
+      if(n.b.t === "num"){ const k = n.b.v; return q => Math.pow(a(q), k); }
+      return q => Math.pow(a(q), b(q));
+    }
+    case "bin": {
+      const a = compile(n.a), b = compile(n.b);
+      switch(n.o){
+        case "+": return q => a(q) + b(q);
+        case "-": return q => a(q) - b(q);
+        case "*": return q => a(q) * b(q);
+        case "/": return q => a(q) / b(q);
+      }
+      break;
+    }
+    case "call": {
+      const A = n.a.map(compile), f = A[0], g = A[1];
+      switch(n.n){
+        case "sqrt":  return q => Math.sqrt(f(q));
+        case "ln": case "log": return q => Math.log(f(q));
+        case "log10": return q => Math.log10(f(q));
+        case "exp":   return q => Math.exp(f(q));
+        case "abs":   return q => Math.abs(f(q));
+        case "sin":   return q => Math.sin(f(q));
+        case "cos":   return q => Math.cos(f(q));
+        case "tan":   return q => Math.tan(f(q));
+        case "min":   return q => Math.min(f(q), g(q));
+        case "max":   return q => Math.max(f(q), g(q));
+        case "pow":   return q => Math.pow(f(q), g(q));
+      }
+    }
+  }
+  throw new Error("compile");
+}
+
+const NUM = v => ({ t:"num", v });
+const isNum = (n,v) => n.t === "num" && n.v === v;
+function add(a,b){ if(isNum(a,0)) return b; if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v+b.v); return { t:"bin", o:"+", a, b }; }
+function sub(a,b){ if(isNum(b,0)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v-b.v); return { t:"bin", o:"-", a, b }; }
+function mul(a,b){
+  if(isNum(a,0)||isNum(b,0)) return NUM(0);
+  if(isNum(a,1)) return b; if(isNum(b,1)) return a;
+  if(a.t==="num"&&b.t==="num") return NUM(a.v*b.v);
+  return { t:"bin", o:"*", a, b };
+}
+function div(a,b){ if(isNum(a,0)) return NUM(0); if(isNum(b,1)) return a; return { t:"bin", o:"/", a, b }; }
+function powN(a,b){ if(isNum(b,1)) return a; if(isNum(b,0)) return NUM(1); return { t:"pow", a, b }; }
+class NonDifferentiable extends Error {}
+
+function diff(n){
+  switch(n.t){
+    case "num": return NUM(0);
+    case "var": return NUM(1);
+    case "neg": return { t:"neg", a:diff(n.a) };
+    case "bin":
+      if(n.o === "+") return add(diff(n.a), diff(n.b));
+      if(n.o === "-") return sub(diff(n.a), diff(n.b));
+      if(n.o === "*") return add(mul(diff(n.a), n.b), mul(n.a, diff(n.b)));
+      if(n.o === "/") return div(sub(mul(diff(n.a), n.b), mul(n.a, diff(n.b))), powN(n.b, NUM(2)));
+      break;
+    case "pow": {
+      const da = diff(n.a);
+      if(n.b.t === "num") return mul(mul(NUM(n.b.v), powN(n.a, NUM(n.b.v - 1))), da);
+      const db = diff(n.b);
+      return mul(n, add(mul(db, { t:"call", n:"ln", a:[n.a] }), div(mul(n.b, da), n.a)));
+    }
+    case "call": {
+      const u = n.a[0], du = diff(u);
+      switch(n.n){
+        case "ln": case "log":  return div(du, u);
+        case "log10":           return div(du, mul(u, NUM(Math.LN10)));
+        case "exp":             return mul(n, du);
+        case "sqrt":            return div(du, mul(NUM(2), n));
+        case "sin":             return mul({ t:"call", n:"cos", a:[u] }, du);
+        case "cos":             return { t:"neg", a:mul({ t:"call", n:"sin", a:[u] }, du) };
+        case "pow":             return diff({ t:"pow", a:n.a[0], b:n.a[1] });
+        default: throw new NonDifferentiable(n.n);   /* min, max, abs, tan */
+      }
+    }
+  }
+  throw new Error("diff");
+}
+
+/* Marginal cost is the derivative of total cost, so it is taken symbolically
+   where that is possible and by a central difference where the expression has
+   a kink — which is exactly the case a student writing min(...) wants to see. */
+function buildCost(src){
+  const ast = parse(src);
+  const c = compile(ast);
+  let mc, exact = true;
+  try{ mc = compile(diff(ast)); }
+  catch(err){
+    if(!(err instanceof NonDifferentiable)) throw err;
+    exact = false;
+    const h = 1e-6;
+    mc = q => (c(q+h) - c(Math.max(0, q-h))) / (q > h ? 2*h : h);
+  }
+  return { src, c, mc, exact };
+}
+
+/* ==========================================================================
+   2. Small helpers
+   ========================================================================== */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const fin = Number.isFinite;
+function fmt(v, d = 2){
+  if(!fin(v)) return "—";
+  const a = Math.abs(v);
+  if(a !== 0 && (a < 1e-3 || a >= 1e5)) return v.toExponential(1);
+  return v.toFixed(d);
+}
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function niceStep(range, target){
+  const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+const up = v => { const s = niceStep(Math.max(v, 1e-6), 6); return Math.ceil(v/s - 1e-9)*s; };
+
+/* ==========================================================================
+   3. The cost function
+   --------------------------------------------------------------------------
+   Four families, all of them from the GeoGebra original. The two that start
+   from a production function are short-run: capital is fixed at K, so the
+   only choice is labour, and inverting the production function for l(q) and
+   pricing it at w gives the cost curve.
+
+     Cobb-Douglas   f(K,l) = b (K^beta l^(1-beta))^s
+                    l(q) = (q / (b K^(beta s)))^(1/((1-beta)s))
+                    c(q) = rK + w b^-e K^(-beta/(1-beta)) q^e,  e = 1/((1-beta)s)
+
+     logistic       g(K,l) = b K^gamma / (1 + exp(-s (ln f - m)))
+                    c(q) = rK + w exp(m/(1-beta)) K^(-beta/(1-beta))
+                                * (q / (bK^gamma - q))^e
+
+   The logistic one is the interesting case: output cannot exceed the capacity
+   bK^gamma however much labour is hired, so marginal cost runs to infinity
+   there and the supply curve has a vertical asymptote. The Cobb-Douglas one
+   has constant returns to labour in the exponent e: e > 1 gives the textbook
+   rising marginal cost, e < 1 gives a firm with no optimum at all, and the
+   applet says so rather than drawing something meaningless.
+   ========================================================================== */
+
+const FAMS = ["quad", "custom", "cd", "logit"];
+const PARAMS = {
+  quad:   ["F","a","k"],
+  custom: [],
+  cd:     ["b","beta","s","w","r","k0"],
+  logit:  ["b","beta","s","gam","m","w","r","k0"]
+};
+
+function buildModel(){
+  const f = st.fam;
+  if(f === "quad"){
+    const F = st.F, a = st.a, k = st.k;
+    return { c: q => F + a*Math.pow(q, k),
+             mc: q => a*k*Math.pow(q, k-1),
+             cap: Infinity, F, exact:true };
+  }
+  if(f === "custom"){
+    if(!st.C) return null;
+    const c = st.C.c, mc = st.C.mc;
+    let F = 0;
+    for(const h of [1e-9, 1e-7, 1e-5, 1e-3, 1e-2]){ const v = c(h); if(fin(v)){ F = v; break; } }
+    if(Math.abs(F) < 1e-6) F = 0;         /* c(eps) for a cost with no fixed part */
+    return { c, mc, cap: Infinity, F, exact: st.C.exact };
+  }
+  const b = st.b, be = st.beta, s = st.s, r = st.r, w = st.w, K = st.k0;
+  const e = 1/((1-be)*s);
+  const Kf = Math.pow(K, -be/(1-be));
+  const F = r*K;
+  if(f === "cd"){
+    const A = w*Math.pow(b, -e)*Kf;
+    return { c: q => q <= 0 ? F : F + A*Math.pow(q, e),
+             mc: q => q <= 0 ? (e > 1 ? 0 : Infinity) : A*e*Math.pow(q, e-1),
+             cap: Infinity, F, e, A, exact:true };
+  }
+  const Q = b*Math.pow(K, st.gam);
+  const A = w*Math.exp(st.m/(1-be))*Kf;
+  return {
+    c: q => q <= 0 ? F : (q >= Q ? Infinity : F + A*Math.pow(q/(Q-q), e)),
+    mc: q => (q <= 0) ? (e > 1 ? 0 : Infinity)
+           : (q >= Q ? Infinity : A*e*Math.pow(q/(Q-q), e-1)*Q/((Q-q)*(Q-q))),
+    cap: Q, F, e, A, exact:true
+  };
+}
+
+/* average and average variable cost, both read off the same c(q) */
+const AC  = (M,q) => q > 0 ? M.c(q)/q : Infinity;
+const AVC = (M,q) => q > 0 ? (M.c(q) - M.F)/q : Infinity;
+
+/* ==========================================================================
+   4. The firm's problem
+   --------------------------------------------------------------------------
+   The optimum is NOT read off MC = p. With a cubic cost that condition has two
+   roots, one of them a minimum of profit, and with any non-convex cost the
+   global optimum can sit at a corner instead. So profit is maximised directly:
+   a scan over the whole feasible range, a golden-section refinement of the
+   best bracket, and then a comparison against shutting down, which is a
+   genuine candidate and not a limiting case.
+   ========================================================================== */
+
+/* an upper end for the search: past the point where marginal cost has risen
+   clear of the price and is still rising, more output can only lose money */
+function upperQ(M, p){
+  if(fin(M.cap)) return M.cap*(1 - 1e-7);
+  let q = 1e-3;
+  for(let i = 0; i < 200; i++){
+    const a = M.mc(q), b = M.mc(q*1.6);
+    if(fin(a) && a > p*1.001 + 1e-12 && fin(b) && b >= a) return q*3;
+    q *= 1.35;
+    if(q > 1e7) return NaN;         /* marginal cost never catches the price */
+  }
+  return NaN;
+}
+
+function argmax(f, lo, hi, n){
+  let bq = lo, bv = -Infinity;
+  for(let i = 0; i <= n; i++){
+    const q = lo + (hi-lo)*i/n, v = f(q);
+    if(fin(v) && v > bv){ bv = v; bq = q; }
+  }
+  const h = (hi-lo)/n;
+  let a = Math.max(lo, bq-h), b = Math.min(hi, bq+h);
+  const gr = (Math.sqrt(5)-1)/2;
+  let c1 = b - gr*(b-a), d1 = a + gr*(b-a);
+  for(let i = 0; i < 70 && b-a > 1e-12; i++){
+    const fc = f(c1), fd = f(d1);
+    if((fin(fc)?fc:-Infinity) >= (fin(fd)?fd:-Infinity)){ b = d1; d1 = c1; c1 = b - gr*(b-a); }
+    else { a = c1; c1 = d1; d1 = a + gr*(b-a); }
+  }
+  const q = (a+b)/2, v = f(q);
+  return (fin(v) && v > bv) ? { q, v } : { q:bq, v:bv };
+}
+
+/* the same routine answers "what does the firm do at this price", whether the
+   price is the one on the slider or one of the hundred used to trace supply */
+function solve(M, p){
+  const piShut = -M.F;
+  if(!M || !(p > 0)) return { q:0, pi:piShut, shut:true, QU:0 };
+  const pi = q => p*q - M.c(q);
+  let QU = upperQ(M, p);
+  if(!fin(QU)){
+    /* Marginal cost never overtakes the price in any range worth drawing. That
+       is only unbounded profit if profit is actually still rising out there;
+       when marginal cost merely equals the price the firm is indifferent, and
+       a bounded search returns that honestly instead of claiming infinity. */
+    const big = 1e6, v = pi(big);
+    if(fin(v) && v > piShut + 1e-6) return { q:NaN, pi:Infinity, unbounded:true, shut:false };
+    QU = 1e4;
+  }
+  const r = argmax(pi, 0, QU, 700);
+  if(!(r.v > piShut + 1e-10) || !(r.q > 1e-9)) return { q:0, pi:piShut, shut:true, QU };
+  return { q:r.q, pi:r.v, shut:false, QU, atCap: fin(M.cap) && r.q > M.cap*0.8 };
+}
+
+/* Point elasticity of supply, by a central difference in the price. It is the
+   number that says how vertical the supply panel has gone. */
+function supplyElasticity(M, p, q){
+  if(!(q > 0) || !(p > 0)) return NaN;
+  const h = p*0.01;
+  const a = solve(M, p-h).q, b = solve(M, p+h).q;
+  if(!(a > 0) || !(b > 0)) return NaN;
+  return ((b-a)/(2*h))*(p/q);
+}
+
+/* Minimum of average (variable) cost. A geometric ladder because the shape
+   near zero is what decides whether the firm ever shuts down, and a linear
+   grid over a range of 10^5 resolves none of it. */
+function minAvg(M, which){
+  const g = which === "ac" ? (q => AC(M,q)) : (q => AVC(M,q));
+  const hi = fin(M.cap) ? M.cap*(1 - 1e-7) : 1e5;
+  const lo = hi*1e-9;
+  const n = 700, lg = Math.log(hi/lo)/n;
+  let bq = lo, bv = Infinity, bi = 0;
+  for(let i = 0; i <= n; i++){
+    const q = lo*Math.exp(lg*i), v = g(q);
+    if(fin(v) && v < bv){ bv = v; bq = q; bi = i; }
+  }
+  const a0 = lo*Math.exp(lg*Math.max(0, bi-1)), b0 = lo*Math.exp(lg*Math.min(n, bi+1));
+  const r = argmax(q => -g(q), a0, b0, 60);
+  const v = -r.v;
+  /* An "infimum" sitting on either end of the ladder was never a minimum: the
+     curve is still falling when the search runs out of room. Saying so keeps a
+     shutdown price of 7.7e-4 from being reported for a firm whose average
+     variable cost simply decreases forever. */
+  return { q: v < bv ? r.q : bq, v: Math.min(v, bv), atZero: bi <= 1, atEdge: bi >= n-1 };
+}
+
+/* Where profit crosses zero. Reported as the break-even quantity, which for a
+   cost with a fixed part is the smaller of two roots. */
+function zeroProfit(M, p, QU){
+  const out = [];
+  if(!fin(QU) || QU <= 0) return out;
+  const pi = q => p*q - M.c(q);
+  const n = 900;
+  let prev = pi(0), pq = 0;
+  for(let i = 1; i <= n; i++){
+    const q = QU*i/n, v = pi(q);
+    if(fin(v) && fin(prev) && ((prev < 0 && v >= 0) || (prev > 0 && v <= 0))){
+      let a = pq, b = q, fa = prev;
+      for(let j = 0; j < 80; j++){
+        const mid = (a+b)/2, fm = pi(mid);
+        if(!fin(fm)) break;
+        if((fa < 0) === (fm < 0)){ a = mid; fa = fm; } else b = mid;
+      }
+      out.push((a+b)/2);
+    }
+    if(fin(v)){ prev = v; pq = q; }
+  }
+  return out;
+}
+
+/* The supply curve, traced by solving the firm's problem at each price rather
+   than by inverting MC. That is the only way to get the jump right: below the
+   shutdown price the answer is 0, at it the answer leaps to a strictly
+   positive quantity, and no inversion of MC = p will produce that leap. */
+function supplyCurve(M, pMax, n){
+  const pts = [];
+  for(let i = 0; i <= n; i++){
+    const p = pMax*i/n;
+    const r = solve(M, p);
+    pts.push({ p, q: r.unbounded ? NaN : r.q, shut: !!r.shut });
+  }
+  return pts;
+}
+
+/* ==========================================================================
+   5. State and strings
+   ========================================================================== */
+const MK = {
+  supply:"#00D5F0", mc:"#FF4D4D", ac:"#FFD24A", avc:"#FF9E2C",
+  price:"#B07CFF", cost:"#F2695E", rev:"#6FD3A0", prof:"#5AA9FF",
+  vcost:"#FF8A6B", opt:"#C15CFF", beq:"#8CE2EC", cap:"#7C8B93",
+  areaVC:"rgba(255,64,84,.17)", areaPS:"rgba(0,153,255,.26)"
+};
+const LAYERS = {
+  mc:     {modes:["marg","tot"], col:MK.mc},
+  ac:     {modes:["marg"],       col:MK.ac},
+  avc:    {modes:["marg"],       col:MK.avc},
+  price:  {modes:["marg","tot"], col:MK.price},
+  areaVC: {modes:["marg"],       col:"#FF4054"},
+  areaPS: {modes:["marg"],       col:"#0099FF"},
+  cost:   {modes:["tot"],        col:MK.cost},
+  rev:    {modes:["tot"],        col:MK.rev},
+  prof:   {modes:["tot"],        col:MK.prof},
+  vcost:  {modes:["tot"],        col:MK.vcost},
+  tangent:{modes:["tot"],        col:MK.price},
+  opt:    {modes:["marg","tot"], col:MK.opt},
+  beq:    {modes:["marg","tot"], col:MK.beq},
+  grid:   {modes:["marg","tot"], col:null}
+};
+const st = {
+  fam:"quad", view:"marg",
+  F:1.9, a:0.125, k:2.08,
+  b:1.98, beta:0.465, s:0.547, gam:0.67, m:0.41, w:0.28, r:0.39, k0:5,
+  p:2,
+  customSrc:"0.1q^3-0.5q^2+2q", C:null,
+  layers:{ mc:true, ac:true, avc:true, price:true, areaVC:false, areaPS:false,
+           cost:true, rev:true, prof:true, vcost:false, tangent:true,
+           opt:true, beq:false, grid:true }
+};
+let LANG = "es";
+
+const STR = {
+es:{
+  docTitle:"Beneficios, Costos y Oferta",
+  title:"Beneficios, Costos y Oferta",
+  sub:"El problema de la empresa competitiva en el corto plazo. El panel izquierdo es el problema; el derecho es su respuesta a cada precio. Dibujados a la misma escala, porque son la misma curva.",
+  gFam:"Función de costos", gCustom:"Expresión", gParams:"Parámetros", gPrice:"Precio",
+  gView:"Panel de la empresa", gLayers:"Capas",
+  customHint:"Costo total c(q). La variable es q. El costo fijo se lee como c(0).",
+  fams:{quad:"Cuadráticos / potencia", custom:"Personalizada",
+        cd:"Producción Cobb–Douglas", logit:"Producción log-CD logística"},
+  famHint:{
+    quad:"La forma de manual: un costo fijo F más un término creciente. Con k > 1 el costo marginal sube desde cero, así que la empresa produce a cualquier precio positivo y nunca cierra.",
+    custom:"Escriba el costo total. El costo marginal se deriva de forma exacta. La cúbica que viene por defecto da el costo variable medio en U del manual, con precio de cierre estrictamente positivo.",
+    cd:"Corto plazo con capital fijo K̄: se invierte la función de producción para obtener l(q) y se valora al salario w. El exponente e = 1/((1−β)s) lo decide todo: con e > 1 el costo marginal crece; con e ≤ 1 el problema no tiene solución.",
+    logit:"Igual, pero la producción satura en b·K̄^γ por mucho trabajo que se contrate. El costo marginal se dispara al acercarse a esa capacidad, y la oferta tiene una asíntota vertical."
+  },
+  viewMarg:"Marginales", viewTot:"Totales",
+  viewHint:{
+    marg:"Costo marginal, medio y variable medio en $/unidad — las mismas unidades que el precio, así que este panel comparte los dos ejes con el de oferta.",
+    tot:"Costo, ingreso y beneficio totales en $. El eje vertical ya no es el del panel de oferta; el que sigue compartido es el de cantidad."
+  },
+  layers:{ mc:"Costo marginal (CMg)", ac:"Costo medio (CMe)", avc:"Costo variable medio (CVMe)",
+           price:"Línea de precio", areaVC:"Área de costos variables", areaPS:"Área de excedente",
+           cost:"Costo total", rev:"Ingreso total", prof:"Beneficio", vcost:"Costo variable",
+           tangent:"Tangente de pendiente p", opt:"Óptimo", beq:"Punto de equilibrio", grid:"Cuadrícula" },
+  vp1:"Oferta de la empresa", vp2:"El problema de la empresa",
+  pillLinked:"misma escala", pillOwn:"eje propio ($)",
+  axQ:"q", axP:"p, $/unidad", axMoney:"$",
+  legSupply:"Oferta", legShut:"Precio de cierre", legBE:"Precio de nivelación",
+  sMC:"CMg", sPShut:"p cierre", sPBE:"p nivel.",
+  roP:"Precio p", roQ:"q*(p)", roShut:"Cierre", roBE:"Nivelación", roPS:"Excedente", roEl:"Elasticidad",
+  roCost:"c(q*)", roRev:"Ingreso", roProf:"Beneficio", roMC:"CMg", roAC:"CMe", roAVC:"CVMe",
+  roCF:"Costo fijo", roQeq:"q de nivelación",
+  priceHint:{
+    below:"p está por debajo del precio de cierre: producir cualquier cantidad pierde más que cerrar.",
+    mid:"p cubre el costo variable medio pero no el medio total: conviene producir y aun así hay pérdidas.",
+    above:"p está por encima del costo medio mínimo: la empresa produce con beneficio.",
+    at:"p está justo en el costo medio mínimo: beneficio nulo."
+  },
+  vProfit:"Produce con beneficio",
+  vProfitT:"En el óptimo el costo marginal iguala al precio por su rama creciente, y el precio queda por encima del costo medio. El rectángulo entre p y CMe(q*) es el beneficio; el área bajo CMg hasta q* es el costo variable, y lo que queda entre p y CMg es el excedente del productor, que es el beneficio más el costo fijo.",
+  vLoss:"Produce con pérdidas, y hace bien",
+  vLossT:"El precio está entre el costo variable medio mínimo y el costo medio mínimo. Cerrar costaría el costo fijo entero; produciendo, los ingresos cubren todo el costo variable y algo del fijo, así que la pérdida es menor. El costo fijo ya está pagado y no entra en la decisión: por eso la curva de oferta se corta en el mínimo del costo variable medio y no en el del costo medio.",
+  vBreak:"Beneficio nulo",
+  vBreakT:"El precio está en el mínimo del costo medio. La empresa cubre exactamente todos sus costos, incluido el fijo. Éste es el precio de nivelación, y el punto por el que la oferta corta a la curva de costo medio.",
+  vShut:"Cierra",
+  vShutT:"El precio no llega al costo variable medio mínimo: ninguna cantidad positiva cubre siquiera lo que cuesta producirla. El óptimo es q* = 0, la pérdida es exactamente el costo fijo, y en el panel de oferta la curva está pegada al eje de precios.",
+  vCap:"Contra la capacidad",
+  vCapT:"El óptimo está prácticamente en la capacidad b·K̄^γ, donde el costo marginal se va a infinito. Más precio ya casi no compra más cantidad: la oferta es vertical. Es lo que hace un capital fijo en el corto plazo.",
+  vUnb:"No hay óptimo",
+  vUnbT:"El costo marginal no supera al precio en ningún rango dibujable, así que cada unidad extra sigue añadiendo beneficio y no hay cantidad óptima. Con la Cobb–Douglas eso pasa cuando e = 1/((1−β)s) ≤ 1 —rendimientos no decrecientes del único factor variable—; con la familia de potencia, cuando k está tan cerca de 1 que el costo marginal es casi constante. Suba s, β o k, o cambie de familia.",
+  vErr:"Sin función de costos",
+  vErrT:"La expresión no se entiende, así que no hay nada que optimizar.",
+  errParse:"No se entiende la expresión.", errVars:"La única variable admitida es q.",
+  foot:"Traducido del applet de GeoGebra «Beneficios y Costos». La cantidad es q; en la expresión también se acepta x. Sintaxis: + − * / ^ ( ), sqrt ln log exp abs min max, constantes e y pi. El óptimo se busca maximizando el beneficio en todo el rango, no resolviendo CMg = p, para que una curva de costos no convexa dé la respuesta correcta."
+},
+en:{
+  docTitle:"Profit, Costs and Supply",
+  title:"Profit, Costs and Supply",
+  sub:"The competitive firm's short-run problem. The left panel is the problem; the right one is its answer at every price. Drawn to the same scale, because they are the same curve.",
+  gFam:"Cost function", gCustom:"Expression", gParams:"Parameters", gPrice:"Price",
+  gView:"Firm panel", gLayers:"Layers",
+  customHint:"Total cost c(q). The variable is q. Fixed cost is read off as c(0).",
+  fams:{quad:"Quadratic / power", custom:"Custom",
+        cd:"Cobb–Douglas production", logit:"Logistic log-CD production"},
+  famHint:{
+    quad:"The textbook shape: a fixed cost F plus a rising term. With k > 1 marginal cost rises from zero, so the firm produces at any positive price and never shuts down.",
+    custom:"Type the total cost. Marginal cost is differentiated exactly. The cubic supplied by default gives the textbook U-shaped average variable cost, with a strictly positive shutdown price.",
+    cd:"Short run with capital fixed at K̄: the production function is inverted for l(q) and priced at the wage w. The exponent e = 1/((1−β)s) decides everything: e > 1 gives rising marginal cost, e ≤ 1 gives a problem with no solution.",
+    logit:"The same, but output saturates at b·K̄^γ however much labour is hired. Marginal cost blows up as that capacity is approached, and supply has a vertical asymptote."
+  },
+  viewMarg:"Marginals", viewTot:"Totals",
+  viewHint:{
+    marg:"Marginal, average and average variable cost in $ per unit — the same units as the price, so this panel shares both axes with the supply panel.",
+    tot:"Total cost, revenue and profit in $. The vertical axis is no longer the supply panel's; the quantity axis still is."
+  },
+  layers:{ mc:"Marginal cost (MC)", ac:"Average cost (AC)", avc:"Average variable cost (AVC)",
+           price:"Price line", areaVC:"Variable-cost area", areaPS:"Producer surplus area",
+           cost:"Total cost", rev:"Total revenue", prof:"Profit", vcost:"Variable cost",
+           tangent:"Tangent of slope p", opt:"Optimum", beq:"Break-even point", grid:"Grid" },
+  vp1:"The firm's supply", vp2:"The firm's problem",
+  pillLinked:"same scale", pillOwn:"own axis ($)",
+  axQ:"q", axP:"p, $ per unit", axMoney:"$",
+  legSupply:"Supply", legShut:"Shutdown price", legBE:"Break-even price",
+  sMC:"MC", sPShut:"p shut", sPBE:"p b-e",
+  roP:"Price p", roQ:"q*(p)", roShut:"Shutdown", roBE:"Break-even", roPS:"Surplus", roEl:"Elasticity",
+  roCost:"c(q*)", roRev:"Revenue", roProf:"Profit", roMC:"MC", roAC:"AC", roAVC:"AVC",
+  roCF:"Fixed cost", roQeq:"Break-even q",
+  priceHint:{
+    below:"p is below the shutdown price: producing anything loses more than closing.",
+    mid:"p covers average variable cost but not average total cost: produce, and still make a loss.",
+    above:"p is above minimum average cost: the firm produces at a profit.",
+    at:"p sits exactly at minimum average cost: zero profit."
+  },
+  vProfit:"Produces at a profit",
+  vProfitT:"At the optimum marginal cost equals the price on its rising branch, and the price is above average cost. The rectangle between p and AC(q*) is profit; the area under MC out to q* is variable cost, and what is left between p and MC is producer surplus, which is profit plus fixed cost.",
+  vLoss:"Produces at a loss, and is right to",
+  vLossT:"The price lies between minimum average variable cost and minimum average cost. Shutting down would cost the whole fixed cost; producing, revenue covers all of variable cost and part of the fixed cost, so the loss is smaller. Fixed cost is already sunk and plays no part in the decision — which is why the supply curve is cut at the bottom of average variable cost and not at the bottom of average cost.",
+  vBreak:"Zero profit",
+  vBreakT:"The price is at the bottom of average cost. The firm covers all of its costs exactly, fixed cost included. This is the break-even price, and the point where supply crosses the average cost curve.",
+  vShut:"Shuts down",
+  vShutT:"The price does not reach minimum average variable cost: no positive quantity covers even what it costs to make. The optimum is q* = 0, the loss is exactly the fixed cost, and in the supply panel the curve lies flat against the price axis.",
+  vCap:"Against the capacity",
+  vCapT:"The optimum is practically at the capacity b·K̄^γ, where marginal cost runs to infinity. More price now buys almost no more quantity: supply is vertical. That is what a fixed capital does in the short run.",
+  vUnb:"No optimum",
+  vUnbT:"Marginal cost never overtakes the price over any range worth drawing, so every extra unit still adds profit and there is no optimal quantity. Under Cobb–Douglas that happens when e = 1/((1−β)s) ≤ 1 — non-decreasing returns to the one variable factor; under the power family, when k is so close to 1 that marginal cost is near enough constant. Raise s, β or k, or switch family.",
+  vErr:"No cost function",
+  vErrT:"The expression does not parse, so there is nothing to optimise.",
+  errParse:"That expression does not parse.", errVars:"The only variable allowed is q.",
+  foot:"Translated from the GeoGebra applet “Beneficios y Costos”. Quantity is q; x is accepted in the expression too. Syntax: + − * / ^ ( ), sqrt ln log exp abs min max, constants e and pi. The optimum is found by maximising profit over the whole range rather than by solving MC = p, so that a non-convex cost curve still gives the right answer."
+}};
+const T = () => STR[LANG];
+
+/* ==========================================================================
+   6. Derived state, cached on the parameters it depends on
+   ========================================================================== */
+let MODEL = null, KEY = "", MINAC = null, MINAVC = null, SUP = null, SUPKEY = "";
+
+function modelKey(){
+  return st.fam + "|" + PARAMS[st.fam].map(k => st[k]).join(",") +
+         "|" + (st.fam === "custom" ? (st.C ? st.C.src : "!") : "");
+}
+function ensureModel(){
+  const k = modelKey();
+  if(k === KEY) return;
+  KEY = k; SUPKEY = "";
+  MODEL = buildModel();
+  MINAC  = MODEL ? minAvg(MODEL, "ac")  : null;
+  MINAVC = MODEL ? minAvg(MODEL, "avc") : null;
+}
+/* the shutdown price is the bottom of average variable cost; when that bottom
+   is only approached as q -> 0 there is no shutdown price at all */
+const shutPrice = () => (MINAVC && !MINAVC.atZero && !MINAVC.atEdge && MINAVC.v > 1e-7) ? MINAVC.v : 0;
+const bePrice   = () => (MINAC && fin(MINAC.v) && !MINAC.atEdge) ? MINAC.v : NaN;
+
+function frame(){
+  if(!MODEL) return null;
+  const pMax = Math.max(up(Math.max(st.p*1.35, (fin(bePrice())?bePrice():0)*1.4,
+                                    shutPrice()*2, 0.5)), 0.5);
+  let qTop = solve(MODEL, pMax).q;
+  if(!fin(qTop) || qTop <= 0) qTop = fin(MODEL.cap) ? MODEL.cap*0.9 : 10;
+  let qMax = up(qTop*1.15);
+  if(fin(MODEL.cap)) qMax = Math.min(qMax, up(MODEL.cap));
+  qMax = Math.max(qMax, 1e-3);
+  const key = KEY + "|" + pMax;
+  if(key !== SUPKEY){ SUPKEY = key; SUP = supplyCurve(MODEL, pMax, 140); }
+  return { pMax, qMax };
+}
+
+/* ==========================================================================
+   7. Drawing
+   ========================================================================== */
+const CAS  = () => document.documentElement.getAttribute("data-theme") === "light"
+                 ? "rgba(255,255,255,.85)" : "rgba(6,9,14,.62)";
+
+function setup(cv){
+  const dpr = Math.min(devicePixelRatio||1, 2), r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if(cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+  return {ctx,w,h};
+}
+function plot(cv, xmin, xmax, ymin, ymax, xlab, ylab){
+  const {ctx,w,h} = setup(cv);
+  const P = {l:52, r:22, t:16, b:34};
+  const bx = {x0:P.l, y0:P.t, x1:w-P.r, y1:h-P.b};
+  const sx = (xmax-xmin)||1, sy = (ymax-ymin)||1;
+  const SXr = x => bx.x0 + ((x-xmin)/sx)*(bx.x1-bx.x0);
+  const SYr = y => bx.y1 - ((y-ymin)/sy)*(bx.y1-bx.y0);
+  /* coordinates that leave the box are still drawn, but a curve running to
+     infinity must not hand canvas a number it cannot rasterise */
+  const SX = x => clamp(SXr(x), bx.x0-4e4, bx.x1+4e4);
+  const SY = y => clamp(SYr(y), bx.y0-4e4, bx.y1+4e4);
+
+  const gx = niceStep(sx, 7), gy = niceStep(sy, 5);
+  const gx0 = Math.ceil((xmin-1e-9)/gx)*gx, gy0 = Math.ceil((ymin-1e-9)/gy)*gy;
+  if(st.layers.grid){
+    ctx.strokeStyle = css("--rule-2"); ctx.lineWidth = 1; ctx.beginPath();
+    for(let x=gx0; x<xmax-1e-9; x+=gx) if(x>xmin+1e-9){ ctx.moveTo(SXr(x),bx.y0); ctx.lineTo(SXr(x),bx.y1); }
+    for(let y=gy0; y<ymax-1e-9; y+=gy) if(y>ymin+1e-9){ ctx.moveTo(bx.x0,SYr(y)); ctx.lineTo(bx.x1,SYr(y)); }
+    ctx.stroke();
+  }
+  /* the axes sit at zero when zero is inside the frame, at the border otherwise */
+  const ax = SYr(clamp(0, ymin, ymax)), ay = SXr(clamp(0, xmin, xmax));
+  ctx.strokeStyle = css("--rule"); ctx.lineWidth = 1; ctx.beginPath();
+  ctx.moveTo(ay,bx.y0); ctx.lineTo(ay,bx.y1); ctx.moveTo(bx.x0,ax); ctx.lineTo(bx.x1,ax); ctx.stroke();
+
+  ctx.fillStyle = css("--ink-3"); ctx.font = "11px " + css("--f-mono");
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for(let x=gx0; x<=xmax+1e-9; x+=gx) ctx.fillText(fmt(x, gx<1?1:0), SXr(x), bx.y1+6);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for(let y=gy0; y<=ymax+1e-9; y+=gy) ctx.fillText(fmt(y, gy<1?1:0), bx.x0-6, SYr(y));
+  ctx.fillStyle = css("--ink-2"); ctx.font = "italic 13px " + css("--f-display");
+  ctx.textAlign = "right"; ctx.textBaseline = "top"; ctx.fillText(xlab, bx.x1, bx.y1+16);
+  ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(ylab, bx.x0-44, bx.y0-2);
+  return {ctx, bx, SX, SY, w, h, xmin, xmax, ymin, ymax};
+}
+function clipIn(V){ V.ctx.save(); V.ctx.beginPath();
+  V.ctx.rect(V.bx.x0, V.bx.y0, V.bx.x1-V.bx.x0, V.bx.y1-V.bx.y0); V.ctx.clip(); }
+function unclip(V){ V.ctx.restore(); }
+
+function poly(ctx, pts, col, wd, dash){
+  if(pts.length < 2) return;
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  const path = () => { ctx.beginPath(); let pen = false;
+    for(const p of pts){ if(!p){ pen = false; continue; }
+      if(!pen){ ctx.moveTo(p[0],p[1]); pen = true; } else ctx.lineTo(p[0],p[1]); } };
+  ctx.setLineDash(dash || []);
+  path(); ctx.strokeStyle = CAS(); ctx.lineWidth = wd+3; ctx.stroke();
+  path(); ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.stroke();
+  ctx.setLineDash([]);
+}
+/* samples a function of q into screen points, breaking the line wherever the
+   value stops being finite so an asymptote is a gap and not a spike */
+function curve(V, f, q0, q1, n){
+  const pts = [];
+  for(let i = 0; i <= n; i++){
+    const q = q0 + (q1-q0)*i/n, v = f(q);
+    if(!fin(v)){ pts.push(null); continue; }
+    if(v > V.ymax + (V.ymax-V.ymin)*40 || v < V.ymin - (V.ymax-V.ymin)*40){ pts.push(null); continue; }
+    pts.push([V.SX(q), V.SY(v)]);
+  }
+  return pts;
+}
+function dot(ctx, X, Y, col, r){
+  r = r || 4.5;
+  ctx.fillStyle = CAS();          ctx.beginPath(); ctx.arc(X,Y,r+4,0,7); ctx.fill();
+  ctx.fillStyle = css("--surface");ctx.beginPath(); ctx.arc(X,Y,r+2,0,7); ctx.fill();
+  ctx.fillStyle = col;            ctx.beginPath(); ctx.arc(X,Y,r,0,7); ctx.fill();
+}
+function hline(V, y, col, dash, wd){
+  poly(V.ctx, [[V.bx.x0, V.SY(y)], [V.bx.x1, V.SY(y)]], col, wd||1.5, dash||[5,4]);
+}
+function tag(V, x, y, text, col, align){
+  const ctx = V.ctx;
+  ctx.font = "600 11px " + css("--f-mono");
+  ctx.textAlign = align || "left"; ctx.textBaseline = "middle";
+  ctx.lineWidth = 3.5; ctx.strokeStyle = css("--surface"); ctx.strokeText(text, x, y);
+  ctx.fillStyle = col; ctx.fillText(text, x, y);
+}
+
+/* --- the supply panel ---------------------------------------------------- */
+let PICK = { supply:null, firm:null };
+
+function drawSupply(FR, R){
+  const cv = $("cSupply");
+  if(!FR){ setup(cv); PICK.supply = null; return; }
+  const t = T();
+  const V = plot(cv, 0, FR.qMax, 0, FR.pMax, t.axQ, t.axP);
+  PICK.supply = { bx:V.bx, ymin:0, ymax:FR.pMax };
+  const M = MODEL, ps = shutPrice(), pbe = bePrice();
+
+  /* the curve in model coordinates first, so the surplus region can be built
+     from the very samples that get drawn */
+  const branch = [];
+  if(ps > 1e-7 && MINAVC && fin(MINAVC.q)) branch.push([MINAVC.q, ps]);
+  if(SUP) for(const s of SUP) if(s.q > 1e-9 && s.p >= ps - 1e-9) branch.push([s.q, s.p]);
+
+  clipIn(V);
+
+  if(fin(M.cap) && M.cap <= FR.qMax*1.02)
+    poly(V.ctx, [[V.SX(M.cap), V.bx.y0],[V.SX(M.cap), V.bx.y1]], MK.cap, 1.2, [3,4]);
+
+  /* The average curves are ghosted in behind: average cost to show where
+     supply crosses it, average variable cost to show where it is cut off.
+     Marginal cost is deliberately NOT drawn yet — it goes on top of supply
+     further down, because the two lying on each other is the whole point of
+     putting these panels side by side. */
+  V.ctx.globalAlpha = 0.6;
+  if(st.layers.avc) poly(V.ctx, curve(V, q => AVC(M,q), 1e-6, FR.qMax, 420), MK.avc, 1.3, [4,4]);
+  if(st.layers.ac)  poly(V.ctx, curve(V, q => AC(M,q), 1e-6, FR.qMax, 420), MK.ac, 1.3, [4,4]);
+  V.ctx.globalAlpha = 1;
+
+  /* Producer surplus, here, is the area between the price axis and the supply
+     curve from the shutdown price up to p — the integral of q*(P) dP. It is
+     the SAME number as the area between p and marginal cost in the other
+     panel, and deliberately not the same shape: with a jump at the shutdown
+     price the two regions cannot coincide, and integrating q over price is
+     the one of the two that survives the jump. */
+  if(st.layers.areaPS && R && !R.shut && R.q > 0 && st.p > ps){
+    const ctx = V.ctx;
+    ctx.beginPath(); ctx.moveTo(V.SX(0), V.SY(ps));
+    let n = 0;
+    for(const [q,pp] of branch) if(pp <= st.p + 1e-12){ ctx.lineTo(V.SX(q), V.SY(pp)); n++; }
+    ctx.lineTo(V.SX(R.q), V.SY(st.p));
+    ctx.lineTo(V.SX(0), V.SY(st.p));
+    ctx.closePath();
+    ctx.fillStyle = MK.areaPS; ctx.fill();
+  }
+
+  if(fin(pbe)) hline(V, pbe, MK.ac, [2,4], 1.2);
+  if(ps > 1e-7) hline(V, ps, MK.avc, [2,4], 1.2);
+
+  /* the curve itself, in three pieces: flat against the price axis below the
+     shutdown price, a jump across it, then the rising branch */
+  if(ps > 1e-7) poly(V.ctx, [[V.SX(0), V.SY(0)], [V.SX(0), V.SY(ps)]], MK.supply, 3.4);
+  const scr = branch.map(([q,pp]) => [V.SX(q), V.SY(pp)]);
+  if(ps > 1e-7 && scr.length) poly(V.ctx, [[V.SX(0), V.SY(ps)], scr[0]], MK.supply, 1.6, [5,4]);
+  poly(V.ctx, scr, MK.supply, 3.4);
+
+  /* marginal cost, laid over the supply curve rather than under it: above the
+     shutdown price the dashes sit exactly on the cyan, and that is the lesson */
+  if(st.layers.mc){
+    V.ctx.setLineDash([5,5]); V.ctx.lineCap = "butt";
+    const pts = curve(V, q => M.mc(q), 1e-6, FR.qMax, 420);
+    V.ctx.beginPath(); let pen = false;
+    for(const pt of pts){ if(!pt){ pen = false; continue; }
+      if(!pen){ V.ctx.moveTo(pt[0],pt[1]); pen = true; } else V.ctx.lineTo(pt[0],pt[1]); }
+    V.ctx.strokeStyle = MK.mc; V.ctx.lineWidth = 1.6; V.ctx.stroke();
+    V.ctx.setLineDash([]); V.ctx.lineCap = "round";
+  }
+
+  if(st.layers.price) hline(V, st.p, MK.price, [6,4], 1.8);
+
+  if(st.layers.opt && R && !R.unbounded){
+    const X = V.SX(R.shut ? 0 : R.q), Y = V.SY(st.p);
+    if(!R.shut) poly(V.ctx, [[X, V.SY(0)],[X, Y]], MK.opt, 1.2, [3,3]);
+    dot(V.ctx, X, Y, MK.opt, 5);
+  }
+  unclip(V);
+
+  if(fin(pbe) && pbe < FR.pMax) tag(V, V.bx.x1-4, V.SY(pbe)-9, t.sPBE, MK.ac, "right");
+  if(ps > 1e-7 && ps < FR.pMax) tag(V, V.bx.x1-4, V.SY(ps)+11, t.sPShut, MK.avc, "right");
+  if(st.layers.price && st.p <= FR.pMax) tag(V, V.bx.x0+5, V.SY(st.p)-9, "p", MK.price);
+}
+
+/* --- the firm's panel, marginals ----------------------------------------- */
+function drawMarginals(FR, R){
+  const cv = $("cFirm");
+  const t = T();
+  const V = plot(cv, 0, FR.qMax, 0, FR.pMax, t.axQ, t.axP);
+  PICK.firm = { bx:V.bx, ymin:0, ymax:FR.pMax };
+  const M = MODEL, q = R && !R.shut && fin(R.q) ? R.q : 0;
+  clipIn(V);
+
+  if(fin(M.cap) && M.cap <= FR.qMax*1.02)
+    poly(V.ctx, [[V.SX(M.cap), V.bx.y0],[V.SX(M.cap), V.bx.y1]], MK.cap, 1.2, [3,4]);
+
+  if(st.layers.areaVC && q > 0){
+    const ctx = V.ctx, n = 200;
+    ctx.beginPath(); ctx.moveTo(V.SX(0), V.SY(0));
+    for(let i = 0; i <= n; i++){
+      const x = q*i/n, v = M.mc(x);
+      ctx.lineTo(V.SX(x), V.SY(fin(v) ? Math.min(v, V.ymax*30) : 0));
+    }
+    ctx.lineTo(V.SX(q), V.SY(0)); ctx.closePath();
+    ctx.fillStyle = MK.areaVC; ctx.fill();
+  }
+  if(st.layers.areaPS && q > 0){
+    const ctx = V.ctx, n = 200;
+    ctx.beginPath(); ctx.moveTo(V.SX(0), V.SY(st.p));
+    for(let i = 0; i <= n; i++){
+      const x = q*i/n, v = M.mc(x);
+      ctx.lineTo(V.SX(x), V.SY(fin(v) ? Math.min(v, st.p) : st.p));
+    }
+    ctx.lineTo(V.SX(q), V.SY(st.p)); ctx.closePath();
+    ctx.fillStyle = MK.areaPS; ctx.fill();
+  }
+  /* the profit rectangle: (p - AC(q*)) wide by q* long, the picture students
+     are meant to leave with */
+  if(st.layers.opt && q > 0){
+    const ac = AC(M,q);
+    if(fin(ac)){
+      const ctx = V.ctx, y0 = V.SY(st.p), y1 = V.SY(ac);
+      ctx.fillStyle = st.p >= ac ? "rgba(111,211,160,.18)" : "rgba(228,112,92,.20)";
+      ctx.fillRect(V.SX(0), Math.min(y0,y1), V.SX(q)-V.SX(0), Math.abs(y1-y0));
+      poly(ctx, [[V.SX(0),y1],[V.SX(q),y1]], MK.ac, 1.2, [3,3]);
+    }
+  }
+
+  if(st.layers.avc) poly(V.ctx, curve(V, x => AVC(M,x), 1e-6, FR.qMax, 500), MK.avc, 2);
+  if(st.layers.ac)  poly(V.ctx, curve(V, x => AC(M,x),  1e-6, FR.qMax, 500), MK.ac,  2);
+  if(st.layers.mc)  poly(V.ctx, curve(V, x => M.mc(x),  1e-6, FR.qMax, 500), MK.mc,  3);
+  if(st.layers.price) hline(V, st.p, MK.price, [6,4], 1.8);
+
+  if(st.layers.beq){
+    if(MINAC && fin(MINAC.v) && MINAC.v <= FR.pMax) dot(V.ctx, V.SX(MINAC.q), V.SY(MINAC.v), MK.beq, 4);
+    if(MINAVC && !MINAVC.atZero && MINAVC.v <= FR.pMax) dot(V.ctx, V.SX(MINAVC.q), V.SY(MINAVC.v), MK.avc, 4);
+  }
+  if(st.layers.opt && R && !R.unbounded){
+    const X = V.SX(R.shut ? 0 : R.q);
+    poly(V.ctx, [[X, V.SY(0)],[X, V.SY(st.p)]], MK.opt, 1.2, [3,3]);
+    dot(V.ctx, X, V.SY(st.p), MK.opt, 5);
+  }
+  unclip(V);
+  if(st.layers.price && st.p <= FR.pMax) tag(V, V.bx.x0+5, V.SY(st.p)-9, "p", MK.price);
+  if(st.layers.mc) tag(V, V.bx.x1-4, V.SY(Math.min(M.mc(FR.qMax*0.97), FR.pMax*0.96))-10, t.sMC, MK.mc, "right");
+}
+
+/* --- the firm's panel, totals -------------------------------------------- */
+function drawTotals(FR, R){
+  const cv = $("cFirm");
+  const t = T();
+  const M = MODEL;
+  let hi = 0, lo = 0;
+  for(let i = 0; i <= 60; i++){
+    const q = FR.qMax*i/60, c = M.c(q);
+    if(fin(c)) hi = Math.max(hi, c);
+    hi = Math.max(hi, st.p*q);
+    if(fin(c)) lo = Math.min(lo, st.p*q - c);
+  }
+  const ymax = up(Math.max(hi*1.08, 1)), ymin = -up(Math.max(-lo*1.2, M.F*1.2, 0.2));
+  const V = plot(cv, 0, FR.qMax, ymin, ymax, t.axQ, t.axMoney);
+  PICK.firm = null;
+  const q = R && !R.shut && fin(R.q) ? R.q : 0;
+  clipIn(V);
+
+  if(fin(M.cap) && M.cap <= FR.qMax*1.02)
+    poly(V.ctx, [[V.SX(M.cap), V.bx.y0],[V.SX(M.cap), V.bx.y1]], MK.cap, 1.2, [3,4]);
+
+  if(st.layers.rev)   poly(V.ctx, [[V.SX(0),V.SY(0)],[V.SX(FR.qMax),V.SY(st.p*FR.qMax)]], MK.rev, 2);
+  if(st.layers.vcost) poly(V.ctx, curve(V, x => M.c(x)-M.F, 0, FR.qMax, 500), MK.vcost, 1.6, [5,4]);
+  if(st.layers.cost)  poly(V.ctx, curve(V, x => M.c(x), 0, FR.qMax, 500), MK.cost, 2.6);
+  if(st.layers.prof)  poly(V.ctx, curve(V, x => st.p*x - M.c(x), 0, FR.qMax, 500), MK.prof, 2);
+  if(st.layers.cost && M.F > 1e-6) hline(V, M.F, MK.cost, [2,4], 1.1);
+
+  /* the first-order condition, drawn rather than asserted: the tangent to the
+     cost curve at q* has slope p, so it is parallel to the revenue line */
+  if(st.layers.tangent && q > 0){
+    const c = M.c(q), a = Math.max(0, q - FR.qMax*0.42), b = Math.min(FR.qMax, q + FR.qMax*0.42);
+    poly(V.ctx, [[V.SX(a), V.SY(c + st.p*(a-q))], [V.SX(b), V.SY(c + st.p*(b-q))]], MK.price, 1.6, [6,4]);
+  }
+  if(st.layers.beq && R && !R.unbounded && R.QU){
+    for(const z of zeroProfit(M, st.p, Math.min(R.QU, FR.qMax))){
+      dot(V.ctx, V.SX(z), V.SY(0), MK.beq, 4);
+      poly(V.ctx, [[V.SX(z), V.SY(0)],[V.SX(z), V.SY(st.p*z)]], MK.beq, 1, [3,3]);
+    }
+  }
+  if(st.layers.opt && q > 0){
+    const c = M.c(q), rev = st.p*q;
+    poly(V.ctx, [[V.SX(q), V.SY(c)],[V.SX(q), V.SY(rev)]], MK.opt, 2.4);
+    dot(V.ctx, V.SX(q), V.SY(rev), MK.rev, 4.5);
+    dot(V.ctx, V.SX(q), V.SY(c), MK.cost, 4.5);
+    if(st.layers.prof){
+      dot(V.ctx, V.SX(q), V.SY(rev-c), MK.prof, 4.5);
+      poly(V.ctx, [[V.SX(q), V.SY(0)],[V.SX(q), V.SY(rev-c)]], MK.prof, 1, [3,3]);
+    }
+  }
+  unclip(V);
+  if(st.layers.opt && q > 0)
+    tag(V, V.SX(q)+7, (V.SY(M.c(q))+V.SY(st.p*q))/2, "π", MK.opt);
+}
+
+/* ==========================================================================
+   8. Readouts and the verdict
+   ========================================================================== */
+function rows(el, list){
+  el.innerHTML = list.map(([lab,val,cls]) =>
+    '<div class="ro"><div class="lab">'+lab+'</div><div class="val '+(cls||"")+'">'+val+'</div></div>').join("");
+}
+function verdictOf(R){
+  if(!MODEL || !R) return "Err";
+  if(R.unbounded) return "Unb";
+  if(R.shut) return "Shut";
+  if(R.atCap) return "Cap";
+  if(R.pi >  1e-7) return "Profit";
+  if(R.pi < -1e-7) return "Loss";
+  return "Break";
+}
+function paint(R){
+  const t = T(), M = MODEL;
+  const ps = shutPrice(), pbe = bePrice();
+  if(!M || !R){ rows($("ro-supply"),[]); rows($("ro-firm"),[]); }
+  else{
+    const q = R.shut ? 0 : R.q;
+    const rev = R.shut ? 0 : st.p*q, cost = R.shut ? M.F : M.c(q);
+    const PS = R.shut ? 0 : R.pi + M.F;
+    rows($("ro-supply"), [
+      [t.roP, fmt(st.p,2)],
+      [t.roQ, R.unbounded ? "∞" : fmt(q,3), R.shut ? "is-crit" : ""],
+      [t.roShut, R.unbounded ? "—" : ps > 1e-7 ? fmt(ps,3) : "0"],
+      [t.roBE, R.unbounded ? "—" : fmt(pbe,3)],
+      [t.roPS, R.unbounded ? "∞" : fmt(PS,3)],
+      [t.roEl, R.unbounded ? "—" : fmt(supplyElasticity(M, st.p, q), 2)]
+    ]);
+    rows($("ro-firm"), [
+      [t.roCost, R.unbounded ? "∞" : fmt(cost,2)],
+      [t.roRev,  R.unbounded ? "∞" : fmt(rev,2)],
+      [t.roProf, R.unbounded ? "∞" : fmt(R.pi,3), R.pi > 1e-7 ? "is-good" : R.pi < -1e-7 ? "is-crit" : ""],
+      [t.roMC,  q > 0 ? fmt(M.mc(q),3) : "—"],
+      [t.roAC,  q > 0 ? fmt(AC(M,q),3) : "—"],
+      [t.roAVC, q > 0 ? fmt(AVC(M,q),3) : "—"],
+      [t.roCF, fmt(M.F,2)]
+    ]);
+  }
+  const kind = verdictOf(R);
+  const cls = {Profit:" is-good", Loss:" is-warn", Shut:" is-crit", Cap:" is-warn",
+               Unb:" is-crit", Err:" is-crit", Break:""}[kind] || "";
+  $("verdict").className = "verdict" + cls;
+  $("v-title").textContent = t["v"+kind];
+  $("v-text").textContent  = t["v"+kind+"T"];
+
+  let hint = "";
+  if(M && R && !R.unbounded){
+    if(st.p < ps - 1e-9) hint = t.priceHint.below;
+    else if(fin(pbe) && st.p < pbe - 1e-6) hint = t.priceHint.mid;
+    else if(fin(pbe) && Math.abs(st.p - pbe) <= 1e-6) hint = t.priceHint.at;
+    else hint = t.priceHint.above;
+  }
+  $("price-hint").textContent = hint;
+  $("view-hint").textContent = t.viewHint[st.view];
+  $("fam-hint").textContent  = t.famHint[st.fam];
+  $("fam-formula").textContent = formulaOf();
+  $("pill-firm").textContent = st.view === "marg" ? t.pillLinked : t.pillOwn;
+  $("pill-firm").className = "pill" + (st.view === "marg" ? " on" : "");
+  $("vp-firm-title").textContent = t.vp2;
+}
+function render(){
+  ensureModel();
+  const FR = frame();
+  const R = MODEL ? solve(MODEL, st.p) : null;
+  drawSupply(FR, R);
+  if(!FR){ setup($("cFirm")); PICK.firm = null; }
+  else if(st.view === "marg") drawMarginals(FR, R);
+  else drawTotals(FR, R);
+  paint(R);
+}
+
+/* ==========================================================================
+   9. Controls
+   ========================================================================== */
+function formulaOf(){
+  if(st.fam === "quad")   return "c(q) = F + a·q^k";
+  if(st.fam === "custom") return "c(q) = " + st.customSrc;
+  if(st.fam === "cd")     return "c(q) = r·K̄ + w·b^(−e)·K̄^(−β/(1−β))·q^e,  e = 1/((1−β)s) = " +
+                                  fmt(1/((1-st.beta)*st.s), 3);
+  return "c(q) = r·K̄ + w·e^(m/(1−β))·K̄^(−β/(1−β))·(q/(Q̄−q))^e,  Q̄ = b·K̄^γ = " +
+         fmt(st.b*Math.pow(st.k0, st.gam), 3);
+}
+function readCost(){
+  const t = T();
+  if(st.fam !== "custom"){ $("c-err").textContent = ""; return; }
+  try{
+    st.C = buildCost($("c-expr").value.trim());
+    st.customSrc = st.C.src;
+    $("c-expr").setAttribute("aria-invalid","false"); $("c-err").textContent = "";
+  }catch(err){
+    st.C = null;
+    $("c-expr").setAttribute("aria-invalid","true");
+    $("c-err").textContent = /unknown/i.test(err.message) ? t.errVars : t.errParse;
+  }
+  KEY = "";
+}
+function buildFams(){
+  const t = T();
+  $("fams").innerHTML = FAMS.map((k,i) =>
+    '<button type="button" data-fam="'+k+'" aria-pressed="'+(k===st.fam)+'">'+
+    '<span class="n">'+(i+1)+'</span><span>'+t.fams[k]+'</span></button>').join("");
+  $("fams").querySelectorAll("[data-fam]").forEach(b => b.addEventListener("click", () => {
+    st.fam = b.dataset.fam; KEY = "";
+    buildFams(); syncParams(); readCost(); render();
+  }));
+}
+function buildLayers(){
+  const t = T();
+  const keys = Object.keys(LAYERS).filter(k => LAYERS[k].modes.includes(st.view));
+  $("layers").innerHTML = keys.map(k => {
+    const c = LAYERS[k].col;
+    return '<label class="check"><input type="checkbox" data-l="'+k+'" '+(st.layers[k]?"checked":"")+'>'+
+      (c ? '<i class="swatch" style="background:'+c+'"></i>' : '') +
+      '<span>'+t.layers[k]+'</span></label>';
+  }).join("");
+  $("layers").querySelectorAll("input").forEach(cb => cb.addEventListener("change", () => {
+    st.layers[cb.dataset.l] = cb.checked; render();
+  }));
+}
+function buildLegends(){
+  const t = T();
+  const leg = (c,l) => '<span><i style="background:'+c+'"></i>'+l+'</span>';
+  $("legend-supply").innerHTML = leg(MK.supply, t.legSupply) + leg(MK.avc, t.legShut) +
+                           leg(MK.ac, t.legBE) + leg(MK.price, "p");
+  const L = t.layers;
+  $("legend-firm").innerHTML = st.view === "marg"
+    ? leg(MK.mc, L.mc) + leg(MK.ac, L.ac) + leg(MK.avc, L.avc) + leg(MK.price, "p")
+    : leg(MK.cost, L.cost) + leg(MK.rev, L.rev) + leg(MK.prof, L.prof) + leg(MK.price, L.tangent);
+}
+function syncParams(){
+  const on = new Set(PARAMS[st.fam]);
+  document.querySelectorAll(".slider-row[data-p]").forEach(r => { r.hidden = !on.has(r.dataset.p); });
+  document.querySelectorAll(".group")[1].hidden = st.fam !== "custom";
+  document.querySelectorAll(".group")[2].hidden = on.size === 0;
+  $("fam-formula").textContent = formulaOf();
+}
+function bind(id, key, after){
+  const s = $(id), b = $(id+"-v");
+  const set = v => {
+    v = parseFloat(v); if(!fin(v)) return;
+    v = clamp(v, parseFloat(s.min), parseFloat(s.max));
+    st[key] = v; s.value = v; b.value = +v.toFixed(3);
+    KEY = "";
+    if(after) after();
+    render();
+  };
+  s.addEventListener("input", () => set(s.value));
+  b.addEventListener("change", () => set(b.value));
+  b.value = st[key]; s.value = st[key];
+}
+function setPrice(v){
+  st.p = clamp(Math.round(v*100)/100, 0, 10);
+  $("p").value = st.p; $("p-v").value = st.p;
+  render();
+}
+/* Dragging in a panel whose vertical axis IS the price moves the price. The
+   supply curve is then read the way it is meant to be read: pick a price, see
+   the quantity. In the totals view the vertical axis is money, so it does not
+   answer to the pointer. */
+function dragPrice(cv, which){
+  const grab = ev => {
+    const pick = PICK[which]; if(!pick) return;
+    const r = cv.getBoundingClientRect(), y = ev.clientY - r.top;
+    const f = (pick.bx.y1 - y)/(pick.bx.y1 - pick.bx.y0);
+    setPrice(pick.ymin + f*(pick.ymax - pick.ymin));
+  };
+  cv.addEventListener("pointerdown", ev => {
+    if(!PICK[which]) return;
+    cv.setPointerCapture(ev.pointerId); cv.dataset.drag = "1"; grab(ev); ev.preventDefault();
+  });
+  cv.addEventListener("pointermove", ev => { if(cv.dataset.drag === "1") grab(ev); });
+  const stop = ev => { cv.dataset.drag = "0"; try{ cv.releasePointerCapture(ev.pointerId); }catch(_){} };
+  cv.addEventListener("pointerup", stop);
+  cv.addEventListener("pointercancel", stop);
+}
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = LANG;
+  document.title = t.docTitle;
+  $("h-title").textContent = t.title; $("h-sub").textContent = t.sub;
+  document.querySelectorAll("[data-t]").forEach(el => {
+    const v = t[el.dataset.t]; if(v !== undefined) el.textContent = v;
+  });
+  $("vp-supply-title").textContent = t.vp1; $("vp-firm-title").textContent = t.vp2;
+  $("foot").textContent = t.foot;
+  $("lg-es").setAttribute("aria-pressed", String(LANG==="es"));
+  $("lg-en").setAttribute("aria-pressed", String(LANG==="en"));
+  buildFams(); buildLayers(); buildLegends(); syncParams(); readCost(); render();
+  try{ localStorage.setItem("fsp.lang", LANG); }catch(_){}
+}
+function setTheme(th){
+  document.documentElement.setAttribute("data-theme", th);
+  $("th-dark").setAttribute("aria-pressed", String(th==="dark"));
+  $("th-light").setAttribute("aria-pressed", String(th==="light"));
+  try{ localStorage.setItem("fsp.theme", th); }catch(_){}
+  render();
+}
+
+["F","a","k","b","beta","s","gam","m","w","r","k0"].forEach(id => bind(id, id));
+bind("p","p");
+$("c-expr").addEventListener("change", () => { readCost(); render(); });
+$("c-expr").addEventListener("input", () => { readCost(); render(); });
+document.querySelectorAll("#view-seg [data-v]").forEach(b => b.addEventListener("click", () => {
+  st.view = b.dataset.v;
+  document.querySelectorAll("#view-seg [data-v]").forEach(o => o.setAttribute("aria-pressed", String(o===b)));
+  buildLayers(); buildLegends(); render();
+}));
+$("lg-es").addEventListener("click", () => { LANG="es"; applyLang(); });
+$("lg-en").addEventListener("click", () => { LANG="en"; applyLang(); });
+$("th-dark").addEventListener("click", () => setTheme("dark"));
+$("th-light").addEventListener("click", () => setTheme("light"));
+dragPrice($("cSupply"), "supply");
+dragPrice($("cFirm"), "firm");
+new ResizeObserver(() => render()).observe(document.querySelector(".viewports"));
+window.addEventListener("keydown", ev => {
+  if(ev.target.tagName === "INPUT") return;
+  if(ev.key >= "1" && ev.key <= "4"){
+    st.fam = FAMS[+ev.key - 1]; KEY = ""; buildFams(); syncParams(); readCost(); render();
+  }
+  if(ev.key === "m" || ev.key === "t"){
+    st.view = ev.key === "m" ? "marg" : "tot";
+    document.querySelectorAll("#view-seg [data-v]").forEach(o =>
+      o.setAttribute("aria-pressed", String(o.dataset.v === st.view)));
+    buildLayers(); buildLegends(); render();
+  }
+});
+
+let lang0 = "es", theme0 = "dark";
+try{ lang0 = localStorage.getItem("fsp.lang")||"es"; theme0 = localStorage.getItem("fsp.theme")||"dark"; }catch(_){}
+const qs = new URLSearchParams(location.search);
+if(qs.get("lang") === "en" || qs.get("lang") === "es") lang0 = qs.get("lang");
+LANG = lang0;
+document.documentElement.setAttribute("data-theme", theme0);
+$("th-dark").setAttribute("aria-pressed", String(theme0==="dark"));
+$("th-light").setAttribute("aria-pressed", String(theme0==="light"));
+readCost();
+applyLang();
+</script>
+</body>
+</html>

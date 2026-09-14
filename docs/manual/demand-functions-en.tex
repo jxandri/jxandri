@@ -1,0 +1,347 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[english]{babel}
+\manuallang{en}
+
+\appletname{Demand Functions}
+\appletsub{Where demand curves come from. Move a price or income, and every
+optimal bundle leaves a mark: the trail you leave is the demand function.}
+\appletdir{demand-functions}
+
+\begin{document}
+\manualtitlepage{Applet manual · Introductory Microeconomics · Universidad de los Andes\\
+Translated from a GeoGebra applet.\\
+MIT licensed. It opens in a browser; there is nothing to install.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{What this is}
+
+A demand curve is not a datum. It is the result of solving the consumer's
+problem once for every price, and writing the answers down.
+
+In a course that gets said, the finished curve gets drawn, and the class moves
+on. This applet does the other thing: the consumer's problem on the left, an
+empty pair of axes on the right, and the student moving the price. Every
+optimal bundle leaves a mark in the right-hand panel. After a while there is a
+curve there, and the student built it point by point.
+
+\figher[1.0]{revealed}{After sweeping $p_x$. The purple points in the left
+panel are the price-consumption path; those on the right are the demand curve
+just built, with the exact curve revealed underneath.}
+
+\begin{amkey}
+The trail and the curve are not two things: the revealed curve passes exactly
+through the recorded points. Seeing them coincide is the difference between
+knowing the definition of a demand function and understanding it.
+\end{amkey}
+
+\subsection{Who it is for}
+
+The demand topic, after the consumer's optimum has been covered. It is the
+bridge between the two. It also handles normal, inferior and Giffen goods,
+which usually survive as a footnote and here can be manufactured and looked at.
+
+\input{open-en}
+
+% ==========================================================================
+\section{The screen}
+
+\fig[1.0]{interface}{The whole screen. Left: the consumer's problem. Right: the
+demand curve being built.}
+
+\begin{description}
+\item[Ranges.] The interval considered for each variable. It is both the travel
+  of the slider and the stretch the right panel's horizontal axis draws. It is
+  the most easily forgotten control and the one that solves the most problems.
+\item[Preferences.] Five families, the last one writable.
+\item[Parameters.] Those of the chosen family.
+\item[Variable being swept.] Which of $p_x$, $p_y$ or $m$ moves. The other two
+  are held fixed, and recorded points belong to that one only.
+\item[Prices and income.] $p_x$, $p_y$, $m$.
+\item[Discover the demand curve.] The buttons that record, sweep and clear.
+\item[Layers.] What gets drawn.
+\end{description}
+
+\subsection{The two panels}
+
+\begin{description}
+\item[Choice · $(x, y)$ plane.] The budget line, the indifference curve through
+  the optimal bundle, the bundle itself, and the price-consumption path as it
+  forms.
+\item[Demand.] The optimal quantity against the variable being moved. Its
+  header says which. When the variable is income, the panel becomes the
+  \ui{Engel curve}.
+\end{description}
+
+The \ui{One panel / Two} switch in the right-hand header separates the demand
+for $x$ from that for $y$ into two plots, which is what you need when the two
+have very different scales.
+
+\fig[1.0]{engel}{With income as the swept variable, the right panel becomes the
+Engel curve.}
+
+\subsection{The dark theme}
+
+\fig[0.95]{dark}{Both panels in the dark theme.}
+
+% ==========================================================================
+\section{The five families}
+
+Each brings a closed-form demand, except the custom one, which is solved
+numerically.
+
+\begin{ctrltable}{Family & Utility and demand}
+Cobb--Douglas & $U = x^{\alpha} y^{1-\alpha}$, with
+  $x^\ast = \alpha m/p_x$ and $y^\ast = (1-\alpha) m/p_y$. Each good's demand
+  ignores the other good's price: the clean case. \\
+CES & $U = (x^{r} + y^{r})^{1/r}$. With $r$ near 1 they are near-perfect
+  substitutes; with $r$ strongly negative, near-complements. \\
+Linear (substitutes) & $U = a x + y$. Demand is at a corner: all $x$ if
+  $a > p_x/p_y$, all $y$ if not. \\
+X inferior (Giffen) & $U = \ln(x - \underline{x}) -
+  \tfrac{1+b}{b}\ln(\bar y - y)$ with $b = (1-\beta)/\beta$. This is the family
+  the Giffen case is built with. \\
+Custom & Whatever $U(x, y)$ you type. \\
+\end{ctrltable}
+
+\begin{ctrltable}{Parameter & Which family}
+$\alpha$ & Cobb--Douglas: $x$'s share of spending. \\
+$r$ & CES: the substitution exponent. \\
+$a$ & Linear: what $x$ is worth against $y$. \\
+$\beta$, $\underline{x}$, $\bar y$ & X inferior: the weight, the subsistence
+  minimum of $x$, and the ceiling on $y$. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Discovering the demand curve}
+
+This is the heart of the applet. Four controls:
+
+\begin{ctrltable}{Control & What it does}
+Mark while moving & Records a point automatically every time the chosen
+  variable moves. The most comfortable setting for a class demonstration. \\
+Record point & Saves the current bundle. One point, deliberately. \\
+Sweep & Runs the variable from one end of its interval to the other, marking as
+  it goes. Press again to stop. \\
+Clear & Erases the points for the current variable. \\
+\end{ctrltable}
+
+Points belong to the variable that was being moved. Switching from $p_x$ to $m$
+does not mix the trails: each keeps its own.
+
+\fig[1.0]{swept}{Part-way through a sweep of $p_x$: the points recorded so far
+and the current optimal bundle.}
+
+\subsection{The layers}
+
+\begin{ctrltable}{Layer & What it draws}
+Recorded points & The marks left so far. \\
+Join the points & Connects them with segments. \\
+Reveal the curve & Draws the exact, computed demand function underneath the
+  points. This is the check. \\
+Price-consumption path & In the $(x, y)$ plane, the trail of optimal
+  bundles. \\
+Budget line & The current constraint. \\
+Indifference curve & The one through the optimal bundle. \\
+Demand for x / Demand for y & Which of the two demands the right panel
+  draws. \\
+Highlight Giffen stretch & Marks in purple the stretches with
+  $\partial x^\ast/\partial p_x > 0$. \\
+Grid & The background rule. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Ranges and axes}
+
+\begin{amwatch}
+The $p_x$, $p_y$ and $m$ sliders are \emph{bounded by the interval} set in the
+\ui{Ranges} group. If you try to take $p_y$ below its range minimum it will not
+move. Lower the range minimum first. This is the most frequent cause of a
+slider that appears not to respond.
+\end{amwatch}
+
+The right panel's vertical axis has two modes:
+
+\begin{description}
+\item[Fixed vertical axis] (the default). The ceiling is
+  $m_{\text{max}}/p_{\text{min}}$, the most that can be bought under the
+  current ranges. The advantage is that the axis does not move as you drag, so
+  two sweeps can be compared by eye.
+\item[Automatic.] The axis fits the curve. You need this when the quantity of
+  interest is small next to that ceiling --- the Giffen case, for instance,
+  where $x^\ast$ hovers around $0.3$ and the ceiling is $8$.
+\end{description}
+
+% ==========================================================================
+\section{Normal, inferior, Giffen}
+
+The three readouts on the right settle everything:
+
+\begin{ctrltable}{Readout & What it says}
+$\partial x^\ast/\partial p_x$ & The slope of demand. Negative is ordinary;
+  positive is Giffen. \\
+$\partial x^\ast/\partial m$ & The income effect. Negative means an inferior
+  good. \\
+Type & \emph{normal} or \emph{inferior}, from the sign of the previous one. \\
+\end{ctrltable}
+
+And the verdict at the top names the case:
+
+\begin{description}
+\item[x is a normal good here.] Demand falls when its price rises and rises
+  with income.
+\item[x is an inferior good here.] $\partial x^\ast/\partial m < 0$. Being
+  inferior is \emph{necessary} for Giffen, but not sufficient.
+\item[x is a Giffen good here.] $\partial x^\ast/\partial p_x > 0$. The income
+  effect dominates the substitution effect, which can only happen if $x$ is
+  inferior.
+\end{description}
+
+\fig[1.0]{giffen}{The Giffen case. Demand rises with the price, and the whole
+stretch is highlighted. Look at the left panel: the price-consumption path
+climbs almost vertically, because the consumer can barely cut $x$ below their
+subsistence minimum.}
+
+\fig[0.85]{giffen-verdict}{The verdict in the Giffen case.}
+
+% ==========================================================================
+\section{Classroom activities}
+
+\begin{activity}{Building a demand curve by hand}
+\amset Opening values (Cobb--Douglas). \ui{Variable being swept} on $p_x$.
+Switch on \ui{Mark while moving}.
+\amexp At $p_x = 1.83$: $x^\ast = 1.68$, $y^\ast = 2.11$, spend $5.4$ of $5.4$.
+Move $p_x$ slowly from one end to the other. Every bundle leaves a mark on the
+right.
+\par\smallskip
+Once you have fifteen or twenty points, switch on \ui{Reveal the curve}. The
+computed curve passes exactly through them. Ask the class what a demand
+function is, then: not a datum, but the record of twenty optimisation problems
+solved.
+\end{activity}
+
+\begin{activity}{Spending does not move}
+\amset Cobb--Douglas, sweeping $p_x$.
+\amexp The \ui{Spend} readout always says $5.4 / 5.4$, and $y^\ast$ does not
+change as $p_x$ moves. Under Cobb--Douglas each good takes a fixed share of
+income: $x^\ast = \alpha m / p_x$ does not involve $p_y$, and $y^\ast$ does not
+involve $p_x$.
+\par\smallskip
+Move $\alpha$ and watch the two shares change. It is the property that makes
+Cobb--Douglas the exam case, and it is worth seeing before it is assumed.
+\end{activity}
+
+\begin{activity}{The Engel curve}
+\amset \ui{Variable being swept} on $m$. Sweep.
+\amexp The right panel is renamed \ui{Engel curve}. Under Cobb--Douglas it
+comes out a straight line through the origin: demand is proportional to income.
+\par\smallskip
+Switch to \ui{X inferior} and repeat. The Engel curve bends downwards: more
+income, less $x$. There is the definition of an inferior good, drawn.
+\end{activity}
+
+\begin{activity}{Inferior is not Giffen}
+\amset \ui{X inferior} family, opening values.
+\amexp $x^\ast = 1.08$, $y^\ast = 3.12$,
+$\partial x^\ast/\partial p_x = -0.422$ and
+$\partial x^\ast/\partial m = -0.068$. The type is \emph{inferior} and the
+verdict says so, but demand still slopes downwards.
+\par\smallskip
+Ask whether that contradicts anything. It does not: being inferior is necessary
+for Giffen, not sufficient. The income effect also has to be strong enough, and
+for that the consumer has to be made poor in real terms.
+\end{activity}
+
+\begin{activity}{Manufacturing a Giffen good}
+\amset \ui{X inferior} family. In \ui{Ranges}, lower the minimum of $p_y$ to
+$0.2$. Then set $p_y = 0.35$. Turn off the \ui{Fixed vertical axis}.
+\amexp Now $x^\ast = 0.30$, $y^\ast = 10.54$, and
+$\partial x^\ast/\partial p_x = +3.1\times 10^{-4}$: \emph{positive}. The
+verdict says ``x is a Giffen good here'' and the stretch is highlighted.
+\par\smallskip
+Sweep $p_x$ and watch the curve rise. What you have done is make the other good
+so cheap that $x$ has become the consumer's subsistence good: when $x$ gets
+dearer they get poorer, and getting poorer they buy more of the cheap staple.
+It is the Irish potato story, and it takes this much setting up to see it.
+\end{activity}
+
+\begin{activity}{The two extreme cases}
+\amset \ui{Linear (substitutes)} family. Sweep $p_x$.
+\amexp Demand is a step: all $x$ until $p_x/p_y$ crosses $a$, then zero at
+once. There is no stretch in between.
+\par\smallskip
+Switch to \ui{CES} and take $r$ down towards $-6$: the curves smooth out until
+they resemble complements. The two extremes bracket what a demand curve can do,
+and the other families fall between them.
+\end{activity}
+
+\begin{activity}{The price-consumption path}
+\amset Any family. Switch on \ui{Price-consumption path} and sweep $p_x$.
+\amexp In the $(x, y)$ plane the trail of optimal bundles appears. Under
+Cobb--Douglas it is horizontal, because $y^\ast$ does not depend on $p_x$.
+Under the inferior family it climbs almost vertically.
+\par\smallskip
+The demand curve in the right panel is that same path, with $p_x$ on the
+horizontal axis instead of $x$. Same information, two coordinate systems.
+\end{activity}
+
+\begin{activity}{Your own utility function}
+\amset \ui{Custom} family. Type \code{x\^{}0.3*y\^{}0.7}, then
+\code{min(2x,y)}, then \code{x+4ln(y)}.
+\amexp Demand is solved numerically and the trail builds the same way. With
+\code{min(2x,y)} the two demands move together; with the quasilinear one, the
+demand for $y$ stops depending on income once income passes a threshold.
+\par\smallskip
+This is the moment to have the class predict the shape before sweeping.
+\end{activity}
+
+% ==========================================================================
+\section{Expression syntax}
+
+\begin{ctrltable}{Element & What is allowed}
+Operators & \code{+ - * / \^{} ( )} \\
+Functions & \code{sqrt ln log exp abs min max sin cos} \\
+Constants & \code{e}, \code{pi} \\
+Implicit multiplication & \code{2xy} is \code{2*x*y} \\
+Variables & Only \code{x} and \code{y} \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{How it is computed}
+
+The four named families carry closed-form demands, derived by hand. The custom
+one cannot, so its optimum is found numerically along the budget line: a dense
+scan and a golden-section refinement, the same as in the other applets in this
+collection. It is robust where a first-order condition finds nothing --- corners
+and kinks included.
+
+The derivatives $\partial x^\ast/\partial p_x$ and $\partial x^\ast/\partial m$
+in the readouts are central differences on the demand function itself, not
+symbolic derivatives: that way they work identically for the closed-form
+families and for whatever the user types.
+
+% ==========================================================================
+\section{Troubleshooting}
+
+\begin{ctrltable}{Symptom & What is happening}
+A price slider will not move & It is hitting its range. Change the minimum or
+  maximum under \ui{Ranges}. \\
+The curve is flat against the axis & The vertical axis is fixed at
+  $m_{\text{max}}/p_{\text{min}}$ and the quantity is small. Turn off
+  \ui{Fixed vertical axis}. \\
+The points vanish when I change variable & They do not: each variable keeps its
+  own trail. Go back and they are there. \\
+The right panel is unreadable & The two demands have very different scales.
+  Switch to \ui{Two} panels, or turn one of the layers off. \\
+I cannot get the Giffen case & It takes all three: the \ui{X inferior} family,
+  a low $p_y$ (having lowered its range first), and reading the sign of
+  $\partial x^\ast/\partial p_x$, not of $\partial x^\ast/\partial m$. \\
+\end{ctrltable}
+
+\input{tail-en}
+
+\end{document}

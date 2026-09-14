@@ -1,0 +1,399 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[spanish,es-noquoting,es-nodecimaldot]{babel}
+\manuallang{es}
+
+\appletname{Impuesto a la Renta del Trabajo}
+\appletsub{Un impuesto por tramos dobla la restricción entre consumo y ocio.
+Con tipos marginales la frontera se quiebra; con tipos medios se rompe, y
+cruzar un umbral deja al trabajador estrictamente peor.}
+\appletdir{labor-tax}
+
+\begin{document}
+\manualtitlepage{Manual del applet · Microeconomía I · Universidad de los Andes\\
+Traducido del applet de GeoGebra «Restricción Presupuestaria con Impuesto a la Renta».\\
+Código MIT. Se abre en el navegador; no hay nada que instalar.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{Qué es esto}
+
+Un trabajador reparte una dotación de tiempo entre trabajar y no trabajar. Si
+dedica la fracción $L$ a trabajar, gana $wL$, paga un impuesto sobre esa renta
+y se gasta lo que queda en consumo:
+\[
+  c(L) \;=\; \frac{m_0 + wL - T(wL)}{p_x},
+  \qquad \ell = 1 - L .
+\]
+
+La dotación está normalizada a $1$, así que $L$ es la fracción del tiempo que
+se trabaja y $\ell$ el ocio. Lo único que hay que elegir es $L$.
+
+Todo el interés está en $T(\cdot)$, el impuesto por tramos, y en una decisión de
+diseño que los sistemas fiscales reales toman y que casi nunca se discute en
+clase: si el tipo de cada tramo se aplica \emph{solo a la renta que cae dentro
+de ese tramo} o \emph{a toda la renta}. Los dos esquemas suenan casi igual y
+producen fronteras presupuestarias completamente distintas.
+
+\figher[1.0]{marginal}{Tipos marginales. El impuesto de cada tramo grava solo
+la renta que cae dentro de él. La renta neta es continua, así que la frontera
+se \emph{quiebra} pero no se corta.}
+
+\begin{amkey}
+Con tipos marginales la frontera tiene un \textbf{quiebre}: la pendiente cambia
+de golpe pero la línea no se rompe. Con tipos medios tiene un
+\textbf{salto}: ganar una unidad más deja al trabajador con menos. Un quiebre
+atrae óptimos; un salto los empuja hacia abajo y los deja pegados justo por
+debajo del umbral.
+\end{amkey}
+
+\subsection{Para quién}
+
+Para el tema de elección entre consumo y ocio, o para una clase de economía
+pública sobre diseño de impuestos. Supone curvas de indiferencia, restricción
+presupuestaria y la idea de óptimo. Sirve también, sin cambiar nada, para
+explicar por qué en los datos fiscales aparece gente amontonada justo debajo de
+un umbral.
+
+\input{open-es}
+
+% ==========================================================================
+\section{La pantalla}
+
+\fig[1.0]{interface}{La pantalla completa: los controles a la izquierda, el
+veredicto arriba, el plano consumo-ocio y el panel de renta neta abajo.}
+
+\begin{description}
+\item[Cómo se aplica.] Los dos esquemas, tipos marginales y tipos medios. Es el
+  control que importa; todo lo demás es contexto.
+\item[Tramos.] Tres tipos $t_0, t_1, t_2$ y dos umbrales $s_0, s_1$, todos
+  sobre la renta del trabajo $wL$.
+\item[Salario y renta.] El salario $w$, la renta no laboral $m_0$ y el precio
+  del consumo $p_x$.
+\item[Preferencias.] Cuatro familias y una casilla para escribir la suya.
+\item[Eje vertical.] Si el eje del plano mide ocio o trabajo.
+\item[Capas.] Qué se dibuja.
+\end{description}
+
+El veredicto de la banda superior nombra qué clase de óptimo ha salido:
+tangencia, quiebre, borde del salto, no trabajar, o trabajar toda la dotación.
+
+\subsection{Los dos paneles}
+
+\begin{description}
+\item[Consumo y ocio.] El mapa de utilidad bajo una rampa topográfica, lo
+  inasequible velado, la frontera con sus quiebres o saltos, los umbrales, la
+  curva de indiferencia por el óptimo, y el óptimo.
+\item[Renta neta.] La renta neta frente a la bruta, con la recta de 45° de
+  referencia. Aquí las preferencias no pintan nada, y ese es el punto: el salto
+  es una propiedad del impuesto, no del trabajador. El conmutador lo cambia a
+  \ui{Utilidad}, que dibuja $u(c(L), 1-L)$ a lo largo de la frontera.
+\end{description}
+
+\fig[0.62]{notch}{El panel de renta neta con tipos medios. En cada umbral la
+renta neta cae en vertical: con los valores de partida, cruzar el primer umbral
+la lleva de $20$ a $12$.}
+
+\subsection{El tema oscuro}
+
+\fig[0.95]{dark}{Los dos paneles en el tema oscuro, con tipos medios.}
+
+% ==========================================================================
+\section{El modelo}
+
+\subsection{Los dos esquemas}
+
+Sean $t_0, t_1, t_2$ los tipos y $s_0 \le s_1$ los umbrales, todos sobre la
+renta del trabajo $Y = wL$.
+
+\subsubsection{Tipos marginales}
+
+Cada tipo grava solo la parte de la renta que cae dentro de su tramo:
+\[
+  T(Y) \;=\; t_0\min(Y, s_0)
+        \;+\; t_1\max\bigl(0, \min(Y, s_1) - s_0\bigr)
+        \;+\; t_2\max(0, Y - s_1).
+\]
+$T$ es continua y creciente, y la renta neta $Y - T(Y)$ es continua y cóncava.
+La frontera presupuestaria es una poligonal: en cada umbral cambia de
+pendiente, pero no se rompe.
+
+\subsubsection{Tipos medios}
+
+El tramo en el que se cae fija el tipo sobre \emph{toda} la renta:
+\[
+  T(Y) \;=\; Y \cdot t_{i(Y)},
+  \qquad
+  i(Y) = \begin{cases} 0 & Y < s_0\\ 1 & s_0 \le Y < s_1\\ 2 & Y \ge s_1\end{cases}
+\]
+Aquí $T$ salta en cada umbral, y la renta neta salta hacia abajo. Con los
+valores de partida ($t_1 = 0{,}4$), cruzar $s_0 = 20$ lleva la renta neta de
+$20$ a $12$: el trabajador que gana una unidad más se queda con ocho menos.
+
+\subsection{Quiebre contra salto}
+
+Los dos nombres se confunden con facilidad y la diferencia lo es todo.
+
+\begin{ctrltable}{Nombre & Qué es}
+Quiebre & La función es continua; la derivada salta. La frontera cambia de
+  inclinación. Un óptimo puede caer exactamente ahí, y de hecho suele hacerlo. \\
+Salto & La función misma es discontinua. La frontera se corta y hay un tramo de
+  puntos que ningún $L$ alcanza. El óptimo se queda pegado justo por debajo. \\
+\end{ctrltable}
+
+\begin{amnote}
+En la literatura fiscal, un quiebre se llama \emph{kink} y un salto
+\emph{notch}. Los dos generan amontonamiento en los datos, pero por razones
+distintas: en el quiebre porque la tasa marginal cambia; en el salto porque
+cruzarlo empeora al contribuyente sin más.
+\end{amnote}
+
+\subsection{Cómo se encuentra el óptimo}
+
+No con una condición de primer orden. En estas fronteras el mejor punto está
+muy a menudo en un quiebre, donde la pendiente no existe y ninguna tangencia se
+cumple; y con tipos medios está en el extremo derecho de una pieza, con un
+punto estrictamente peor inmediatamente a su derecha.
+
+Lo que se hace:
+
+\begin{enumerate}
+\item Se parte la frontera en piezas, una por tramo, con sus propios extremos.
+\item Cada pieza se barre densamente y su mejor muestra se refina por sección
+  áurea.
+\item Se prueba \emph{cada vértice explícitamente}, y por los dos lados, cada
+  uno con la fórmula de su propio tramo.
+\item Gana el mejor de todos, y de dónde salió es lo que lo clasifica.
+\end{enumerate}
+
+\begin{amwatch}
+Cada pieza lleva su propio tramo en lugar de deducirlo de la renta. Deducirlo
+hace que $c(L)$ tenga un solo valor en un umbral, lo que pierde silenciosamente
+el límite por la izquierda —que es el punto más alto de la frontera— y lo dejaba
+fuera de la vista calculada.
+\end{amwatch}
+
+% ==========================================================================
+\section{Los controles}
+
+\subsection{Tramos, salario y renta}
+
+\begin{ctrltable}{Deslizador & Qué es}
+$t_0$, $t_1$, $t_2$ & Los tres tipos, de 0 a 0{,}95. \\
+$s_0$, $s_1$ & Los dos umbrales, sobre la renta del trabajo. $s_1$ se mantiene
+  igual o por encima de $s_0$: al revés invertiría el esquema. \\
+$w$ & El salario. Fija dónde caen los umbrales en el eje del trabajo,
+  $L = s/w$. \\
+$m_0$ & Renta no laboral. Desplaza toda la frontera hacia arriba. \\
+$p_x$ & Precio del consumo. Acotado lejos de cero. \\
+\end{ctrltable}
+
+\subsection{Preferencias}
+
+\begin{ctrltable}{Familia & Forma}
+Cobb--Douglas & $x^{\alpha} y^{1-\alpha}$ \\
+CES & $(\alpha x^{\rho} + (1-\alpha) y^{\rho})^{1/\rho}$ \\
+Cuasilineal & $x + 4\alpha\ln y$ \\
+Personalizada & Lo que escriba \\
+\end{ctrltable}
+
+En la expresión $x$ es el consumo e $y$ el ocio. Con $\rho$ muy negativo la CES
+se acerca a complementarios perfectos y aparecen óptimos en esquina.
+
+\subsection{Eje vertical y capas}
+
+El conmutador \ui{Eje vertical} cambia entre \ui{Ocio} y \ui{Trabajo}. La
+utilidad se lee siempre sobre el ocio, así que voltear el eje relee de verdad
+las preferencias en vez de reflejar un dibujo.
+
+\fig[0.62]{labour-axis}{El plano con el eje vertical puesto en trabajo.}
+
+\begin{ctrltable}{Capa & Qué dibuja}
+Mapa de utilidad & El campo $u$ bajo una rampa de color. \\
+Curvas de fondo & Curvas de nivel de la utilidad, independientes del óptimo. \\
+Conjunto factible & Vela lo que no se puede pagar. \\
+Curva por el óptimo & La curva de indiferencia que pasa por el óptimo. \\
+Óptimo & El punto elegido. \\
+Umbrales & Las verticales en $L = s_0/w$ y $L = s_1/w$. \\
+Retícula & La cuadrícula de fondo. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{El veredicto}
+
+\begin{ctrltable}{Veredicto & Qué significa}
+Óptimo interior & Tangencia: la relación marginal de sustitución iguala al
+  salario neto del tramo. El trabajador está dentro de un tramo. \\
+Óptimo en el quiebre & Cae exactamente sobre un umbral. A la izquierda todavía
+  compensa trabajar más; a la derecha ya no. \\
+Óptimo pegado al salto & Con tipos medios. La hora siguiente cruzaría el umbral
+  y recaudaría el tipo más alto sobre toda la renta. \\
+No trabajar es lo mejor & Esquina en $L = 0$: se vive de la renta no laboral. \\
+Trabajar toda la dotación & Esquina en $L = 1$. \\
+\end{ctrltable}
+
+\fig[0.85]{kink-verdict}{El veredicto con los valores de partida y tipos
+marginales: el óptimo cae sobre el primer umbral.}
+
+% ==========================================================================
+\section{Actividades para clase}
+
+\begin{activity}{El mismo impuesto, dos fronteras}
+\amset Valores de partida. Alterne entre \ui{Tipos marginales} y
+\ui{Tipos medios} mirando el panel de la izquierda.
+\amexp Con marginales la frontera se dobla en los umbrales. Con medios se
+\emph{corta}: aparecen dos trozos de línea que no se tocan, y una franja
+entera de consumos que ningún nivel de trabajo alcanza.
+\par\smallskip
+Los tipos, los umbrales, el salario y las preferencias son idénticos en los dos
+casos. Lo único que cambió fue la frase «sobre la renta del tramo» por «sobre
+toda la renta».
+\end{activity}
+
+\begin{activity}{Amontonarse justo debajo}
+\amset Valores de partida, \ui{Tipos marginales}.
+\amexp La lectura \ui{Trabajo L*} da $0{,}400$, que con $w = 50$ es exactamente
+la renta bruta $20$: el primer umbral. El veredicto dice
+«Óptimo en el quiebre».
+\par\smallskip
+Mueva $t_1$ arriba y abajo. El óptimo se queda clavado en el umbral para un
+rango ancho de tipos, porque en un quiebre no hay una sola pendiente que
+igualar sino un intervalo entero de ellas. Eso es lo que produce el
+amontonamiento en los datos, y no es evasión: es el óptimo.
+\end{activity}
+
+\begin{activity}{Un salto que cuesta bienestar}
+\amset Preferencias \ui{Cuasilineal}. Compare \ui{Tipos marginales} con
+\ui{Tipos medios}.
+\amexp Con marginales: $L^\ast = 0{,}800$, consumo $38{,}00$, renta bruta
+$40{,}0$, impuesto $12{,}0$, utilidad $34{,}781$. El tipo medio es $30\%$ y el
+marginal $80\%$.
+\par\smallskip
+Con medios, el mismo trabajador retrocede a $L^\ast = 0{,}400$, consumo
+$30{,}00$, impuesto $0{,}0$, utilidad $28{,}978$. Recauda \emph{menos} impuesto
+y el trabajador está \emph{peor}. Pregunte a quién beneficia ese diseño. A
+nadie: es una pérdida pura, y es la razón por la que casi ningún sistema fiscal
+usa tipos medios.
+\end{activity}
+
+\begin{activity}{Medir el salto}
+\amset \ui{Tipos medios}, panel derecho en \ui{Impuesto}.
+\amexp La lectura \ui{Mayor salto} da $-12{,}00$. Búsquelo en el dibujo: está
+en el segundo umbral, $s_1 = 30$, donde el tipo pasa de $0{,}4$ a $0{,}8$ sobre
+toda la renta. Justo debajo la renta neta es $30 - 12 = 18$; justo encima,
+$30 - 24 = 6$.
+\par\smallskip
+El primer umbral también salta, de $20$ a $12$, pero menos. Baje $t_2$ hasta que
+el mayor salto pase a ser el primero y vea cómo cambia la lectura.
+\end{activity}
+
+\begin{activity}{La utilidad se rompe en trozos}
+\amset \ui{Tipos medios}, panel derecho en \ui{Utilidad}.
+\amexp La curva $u(c(L), 1-L)$ aparece partida en arcos inconexos, uno por
+tramo. Su punto más alto está en el extremo derecho de uno de ellos, no en un
+máximo interior.
+\par\smallskip
+Es la misma información que el panel izquierdo, en una dimensión menos.
+Pregunte dónde buscaría el máximo un estudiante que derivara e igualara a cero,
+y por qué no lo encontraría.
+\end{activity}
+
+\begin{activity}{No trabajar}
+\amset Preferencias \ui{CES}, $\rho = -6$.
+\amexp El óptimo se va a $L^\ast = 0{,}000$: consumo $10{,}00$, que es
+exactamente $m_0/p_x$. El veredicto dice «No trabajar es lo mejor».
+\par\smallskip
+Con $\rho$ muy negativo la CES se acerca a complementarios perfectos y el ocio
+se vuelve casi imprescindible. Suba $w$ y mire cuánto hace falta para que
+merezca la pena la primera hora.
+\end{activity}
+
+\begin{activity}{El eje no es la preferencia}
+\amset Valores de partida. Cambie \ui{Eje vertical} de \ui{Ocio} a
+\ui{Trabajo}.
+\amexp El mapa de utilidad no es el reflejo del anterior. La utilidad se lee
+siempre sobre el ocio, así que voltear el eje cambia de verdad lo que se está
+dibujando y no solo cómo se mira.
+\par\smallskip
+Es una comprobación útil contra la costumbre de leer los dos ejes como si
+fueran intercambiables.
+\end{activity}
+
+\begin{activity}{Diseñar un impuesto sin saltos}
+\amset \ui{Tipos medios}. Objetivo: que la frontera no se corte.
+\amexp Solo hay una manera: poner los tres tipos iguales. Cualquier diferencia
+entre $t_0$, $t_1$ y $t_2$ produce un salto en el umbral correspondiente.
+\par\smallskip
+Con tipos marginales, en cambio, cualquier combinación creciente da una
+frontera continua. Ahí está el argumento de diseño entero, y cabe en una frase.
+\end{activity}
+
+% ==========================================================================
+\section{Sintaxis de expresiones}
+
+En la casilla de utilidad, $x$ es el consumo e $y$ el ocio.
+
+\begin{ctrltable}{Elemento & Qué se admite}
+Operadores & \code{+ - * / \^{} ( )} \\
+Funciones & \code{sqrt ln log log10 exp abs sin cos tan min max pow} \\
+Constantes & \code{e}, \code{pi} \\
+Multiplicación implícita & \code{2xy} es \code{2*x*y} \\
+Asociatividad & \code{\^{}} liga por la derecha y más fuerte que el menos
+  unario: \code{-x\^{}2} es $-(x^2)$ \\
+\end{ctrltable}
+
+Las derivadas parciales se calculan simbólicamente. Con \code{min}, \code{max} o
+\code{abs} —justo los casos con quiebre— se pasa a diferencias centradas.
+
+% ==========================================================================
+\section{Diferencias con el original de GeoGebra}
+
+\begin{description}
+\item[Una sola base imponible.] \code{TAX\_LABOR} gravaba $wL$, pero la rama de
+  tipos medios \code{l1} gravaba $wL + I_0$. Los dos esquemas no eran
+  comparables justo en el momento en que uno quiere compararlos. Aquí los dos
+  gravan la renta del trabajo.
+\item[Las discontinuidades están modeladas.] El original escribía el impuesto
+  como \code{If[...]} anidados, que GeoGebra dibuja con un segmento que salva el
+  hueco. Aquí cada tramo es una pieza aparte, así que un salto sigue siendo un
+  salto.
+\item[Cada pieza lleva su tramo.] Deducir el tramo de la renta hace que $c(L)$
+  tenga un solo valor en un umbral, lo que pierde el límite por la izquierda: el
+  punto más alto de la frontera caía fuera de la vista calculada y se recortaba.
+\item[Preferencias y un óptimo.] El original dibujaba solo el conjunto
+  presupuestario. Sin un óptimo, el quiebre y el salto son formas y no
+  predicciones, así que se añaden una función de utilidad, la curva de
+  indiferencia por el óptimo y el veredicto sobre el amontonamiento.
+\item[$p_X$ y $w$ empezaban en 0], dividiendo por cero en todas partes. Los dos
+  están acotados lejos de él.
+\item[$s_1 < s_0$] invertiría el esquema; el segundo umbral se mantiene igual o
+  por encima del primero.
+\item[Objetos muertos.] \code{s\_2} tenía deslizador y etiqueta pero no entraba
+  en \code{TAX\_LABOR}; \code{a}, \code{b}, \code{f}, \code{ngreso}, \code{E},
+  \code{E\_trace}, \code{Pendiente}, \code{B\_OCIO}, \code{B\_TRABAJO},
+  \code{h\_TRABAJO} y el conjunto de puntos \code{Q}/\code{P} eran restos del
+  applet del que se copió. No se trasladaron.
+\end{description}
+
+% ==========================================================================
+\section{Problemas frecuentes}
+
+\begin{ctrltable}{Síntoma & Qué pasa}
+El plano sale en blanco & La expresión de utilidad no se entiende. El mensaje en
+  rojo bajo la casilla dice si es sintaxis o variable. \\
+Los umbrales no se ven & Están fuera del eje: con $w$ pequeño, $s/w$ puede pasar
+  de 1. Suba $w$ o baje los umbrales. \\
+Los dos esquemas dan lo mismo & Los tres tipos son iguales. Con tipos iguales no
+  hay ni quiebre ni salto y los dos esquemas coinciden. \\
+Mayor salto dice «---» & Está en tipos marginales, donde por construcción no hay
+  saltos. \\
+El óptimo no se mueve al cambiar un tipo & Está clavado en un quiebre. Es el
+  comportamiento correcto y el asunto de la actividad 2. \\
+\end{ctrltable}
+
+\input{tail-es}
+
+\end{document}

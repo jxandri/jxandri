@@ -135,6 +135,8 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
 .legend .key{display:flex; align-items:center; gap:4px}
 .legend i{width:9px; height:9px; border-radius:2px; display:inline-block}
 .legend[hidden]{display:none}
+#cDemand{cursor:grab; touch-action:none}
+#cDemand:active{cursor:grabbing}
 .canvas-wrap{position:relative; width:100%; aspect-ratio:1/1; background:var(--surface)}
 .canvas-wrap canvas{display:block; width:100%; height:100%; touch-action:none}
 .readout{display:grid; grid-template-columns:repeat(auto-fit,minmax(88px,1fr)); gap:1px;
@@ -261,6 +263,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
           <span class="dash">–</span>
           <input type="number" class="rb" id="maxI" min="0.02" max="1000" step="any" value="8"></div>
         <label class="check auto"><input type="checkbox" id="fixed-axis" checked><span data-t="fixedAxis">Eje vertical fijo</span></label>
+        <p class="hint" id="dv-hint"></p>
         <p class="hint" id="axis-bound"></p>
       </div>
 
@@ -301,6 +304,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:
                 <button type="button" data-panels="1" aria-pressed="true" data-t="onePanel">Un panel</button>
                 <button type="button" data-panels="2" aria-pressed="false" data-t="twoPanels">Dos</button>
               </div>
+              <div class="seg plain"><button type="button" id="dem-reset" hidden data-t="dvReset">Encuadre automático</button></div>
             </div>
           </div>
           <div class="canvas-wrap"><canvas id="cDemand"></canvas></div>
@@ -491,6 +495,11 @@ const st={
      and the income ceiling near the income in play. */
   minPx:1, minPy:1, maxPx:6, maxPy:4, minI:0, maxI:8,
   fixedAxis:true,
+  /* The demand panel's own view. Null means the automatic framing; once the
+     reader zooms or pans it holds whatever they set, per stacked panel for the
+     vertical and shared for the horizontal, because the two panels are two
+     views of the same swept variable. */
+  dv:null, dvAxis:"xy",
   overlay:true,
   customU:null, customSrc:"x^0.5*y^0.5",
   pts:{px:[],py:[],I:[]},
@@ -509,6 +518,8 @@ const STR={
   sub:"De la maximización de utilidad a la curva de demanda. Elige una familia de preferencias, mueve una variable y mira cómo responde la canasta óptima — incluyendo el caso en que la demanda sube cuando sube el precio.",
   dark:"Oscuro", light:"Claro",
   gScales:"Intervalos", scalesHint:"El intervalo que se considera para cada variable. Es el recorrido del deslizador y también el tramo que dibuja el eje horizontal.", onePanel:"Un panel", twoPanels:"Dos",
+  dvReset:"Encuadre automático",
+  dvHint:"En el panel de la demanda: haga clic en un eje para apuntarle la rueda del ratón, o en el plano para las dos; arrastre el plano para desplazarlo. Doble clic vuelve al encuadre automático.",
   fixedAxis:"Eje vertical fijo", boundIs:"Tope: m<sub>máx</sub>/p<sub>mín</sub> →", boundAuto:"El eje se ajusta a la curva; se mueve al cambiar parámetros.",
   gPref:"Preferencias", gParams:"Parámetros", gSweep:"Variable que varía",
   gPrices:"Precios y renta", gDiscover:"Descubrir la demanda", gLayers:"Capas",
@@ -542,6 +553,8 @@ const STR={
   sub:"From utility maximisation to the demand curve. Pick a preference family, move one variable and watch the optimal bundle respond — including the case where demand rises when the price rises.",
   dark:"Dark", light:"Light",
   gScales:"Ranges", scalesHint:"The interval considered for each variable. It is the travel of the slider and also the stretch the horizontal axis draws.", onePanel:"One panel", twoPanels:"Two",
+  dvReset:"Auto framing",
+  dvHint:"On the demand panel: click an axis to point the wheel at it, or the plane for both; drag the plane to pan. Double-click returns to the automatic framing.",
   fixedAxis:"Fixed vertical axis", boundIs:"Ceiling: m<sub>max</sub>/p<sub>min</sub> →", boundAuto:"The axis fits the curve, so it moves when a parameter changes.",
   gPref:"Preferences", gParams:"Parameters", gSweep:"Variable being swept",
   gPrices:"Prices and income", gDiscover:"Discover the demand curve", gLayers:"Layers",
@@ -613,6 +626,20 @@ function demandAt(t){
 /* =====================================================================
    5. Drawing
    ===================================================================== */
+/* What the demand panel last drew, so the pointer can be turned back into
+   prices and quantities. One entry per stacked panel. */
+let DEMGEO = [];
+const DVMIN = 1e-4;          /* a price or an income of zero has no demand */
+
+/* The reader's view starts as a copy of whatever the automatic framing chose,
+   so the first scroll does not jump. */
+function dvSeed(){
+  if(st.dv || !DEMGEO.length) return;
+  st.dv = { x0:DEMGEO[0].xmin, x1:DEMGEO[0].xmax,
+            y:DEMGEO.map(g => ({ y0:g.ymin, y1:g.ymax })) };
+}
+function dvReset(){ st.dv = null; $("dem-reset").hidden = true; render(); }
+function dvSpanOK(a, b){ return b - a > 1e-9 && b - a < 1e9; }
 function setup(cv){
   const dpr=Math.min(devicePixelRatio||1,2), r=cv.getBoundingClientRect();
   const w=Math.max(1,Math.round(r.width)), h=Math.max(1,Math.round(r.height));
@@ -620,23 +647,24 @@ function setup(cv){
   const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
   return {ctx,w,h};
 }
-function frame(ctx,rect,xmax,ymax,xlab,ylab,noClear,xmin){
-  xmin = xmin||0;
-  const span = (xmax-xmin)||1;
+function frame(ctx,rect,xmax,ymax,xlab,ylab,noClear,xmin,ymin){
+  xmin = xmin||0; ymin = ymin||0;
+  const span = (xmax-xmin)||1, vspan = (ymax-ymin)||1;
   const P={l:46,r:18,t:18,b:34};
   const bx={x0:rect.x0+P.l,y0:rect.y0+P.t,x1:rect.x1-P.r,y1:rect.y1-P.b};
   const SX=x=>bx.x0+((x-xmin)/span)*(bx.x1-bx.x0);
-  const SY=y=>bx.y1-(y/ymax)*(bx.y1-bx.y0);
+  const SY=y=>bx.y1-((y-ymin)/vspan)*(bx.y1-bx.y0);
   if(!noClear){ ctx.clearRect(rect.x0,rect.y0,rect.x1-rect.x0,rect.y1-rect.y0);
     ctx.fillStyle=css("--surface"); ctx.fillRect(rect.x0,rect.y0,rect.x1-rect.x0,rect.y1-rect.y0); }
-  const gx=niceStep(span,7), gy=niceStep(ymax,5);
+  const gx=niceStep(span,7), gy=niceStep(vspan,5);
   /* the first gridline at or after the left edge, so ticks stay on round
      numbers whether the axis starts at 0 or at 0.85 */
   const x0g=Math.ceil((xmin-1e-9)/gx)*gx;
   if(st.layers.grid){
     ctx.strokeStyle=css("--rule-2"); ctx.lineWidth=1; ctx.beginPath();
     for(let x=x0g;x<xmax-1e-9;x+=gx){ if(x>xmin+1e-9){ctx.moveTo(SX(x),bx.y0);ctx.lineTo(SX(x),bx.y1);} }
-    for(let y=gy;y<ymax;y+=gy){ctx.moveTo(bx.x0,SY(y));ctx.lineTo(bx.x1,SY(y));}
+    const y0g=Math.ceil((ymin-1e-9*vspan)/gy)*gy;
+    for(let y=y0g;y<ymax;y+=gy){ if(y>ymin){ctx.moveTo(bx.x0,SY(y));ctx.lineTo(bx.x1,SY(y));} }
     ctx.stroke();
   }
   ctx.strokeStyle=css("--rule"); ctx.lineWidth=1; ctx.beginPath();
@@ -649,11 +677,13 @@ function frame(ctx,rect,xmax,ymax,xlab,ylab,noClear,xmin){
   if(x0g>xmin+gx*0.35) ctx.fillText(fmt(xmin,xdec),SX(xmin),bx.y1+6);
   for(let x=x0g;x<=xmax+1e-9;x+=gx) ctx.fillText(fmt(x,xdec),SX(x),bx.y1+6);
   ctx.textAlign="right"; ctx.textBaseline="middle";
-  for(let y=0;y<=ymax+1e-9;y+=gy) ctx.fillText(fmt(y,gy<1?1:0),bx.x0-6,SY(y));
+  const ydec = gy<1?(gy<0.1?2:1):0;
+  for(let y=Math.ceil((ymin-1e-9*vspan)/gy)*gy;y<=ymax+1e-9*vspan;y+=gy)
+    ctx.fillText(fmt(y,ydec),bx.x0-6,SY(y));
   ctx.fillStyle=css("--ink-2"); ctx.font=`italic 13px ${css("--f-display")}`;
   ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(xlab,bx.x1+2,bx.y1);
   ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillText(ylab,bx.x0,bx.y0-4);
-  return {bx,SX,SY};
+  return {bx,SX,SY,xmin,xmax,ymin,ymax};
 }
 function stroke(ctx,pts,col,wd,cas){
   if(pts.length<2) return;
@@ -719,7 +749,11 @@ function drawDemand(){
   /* a typed utility costs a full numeric optimisation per sample, so it gets a
      coarser grid than the closed-form families */
   const N=F().numeric?150:420;
-  const AT=i=>A.min+(A.max-A.min)*i/N;      // sample i of the swept interval
+  /* the curve is sampled over what is on screen, so panning past the slider
+     range shows the curve there rather than an empty frame */
+  const SMIN = st.dv ? Math.max(DVMIN, st.dv.x0) : A.min;
+  const SMAX = st.dv ? st.dv.x1 : A.max;
+  const AT=i=>SMIN+(SMAX-SMIN)*i/N;         // sample i of the swept interval
   const sx=[],sy=[];
   for(let i=0;i<=N;i++){ const t=AT(i)||1e-6; const d=demandAt(t); sx.push(d[0]); sy.push(d[1]); }
 
@@ -737,6 +771,10 @@ function drawDemand(){
      magnitude and the smaller one would otherwise flatten into the axis. */
   const groups = st.overlay ? [series] : series.map(r=>[r]);
   const hh=h/groups.length;
+  /* a view set for two stacked panels does not fit one, and the other way
+     round, so a change of layout drops back to the automatic framing */
+  if(st.dv && st.dv.y.length !== groups.length) st.dv = null;
+  const geo=[];
 
   groups.forEach((rows,gi)=>{
     /* Demand is a hyperbola in its own price: as p -> 0 quantity -> infinity,
@@ -763,9 +801,20 @@ function drawDemand(){
       ymax*=1.25;
     }
     if(!(ymax>0)) ymax=1;
+    let ymin=0, xlo=A.min, xhi=A.max;
+    if(st.dv){ xlo=st.dv.x0; xhi=st.dv.x1; ymin=st.dv.y[gi].y0; ymax=st.dv.y[gi].y1; }
     const ylab = rows.length>1 ? "" : rows[0].lab;
     const rect={x0:0,y0:gi*hh,x1:w,y1:(gi+1)*hh};
-    const {bx,SX,SY}=frame(ctx,rect,A.max,ymax,gi===groups.length-1?A.lab:"",ylab,true,A.min);
+    const {bx,SX,SY}=frame(ctx,rect,xhi,ymax,gi===groups.length-1?A.lab:"",ylab,true,xlo,ymin);
+    geo.push({rect,bx,xmin:xlo,xmax:xhi,ymin,ymax,gi});
+    /* the axis the wheel is pointed at, armed in its own gutter: a band in the
+       margin cannot be mistaken for a curve, which recolouring the axis line
+       could, the accent being a hair from the x* series colour */
+    if(st.dv){
+      ctx.fillStyle="rgba(76,198,212,.22)";
+      if(st.dvAxis!=="x") ctx.fillRect(bx.x0-7,bx.y0,5,bx.y1-bx.y0);
+      if(st.dvAxis!=="y") ctx.fillRect(bx.x0,bx.y1+3,bx.x1-bx.x0,5);
+    }
     ctx.save(); ctx.beginPath(); ctx.rect(bx.x0,bx.y0,bx.x1-bx.x0,bx.y1-bx.y0); ctx.clip();
 
     for(const row of rows){
@@ -806,6 +855,8 @@ function drawDemand(){
   /* two series sharing one panel are only distinguished by colour, so the key
      is not optional there */
   $("legend").hidden = !(st.overlay && series.length>1);
+  DEMGEO = geo;
+  $("dem-reset").hidden = !st.dv;
 }
 
 /* =====================================================================
@@ -997,6 +1048,7 @@ function applyLang(){
   $("lg-es").setAttribute("aria-pressed",String(LANG==="es"));
   $("lg-en").setAttribute("aria-pressed",String(LANG==="en"));
   $("vp1-title").textContent=t.vp1;
+  $("dv-hint").textContent=t.dvHint;
   if(!sweeping) $("btn-sweep").textContent=t.sweep;
   buildChips(); syncParams(); buildLayers(); syncAxisUI(); render();
   try{ localStorage.setItem("demanda.lang",LANG); }catch(_){}
@@ -1031,7 +1083,7 @@ bind("px","px"); bind("py","py"); bind("inc","I");
 bindRange("minPx","maxPx","px");
 bindRange("minPy","maxPy","py");
 bindRange("minI","maxI","inc");
-$("fixed-axis").addEventListener("change",e=>{ st.fixedAxis=e.target.checked; render(); });
+$("fixed-axis").addEventListener("change",e=>{ st.fixedAxis=e.target.checked; st.dv=null; render(); });
 
 document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventListener("click",()=>{
   st.overlay = btn.dataset.panels==="1";
@@ -1039,10 +1091,96 @@ document.querySelectorAll("#panel-seg [data-panels]").forEach(btn=>btn.addEventL
     o.setAttribute("aria-pressed",String(o===btn)));
   render();
 }));
+/* =====================================================================
+   The demand panel's own view
+   ---------------------------------------------------------------------
+   Click an axis to point the wheel at it, click the plane to point it at
+   both; drag the plane to pan. A demand curve is a hyperbola in its own
+   price, so the interesting stretch is rarely the stretch the sliders
+   happen to bracket, and the automatic framing cannot know which one the
+   reader is after.
+   ===================================================================== */
+(function attachDemandView(){
+  const cv=$("cDemand");
+  const local=ev=>{const r=cv.getBoundingClientRect();
+    return [ev.clientX-r.left, ev.clientY-r.top, r.width, r.height];};
+  /* which stacked panel, and whether the pointer is on an axis or the plane */
+  const hit=(mx,my)=>{
+    if(!DEMGEO.length) return null;
+    let g=DEMGEO[0];
+    for(const q of DEMGEO) if(my>=q.rect.y0 && my<=q.rect.y1) g=q;
+    const onY = mx < g.bx.x0, onX = my > g.bx.y1;
+    return {g, zone: onY&&!onX ? "y" : onX&&!onY ? "x" : onY&&onX ? "xy" : "xy",
+            inside: !onY && !onX && mx<=g.bx.x1 && my>=g.bx.y0};
+  };
+  const dataAt=(g,mx,my)=>[
+    g.xmin + (mx-g.bx.x0)/Math.max(1,g.bx.x1-g.bx.x0)*(g.xmax-g.xmin),
+    g.ymin + (g.bx.y1-my)/Math.max(1,g.bx.y1-g.bx.y0)*(g.ymax-g.ymin)];
+
+  let drag=null;
+  cv.addEventListener("pointerdown",ev=>{
+    const [mx,my]=local(ev); const h2=hit(mx,my); if(!h2) return;
+    dvSeed();
+    st.dvAxis = h2.zone;
+    if(h2.inside){
+      cv.setPointerCapture(ev.pointerId);
+      drag={mx,my,gi:h2.g.gi,x0:st.dv.x0,x1:st.dv.x1,
+            y0:st.dv.y[h2.g.gi].y0,y1:st.dv.y[h2.g.gi].y1,
+            bx:h2.g.bx};
+    }
+    render();
+  });
+  cv.addEventListener("pointermove",ev=>{
+    if(!drag||!st.dv) return;
+    const [mx,my]=local(ev);
+    const kx=(drag.x1-drag.x0)/Math.max(1,drag.bx.x1-drag.bx.x0);
+    const ky=(drag.y1-drag.y0)/Math.max(1,drag.bx.y1-drag.bx.y0);
+    const dx=(mx-drag.mx)*kx, dy=(my-drag.my)*ky;   /* screen y grows downward */
+    /* the horizontal is a price or an income and cannot cross zero */
+    let nx0=drag.x0-dx, nx1=drag.x1-dx;
+    if(nx0<DVMIN){ nx1+=DVMIN-nx0; nx0=DVMIN; }
+    st.dv.x0=nx0; st.dv.x1=nx1;
+    const v=st.dv.y[drag.gi];
+    v.y0=drag.y0+dy; v.y1=drag.y1+dy;
+    render();
+  });
+  const end=ev=>{ if(!drag) return; drag=null;
+    try{cv.releasePointerCapture(ev.pointerId);}catch(_){ } };
+  cv.addEventListener("pointerup",end);
+  cv.addEventListener("pointercancel",end);
+  cv.addEventListener("dblclick",ev=>{ ev.preventDefault(); dvReset(); });
+  cv.addEventListener("wheel",ev=>{
+    const [mx,my]=local(ev); const h2=hit(mx,my); if(!h2) return;
+    ev.preventDefault();
+    dvSeed();
+    const k = ev.deltaY<0 ? 1/1.14 : 1.14;         /* wheel up magnifies */
+    const [dx,dy]=dataAt(h2.g,mx,my);
+    const axis = h2.inside ? st.dvAxis : h2.zone;  /* an axis under the pointer wins */
+    if(axis!=="y"){
+      /* zoom about the pointer, so whatever is under it stays under it */
+      let a=dx-(dx-st.dv.x0)*k, b=dx+(st.dv.x1-dx)*k;
+      if(a<DVMIN){ b+=DVMIN-a; a=DVMIN; }
+      if(dvSpanOK(a,b)){ st.dv.x0=a; st.dv.x1=b; }
+    }
+    if(axis!=="x"){
+      const v=st.dv.y[h2.g.gi];
+      const a=dy-(dy-v.y0)*k, b=dy+(v.y1-dy)*k;
+      if(dvSpanOK(a,b)){ v.y0=a; v.y1=b; }
+    }
+    st.dvAxis=axis;
+    render();
+  },{passive:false});
+  $("dem-reset").addEventListener("click",dvReset);
+})();
+
 new ResizeObserver(()=>render()).observe(document.querySelector(".viewports"));
 
-let lang0="es", theme0="dark";
-try{ lang0=localStorage.getItem("demanda.lang")||"es"; theme0=localStorage.getItem("demanda.theme")||"dark"; }catch(_){}
+/* A host that has already chosen a theme for the reader — an embedding page,
+   an artifact frame — has said something, so honour it until the reader uses
+   the toggle. Standalone there is nothing stamped and dark is the design. */
+const stamped=document.documentElement.getAttribute("data-theme");
+let lang0="es", theme0=(stamped==="light"||stamped==="dark")?stamped:"dark";
+try{ lang0=localStorage.getItem("demanda.lang")||"es"; theme0=localStorage.getItem("demanda.theme")||theme0; }catch(_){}
 LANG=lang0;
 readCustom();
 syncParams();

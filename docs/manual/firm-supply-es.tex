@@ -1,0 +1,627 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[spanish,es-noquoting,es-nodecimaldot]{babel}
+\manuallang{es}
+
+\appletname{Beneficios, Costos y Oferta}
+\appletsub{El problema de la empresa competitiva en el corto plazo, y la curva
+de oferta que sale de él. Dos paneles dibujados a la misma escala, porque son
+la misma curva.}
+\appletdir{firm-supply}
+
+\begin{document}
+\manualtitlepage{Manual del applet · Microeconomía I · Universidad de los Andes\\
+Traducido del applet de GeoGebra «Beneficios y Costos».\\
+Código MIT. Se abre en el navegador; no hay nada que instalar.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{Qué es esto}
+
+Una empresa competitiva en el corto plazo tiene un solo grado de libertad:
+cuánto producir. El capital está fijo, el precio se lo dan hecho, y todo lo que
+puede hacer es elegir la cantidad $q$ que maximiza el beneficio
+\[
+  \pi(q) \;=\; p\,q \;-\; c(q).
+\]
+
+Ese es el problema. La curva de oferta de la empresa es la \emph{respuesta} a
+ese problema, resuelta una vez por cada precio posible. Son dos objetos
+distintos, y en casi todos los manuales aparecen en dos figuras distintas y en
+dos páginas distintas, con una frase que dice que el costo marginal «es» la
+curva de oferta y que el estudiante tiene que creerse.
+
+Este applet los pone uno al lado del otro y a la misma escala. El panel
+izquierdo es el problema; el derecho es su respuesta. El costo marginal se dibuja en
+los dos, en las mismas coordenadas, y en el panel de oferta va superpuesto en
+rojo discontinuo sobre la curva de oferta. Por encima del precio de cierre las
+rayas caen exactamente encima. No hay que creerse nada.
+
+\figher[1.0]{panels}{Los dos paneles con los ajustes de partida. Izquierda: el
+problema, con el costo marginal, el medio y el variable medio. Derecha: la
+curva de oferta de la empresa en el plano $(q, p)$. Los dos ejes son los mismos en
+los dos paneles, así que el costo marginal ocupa el mismo lugar en ambos.}
+
+\begin{amkey}
+El costo marginal y la oferta inversa no son curvas parecidas: por encima del
+mínimo del costo variable medio son la misma curva, punto por punto. Todo el
+applet está construido para que eso se vea en vez de enunciarse.
+\end{amkey}
+
+\subsection{Para quién}
+
+Para un primer curso de microeconomía, en la sesión en que se pasa de la
+maximización de beneficios a la curva de oferta. Supone que el estudiante ya ha
+visto costos totales, medios y marginales, y que sabe qué es un óptimo. No
+supone cálculo más allá de la idea de pendiente.
+
+\input{open-es}
+
+% ==========================================================================
+\section{La pantalla}
+
+\fig[1.0]{interface}{La pantalla completa. A la izquierda la columna de
+controles; arriba el veredicto; abajo los dos paneles con sus lecturas.}
+
+De izquierda a derecha y de arriba abajo:
+
+\begin{description}
+\item[La columna de controles.] Elige la función de costos, mueve sus
+  parámetros, fija el precio, decide qué muestra el panel de la empresa y qué
+  capas se dibujan. Los deslizadores tienen a su derecha una casilla numérica:
+  se puede arrastrar o escribir el número exacto.
+\item[El veredicto.] La banda de color bajo el título. Nombra en qué caso está
+  la empresa —beneficio, pérdida, cierre, nivelación, capacidad, sin óptimo— y
+  explica por qué. Cambia solo al mover cualquier cosa.
+\item[El panel de la empresa] (izquierda). O bien las curvas marginales, o bien
+  las totales, según el conmutador \ui{Panel de la empresa}.
+\item[El panel de oferta] (derecha). La curva de oferta inversa en el plano
+  $(q, p)$, con el precio de cierre, el de nivelación y el precio actual.
+\item[Las lecturas.] La fila de números al pie de cada panel. Son los mismos
+  valores que están dibujados, escritos con tres decimales para cuando el ojo
+  no basta.
+\end{description}
+
+\subsection{Arrastrar para cambiar el precio}
+
+En cualquier panel cuyo eje vertical \emph{sea} el precio —el de oferta
+siempre, el de la empresa cuando muestra marginales— se puede arrastrar con el
+ratón o el dedo y el precio sigue al puntero. Es la forma natural de leer una
+curva de oferta: se elige un precio y se mira qué cantidad sale.
+
+En la vista de totales el eje vertical es dinero, no dinero por unidad, y el
+panel no responde al puntero.
+
+\subsection{Teclado}
+
+\begin{ctrltable}{Tecla & Qué hace}
+\key{1} \key{2} \key{3} \key{4} & Elige la función de costos. \\
+\key{m} & Panel de la empresa en marginales. \\
+\key{t} & Panel de la empresa en totales. \\
+\end{ctrltable}
+
+\subsection{El tema oscuro}
+
+El diseño original es oscuro; el claro está pensado para proyectores y para
+imprimir. Las dos versiones se diseñaron por separado, no es una inversión de
+colores.
+
+\fig[0.95]{dark}{Los mismos dos paneles en el tema oscuro.}
+
+% ==========================================================================
+\section{El modelo}
+
+\subsection{Costos}
+
+Todo parte de una función de costo total $c(q)$: lo que cuesta producir $q$
+unidades cuando el capital ya está pagado. De ella salen las demás.
+
+\begin{align*}
+  \text{Costo fijo}          &&  F   &= c(0) \\
+  \text{Costo variable}      &&  CV(q) &= c(q) - F \\
+  \text{Costo marginal}      &&  CMg(q) &= c'(q) \\
+  \text{Costo medio}         &&  CMe(q) &= \frac{c(q)}{q} \\
+  \text{Costo variable medio}&&  CVMe(q) &= \frac{c(q) - F}{q}
+\end{align*}
+
+El costo fijo se lee como el límite de $c(q)$ cuando $q$ tiende a cero por la
+derecha. En las familias que vienen de una función de producción ese límite es
+$r\bar K$, la renta del capital fijo: se paga se produzca lo que se produzca.
+
+\subsection{El problema}
+
+\[
+  \max_{q \,\ge\, 0} \;\; \pi(q) \;=\; p\,q - c(q).
+\]
+
+Si el máximo cae en el interior, la condición de primer orden da
+$CMg(q^\ast) = p$, y la de segundo orden exige que el costo marginal esté
+\emph{creciendo} ahí. Las dos cosas importan: en una curva de costos cúbica la
+ecuación $CMg(q) = p$ tiene dos raíces y una de ellas es un \emph{mínimo} del
+beneficio.
+
+Pero $q^\ast = 0$ también es un candidato, y no es un caso límite del anterior:
+es una esquina, con beneficio $\pi(0) = -F$. La empresa produce solo si le va
+mejor produciendo que cerrando.
+
+\subsection{El precio de cierre}
+
+Comparando las dos opciones:
+\[
+  p\,q - c(q) \;>\; -F
+  \quad\Longleftrightarrow\quad
+  p\,q \;>\; c(q) - F = CV(q)
+  \quad\Longleftrightarrow\quad
+  p \;>\; CVMe(q).
+\]
+
+El costo fijo desaparece de la comparación. Ya está pagado, y una decisión que
+lo tenga en cuenta es una decisión mal tomada. De ahí sale el
+\textbf{precio de cierre}:
+\[
+  \underline{p} \;=\; \min_{q > 0} CVMe(q),
+\]
+y la regla que todo el mundo recita: la empresa produce mientras el precio
+cubra el costo variable medio, aunque no cubra el medio total.
+
+\subsection{El precio de nivelación}
+
+\[
+  p_{ne} \;=\; \min_{q>0} CMe(q).
+\]
+Es el precio al que el beneficio es exactamente cero. Por encima hay beneficio,
+por debajo hay pérdidas —que pueden convenir igualmente, mientras el precio
+siga por encima de $\underline{p}$.
+
+\subsection{La oferta}
+
+\[
+  q^\ast(p) \;=\;
+  \begin{cases}
+    0 & \text{si } p < \underline{p},\\[2pt]
+    \text{la raíz de } CMg(q) = p \text{ en la rama creciente} & \text{si } p > \underline{p}.
+  \end{cases}
+\]
+
+En $p = \underline{p}$ la empresa es indiferente, y la oferta \textbf{salta}:
+pasa de cero a la cantidad $\underline{q}$ que minimiza el costo variable
+medio, sin pasar por los valores intermedios. Ese salto no es un detalle
+técnico. Es la razón por la que la curva de oferta de una empresa con costos
+fijos no llega hasta el origen.
+
+\subsection{El excedente del productor}
+
+\[
+  EP \;=\; \int_0^{q^\ast}\!\bigl(p - CMg(q)\bigr)\,dq
+       \;=\; p\,q^\ast - CV(q^\ast)
+       \;=\; \pi + F.
+\]
+
+Es el mismo número escrito de tres maneras, y el applet lo dibuja de dos: en el
+panel izquierdo como el área entre $p$ y el costo marginal, y en el derecho
+como el área entre el eje de precios y la curva de oferta, desde
+$\underline{p}$ hasta $p$. Las dos regiones tienen formas distintas —con un
+salto no pueden coincidir— y exactamente la misma área.
+
+\begin{amnote}
+Excedente del productor y beneficio son lo mismo solo cuando no hay costo fijo.
+Con $F > 0$ el excedente es siempre mayor, exactamente en $F$.
+\end{amnote}
+
+% ==========================================================================
+\section{Las cuatro funciones de costos}
+
+Se eligen con los cuatro botones de arriba de la columna, o con \key{1} a
+\key{4}. Cada una trae sus propios deslizadores.
+
+\subsection{1 · Cuadráticos / potencia}
+
+\[
+  c(q) = F + a\,q^{k}, \qquad k > 1.
+\]
+La forma de manual. El costo marginal, $CMg = a k q^{k-1}$, crece desde cero,
+de modo que el costo variable medio no tiene mínimo interior: su ínfimo es cero
+y se alcanza solo en el límite. Consecuencia: \textbf{esta empresa nunca
+cierra}. A cualquier precio positivo le conviene producir algo.
+
+\begin{ctrltable}{Deslizador & Qué es}
+$F$ & Costo fijo. Sube o baja el costo medio sin tocar el marginal. \\
+$a$ & Escala del costo variable. \\
+$k$ & Curvatura. Con $k$ cerca de 1 el costo marginal es casi constante y el
+      problema deja de tener solución; con $k$ grande sube muy deprisa y la
+      oferta se hace vertical. \\
+\end{ctrltable}
+
+\subsection{2 · Personalizada}
+
+Se escribe $c(q)$ en la casilla de texto. El costo marginal se obtiene
+derivando la expresión de forma \emph{simbólica}, no numérica, así que es
+exacto. La que viene por defecto,
+\[
+  c(q) = 0{,}1\,q^{3} - 0{,}5\,q^{2} + 2q,
+\]
+es la cúbica del manual: costo fijo nulo, costo variable medio en U con mínimo
+$1{,}375$ en $q = 2{,}5$, y por tanto precio de cierre estrictamente positivo y
+un salto visible en la oferta.
+
+\fig[1.0]{cubic}{La cúbica a $p = 1{,}6$. En el panel de oferta se ven las tres
+piezas de la curva: pegada al eje de precios por debajo de $1{,}375$, el salto
+discontinuo, y la rama creciente que coincide con el costo marginal.}
+
+\subsection{3 · Producción Cobb--Douglas}
+
+En el corto plazo el capital está fijo en $\bar K$ y el único factor variable es
+el trabajo. Partiendo de
+\[
+  f(K, l) = b\,\bigl(K^{\beta} l^{1-\beta}\bigr)^{s},
+\]
+se invierte para obtener el trabajo necesario para producir $q$,
+\[
+  l(q) = \Bigl(\frac{q}{b\,\bar K^{\beta s}}\Bigr)^{\!e}, \qquad
+  e = \frac{1}{(1-\beta)s},
+\]
+y se valora al salario $w$:
+\[
+  c(q) \;=\; r\bar K \;+\; w\,b^{-e}\,\bar K^{-\beta/(1-\beta)}\,q^{\,e}.
+\]
+
+Todo depende de $e$. Con $e > 1$ hay rendimientos decrecientes del factor
+variable, el costo marginal crece y el problema tiene solución. Con
+$e \le 1$ el costo marginal no crece, cada unidad extra añade beneficio, y no
+hay cantidad óptima. El applet lo dice en vez de dibujar algo sin sentido.
+
+\fig[0.8]{no-optimum}{El veredicto cuando $e \le 1$: no hay óptimo, y se explica
+qué mover para que lo haya.}
+
+\begin{ctrltable}{Deslizador & Qué es}
+$b$ & Productividad total. \\
+$\beta$ & Elasticidad del capital. Entra en $e$. \\
+$s$ & Rendimientos a escala de la Cobb--Douglas. Entra en $e$. \\
+$w$ & Salario. Escala todo el costo variable. \\
+$r$ & Renta del capital. Es el costo fijo, $F = r\bar K$. \\
+$\bar K$ & El capital fijo. Es lo que hace que el corto plazo sea corto. \\
+\end{ctrltable}
+
+\subsection{4 · Producción log-CD logística}
+
+La misma idea, con una función de producción que \emph{satura}:
+\[
+  g(K, l) = \frac{b\,K^{\gamma}}{1 + e^{-s(\ln f - m)}},
+\]
+cuyo techo es $\bar Q = b\,\bar K^{\gamma}$ por mucho trabajo que se contrate.
+Invirtiéndola,
+\[
+  c(q) \;=\; r\bar K \;+\; w\,e^{m/(1-\beta)}\,\bar K^{-\beta/(1-\beta)}
+             \left(\frac{q}{\bar Q - q}\right)^{\!e},
+  \qquad 0 < q < \bar Q .
+\]
+
+El costo marginal se dispara al acercarse a $\bar Q$, y la curva de oferta tiene
+una asíntota vertical ahí. Es la representación honesta de lo que significa
+tener el capital fijo: por mucho que suba el precio, hay una cantidad que esta
+planta no puede pasar.
+
+\fig[1.0]{capacity}{La familia logística a $p = 3{,}2$. La capacidad
+$\bar Q = b\bar K^{\gamma}$ está marcada con una vertical gris, y el costo
+marginal sube hacia ella sin llegar nunca.}
+
+% ==========================================================================
+\section{Los controles}
+
+\subsection{Precio}
+
+Un deslizador de 0 a 10, y la casilla numérica para escribir un valor exacto.
+Bajo él aparece una frase que dice dónde está el precio respecto del de cierre
+y del de nivelación. También se puede mover arrastrando dentro de cualquier
+panel cuyo eje vertical sea el precio.
+
+\subsection{Panel de la empresa}
+
+\begin{ctrltable}{Vista & Qué dibuja}
+Marginales & $CMg$, $CMe$ y $CVMe$, en dinero por unidad. Es la misma unidad
+  que el precio, así que este panel comparte \emph{los dos} ejes con el de
+  oferta y las dos figuras son literalmente comparables píxel a píxel. \\
+Totales & $c(q)$, el ingreso $pq$ y el beneficio $\pi(q)$, en dinero. El eje
+  vertical ya no es el del panel de oferta; el de cantidad sí lo sigue siendo.
+  La pastilla de la cabecera del panel dice cuál de los dos casos es. \\
+\end{ctrltable}
+
+\subsection{Las capas}
+
+La lista cambia según la vista, porque no todas las capas tienen sentido en las
+dos.
+
+\subsubsection{En marginales}
+
+\begin{ctrltable}{Capa & Qué dibuja}
+Costo marginal & $CMg(q)$, en rojo. También aparece superpuesto en el panel de
+  oferta. \\
+Costo medio & $CMe(q)$, en oro. Su mínimo es el precio de nivelación. \\
+Costo variable medio & $CVMe(q)$, en naranja. Su mínimo es el precio de cierre. \\
+Línea de precio & La horizontal en $p$. \\
+Área de costos variables & La región bajo $CMg$ hasta $q^\ast$, que es
+  $CV(q^\ast)$. \\
+Área de excedente & La región entre $p$ y $CMg$ hasta $q^\ast$. \\
+Óptimo & El punto $(q^\ast, p)$, su vertical, y el rectángulo del beneficio
+  entre $p$ y $CMe(q^\ast)$, verde si hay beneficio y rojo si hay pérdidas. \\
+Punto de equilibrio & Marca los mínimos de $CMe$ y de $CVMe$. \\
+Cuadrícula & La retícula de fondo. \\
+\end{ctrltable}
+
+\fig[1.0]{areas}{Las dos áreas encendidas a la vez, con la cúbica a
+$p = 1{,}6$. A la izquierda el excedente medido como integral de $p - CMg$
+respecto de la cantidad; a la derecha, el mismo número medido como integral de
+$q$ respecto del precio.}
+
+\subsubsection{En totales}
+
+\begin{ctrltable}{Capa & Qué dibuja}
+Costo total & $c(q)$, con una horizontal punteada en el costo fijo. \\
+Ingreso total & La recta $pq$. \\
+Beneficio & $\pi(q) = pq - c(q)$. Su máximo está en $q^\ast$. \\
+Costo variable & $c(q) - F$, la misma curva bajada. \\
+Tangente de pendiente $p$ & La recta tangente a $c(q)$ en $q^\ast$. Es paralela
+  a la recta de ingresos: ahí está la condición de primer orden, dibujada. \\
+Óptimo & El segmento vertical entre $c(q^\ast)$ y $pq^\ast$, cuya longitud
+  \emph{es} el beneficio. \\
+Punto de equilibrio & Las cantidades donde $\pi(q) = 0$. \\
+\end{ctrltable}
+
+\fig[1.0]{totals}{La vista de totales con la cúbica a $p = 1{,}6$. La tangente
+punteada toca el costo justo donde su pendiente iguala el precio, y el segmento
+vertical en $q^\ast$ mide el beneficio.}
+
+% ==========================================================================
+\section{Cómo se calcula el óptimo}
+
+Conviene saberlo, porque el applet no hace lo que hace el original de GeoGebra
+y la diferencia se nota en los casos interesantes.
+
+\textbf{No se resuelve $CMg = p$.} Esa ecuación tiene dos raíces en una curva de
+costos cúbica, y una de ellas es un mínimo del beneficio. Con cualquier función
+de costos no convexa el óptimo global puede estar además en una esquina, donde
+ninguna condición de primer orden lo encuentra.
+
+Lo que se hace es maximizar el beneficio directamente:
+
+\begin{enumerate}
+\item Se acota el rango por arriba, buscando el punto a partir del cual el
+  costo marginal ha superado el precio y sigue subiendo.
+\item Se barre ese rango con 700 puntos y se queda con el mejor.
+\item Se refina ese entorno por sección áurea.
+\item Se compara el resultado con cerrar, que da $\pi(0) = -F$. Cerrar es un
+  candidato de pleno derecho, no un caso límite.
+\end{enumerate}
+
+La curva de oferta se traza igual: una maximización completa por cada uno de
+140 precios. Es la única manera de que salga el salto. Invirtiendo $CMg = p$
+nunca aparecería, porque por debajo del precio de cierre la respuesta es cero y
+en el precio de cierre da un brinco.
+
+\begin{amnote}
+El mínimo del costo variable medio se busca sobre una escalera geométrica, no
+lineal: lo que decide si la empresa llega a cerrar alguna vez es la forma de la
+curva cerca de cero, y una malla uniforme sobre un rango de cinco órdenes de
+magnitud no resuelve nada ahí. Si el mínimo cae en un extremo de la escalera es
+que no hay mínimo —la curva sigue bajando— y el applet informa de que no hay
+precio de cierre en vez de dar el valor más pequeño que muestreó.
+\end{amnote}
+
+% ==========================================================================
+\section{El veredicto}
+
+La banda de arriba nombra el caso y lo explica. Son seis.
+
+\begin{ctrltable}{Veredicto & Cuándo}
+Produce con beneficio & $p > p_{ne}$. El precio supera el costo medio mínimo. \\
+Produce con pérdidas & $\underline{p} < p < p_{ne}$. Y hace bien: cerrar
+  costaría el costo fijo entero. \\
+Beneficio nulo & $p = p_{ne}$, el mínimo del costo medio. \\
+Cierra & $p < \underline{p}$. El óptimo es $q^\ast = 0$ y la pérdida es
+  exactamente $F$. \\
+Contra la capacidad & El óptimo está prácticamente en $\bar Q$. Solo aparece en
+  la familia logística. \\
+No hay óptimo & El costo marginal no supera al precio en ningún rango
+  dibujable. \\
+\end{ctrltable}
+
+\fig[1.0]{shutdown}{Cierre, con la cúbica a $p = 1{,}15$. La curva de oferta
+está pegada al eje de precios, $q^\ast$ se lee en rojo, y el veredicto explica
+por qué producir sería peor que no producir.}
+
+% ==========================================================================
+\section{Actividades para clase}
+
+Cada una empieza desde los ajustes de partida, salvo que se diga otra cosa. Si
+se ha perdido, recargue la página.
+
+\begin{activity}{Las dos curvas son una}
+\amset Función de costos \ui{Cuadráticos / potencia}, valores de partida,
+$p = 2$. Encienda \ui{Costo marginal} si estuviera apagado.
+\amexp La curva roja del panel izquierdo y la cian del derecho ocupan el mismo
+lugar en la pantalla. Mueva $p$: el punto morado se desplaza por las dos a la
+vez, siempre a la misma altura. Suba $a$ o $k$ y las dos se empinan juntas.
+\par\smallskip
+Pregunte a la clase por qué el panel derecho no tiene curva de costo medio
+dibujada con trazo grueso: porque el costo medio no interviene en la decisión
+de cuánto producir, solo en la de si el negocio merece la pena.
+\end{activity}
+
+\begin{activity}{Fabricar un precio de cierre}
+\amset Elija \ui{Personalizada}. La expresión por defecto es la cúbica.
+\amexp Ahora $CVMe$ tiene forma de U con mínimo $1{,}375$, y la oferta ya no
+sale del origen: hay un tramo pegado al eje de precios y un salto.
+\par\smallskip
+Baje el precio hasta $1{,}30$ y luego súbalo a $1{,}40$. La cantidad pasa de $0$
+a $2{,}55$ de golpe. Pregunte: ¿qué cantidad produce la empresa cuando
+$p = 1{,}375$ exactamente? La respuesta honesta es que le da igual, y por eso
+la oferta ahí no es una función sino una correspondencia.
+\end{activity}
+
+\begin{activity}{Producir perdiendo dinero}
+\amset Cúbica. En esta cúbica $F = 0$, así que el precio de cierre y el de
+nivelación coinciden en $1{,}375$ y no hay franja de pérdidas. Añádale un costo
+fijo: escriba \code{1+0.1q\^{}3-0.5q\^{}2+2q} en la casilla. Ponga $p = 1{,}6$.
+\amexp El precio de cierre sigue siendo $1{,}375$ —el costo fijo no toca al
+costo variable medio— pero el de nivelación sube a $1{,}733$. Entre los dos hay
+ahora una franja de precios, y $1{,}6$ está dentro de ella.
+\par\smallskip
+La lectura \ui{Beneficio} da $-0{,}394$ en rojo, y aun así el óptimo es producir
+$2{,}869$. Pregunte por qué no cierra. Cerrar costaría el costo fijo entero,
+$-1$; produciendo pierde solo $0{,}394$. Mueva el precio por toda la franja
+$1{,}375 < p < 1{,}733$: el beneficio es negativo en toda ella y producir sigue
+siendo lo mejor.
+\end{activity}
+
+\begin{activity}{El excedente medido dos veces}
+\amset Cúbica, $p = 1{,}6$. Encienda \ui{Área de excedente}.
+\amexp Aparecen dos regiones sombreadas de formas claramente distintas, una en
+cada panel. La lectura \ui{Excedente} da $0{,}606$, y es la de las dos.
+\par\smallskip
+Compruébelo con los números del panel izquierdo: $q^\ast = 2{,}869$,
+$\text{ingreso} = p\,q^\ast = 4{,}59$, $c(q^\ast) = 3{,}98$. Como aquí $F = 0$,
+el costo variable es el costo entero, y
+$EP = 4{,}59 - 3{,}98 = 0{,}61$. Coincide con las dos áreas.
+\par\smallskip
+Pregunte por qué las dos regiones no tienen la misma forma si miden lo mismo.
+Porque una integra $p - CMg$ respecto de la cantidad y la otra integra $q^\ast$
+respecto del precio; con un salto en el precio de cierre no pueden ser la misma
+región, pero el teorema fundamental del cálculo dice que tienen la misma área.
+\end{activity}
+
+\begin{activity}{La condición de primer orden, dibujada}
+\amset Cúbica, $p = 1{,}6$, panel de la empresa en \ui{Totales}.
+\amexp La tangente punteada al costo total en $q^\ast$ es paralela a la recta
+de ingresos. Mueva el precio: la recta de ingresos gira, y el punto de
+tangencia se desliza por la curva de costos hasta donde la pendiente vuelve a
+coincidir.
+\par\smallskip
+El segmento vertical en $q^\ast$ es el beneficio. Encienda \ui{Punto de
+equilibrio} y aparecen las dos cantidades en las que ese segmento tiene
+longitud cero.
+\end{activity}
+
+\begin{activity}{Dos raíces, un óptimo}
+\amset Cúbica, $p = 1{,}6$, vista \ui{Marginales}.
+\amexp La horizontal del precio corta al costo marginal \emph{dos} veces. El
+punto morado está en la de la derecha, donde $CMg$ está subiendo.
+\par\smallskip
+Pregunte qué pasa en la otra. Es la solución de $CMg = p$ que un estudiante
+obtendría resolviendo la ecuación sin mirar la segunda derivada, y es un mínimo
+del beneficio: producir esa cantidad es lo peor que puede hacer la empresa
+entre las que le costean el variable. Pásese a \ui{Totales} para verlo como un
+valle en la curva de beneficio.
+\end{activity}
+
+\begin{activity}{Capacidad}
+\amset Familia \ui{Producción log-CD logística}, valores de partida.
+\amexp La vertical gris marca $\bar Q = b\bar K^{\gamma}$. Suba el precio hasta
+el tope del deslizador: la cantidad crece cada vez menos, y la lectura
+\ui{Elasticidad} se acerca a cero.
+\par\smallskip
+Suba ahora $\bar K$ y la capacidad se desplaza a la derecha. Ese es exactamente
+el ejercicio de largo plazo que el corto plazo no permite: la única manera de
+producir más allá de $\bar Q$ es cambiar de planta.
+\end{activity}
+
+\begin{activity}{Cuando no hay óptimo}
+\amset Familia \ui{Producción Cobb--Douglas}. Baje $\beta$ a $0{,}05$ y suba
+$s$ a $2$.
+\amexp La fórmula de la columna muestra $e = 0{,}526$, y el veredicto pasa a
+«No hay óptimo». Todas las lecturas del panel de oferta se vuelven rayas.
+\par\smallskip
+El costo marginal es decreciente: cada unidad extra cuesta menos que la
+anterior y se vende al mismo precio. Pregunte qué le pasaría a una empresa así
+en un mercado competitivo. La respuesta —que crecería hasta dejar de ser
+competitiva— es el argumento por el que los rendimientos decrecientes no son un
+supuesto técnico sino la condición para que el modelo tenga sentido.
+\end{activity}
+
+% ==========================================================================
+\section{Sintaxis de expresiones}
+
+En la casilla de costos la variable es \code{q}. También se acepta \code{x},
+porque es como se llamaba en GeoGebra.
+
+\begin{ctrltable}{Elemento & Qué se admite}
+Operadores & \code{+ - * / \^{} ( )} \\
+Funciones & \code{sqrt ln log log10 exp abs sin cos tan min max pow} \\
+Constantes & \code{e}, \code{pi} \\
+Multiplicación implícita & \code{2q}, \code{3(q+1)}, \code{2sqrt(q)} \\
+Asociatividad & \code{\^{}} liga por la derecha y más fuerte que el menos
+  unario: \code{-q\^{}2} es $-(q^2)$ \\
+\end{ctrltable}
+
+El costo marginal se deriva simbólicamente. Cuando la expresión tiene un
+quiebre —\code{min}, \code{max}, \code{abs}— no hay derivada simbólica que
+valga y se pasa a una diferencia centrada, que es lo que se ve dibujado de
+todos modos.
+
+\begin{amwatch}
+Escribir una función de costos decreciente, o con costo marginal constante,
+lleva al caso «No hay óptimo». No es un fallo del applet: es que ese problema
+no tiene solución.
+\end{amwatch}
+
+% ==========================================================================
+\section{Diferencias con el original de GeoGebra}
+
+\begin{description}
+\item[Dos paneles en lugar de uno.] El original dibujaba costo total, ingreso,
+  beneficio, costo marginal y costo medio sobre los mismos ejes. El dinero y el
+  dinero por unidad no comparten escala, así que las curvas marginales quedaban
+  ilegibles al lado de las totales. Aquí están separadas, y el panel marginal
+  está enganchado a la escala del de oferta.
+\item[La curva de oferta, que no estaba.] Junto con el precio de cierre, el de
+  nivelación, el salto entre ellos y la elasticidad.
+\item[El óptimo es una maximización, no una intersección.] El original
+  intersecaba \code{Eq: CM(x) = p} con el eje y usaba el resultado como extremo
+  derecho de un \code{Max[Beneficios, 0, x(A)]}. Con costo marginal no monótono
+  ese intervalo es el equivocado, y cuando $CMg = p$ no tiene raíz la cadena
+  entera devolvía \code{NaN} y el applet se quedaba en blanco.
+\item[Cerrar es un candidato.] El original siempre comparaba contra un máximo
+  interior. Aquí $\pi(0) = -F$ compite con él, que es lo que hace que el precio
+  de cierre exista.
+\item[Un ínfimo no es un mínimo.] Un costo variable medio que solo decrece
+  hacia cero no tiene mínimo, luego no hay precio de cierre. Informar del valor
+  más pequeño muestreado daba un precio de cierre de $7{,}7\times10^{-4}$.
+\item[Deslizadores acotados lejos de la división por cero.] $\beta = 1$ divide
+  por $1-\beta$; $\bar K = 0$ eleva cero a una potencia negativa; $w = 0$ y
+  $a = 0$ dejan el costo constante; $k = 1$ deja el costo marginal constante.
+  Todos eran alcanzables en el original.
+\item[$m$ ampliado] de $[0, 1]$ a $[-1, 2]$, donde de verdad mueve el nivel de
+  costos lo bastante para verse.
+\item[Bilingüe, y con veredicto.] Cada estado del problema se nombra y se
+  explica, porque las formas por sí solas no dicen en cuál de los seis casos
+  está mirando el estudiante.
+\item[Objetos muertos no trasladados.] \code{AreaProfi}, \code{CM2} (una copia
+  de \code{CM}), \code{eq1}, \code{A}, \code{prueba} y \code{prueba2} eran
+  fontanería de la construcción de GeoGebra, no objetos con significado.
+\end{description}
+
+% ==========================================================================
+\section{Problemas frecuentes}
+
+\begin{ctrltable}{Síntoma & Qué pasa}
+Los paneles salen vacíos & La expresión de costos no se entiende. El mensaje en
+  rojo bajo la casilla dice si es un problema de sintaxis o de variable. \\
+Todo dice «$\infty$» o rayas & Está en el caso «No hay óptimo». Suba $k$, o
+  $s$, o $\beta$, o cambie de familia. \\
+Las escalas dejan de coincidir & El panel de la empresa está en \ui{Totales}.
+  La pastilla de su cabecera lo dice. Vuelva a \ui{Marginales}. \\
+El eje se mueve al arrastrar el precio & Es deliberado: los ejes se redondean a
+  números redondos y saltan por escalones, para que dos ajustes puedan
+  compararse a ojo en vez de renumerarse continuamente. \\
+El precio no responde al ratón & Está arrastrando dentro del panel de totales,
+  cuyo eje vertical es dinero. Use el panel de oferta o el deslizador. \\
+Se perdió el idioma o el tema & Se guardan en el navegador. En una ventana
+  privada, o tras borrar los datos del sitio, vuelven a sus valores de
+  partida. \\
+\end{ctrltable}
+
+\input{tail-es}
+
+\end{document}

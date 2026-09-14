@@ -1,0 +1,403 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[spanish,es-noquoting,es-nodecimaldot]{babel}
+\manuallang{es}
+
+\appletname{Óptimo del Consumidor}
+\appletsub{Dos bienes, preferencias monótonas y una restricción presupuestaria
+lineal. El diagrama 2D y la superficie 3D son lo mismo visto de dos maneras:
+mueve algo en cualquiera de los dos y el otro responde.}
+\appletdir{consumer-optimum}
+
+\begin{document}
+\manualtitlepage{Manual del applet · Microeconomía I · Universidad de los Andes\\
+Traducido del applet de GeoGebra «Maximización de Utilidad, Curvas de Nivel y…».\\
+Código MIT. Se abre en el navegador; no hay nada que instalar.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{Qué es esto}
+
+El problema del consumidor se enseña en dos dimensiones: curvas de indiferencia
+y una recta de presupuesto. Pero la utilidad es una función de dos variables, y
+las curvas de indiferencia son sus curvas de nivel. El diagrama de siempre es
+la vista desde arriba de una superficie.
+
+Este applet muestra las dos vistas a la vez y las mantiene enganchadas. Arrastre
+la canasta en el plano y se mueve en la superficie; arrástrela en la superficie
+y se mueve en el plano. La proyección ortogonal X--Z convierte «encontrar la
+mejor canasta asequible» en «encontrar la cima de esta loma».
+
+\figher[1.0]{panels}{Los dos paneles. Izquierda: el diagrama de manual, con el
+mapa de utilidad debajo. Derecha: la misma función como superficie
+$z = u(x, y)$, con la recta presupuestaria levantada sobre ella.}
+
+\begin{amkey}
+La curva presupuestaria levantada sobre la superficie es el objeto que une las
+dos vistas. Su punto más alto \emph{es} el óptimo. Verlo como una loma con una
+cima quita el misterio a la condición de tangencia.
+\end{amkey}
+
+\subsection{Para quién}
+
+Para el tema de elección del consumidor, y para cualquier curso donde haga
+falta que las curvas de nivel de una función de dos variables dejen de ser un
+dibujo abstracto. Trae además un modo de retos con seis familias de
+preferencias, puntuación y progreso guardado, que funciona bien como tarea.
+
+\input{open-es}
+
+% ==========================================================================
+\section{La pantalla}
+
+\fig[1.0]{interface}{La pantalla completa.}
+
+\begin{description}
+\item[Modo.] \ui{Explorar} o \ui{Retos}, arriba a la derecha.
+\item[Preferencias.] La casilla de $u(x, y)$ y seis atajos.
+\item[Restricción presupuestaria.] $p_x$, $p_y$, $m$.
+\item[Método gráfico.] Cuál de las tres maneras de buscar el óptimo está
+  activa.
+\item[Capas.] Catorce, que se describen más abajo.
+\item[Dominio.] Hasta dónde llegan los ejes, con un botón para ajustarlos al
+  presupuesto.
+\end{description}
+
+Debajo de los dos paneles hay una barra deslizante cuyo significado cambia con
+el método elegido, y a los pies de cada panel una fila de lecturas.
+
+\subsection{Las lecturas}
+
+\begin{ctrltable}{Lectura & Qué es}
+$x$, $y$ & Las coordenadas de la canasta $P$. \\
+$u(P)$ & La utilidad en $P$. \\
+Gasto & Lo gastado sobre lo disponible, $p_x x + p_y y$ frente a $m$. \\
+RMS & La relación marginal de sustitución en $P$, $u_x/u_y$, en positivo. \\
+$p_x/p_y$ & El precio relativo. En el óptimo interior los dos coinciden. \\
+Brecha & Cuánto le falta a $P$ para ser el óptimo, y una etiqueta:
+  \emph{tangencia}, \emph{casi} o \emph{lejos}. \\
+u máx. & La utilidad del verdadero óptimo. Es la que hay que alcanzar. \\
+\end{ctrltable}
+
+\begin{amnote}
+La RMS se presenta en positivo, como $u_x/u_y$, y se compara directamente con
+$p_x/p_y$. El original de GeoGebra mostraba $-u_x/u_y$ bajo una etiqueta que
+decía $u_x/u_y$, lo que hacía imposible comparar los dos números a ojo.
+\end{amnote}
+
+% ==========================================================================
+\section{Los tres métodos gráficos}
+
+\begin{description}
+\item[Elegir la canasta.] $P$ se mueve por la recta presupuestaria, y el
+  deslizador de abajo la recorre de $x = 0$ a $x = m/p_x$. La tarea es subir
+  mientras el color bajo $P$ siga aclarándose.
+\item[Subir la curva de nivel.] $P$ se queda quieta y el deslizador sube el
+  nivel $u$. La tarea es encontrar el nivel en el que la curva pasa de cortar
+  la recta dos veces a no cortarla: ahí la roza en un solo punto.
+\item[Punto libre.] $P$ se mueve por todo el cuadrante, dentro o fuera del
+  conjunto factible. Sirve para hablar de canastas inasequibles y de las que
+  dejan dinero sin gastar.
+\end{description}
+
+Los dos paneles son arrastrables en los tres métodos. En 3D el puntero se
+lanza como un rayo contra el campo de alturas, así que la canasta cae donde el
+cursor toca visualmente el terreno.
+
+\fig[1.0]{optimum}{Con la capa \ui{Mostrar óptimo} y la tangente encendidas.}
+
+% ==========================================================================
+\section{La cámara}
+
+Cuatro botones sobre el panel 3D. Tres son proyecciones \textbf{ortográficas}
+de verdad —sin división por perspectiva—, así que las aristas paralelas siguen
+paralelas y pasos iguales en el mundo son pasos iguales en la pantalla.
+
+\begin{ctrltable}{Botón & Proyecta sobre, y qué ejes quedan en pantalla}
+X--Z & El plano $y = 0$: $x$ a la derecha, $u$ arriba. \\
+X--Y & El plano $z = 0$: $x$ a la derecha, $y$ arriba. \\
+Y--Z & El plano $x = 0$: $y$ a la derecha, $u$ arriba. \\
+3D & Ninguno: perspectiva libre, con órbita y zoom. \\
+\end{ctrltable}
+
+\fig[0.62]{xz}{La proyección X--Z. La curva presupuestaria levantada se
+proyecta en un solo arco cuya cima es el óptimo.}
+
+\ui{X--Z} es la que hay que buscar: «encontrar la mejor canasta asequible» se
+convierte en «encontrar lo alto de esta loma». \ui{X--Y} reproduce el diagrama
+2D exactamente, lo que hace concreta la correspondencia entre los dos paneles.
+En las dos vistas laterales una curva de indiferencia, por ser un conjunto de
+nivel, se proyecta en una recta horizontal.
+
+\fig[0.62]{xy}{La proyección X--Y. Es el diagrama 2D, dibujado por el motor 3D.}
+
+Arrastrar o mover con las flechas fuera de una vista canónica suelta el botón
+pero conserva el tipo de proyección. Arrastrar la canasta funciona en todas las
+vistas: la aplicación usa solo las coordenadas que la proyección activa puede
+expresar, de modo que un arrastre horizontal en \ui{Y--Z} mueve a lo largo de
+$y$ y no del eje $x$ colapsado.
+
+% ==========================================================================
+\section{Las capas}
+
+\begin{ctrltable}{Capa & Qué dibuja}
+Mapa de utilidad & El campo $u$ bajo una rampa de color. \\
+Curvas de fondo & Curvas de nivel a intervalos regulares. \\
+Curva de nivel & La curva del nivel que marca el deslizador. \\
+Curva por P & La curva de indiferencia que pasa por la canasta. \\
+Conjunto factible & Vela lo que no se puede pagar. \\
+Corte 3D & La recta presupuestaria levantada sobre la superficie. \\
+Tangente en P & La tangente a la curva de indiferencia en $P$. \\
+Gradiente & $\nabla u$ en $P$. \\
+Parciales & $u_x$ y $u_y$ por separado. \\
+Plano de corte & El plano vertical sobre la recta presupuestaria. \\
+Retícula base & La cuadrícula del suelo en 3D. \\
+Sólo lo asequible & Recorta la superficie al conjunto factible. \\
+Mostrar óptimo & Revela el verdadero óptimo. \\
+Dejar rastro & Guarda las curvas de nivel que se van barriendo. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Casos particulares}
+
+Los seis atajos de preferencias cubren los casos que un curso necesita. Dos
+merecen mirarse despacio porque rompen la condición de tangencia.
+
+\fig[1.0]{complements}{Complementarios perfectos, \code{min(2x,y)}. La curva de
+indiferencia tiene un codo y no hay tangente que igualar.}
+
+\fig[1.0]{substitutes}{Sustitutos perfectos, \code{2x+3y}. Con
+$p_x/p_y = 2/3$ la recta presupuestaria y las curvas de indiferencia son
+paralelas: toda la recta es óptima.}
+
+\begin{amnote}
+Con los precios de partida ($p_x = 2$, $p_y = 3$) el atajo \code{2x+3y} da
+exactamente $\text{RMS} = p_x/p_y$. Es el caso degenerado en que el consumidor
+es indiferente entre todas las canastas asequibles, y merece la pena enseñarlo
+antes de que aparezca por sorpresa en un examen.
+\end{amnote}
+
+% ==========================================================================
+\section{El modo de retos}
+
+\fig[1.0]{challenge}{El modo de retos.}
+
+Seis niveles, cada uno con su familia de preferencias y con precios y renta
+generados de nuevo en cada intento:
+
+\begin{ctrltable}{Nivel & Familia y tarea}
+1 & Cobb--Douglas. Colocar $P$ en la canasta óptima. \\
+2 & Cobb--Douglas asimétrica. Subir la curva de nivel hasta que roce. \\
+3 & Sustitutos perfectos. Colocar $P$. \\
+4 & Complementarios perfectos. Colocar $P$. \\
+5 & Cuasilineal. Subir la curva de nivel. \\
+6 & CES. Colocar $P$. \\
+\end{ctrltable}
+
+Mientras un reto está vivo, los precios, la renta y la función de utilidad
+quedan bloqueados. Comprobar la respuesta revela el óptimo, puntúa el intento y
+explica \emph{cuál} condición de optimalidad se aplicaba: tangencia, vértice o
+esquina. El progreso se guarda en el navegador.
+
+\begin{amnote}
+Que la tarea alterne entre «colocar la canasta» y «subir la curva» es
+deliberado: son los dos métodos gráficos del temario, y un estudiante que solo
+practique uno no reconoce el otro en un examen.
+\end{amnote}
+
+% ==========================================================================
+\section{Actividades para clase}
+
+\begin{activity}{Las dos vistas son una}
+\amset Valores de partida ($u = x^{0,5}y^{0,5}$, $p_x = 2$, $p_y = 3$,
+$m = 24$). Método \ui{Elegir la canasta}.
+\amexp Arrastre $P$ en el panel 2D y mírela moverse en el 3D. Después
+arrástrela en el 3D y mírela moverse en el 2D.
+\par\smallskip
+Pase la cámara a \ui{X--Y}: el panel derecho se convierte en el izquierdo. Es la
+demostración más corta de que una curva de indiferencia es una curva de nivel.
+\end{activity}
+
+\begin{activity}{Encontrar la cima}
+\amset Cámara en \ui{X--Z}, método \ui{Elegir la canasta}.
+\amexp La curva presupuestaria levantada se proyecta en un arco. Mueva el
+deslizador y vea $u(P)$ subir hasta un máximo y volver a bajar.
+\par\smallskip
+La lectura \ui{u máx.} dice $4{,}899$, que es $\sqrt{24}$. El óptimo está en
+$x^\ast = 6$, $y^\ast = 4$. Compruébelo con la fórmula de Cobb--Douglas,
+$x^\ast = \alpha m/p_x$, y vea que el número coincide con la cima del arco.
+\end{activity}
+
+\begin{activity}{La tangencia, encontrada de dos maneras}
+\amset Método \ui{Elegir la canasta}; después \ui{Subir la curva de nivel}.
+\amexp Con el primer método, suba por la recta mientras el color bajo $P$ se
+siga aclarando: la lectura \ui{Brecha} baja hasta decir \emph{tangencia}.
+\par\smallskip
+Con el segundo, suba $u$ hasta que la curva pase de cortar la recta dos veces a
+no cortarla. El nivel en el que la roza es el mismo $4{,}899$. Los dos métodos
+del temario dan el mismo número, y conviene que la clase lo vea en el mismo
+minuto.
+\end{activity}
+
+\begin{activity}{RMS contra precio relativo}
+\amset Valores de partida, capa \ui{Tangente en P} encendida.
+\amexp Con $P$ lejos del óptimo, \ui{RMS} $= 1{,}33$ y $p_x/p_y = 0{,}67$: la
+tangente es más inclinada que la recta presupuestaria. Mueva $P$ hasta que los
+dos números coincidan.
+\par\smallskip
+Ahí está la condición de primer orden, leída como dos números que se
+persiguen. Encienda \ui{Gradiente} y \ui{Parciales} para ver de dónde sale la
+RMS.
+\end{activity}
+
+\begin{activity}{Un óptimo sin tangencia}
+\amset Atajo \ui{Complementarios / Complements}, \code{min(2x,y)}.
+\amexp La lectura \ui{u máx.} da $6{,}000$, en $x^\ast = 3$, $y^\ast = 6$. Pero
+la RMS en el codo no está definida: la lectura da $0{,}00$ y ninguna tangente
+iguala nada.
+\par\smallskip
+Pregunte cómo se encuentra entonces el óptimo. La respuesta es que se resuelve
+el sistema $2x = y$ junto con la recta presupuestaria, y que la condición de
+tangencia no interviene. Es el caso que rompe la receta.
+\end{activity}
+
+\begin{activity}{Todas las canastas empatan}
+\amset Atajo \ui{Sustitutos / Substitutes}, \code{2x+3y}, precios de partida.
+\amexp $\text{RMS} = 2/3$ y $p_x/p_y = 2/3$: iguales. La recta presupuestaria y
+las curvas de indiferencia son paralelas, así que \emph{cualquier} canasta de
+la recta es óptima.
+\par\smallskip
+Mueva $p_x$ un poco arriba o abajo y el óptimo salta de golpe a un eje. Es la
+demanda de esquina, y este es el único ajuste en que se la puede ver justo en
+el punto de bascular.
+\end{activity}
+
+\begin{activity}{Lo que no se puede pagar}
+\amset Método \ui{Punto libre}. Capa \ui{Conjunto factible} encendida.
+\amexp Arrastre $P$ fuera del velo. La lectura \ui{Gasto} pasa de $24{,}0$ y
+el applet no lo impide: la canasta existe, simplemente no se puede pagar.
+\par\smallskip
+Arrástrela después hacia adentro, dejando dinero sin gastar. Con preferencias
+monótonas eso nunca es óptimo, y se ve porque siempre hay una canasta al
+noreste con más color.
+\end{activity}
+
+\begin{activity}{Retos como tarea}
+\amset Modo \ui{Retos}.
+\amexp Los seis niveles generan precios y renta nuevos en cada intento, así que
+no se puede memorizar la respuesta. Al comprobar, el applet explica qué
+condición se aplicaba en ese caso.
+\par\smallskip
+Es una tarea de una sesión con corrección automática. El progreso se guarda en
+el navegador del estudiante, así que conviene pedir una captura de pantalla de
+la puntuación.
+\end{activity}
+
+% ==========================================================================
+\section{Sintaxis de expresiones}
+
+\begin{ctrltable}{Elemento & Qué se admite}
+Operadores & \code{+ - * / \^{} ( )} \\
+Funciones & \code{sqrt ln log log10 exp abs min max sin cos tan} \\
+Constantes & \code{e}, \code{pi} \\
+Multiplicación implícita & \code{2xy} es \code{2*x*y}; \code{x\^{}(1/3)y\^{}(2/3)}
+  se lee como se espera \\
+Asociatividad & \code{\^{}} liga por la derecha y más fuerte que el menos
+  unario: \code{-x\^{}2} es $-(x^2)$ \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Cómo está hecho}
+
+Todo está escrito a mano para que la página siga siendo autónoma.
+
+\begin{ctrltable}{Pieza & Enfoque}
+Lenguaje de expresiones & Tokenizador $\rightarrow$ analizador de Pratt
+  $\rightarrow$ árbol de cierres. Sin \code{eval} ni \code{new Function}, así
+  que una política de seguridad estricta no lo rompe. \\
+Derivadas parciales & Derivación simbólica sobre el árbol, con plegado de
+  constantes. Pasa a diferencias centradas cuando aparecen \code{min},
+  \code{max} o \code{abs} —justo los casos con quiebre. \\
+Curvas de nivel & Marching squares sobre un campo muestreado de
+  $141\times141$, con desambiguación de sillas y salto de celdas indefinidas. \\
+Óptimo & Barrido denso y refinamiento por sección áurea sobre la recta
+  presupuestaria, y después clasificación en interior, vértice o esquina.
+  Robusto donde una condición de primer orden no encuentra nada. \\
+Superficie 3D & Algoritmo del pintor sobre canvas 2D. Un campo de alturas se
+  ordena exactamente por profundidad de centroide, así que no hace falta
+  búfer de profundidad ni hay modo de fallo por pérdida de contexto. \\
+Selección en 3D & Se lanza el rayo del puntero contra el campo de alturas y se
+  biseca. Los cruces cuentan en las dos direcciones, porque en una proyección
+  lateral el rayo va a ras del terreno y puede emerger desde debajo. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{Diferencias con el original de GeoGebra}
+
+\begin{description}
+\item[Rampa de color.] El original teñía las curvas de nivel con tres funciones
+  lineales a trozos (\code{redfun}, \code{greenfun}, \code{bluefun}). El
+  reemplazo va de azul y verde abajo a amarillo y naranja en medio, y luego a
+  rojo vivo y marrón oscuro arriba. Como el extremo alto se oscurece, la altura
+  no se recupera solo del brillo: eso lo llevan la barra de color y las
+  lecturas, y toda curva dibujada sobre el mapa lleva un contorno blanco para
+  seguir siendo legible sobre los marrones.
+\item[Marcas.] La canasta, la recta, la tangente, el gradiente, las parciales y
+  el óptimo revelado son colores fijos y vivos con contorno oscuro, ninguno de
+  ellos repitiendo un tono por el que pase la rampa.
+\item[Rango de color.] \code{uMIN}/\code{uMAX} se leían en dos esquinas del
+  dominio. Para $\ln(x) + y$ esa esquina inferior es $-\infty$ y la rampa se
+  colapsaba. La reescritura toma el percentil 2 del campo muestreado.
+\item[Dominio.] Los deslizadores $x_C$, $y_C$ llegaban a $-10$, lo que deja
+  \code{sqrt(x)} y \code{ln(x)} fuera de su dominio. El cuadrante está ahora
+  recortado a $x, y \ge 0$.
+\item[Parametrización de la recta.] $x_s$ recorría $[x_C, x_G]$ en vez de
+  $[0, m/p_x]$, así que la «canasta» podía quedar en $x$ negativo con $y$ por
+  encima de la recta. Ahora se parametriza por $t \in [0, m/p_x]$.
+\item[Precios.] $p_X$ y $p_Y$ empezaban en 0, con lo que
+  $y_s = (m - p_X x)/p_Y$ y el dominio $m/p_X$ dividían por cero. Los dos están
+  acotados por debajo en $0{,}2$.
+\item[Etiquetado de la RMS.] El original mostraba $-f_x/f_y$ bajo una etiqueta
+  que anunciaba $u_x/u_y$: el signo no cuadraba con el nombre. Ahora se informa
+  en positivo, como $f_x/f_y$, y se compara directamente con $p_x/p_y$, con la
+  brecha de tangencia como lectura propia.
+\item[Objetos muertos.] \code{afin}, \code{text1} (que se refería a
+  $a_0, a_1, a_2$, inexistentes en el archivo), \code{BooleFuncion},
+  \code{BooleTransparente}, \code{BooleMostrarVar},
+  \code{BooleIntersecciones}, \code{BooleTangent}, \code{BooleTanPlane},
+  \code{s}, \code{Impl}, \code{Boole} y \code{DX} eran restos del applet del que
+  se copió. No se trasladaron.
+\end{description}
+
+% ==========================================================================
+\section{Accesibilidad}
+
+Los dos lienzos se manejan con teclado: las flechas mueven la canasta o el
+nivel, y \key{+} y \key{-} acercan y alejan la vista 3D. Los temas claro y
+oscuro están diseñados por separado, y los dos responden al ajuste del sistema.
+Los números son de ancho tabular. El movimiento respeta
+\code{prefers-reduced-motion}.
+
+% ==========================================================================
+\section{Problemas frecuentes}
+
+\begin{ctrltable}{Síntoma & Qué pasa}
+El mapa sale de un solo color & La función tiene un $-\infty$ en el dominio
+  dibujado. Suba el mínimo del dominio o cambie la expresión. \\
+No puedo arrastrar en 3D & Compruebe que no está en modo \ui{Retos} con los
+  controles bloqueados. Fuera de eso, el arrastre funciona en las cuatro
+  vistas. \\
+La superficie sale a trozos & La función no está definida en parte del
+  cuadrante. Es correcto: ahí no hay suelo. \\
+El botón de cámara se apaga solo & Ha arrastrado fuera de la vista canónica. El
+  tipo de proyección se conserva; vuelva a pulsarlo para recentrar. \\
+Perdí la puntuación de los retos & Se guarda en el navegador. En ventana
+  privada, o tras borrar los datos del sitio, empieza de cero. \\
+\end{ctrltable}
+
+\input{tail-es}
+
+\end{document}

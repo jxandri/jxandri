@@ -4,6 +4,8 @@ A standalone rewrite of the GeoGebra applet *Restricción Presupuestaria con
 Impuesto a la Renta* as a single self-contained HTML file. No build step, no
 dependencies, no network at runtime.
 
+**Manual:** [`dist/Labour-Tax-Guia.pdf`](../dist/Labour-Tax-Guia.pdf) (español) · [`dist/Labour-Tax-Guide.pdf`](../dist/Labour-Tax-Guide.pdf) (English)
+
 Three rates and two thresholds, both on labour income `Y = w·L`, with the time
 endowment normalised to 1 so `L` is the fraction of it worked and `ℓ = 1 − L` is
 leisure. Consumption affordable at labour `L` is

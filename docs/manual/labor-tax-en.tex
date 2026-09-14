@@ -1,0 +1,397 @@
+\documentclass[11pt,a4paper]{appletmanual}
+\usepackage[english]{babel}
+\manuallang{en}
+
+\appletname{Labour Income Tax}
+\appletsub{A bracketed tax bends the constraint between consumption and
+leisure. Marginal rates kink the frontier; average rates break it, and crossing
+a threshold leaves the worker strictly worse off.}
+\appletdir{labor-tax}
+
+\begin{document}
+\manualtitlepage{Applet manual · Introductory Microeconomics · Universidad de los Andes\\
+Translated from the GeoGebra applet “Restricción Presupuestaria con Impuesto a la Renta”.\\
+MIT licensed. It opens in a browser; there is nothing to install.}
+
+\manualtoc
+\thispagestyle{empty}
+\clearpage
+\setcounter{page}{1}
+
+% ==========================================================================
+\section{What this is}
+
+A worker splits a time endowment between working and not working. Devoting a
+fraction $L$ to work earns $wL$, pays a tax on that income, and spends what is
+left on consumption:
+\[
+  c(L) \;=\; \frac{m_0 + wL - T(wL)}{p_x},
+  \qquad \ell = 1 - L .
+\]
+
+The endowment is normalised to $1$, so $L$ is the fraction of time worked and
+$\ell$ is leisure. The only thing to choose is $L$.
+
+All the interest is in $T(\cdot)$, the bracketed tax, and in a design decision
+that real tax systems make and that classes almost never discuss: whether each
+bracket's rate applies \emph{only to the income falling inside that bracket} or
+\emph{to all income}. The two schemes sound nearly identical and produce
+completely different budget frontiers.
+
+\figher[1.0]{marginal}{Marginal rates. Each bracket's rate taxes only the
+income inside it. Net income stays continuous, so the frontier \emph{kinks} but
+does not break.}
+
+\begin{amkey}
+Under marginal rates the frontier has a \textbf{kink}: the slope changes
+abruptly but the line does not break. Under average rates it has a
+\textbf{notch}: earning one more unit leaves the worker with less. A kink
+attracts optima; a notch pushes them down and pins them just below the
+threshold.
+\end{amkey}
+
+\subsection{Who it is for}
+
+The consumption-leisure choice, or a public-economics class on tax design. It
+assumes indifference curves, a budget constraint and the idea of an optimum.
+Without changing anything it also serves to explain why tax data shows people
+bunched just below a threshold.
+
+\input{open-en}
+
+% ==========================================================================
+\section{The screen}
+
+\fig[1.0]{interface}{The whole screen: controls on the left, the verdict along
+the top, the consumption-leisure plane and the net-income panel below.}
+
+\begin{description}
+\item[How it applies.] The two schemes, marginal rates and average rates. This
+  is the control that matters; everything else is context.
+\item[Brackets.] Three rates $t_0, t_1, t_2$ and two thresholds $s_0, s_1$, all
+  on labour income $wL$.
+\item[Wage and income.] The wage $w$, non-labour income $m_0$, and the price of
+  consumption $p_x$.
+\item[Preferences.] Four families and a box to write your own.
+\item[Vertical axis.] Whether the plane's axis measures leisure or labour.
+\item[Layers.] What gets drawn.
+\end{description}
+
+The verdict band at the top names which kind of optimum came out: a tangency, a
+kink, the edge of a drop, not working, or working the whole endowment.
+
+\subsection{The two panels}
+
+\begin{description}
+\item[Consumption and leisure.] The utility map under a topographic ramp,
+  everything unaffordable veiled over, the frontier with its kinks or notches,
+  the thresholds, the indifference curve through the optimum, and the optimum.
+\item[Net income.] Net against gross income, with the 45° line for reference.
+  Preferences play no part here, which is the point: the notch is a property of
+  the schedule, not of the worker. The switch changes it to \ui{Utility}, which
+  draws $u(c(L), 1-L)$ along the frontier.
+\end{description}
+
+\fig[0.62]{notch}{The net-income panel under average rates. At every threshold
+net income falls vertically: at the opening values, crossing the first
+threshold takes it from $20$ to $12$.}
+
+\subsection{The dark theme}
+
+\fig[0.95]{dark}{Both panels in the dark theme, under average rates.}
+
+% ==========================================================================
+\section{The model}
+
+\subsection{The two schemes}
+
+Let $t_0, t_1, t_2$ be the rates and $s_0 \le s_1$ the thresholds, all on
+labour income $Y = wL$.
+
+\subsubsection{Marginal rates}
+
+Each rate taxes only the part of income inside its own bracket:
+\[
+  T(Y) \;=\; t_0\min(Y, s_0)
+        \;+\; t_1\max\bigl(0, \min(Y, s_1) - s_0\bigr)
+        \;+\; t_2\max(0, Y - s_1).
+\]
+$T$ is continuous and increasing, and net income $Y - T(Y)$ is continuous and
+concave. The budget frontier is a polyline: at each threshold it changes slope
+but does not break.
+
+\subsubsection{Average rates}
+
+The bracket you land in sets the rate on \emph{all} income:
+\[
+  T(Y) \;=\; Y \cdot t_{i(Y)},
+  \qquad
+  i(Y) = \begin{cases} 0 & Y < s_0\\ 1 & s_0 \le Y < s_1\\ 2 & Y \ge s_1\end{cases}
+\]
+Here $T$ jumps at every threshold and net income jumps down. At the opening
+values ($t_1 = 0.4$), crossing $s_0 = 20$ takes net income from $20$ to $12$:
+the worker who earns one unit more keeps eight less.
+
+\subsection{Kink versus notch}
+
+The two names are easy to confuse and the difference is everything.
+
+\begin{ctrltable}{Name & What it is}
+Kink & The function is continuous; its derivative jumps. The frontier changes
+  slope. An optimum can land exactly there, and usually does. \\
+Notch & The function itself is discontinuous. The frontier breaks and there is
+  a stretch of points no $L$ reaches. The optimum is pinned just below. \\
+\end{ctrltable}
+
+\begin{amnote}
+Both generate bunching in the data, but for different reasons: at a kink
+because the marginal rate changes; at a notch because crossing it simply makes
+the taxpayer worse off.
+\end{amnote}
+
+\subsection{How the optimum is found}
+
+Not from a first-order condition. On these frontiers the best point is very
+often at a kink, where the slope does not exist and no tangency holds; and
+under average rates it sits at the right-hand end of a piece with a strictly
+worse point immediately to its right.
+
+What happens instead:
+
+\begin{enumerate}
+\item The frontier is split into pieces, one per bracket, with their own
+  endpoints.
+\item Each piece is scanned densely and its best sample refined by golden
+  section.
+\item \emph{Every vertex is tested explicitly}, from both sides, each on its own
+  bracket's formula.
+\item Whichever wins is the optimum, and where it came from is what classifies
+  it.
+\end{enumerate}
+
+\begin{amwatch}
+Each piece carries its own bracket rather than looking it up from the income.
+Looking it up makes $c(L)$ single-valued at a threshold, which silently loses
+the left-hand limit --- the highest point of the frontier --- and left it
+falling outside the computed view.
+\end{amwatch}
+
+% ==========================================================================
+\section{The controls}
+
+\subsection{Brackets, wage and income}
+
+\begin{ctrltable}{Slider & What it is}
+$t_0$, $t_1$, $t_2$ & The three rates, 0 to 0.95. \\
+$s_0$, $s_1$ & The two thresholds, on labour income. $s_1$ is held at or above
+  $s_0$: the other way round would invert the schedule. \\
+$w$ & The wage. It sets where the thresholds land on the labour axis,
+  $L = s/w$. \\
+$m_0$ & Non-labour income. Shifts the whole frontier upward. \\
+$p_x$ & Price of consumption. Bounded away from zero. \\
+\end{ctrltable}
+
+\subsection{Preferences}
+
+\begin{ctrltable}{Family & Form}
+Cobb--Douglas & $x^{\alpha} y^{1-\alpha}$ \\
+CES & $(\alpha x^{\rho} + (1-\alpha) y^{\rho})^{1/\rho}$ \\
+Quasilinear & $x + 4\alpha\ln y$ \\
+Custom & Whatever you type \\
+\end{ctrltable}
+
+In the expression $x$ is consumption and $y$ is leisure. With $\rho$ strongly
+negative the CES approaches perfect complements and corner optima appear.
+
+\subsection{Vertical axis and layers}
+
+The \ui{Vertical axis} switch moves between \ui{Leisure} and \ui{Labour}.
+Utility is always read on leisure, so flipping the axis genuinely re-reads
+preferences rather than mirroring a picture.
+
+\fig[0.62]{labour-axis}{The plane with the vertical axis set to labour.}
+
+\begin{ctrltable}{Layer & What it draws}
+Utility map & The field $u$ under a colour ramp. \\
+Background contours & Level curves of utility, independent of the optimum. \\
+Feasible set & Veils what cannot be afforded. \\
+Curve through the optimum & The indifference curve passing through it. \\
+Optimum & The chosen point. \\
+Thresholds & The verticals at $L = s_0/w$ and $L = s_1/w$. \\
+Grid & The background rule. \\
+\end{ctrltable}
+
+% ==========================================================================
+\section{The verdict}
+
+\begin{ctrltable}{Verdict & What it means}
+Interior optimum & Tangency: the marginal rate of substitution equals the
+  bracket's net wage. The worker is inside a bracket. \\
+Optimum at the kink & It lands exactly on a threshold. To the left another hour
+  still repays; to the right it does not. \\
+Optimum pinned below the drop & Under average rates. The next hour would cross
+  the threshold and levy the higher rate on all income. \\
+Not working is best & Corner at $L = 0$: living on non-labour income. \\
+Working the whole endowment & Corner at $L = 1$. \\
+\end{ctrltable}
+
+\fig[0.85]{kink-verdict}{The verdict at the opening values under marginal
+rates: the optimum lands on the first threshold.}
+
+% ==========================================================================
+\section{Classroom activities}
+
+\begin{activity}{The same tax, two frontiers}
+\amset Opening values. Switch between \ui{Marginal rates} and \ui{Average
+rates} while watching the left panel.
+\amexp Under marginal rates the frontier bends at the thresholds. Under average
+rates it \emph{breaks}: two stretches of line that do not touch, and a whole
+band of consumption levels no amount of work reaches.
+\par\smallskip
+The rates, thresholds, wage and preferences are identical in both. All that
+changed was the phrase ``on the income in the bracket'' to ``on all income''.
+\end{activity}
+
+\begin{activity}{Bunching just below}
+\amset Opening values, \ui{Marginal rates}.
+\amexp The \ui{Labour L*} readout gives $0.400$, which at $w = 50$ is exactly
+gross income $20$: the first threshold. The verdict says ``Optimum at the
+kink''.
+\par\smallskip
+Move $t_1$ up and down. The optimum stays pinned to the threshold across a wide
+range of rates, because at a kink there is not one slope to match but a whole
+interval of them. That is what produces bunching in the data, and it is not
+evasion: it is the optimum.
+\end{activity}
+
+\begin{activity}{A notch that costs welfare}
+\amset \ui{Quasilinear} preferences. Compare \ui{Marginal rates} with
+\ui{Average rates}.
+\amexp Under marginal: $L^\ast = 0.800$, consumption $38.00$, gross income
+$40.0$, tax $12.0$, utility $34.781$. The average rate is $30\%$ and the
+marginal rate $80\%$.
+\par\smallskip
+Under average rates the same worker retreats to $L^\ast = 0.400$, consumption
+$30.00$, tax $0.0$, utility $28.978$. It collects \emph{less} tax and the
+worker is \emph{worse off}. Ask who that design benefits. Nobody: it is pure
+loss, and it is why almost no tax system uses average rates.
+\end{activity}
+
+\begin{activity}{Measuring the drop}
+\amset \ui{Average rates}, right panel on \ui{Tax}.
+\amexp The \ui{Largest drop} readout gives $-12.00$. Find it in the picture:
+it is at the second threshold, $s_1 = 30$, where the rate goes from $0.4$ to
+$0.8$ on all income. Just below, net income is $30 - 12 = 18$; just above,
+$30 - 24 = 6$.
+\par\smallskip
+The first threshold drops too, from $20$ to $12$, but by less. Lower $t_2$
+until the first becomes the largest and watch the readout change.
+\end{activity}
+
+\begin{activity}{Utility breaks into pieces}
+\amset \ui{Average rates}, right panel on \ui{Utility}.
+\amexp The curve $u(c(L), 1-L)$ appears split into disconnected arcs, one per
+bracket. Its highest point is at the right-hand end of one of them, not at an
+interior maximum.
+\par\smallskip
+It is the same information as the left panel, one dimension down. Ask where a
+student who differentiated and set to zero would look, and why they would not
+find it.
+\end{activity}
+
+\begin{activity}{Not working}
+\amset \ui{CES} preferences, $\rho = -6$.
+\amexp The optimum goes to $L^\ast = 0.000$: consumption $10.00$, which is
+exactly $m_0/p_x$. The verdict says ``Not working is best''.
+\par\smallskip
+With $\rho$ strongly negative the CES approaches perfect complements and
+leisure becomes nearly indispensable. Raise $w$ and see how far it has to go
+before the first hour is worth it.
+\end{activity}
+
+\begin{activity}{The axis is not the preference}
+\amset Opening values. Move \ui{Vertical axis} from \ui{Leisure} to
+\ui{Labour}.
+\amexp The utility map is not the mirror image of the previous one. Utility is
+always read on leisure, so flipping the axis genuinely changes what is being
+drawn, not just how it is being looked at.
+\par\smallskip
+A useful check against the habit of reading the two axes as interchangeable.
+\end{activity}
+
+\begin{activity}{Designing a tax without notches}
+\amset \ui{Average rates}. The goal: a frontier that does not break.
+\amexp There is only one way: make all three rates equal. Any difference
+between $t_0$, $t_1$ and $t_2$ produces a notch at the corresponding threshold.
+\par\smallskip
+Under marginal rates, by contrast, any increasing combination gives a
+continuous frontier. There is the whole design argument, and it fits in a
+sentence.
+\end{activity}
+
+% ==========================================================================
+\section{Expression syntax}
+
+In the utility box, $x$ is consumption and $y$ is leisure.
+
+\begin{ctrltable}{Element & What is allowed}
+Operators & \code{+ - * / \^{} ( )} \\
+Functions & \code{sqrt ln log log10 exp abs sin cos tan min max pow} \\
+Constants & \code{e}, \code{pi} \\
+Implicit multiplication & \code{2xy} is \code{2*x*y} \\
+Associativity & \code{\^{}} binds to the right and tighter than unary minus:
+  \code{-x\^{}2} is $-(x^2)$ \\
+\end{ctrltable}
+
+Partial derivatives are computed symbolically. With \code{min}, \code{max} or
+\code{abs} --- precisely the kinked cases --- it falls back to central
+differences.
+
+% ==========================================================================
+\section{Changes from the GeoGebra original}
+
+\begin{description}
+\item[One tax base.] \code{TAX\_LABOR} taxed $wL$, but the average-rate branch
+  \code{l1} taxed $wL + I_0$. The two schemes were therefore not comparable at
+  exactly the moment you want to compare them. Both tax labour income here.
+\item[Discontinuities are modelled.] The original wrote the schedule as nested
+  \code{If[...]}, which GeoGebra draws with a segment bridging the gap. Each
+  bracket is a separate piece here, so a notch stays a notch.
+\item[Each piece carries its own bracket.] Looking the bracket up from the
+  income makes $c(L)$ single-valued at a threshold, which silently loses the
+  left-hand limit --- the highest point of the frontier. It was falling outside
+  the computed view and being clipped.
+\item[Preferences and an optimum.] The original drew the budget set only.
+  Without an optimum the kink and the notch are shapes rather than predictions,
+  so a utility function, the indifference curve through the optimum and the
+  bunching verdict are added.
+\item[$p_X$ and $w$ started at 0], dividing by zero throughout. Both are
+  bounded away from it.
+\item[$s_1 < s_0$] would invert the schedule; the second threshold is held at
+  or above the first.
+\item[Dead objects.] \code{s\_2} had a slider and a label but never entered
+  \code{TAX\_LABOR}; \code{a}, \code{b}, \code{f}, \code{ngreso}, \code{E},
+  \code{E\_trace}, \code{Pendiente}, \code{B\_OCIO}, \code{B\_TRABAJO},
+  \code{h\_TRABAJO} and the \code{Q}/\code{P} point set were leftovers from the
+  applet this was copied from. Not carried over.
+\end{description}
+
+% ==========================================================================
+\section{Troubleshooting}
+
+\begin{ctrltable}{Symptom & What is happening}
+The plane is blank & The utility expression does not parse. The red message
+  under the box says whether it is syntax or a variable. \\
+The thresholds are not visible & They are off the axis: with a small $w$,
+  $s/w$ can exceed 1. Raise $w$ or lower the thresholds. \\
+Both schemes give the same answer & All three rates are equal. With equal rates
+  there is neither kink nor notch and the two schemes coincide. \\
+Largest drop reads ``---'' & You are on marginal rates, where by construction
+  there are no drops. \\
+The optimum does not move when I change a rate & It is pinned at a kink. That
+  is the correct behaviour and the subject of activity 2. \\
+\end{ctrltable}
+
+\input{tail-en}
+
+\end{document}
