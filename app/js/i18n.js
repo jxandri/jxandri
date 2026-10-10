@@ -143,7 +143,7 @@ const STRINGS = {
     'lab.opacity': 'Panel opacity',
     'lab.size': 'Panel size',
     'lab.full': 'Full screen',
-    'lab.projlabel': 'the (x, y) plane',
+    'lab.projlabel': 'the (x, y) plane · drag to move the explorer',
     'lab.note': 'The panel is the picture your textbook draws: the domain seen from above, with the same level curves in the same colours, the same tangent line, and the explorer as a dot. Everything on it is the same state as the scene behind — walk in the 3D view and the dot walks on the map.',
     'sec.domain': 'Domain',
     'dom.xmin': 'x min', 'dom.xmax': 'x max', 'dom.ymin': 'y min', 'dom.ymax': 'y max',
@@ -298,9 +298,9 @@ const STRINGS = {
     'dial.sizereset': 'Back to 1 : 1 — the explorer 1.8 m tall',
 
     'sat.caption': 'Sentinel-2 · height washed over',
-    'msg.nopointer': 'This browser will not hand over the mouse pointer here. Hold the right button and drag to look around; hold the left button to pick the explorer up and carry them.',
+    'msg.nopointer': 'This browser will not hand over the mouse pointer here. Hold the right button and drag to look around — everything else works as usual.',
     'cc.click': 'Click to look around',
-    'cc.esc': 'Esc releases the mouse · or drag: right to look, left to carry the explorer',
+    'cc.esc': 'Esc releases the mouse · or hold the right button and drag to look',
     'loading': 'Building the terrain…',
 
     'msg.undefinedFrac': 'f is undefined on {pct}% of the domain',
@@ -454,7 +454,7 @@ const STRINGS = {
     'lab.opacity': 'Opacidad del panel',
     'lab.size': 'Tamaño del panel',
     'lab.full': 'Pantalla completa',
-    'lab.projlabel': 'el plano (x, y)',
+    'lab.projlabel': 'el plano (x, y) · arrastre para mover al explorador',
     'lab.note': 'El panel es la figura que dibuja su libro de texto: el dominio visto desde arriba, con las mismas curvas de nivel en los mismos colores, la misma recta tangente y el explorador como un punto. Todo lo que hay en él es el mismo estado de la escena de atrás: camine en la vista 3D y el punto camina sobre el mapa.',
     'sec.domain': 'Dominio',
     'dom.xmin': 'x mín', 'dom.xmax': 'x máx', 'dom.ymin': 'y mín', 'dom.ymax': 'y máx',
@@ -609,9 +609,9 @@ const STRINGS = {
     'dial.sizereset': 'Volver a 1 : 1 — el explorador de 1,8 m',
 
     'sat.caption': 'Sentinel-2 · altura superpuesta',
-    'msg.nopointer': 'Este navegador no entrega aquí el puntero del ratón. Mantenga el botón derecho y arrastre para mirar alrededor; mantenga el izquierdo para levantar al explorador y llevarlo.',
+    'msg.nopointer': 'Este navegador no entrega aquí el puntero del ratón. Mantenga el botón derecho y arrastre para mirar alrededor; todo lo demás funciona igual.',
     'cc.click': 'Haga clic para mirar alrededor',
-    'cc.esc': 'Esc suelta el ratón · o arrastre: derecho para mirar, izquierdo para llevar al explorador',
+    'cc.esc': 'Esc suelta el ratón · o mantenga el botón derecho y arrastre para mirar',
     'loading': 'Construyendo el terreno…',
 
     'msg.undefinedFrac': 'f no está definida en el {pct}% del dominio',

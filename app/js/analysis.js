@@ -943,7 +943,11 @@ export class DerivativeGizmo {
 export class TangentPlane {
   constructor(field) {
     this.field = field;
-    const geom = new THREE.PlaneGeometry(1, 1, 1, 1);
+    this.n = 40;                                   // cells a side
+    const w = this.n + 1;
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * w * 3), 3));
+    geom.setIndex([]);
     this.material = new THREE.MeshBasicMaterial({
       color: 0xffe27a, transparent: true, opacity: 0.30,
       side: THREE.DoubleSide, depthWrite: false, toneMapped: false, fog: false,
@@ -953,40 +957,120 @@ export class TangentPlane {
     this.mesh.renderOrder = 4;
     this.mesh.visible = false;
     this.geometry = geom;
+    this._ok = new Uint8Array(w * w);
+    this._edge = new Uint8Array(w * w);
+    this._x = new Float64Array(w * w);
+    this._y = new Float64Array(w * w);
   }
 
   /**
    * @param radiusMetres  half-width, as arc length over the surface
    * @param lift          clearance along the normal, in world metres
+   * @param inside        feasibility test, or null when nothing constrains it
    *
    * The lift is a lie of a few centimetres, told on purpose: over a bowl the
    * true tangent plane lies under the surface everywhere except at the single
    * point of tangency, and an object buried in the ground teaches nobody
    * anything. Slide the explorer scale down and the gap closes on its own.
+   *
+   * The patch is a grid rather than one quad, for two reasons. Every vertex is
+   * z0 + fx·(x − cx) + fy·(y − cy) evaluated at a point of the domain, so what
+   * is drawn is the linear approximation itself rather than a rectangle
+   * rotated into roughly the right attitude. And having a domain point per
+   * vertex is what lets the patch be cut at the constraint.
+   *
+   * That cut is the point. A tangent plane answers "if I step this way, how
+   * does f change?", and over infeasible ground there is no such step to take:
+   * a plane hanging out past the budget line is as misleading as an
+   * indifference curve drawn through bundles the consumer cannot buy.
    */
-  update(cx, cy, radiusMetres, lift = 0) {
+  update(cx, cy, radiusMetres, lift = 0, inside = null) {
     const field = this.field;
     const r = field.arcRadius(cx, cy, 1, 0, radiusMetres * 1.6);
     const z0 = field.height(cx, cy);
     const [fx, fy] = field.gradient(cx, cy, Math.max(r, 1e-9) * 1e-3);
     if (!isFinite(z0) || !isFinite(fx) || !isFinite(fy)) { this.mesh.visible = false; return; }
 
-    // Build the plane's basis directly in world space.
-    const o = new THREE.Vector3(field.worldX(cx), field.worldY(z0), field.worldZ(cy));
-    if (lift) o.addScaledVector(field.normalFromGrad(fx, fy, new THREE.Vector3()), lift);
-    const ex = new THREE.Vector3(field.S, field.worldY(fx), 0).normalize();
-    const ey = new THREE.Vector3(0, field.worldY(fy), -field.S).normalize();
-    const n = new THREE.Vector3().crossVectors(ey, ex).normalize();
-    if (n.y < 0) n.negate();
+    // The plane is flat, so one normal serves every vertex and the lift is an
+    // exact constant offset rather than a per-vertex correction.
+    const nrm = field.normalFromGrad(fx, fy, new THREE.Vector3());
+    const ox = nrm.x * lift, oy = nrm.y * lift, oz = nrm.z * lift;
 
-    const m = new THREE.Matrix4().makeBasis(ex, n, ey.clone().negate());
-    this.mesh.position.copy(o);
-    this.mesh.quaternion.setFromRotationMatrix(m);
-    // PlaneGeometry lies in XY; rotate it into the basis' XZ.
-    this.mesh.rotateX(-Math.PI / 2);
-    const size = r * field.S * 2;
-    this.mesh.scale.set(size, size, 1);
-    this.mesh.visible = true;
+    const n = this.n, w = n + 1;
+    const X = this._x, Y = this._y, ok = this._ok, edge = this._edge;
+    // Outside the domain is outside the picture too: a plane reaching past the
+    // edge of the plot describes ground that was never surveyed.
+    const allowed = (x, y) => field.inDomain(x, y) && (!inside || inside(x, y));
+
+    let any = false;
+    for (let j = 0; j < w; j++) {
+      const y = cy + ((j / n) * 2 - 1) * r;
+      for (let i = 0; i < w; i++) {
+        const k = j * w + i;
+        X[k] = cx + ((i / n) * 2 - 1) * r;
+        Y[k] = y;
+        edge[k] = 0;
+        ok[k] = allowed(X[k], Y[k]) ? 1 : 0;
+        if (ok[k]) any = true;
+      }
+    }
+    if (!any) { this.mesh.visible = false; return; }
+
+    // Pull the first row of disallowed vertices onto the boundary.
+    //
+    // Dropping every cell that straddles the constraint would end the patch in
+    // a staircase one cell deep, which on a straight frontier is a visible lie
+    // about a straight line. Each disallowed vertex with an allowed neighbour
+    // is moved along that edge to the crossing, found by bisection, so a budget
+    // line cuts the patch exactly straight. What is left of the staircase is
+    // the occasional corner cell, bounded by one fortieth of the patch.
+    for (let j = 0; j < w; j++) {
+      for (let i = 0; i < w; i++) {
+        const k = j * w + i;
+        if (ok[k]) continue;
+        let nb = -1;
+        if (i > 0 && ok[k - 1]) nb = k - 1;
+        else if (i < n && ok[k + 1]) nb = k + 1;
+        else if (j > 0 && ok[k - w]) nb = k - w;
+        else if (j < n && ok[k + w]) nb = k + w;
+        if (nb < 0) continue;
+        let ax = X[nb], ay = Y[nb];                // inside
+        let bx = X[k], by = Y[k];                  // outside
+        for (let t = 0; t < 14; t++) {
+          const mx = (ax + bx) / 2, my = (ay + by) / 2;
+          if (allowed(mx, my)) { ax = mx; ay = my; } else { bx = mx; by = my; }
+        }
+        X[k] = ax; Y[k] = ay;
+        edge[k] = 1;
+      }
+    }
+
+    const pos = this.geometry.getAttribute('position');
+    const P = pos.array;
+    for (let k = 0; k < w * w; k++) {
+      const z = z0 + fx * (X[k] - cx) + fy * (Y[k] - cy);
+      P[k * 3] = field.worldX(X[k]) + ox;
+      P[k * 3 + 1] = field.worldY(z) + oy;
+      P[k * 3 + 2] = field.worldZ(Y[k]) + oz;
+    }
+
+    // A cell is drawn when every corner is usable — allowed, or moved onto the
+    // frontier — and at least one corner is genuinely inside.
+    const idx = [];
+    for (let j = 0; j < n; j++) {
+      for (let i = 0; i < n; i++) {
+        const a = j * w + i, b = a + 1, c = a + w, d = c + 1;
+        if (!((ok[a] || edge[a]) && (ok[b] || edge[b])
+          && (ok[c] || edge[c]) && (ok[d] || edge[d]))) continue;
+        if (!(ok[a] || ok[b] || ok[c] || ok[d])) continue;
+        idx.push(a, c, b, b, c, d);
+      }
+    }
+
+    pos.needsUpdate = true;
+    this.geometry.setIndex(idx);
+    this.geometry.computeBoundingSphere();
+    this.mesh.visible = idx.length > 0;
   }
 
   setVisible(v) { this.mesh.visible = v; }

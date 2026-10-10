@@ -222,11 +222,15 @@ más rápido.</p>
   usted no se quede haciendo clic en una escena que no se mueve.</p>
 </div>
 
-<p><strong>Mantenga el botón izquierdo y arrastre</strong> para levantar al explorador y llevarlo.
-Sigue al cursor por la superficie y aterriza donde usted suelte, lo que es mejor que mantener
-<kbd>W</kbd> durante dos kilómetros cuando quiere mirar el otro lado de un cerro. Funciona en toda
-clase de superficie, y no es un cambio en <code>f</code>: estar parado en otro sitio es estar
-parado en otro sitio, y cada lectura se recalcula desde el punto nuevo igual que tras un paso dado
+<p>Para ir lejos sin caminar hasta allá, <strong>arrastre sobre el mapa plano</strong> de la
+esquina inferior izquierda del Laboratorio: presione en cualquier punto y el explorador se levanta
+y se posa bajo el cursor, lo sigue mientras usted arrastra, y se queda donde lo suelte. El mapa es
+un rectángulo del dominio dibujado a escala, así que el punto que usted presiona <em>es</em> un
+punto del plano: no hay que adivinar qué pliegue del cerro quiso decir, y se ve la ventana entera
+mientras elige. Es mejor que mantener <kbd>W</kbd> durante dos kilómetros para llegar al otro lado
+de un cerro. La escena misma no cambia: arrastrar ahí sigue significando la cámara, como siempre. Y
+ser colocado en otro sitio no es un cambio en <code>f</code>: estar parado en otro lugar es estar
+parado en otro lugar, y cada lectura se recalcula desde el punto nuevo igual que tras un paso dado
 a pie.</p>
 
 <div class="key">
@@ -813,7 +817,13 @@ explorador con el dial de escala y se vuelven a juntar, que es justamente lo que
 <h2>Plano tangente, y la escala del explorador</h2>
 <p>Ahora son dos secciones del panel. El plano tangente es una afirmación sobre la gráfica de una función y se apaga en los otros dos tipos de superficie; la escala del explorador no lo es, y sigue activa en todas partes: un explorador sobre un toro tiene un tamaño, y todo lo que se mide contra él —los cuadrados de la retícula incluidos— cambia con él.</p>
 <p><strong>Plano tangente</strong> <kbd>P</kbd> — dibuja el plano que mejor se ajusta a la
-superficie a los pies del explorador.</p>
+superficie a los pies del explorador. Donde hay una restricción, el parche se corta en ella: el
+plano responde «si doy un paso en esta dirección, ¿cómo cambia f?», y sobre el terreno que la
+restricción prohíbe no hay tal paso que dar, de modo que un plano asomando más allá de la recta
+presupuestaria engañaría tanto como una curva de indiferencia trazada por canastas que el
+consumidor no puede comprar. Párese sobre la frontera con el plano activado y verá la aproximación
+lineal y el borde del conjunto factible encontrarse en una sola imagen: la condición de Lagrange
+antes de escribir una línea de álgebra.</p>
 
 <h2>Regla de acercamiento</h2>
 <p>Cambia el tamaño del explorador un factor de diez por muesca. Hacia la derecha se encoge: 1,8 m,

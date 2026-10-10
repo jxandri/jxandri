@@ -8,8 +8,12 @@
  *      cross-origin frame without allow="pointer-lock", Safari in some
  *      contexts, a user who said no — where the mouse used to do nothing and
  *      say nothing.
- *   3. Dragging with the LEFT button picks the explorer up and carries them,
- *      dropping them where the button is released.
+ *   3. Dragging the explorer happens on the FLAT MAP, not on the scene. The
+ *      scene keeps the gesture it always had — left click asks for the
+ *      pointer — so nothing a student already knows changed; the map is where
+ *      you pick somebody up and put them down, with the whole domain in view.
+ *   5. The tangent plane is cut at the constraint. A plane hanging out past
+ *      the budget line describes steps the consumer cannot take.
  *   4. "Walk the frontier" ropes the explorer to the BINDING constraint, and
  *      to the connected section of it that the constrained optimum lies on.
  *      It used to take the first comparison in the formula's text, which for
@@ -63,7 +67,8 @@ const BASE = 'http://127.0.0.1:8125';
     say(`${page}: right drag turns the head without the pointer`,
       Math.abs(y1 - y0) > 0.1 && !lockedAfterLook, `yaw ${y0.toFixed(3)} -> ${y1.toFixed(3)}`);
 
-    // Left drag: the explorer is carried, and no pointer is taken.
+    // Left drag on the SCENE must leave the explorer exactly where they were:
+    // that gesture belongs to the camera, and the carry lives on the map.
     const a0 = await p.evaluate(() => [window.__peaks.player.x, window.__peaks.player.y]);
     await p.mouse.move(640, 430);
     await p.mouse.down();
@@ -71,14 +76,86 @@ const BASE = 'http://127.0.0.1:8125';
     await p.mouse.up();
     await p.waitForTimeout(400);
     const a1 = await p.evaluate(() => [window.__peaks.player.x, window.__peaks.player.y]);
-    const lockedAfterCarry = await p.evaluate(() => !!document.pointerLockElement);
     const moved = Math.hypot(a1[0] - a0[0], a1[1] - a0[1]);
-    say(`${page}: left drag carries the explorer`, moved > 1e-3 && !lockedAfterCarry,
-      `${a0.map((v) => v.toFixed(3))} -> ${a1.map((v) => v.toFixed(3))}, moved ${moved.toFixed(4)}`);
+    say(`${page}: left drag on the scene does not move the explorer`, moved < 1e-9,
+      `${a0.map((v) => v.toFixed(3))} -> ${a1.map((v) => v.toFixed(3))}`);
+    await p.evaluate(() => document.exitPointerLock());
+    await p.waitForTimeout(250);
+  }
 
-    // And the explorer is still standing on the surface, not floating.
-    say(`${page}: and puts them down on the ground`,
-      await p.evaluate(() => isFinite(window.__peaks.player.height())));
+  /* --- carrying, on the flat map --------------------------------------- */
+
+  await p.goto(`${BASE}/lab.html`, { waitUntil: 'load' });
+  await p.waitForFunction(() => window.__peaks && window.__peaks.player, null, { timeout: 30000 });
+  await p.waitForTimeout(1400);
+
+  const box = await p.evaluate(() => {
+    const r = document.getElementById('minimap').getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  say('the flat map is on screen to drag on', box.w > 40 && box.h > 40,
+    `${Math.round(box.w)}x${Math.round(box.h)} at ${Math.round(box.x)},${Math.round(box.y)}`);
+
+  // A quarter along and a quarter up: the map's y runs up the panel, the
+  // opposite way to the canvas', so the cursor goes three quarters down it.
+  await p.mouse.move(box.x + box.w * 0.5, box.y + box.h * 0.5);
+  await p.mouse.down();
+  await p.mouse.move(box.x + box.w * 0.25, box.y + box.h * 0.75, { steps: 10 });
+  await p.mouse.up();
+  await p.waitForTimeout(400);
+
+  const carried = await p.evaluate(() => {
+    const a = window.__peaks, f = a.field;
+    return {
+      x: a.player.x, y: a.player.y, mode: a.player.mode,
+      wantX: f.xmin + 0.25 * (f.xmax - f.xmin),
+      wantY: f.ymin + 0.25 * (f.ymax - f.ymin),
+      span: Math.max(f.xmax - f.xmin, f.ymax - f.ymin),
+      onGround: isFinite(a.player.height()),
+      locked: !!document.pointerLockElement,
+    };
+  });
+  const err = Math.hypot(carried.x - carried.wantX, carried.y - carried.wantY) / carried.span;
+  say('dragging the map puts the explorer at that point of the domain', err < 0.02,
+    `(${carried.x.toFixed(3)}, ${carried.y.toFixed(3)}) vs ` +
+    `(${carried.wantX.toFixed(3)}, ${carried.wantY.toFixed(3)}), ${(err * 100).toFixed(1)}% of the window`);
+  say('and puts them down on the ground, on foot', carried.onGround && carried.mode === 'third');
+  say('and never asks for the pointer while doing it', !carried.locked);
+
+  /* --- the tangent plane stops at the constraint ------------------------ */
+
+  const plane = await p.evaluate(async () => {
+    const a = window.__peaks, f = a.field;
+    document.getElementById('t-tangent').click();
+    a.player.x = 1.2; a.player.y = 0.8;            // exactly on x + y = 2
+    await new Promise((r) => setTimeout(r, 1400));
+    let m = null;
+    a.world.traverse((o) => {
+      if (o.isMesh && o.material && o.material.color
+        && o.material.color.getHexString() === 'ffe27a') m = o;
+    });
+    if (!m || !m.visible) return null;
+    const pos = m.geometry.getAttribute('position');
+    const used = new Set(m.geometry.getIndex().array);
+    const r = f.arcRadius(a.player.x, a.player.y, 1, 0, a.state.radius * a.player.zoom * 1.6);
+    let over = 0, maxSum = -Infinity;
+    for (const k of used) {
+      const s = f.mathX(pos.getX(k)) + f.mathY(pos.getZ(k));
+      maxSum = Math.max(maxSum, s);
+      if (s > 2 + r * 0.06) over++;              // allow the normal lift's own offset
+    }
+    return { verts: used.size, tris: m.geometry.getIndex().count / 3, over, maxSum, half: r };
+  });
+  say('the tangent plane is drawn', !!plane && plane.tris > 100);
+  if (plane) {
+    say('and no part of it is outside the feasible set', plane.over === 0,
+      `${plane.verts} vertices, max x+y = ${plane.maxSum.toFixed(5)}`);
+    // Standing on the line, roughly half the patch must survive: too few and
+    // it is being over-clipped, too many and it is not being clipped at all.
+    say('and it is cut, not merely shrunk', plane.tris > 3200 * 0.3 && plane.tris < 3200 * 0.7,
+      `${plane.tris} of 3200 cells' triangles`);
+    say('and it reaches the frontier rather than stopping short',
+      plane.maxSum > 2 - plane.half * 0.1, `within ${(2 - plane.maxSum).toExponential(1)}`);
   }
 
   /* --- the rope follows the binding constraint -------------------------- */

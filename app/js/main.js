@@ -1706,30 +1706,33 @@ function toggleCheckbox(id) {
  * off the edge of the screen — and it is the one thing on this page that a
  * browser or an embedding page is entitled to refuse. Safari refuses it in
  * some frames; a cross-origin iframe without `allow="pointer-lock"` refuses
- * it; a user can dismiss the permission. Until now a refusal left the mouse
+ * it; a user can dismiss the permission. A refusal used to leave the mouse
  * doing *nothing*, with no hint that anything had been denied, which is
  * exactly the report this was written for: "the mouse doesn't seem to work".
  *
- * So the pointer is no longer load-bearing. Three gestures, and only the first
- * of them needs anything granted:
+ * So the scene keeps the gesture it always had, and gains one that needs
+ * nothing granted:
  *
- *   click (no drag)   ask for the pointer; look around as before
- *   left drag         pick the explorer up and carry them
- *   right drag        turn the head — the same gesture as pointer-lock look
+ *   left click    ask for the pointer; look around as before
+ *   right drag    turn the head — the same gesture, no permission required
  *
- * `moved` is what separates a click from a drag: a press that never travels
- * more than a few pixels is a click, and asks for the pointer on release.
+ * Carrying the explorer is deliberately *not* here. It lives on the flat map
+ * instead, because a drag on the scene is what the scene has always used for
+ * looking, and overloading it would change a gesture students already know in
+ * order to add one they do not. A map is the better place to pick somebody up
+ * anyway: you can see the whole domain at once, which you cannot from inside
+ * it.
  */
 const DRAG_SLOP = 4;              // pixels before a press becomes a drag
-const drag = { on: false, mode: null, x: 0, y: 0, moved: 0, button: -1 };
+const drag = { on: false, mode: null, x: 0, y: 0, moved: 0, button: -1, mapEl: null };
 
 function dragTo(cx, cy) {
   const dx = cx - drag.x, dy = cy - drag.y;
   drag.x = cx; drag.y = cy;
   drag.moved += Math.abs(dx) + Math.abs(dy);
+  if (drag.mode === 'carry') { carryOnMap(cx, cy); return; }
   if (drag.moved < DRAG_SLOP) return;
   if (drag.mode === 'look') mouseLook(dx, dy);
-  else if (drag.mode === 'carry') carryTo(cx, cy);
 }
 
 function endDrag() {
@@ -1746,36 +1749,75 @@ canvas.addEventListener('mousedown', (e) => {
   // reach. (The card itself lets clicks through — see game.css — so this
   // fires wherever on the scene they clicked.)
   if (game && game.screen === 'offer') game.dismiss();
-  if (pointerLocked) return;              // already captured; nothing to drag
+  if (pointerLocked) return;
 
-  drag.on = true;
-  drag.button = e.button;
-  drag.x = e.clientX; drag.y = e.clientY;
-  drag.moved = 0;
-  // Left carries the explorer, right turns the head. A left press that turns
-  // out to be a click and not a drag asks for the pointer on the way up.
-  drag.mode = e.button === 0 ? 'carry' : 'look';
-  if (drag.mode === 'carry') liftExplorer();
-});
-
-window.addEventListener('mouseup', (e) => {
-  if (e.button === 2) rightDown = false;
-  if (!drag.on || e.button !== drag.button) return;
-  const wasClick = drag.moved < DRAG_SLOP;
-  const mode = drag.mode;
-  endDrag();
-  // A click, not a drag: the old gesture, which is still the best one where
-  // the browser allows it.
-  //
   // On a surface with no explorer placed yet, a left click means "stand here",
   // not "give me the mouse" — taking the pointer as well would hide the cursor
   // the moment you tried to aim the next one.
   const placing = state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE;
-  if (wasClick && mode === 'carry' && !placing && !pointerLocked) askForPointer();
+  if (e.button === 0) {
+    if (!placing) askForPointer();
+    return;
+  }
+  // The right button turns the head without the pointer. This is the whole of
+  // the fallback: one button, one gesture, nothing granted.
+  drag.on = true;
+  drag.button = e.button;
+  drag.mode = 'look';
+  drag.x = e.clientX; drag.y = e.clientY;
+  drag.moved = 0;
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (e.button === 2) rightDown = false;
+  if (drag.on && e.button === drag.button) endDrag();
 });
 window.addEventListener('blur', endDrag);
-canvas.addEventListener('mouseleave', () => { if (drag.mode === 'carry') endDrag(); });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+/**
+ * Carrying the explorer, on the flat map.
+ *
+ * Press anywhere on the map and the explorer is lifted and set down under the
+ * cursor; drag and they follow it; release and they stay. The map is a
+ * rectangle of the domain drawn to scale, so the cursor's position *is* a
+ * point of the domain — no raycast, no ambiguity about which fold of a
+ * hillside was meant, and the whole reachable world visible while you choose.
+ *
+ * Deliberately not "only when the press starts on the figure": on a
+ * two-kilometre window the explorer is a couple of pixels wide on the map, and
+ * asking a student to hit that would make the gesture a dexterity test.
+ */
+function wireMapCarry(el, usable) {
+  if (!el) return;
+  el.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || !usable()) return;
+    e.preventDefault();
+    drag.on = true;
+    drag.button = 0;
+    drag.mode = 'carry';
+    drag.mapEl = el;
+    drag.x = e.clientX; drag.y = e.clientY;
+    drag.moved = 0;
+    liftExplorer();
+    carryOnMap(e.clientX, e.clientY);
+  });
+}
+
+/** Cursor to a point of the domain, through the map under it. */
+function carryOnMap(cx, cy) {
+  if (!carrying || !field || !drag.mapEl) return;
+  const r = drag.mapEl.getBoundingClientRect();
+  if (!(r.width > 0 && r.height > 0)) return;
+  // The map's y runs *up* the panel, which is the plot's own convention and
+  // the opposite of the canvas'.
+  const u = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+  const v = Math.max(0, Math.min(1, (cy - r.top) / r.height));
+  placeExplorerAt(
+    field.xmin + u * (field.xmax - field.xmin),
+    field.ymin + (1 - v) * (field.ymax - field.ymin),
+  );
+}
 
 /**
  * Ask for the pointer, and notice if the answer is no.
@@ -1898,56 +1940,36 @@ const pickPt = new THREE.Vector2();
 let carrying = false;
 
 function liftExplorer() {
-  if (state.surfaceKind === 'graph') {
-    if (!player || !surface) return;
-  } else if (!walker || !altSurface) return;
+  if (!player || !field) return;
   carrying = true;
-  if (canvas.style) canvas.style.cursor = 'grabbing';
+  // Being put somewhere means standing there, not flying over it.
+  if (player.mode === MODE_DRONE) setMode(MODE_THIRD);
 }
 
 function dropExplorer() {
   carrying = false;
-  if (canvas.style) canvas.style.cursor = '';
-  // Landing from a carry is a view change on the surfaces that open in the
-  // drone: you asked to stand somewhere, so stand there.
-  if (state.surfaceKind !== 'graph' && altView.mode === MODE_DRONE) setMode(MODE_THIRD);
-  setMessage('');
+  drag.mapEl = null;
 }
 
-/** Where on the surface is the cursor? Sets the explorer there. */
-function carryTo(cx, cy) {
-  if (!carrying) return;
-  const r = canvas.getBoundingClientRect();
-  pickPt.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
-  picker.setFromCamera(pickPt, camera);
-
-  if (state.surfaceKind === 'graph') {
-    if (!player || !field || !surface) return;
-    // The detail rings are a second, finer copy of the ground drawn over the
-    // first, and near the explorer they are what the ray meets. Offer both, and
-    // take whichever the ray hits first.
-    const targets = [surface.mesh];
-    if (surfaceDetail) for (const ring of surfaceDetail.rings) {
-      if (ring.mesh.visible) targets.push(ring.mesh);
-    }
-    const hit = picker.intersectObjects(targets, false)[0];
-    if (!hit) return;
-    const mx = field.mathX(hit.point.x), my = field.mathY(hit.point.z);
-    if (!field.inDomain(mx, my) || !isFinite(field.height(mx, my))) return;
-    player.x = mx; player.y = my;
-    // A carried explorer must not drag the frontier rail with them: the rail
-    // is a constraint on walking, and being placed is not walking. It is
-    // reapplied the moment they are put down and take their first step.
-    if (player.mode === MODE_DRONE) setMode(MODE_THIRD);
-    return;
-  }
-
-  if (!walker || !altSurface) return;
-  const hit = picker.intersectObject(altSurface, false)[0];
-  if (!hit) return;
-  if (walker.placeAtUV && hit.uv) walker.placeAtUV(hit.uv.x, hit.uv.y);
-  else if (walker.placeAtWorld) walker.placeAtWorld(hit.point);
+/**
+ * Put the explorer at a point of the domain.
+ *
+ * Refused where f is undefined or outside the window: the map has corners the
+ * surface does not reach, and an explorer standing on a hole in the domain has
+ * no height to report.
+ *
+ * Nothing here touches f. Standing somewhere else is not a change to the
+ * surface, and every readout — the gradient, the contour underfoot, the
+ * derivative disc — is recomputed from the new point exactly as it is after a
+ * step taken on foot.
+ */
+function placeExplorerAt(x, y) {
+  if (!player || !field) return;
+  if (!field.inDomain(x, y) || !isFinite(field.height(x, y))) return;
+  player.x = x;
+  player.y = y;
 }
+
 canvas.addEventListener('pointerdown', (e) => {
   if (state.surfaceKind === 'graph' || !walker || !altSurface || pointerLocked) return;
   if (e.button !== 0) return;
@@ -4045,8 +4067,15 @@ function animate() {
 
   if (state.tangent && isFinite(player.height())) {
     if (!still) {
+      // Cut at the constraint. The tangent plane answers "if I step this way,
+      // how does f change?", and over infeasible ground there is no such step
+      // to take — so the patch stops at the frontier, exactly as the level
+      // curves do. Not gated on the frontier *walls* being drawn: that is a
+      // different question, and tying the two together is the mistake the
+      // level-curve clipping already had to be rescued from.
       tangentPlane.update(player.x, player.y, state.radius * player.zoom,
-        Math.max(player.extraLift, surfaceDetail.topLift * 2.6));
+        Math.max(player.extraLift, surfaceDetail.topLift * 2.6),
+        hasConstraint() ? predicate : null);
     }
   } else {
     tangentPlane.setVisible(false);
@@ -4120,6 +4149,12 @@ pad.invertLook = readPadInvert();
 
 wireLanguage();
 wireUI();
+// Carrying the explorer lives on the flat map, not on the scene. Only while
+// the map is showing the drawn picture: in "looking down" mode the panel is a
+// live render of the scene itself, with no 2D rectangle to read a point from.
+wireMapCarry($('minimap'), () => projection && field && player
+  && state.surfaceKind === 'graph'
+  && !$('proj-wrap').hidden && projState.mode !== 'down');
 applyHoldKeyNote();
 applyVocabulary();
 applyShape();

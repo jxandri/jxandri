@@ -218,12 +218,15 @@ Press <kbd>Space</kbd> to rise and <kbd>Ctrl</kbd> to descend. Hold <kbd>Shift</
   that will not move.</p>
 </div>
 
-<p><strong>Hold the left button and drag</strong> to pick the explorer up and carry them. They
-follow the cursor across the surface and land wherever you let go — which beats holding <kbd>W</kbd>
-for two kilometres when you want to look at the other side of a mountain. It works on every kind of
-surface, and it is not a change to <code>f</code>: standing somewhere else is standing somewhere
-else, and every readout is recomputed from the new point exactly as it is after a step taken on
-foot.</p>
+<p>To go somewhere far away without walking there, <strong>drag on the flat map</strong> in the
+Lab's bottom-left corner: press anywhere on it and the explorer is lifted and set down under the
+cursor, follows it while you drag, and stays where you let go. The map is a rectangle of the domain
+drawn to scale, so the point you press <em>is</em> a point of the plane — there is no guessing at
+which fold of a hillside you meant, and you can see the whole window while you choose. It beats
+holding <kbd>W</kbd> for two kilometres to reach the far side of a mountain. The scene itself is
+untouched by this: a drag there still means the camera, as it always has. And being put somewhere
+is not a change to <code>f</code> — standing in a different place is standing in a different place,
+and every readout is recomputed from the new point exactly as after a step taken on foot.</p>
 
 <div class="key">
   <span class="label">The single most important key</span>
@@ -786,7 +789,12 @@ with the zoom dial and they close up again — which is what "tangent" means.</p
 <h2>Tangent plane, and the explorer&#8217;s scale</h2>
 <p>Two sections in the panel now. The tangent plane is a statement about the graph of a function and greys out on the other two kinds of surface; the explorer&#8217;s scale is not, and stays live everywhere — an explorer on a torus has a size, and everything measured against them, the grid squares included, changes with it.</p>
 <p><strong>Tangent plane</strong> <kbd>P</kbd> — draws the flat plane that best matches the
-surface at the explorer's feet.</p>
+surface at the explorer's feet. Where there is a constraint, the patch is cut at it: the plane
+answers "if I step this way, how does f change?", and over ground the constraint forbids there is
+no such step to take, so a plane hanging out past the budget line would be as misleading as an
+indifference curve drawn through bundles the consumer cannot buy. Stand on the frontier with it on
+and you see the linear approximation and the edge of the feasible set meeting in one picture —
+which is the Lagrange condition before any algebra is written down.</p>
 <p><strong>Explorer scale</strong> — changes the explorer's size by a factor of ten per notch.
 To the right they shrink: 1.8 m, then 18 cm, 1.8 cm, 1.8 mm, and finally 0.18 mm. To the left they
 grow, up to ten times life size at 18 m, which is the reading you want when the feature of the

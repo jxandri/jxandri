@@ -75,9 +75,21 @@ kbd { font-size: 9px; padding: 1px 3px; }
   overflow: hidden;
   opacity: var(--proj-opacity, .88);
   box-shadow: 0 8px 26px rgba(0, 0, 0, .38);
-  pointer-events: none;          /* it is a readout, not a control */
+  pointer-events: none;          /* the frame is a readout... */
 }
-#minimap { display: block; width: 100%; height: 100%; }
+/*
+ * ...but the map itself takes the mouse, because you can pick the explorer up
+ * on it and put them down somewhere else. `grab` says so before the press and
+ * `grabbing` during it, which is the only affordance a drag ever gets.
+ */
+#minimap {
+  display: block; width: 100%; height: 100%;
+  pointer-events: auto; cursor: grab;
+}
+#minimap:active { cursor: grabbing; }
+/* In "looking down" mode the panel is a live render, not a map of the domain,
+   so there is no point of the plane under the cursor to move anybody to. */
+#proj-wrap.down #minimap { pointer-events: none; cursor: default; }
 
 /*
  * The rail keeps the right-hand corner to itself now that the flat map has
