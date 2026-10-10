@@ -54,7 +54,8 @@ await mkdir(site, { recursive: true });
  *   /                       the landing page
  *   /gradient-peaks/        the calculus sandbox, Border Run and the campus
  *   /gradient-peaks/guide/  the illustrated manual, English and Spanish
- *   /consumer-optimum/      …and the four GeoGebra applets
+ *   /consumer-optimum/      …and the five GeoGebra applets
+ *   /manuales/              the applet manuals, English and Spanish
  */
 const copies = [
   ['landing/index.html', 'index.html'],
@@ -64,12 +65,17 @@ const copies = [
   ['demand-functions/index.html', 'demand-functions/index.html'],
   ['nonlinear-budget/index.html', 'nonlinear-budget/index.html'],
   ['labor-tax/index.html', 'labor-tax/index.html'],
+  ['edgeworth-box/index.html', 'edgeworth-box/index.html'],
   // The one-file builds, offered as downloads: a student can keep a copy that
   // opens off a memory stick with no connection at all.
   ['dist/Gradient-Peaks.html', 'gradient-peaks/Gradient-Peaks-offline.html'],
   ['dist/Gradient-Peaks-Lab.html', 'gradient-peaks/Gradient-Peaks-Lab-offline.html'],
   ['dist/Gradient-Peaks-Guide.pdf', 'gradient-peaks/guide/Gradient-Peaks-Guide.pdf'],
   ['dist/Gradient-Peaks-Guia.pdf', 'gradient-peaks/guide/Gradient-Peaks-Guia.pdf'],
+  // The applet manuals: a hub page and the two PDFs it links to.
+  ['manuales/index.html', 'manuales/index.html'],
+  ['dist/Microeconomics-Applets-Manual.pdf', 'manuales/Microeconomics-Applets-Manual.pdf'],
+  ['dist/Applets-Microeconomia-Manual.pdf', 'manuales/Applets-Microeconomia-Manual.pdf'],
 ];
 
 for (const [from, to] of copies) {

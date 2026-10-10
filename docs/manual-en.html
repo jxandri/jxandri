@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Microeconomics Applets — Complete Manual</title>
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<section class="cover">
+  <div class="eyebrow">Teaching guide &amp; user manual</div>
+  <h1>The Microeconomics Applets</h1>
+  <p class="sub">Five interactive diagrams for an intermediate microeconomics
+  course — consumer choice, demand curves, kinked budget sets, income tax, and
+  exchange between two people. Every one runs in a browser, with nothing to
+  install.</p>
+  <img src="figs-manual/fig-edgeworth.png" alt="The Edgeworth box applet, showing two sets of indifference curves and the contract curve">
+  <div class="foot">
+    <p><b>Written for someone who has never run one of these before.</b><br>
+    Every step is spelled out. Nothing here requires you to write code.</p>
+    <p style="margin-top:4mm">Version 1.0 &middot; Runs on Windows, macOS, Linux, iPad, iPhone and Android &middot; No installation required</p>
+  </div>
+</section>
+
+<!-- ============================================================== TOC -->
+<section class="toc">
+  <h2>What is in this manual</h2>
+  <ol>
+    <li>Start here — the sixty-second version
+      <span class="desc">How to open one, right now.</span></li>
+    <li>What every applet shares
+      <span class="desc">The controls that mean the same thing in all five.</span></li>
+    <li>Consumer Optimum
+      <span class="desc">The budget line, the indifference curve, and why they touch.</span></li>
+    <li>Demand Functions
+      <span class="desc">Where the demand curve comes from — and a good that breaks the law of demand.</span></li>
+    <li>Non-Linear Budget Constraints
+      <span class="desc">Vouchers, subsidies and the cash that would have cost the same.</span></li>
+    <li>Labour Income Tax
+      <span class="desc">Why a tax bracket bends the constraint, and why the wrong kind of bracket breaks it.</span></li>
+    <li>The Edgeworth Box
+      <span class="desc">Two people, one pile of goods, and every way of splitting it.</span></li>
+    <li>Writing your own utility functions
+      <span class="desc">The syntax, in full, with worked examples.</span></li>
+    <li>Putting these on your own website
+      <span class="desc">Uploading them to jxandri.com, step by step.</span></li>
+    <li>When something looks wrong
+      <span class="desc">The handful of things that actually go wrong, and the fix for each.</span></li>
+  </ol>
+</section>
+
+<!-- =================================================== 1. START HERE -->
+<h1 class="part"><span class="num">1</span>Start here — the sixty-second version</h1>
+
+<p>Each applet is a single web page. There is no installer, no account, no plug-in
+and no "loading" from the internet once the page is open. Everything the applet
+does — every curve, every number — is computed on your own machine, inside the
+browser, while you watch.</p>
+
+<ol class="steps">
+  <li><strong>Click the link</strong> your instructor gave you, or double-click the
+  <code>index.html</code> file if you were given a folder.</li>
+  <li>A page opens with a control panel down the left and one or two diagrams
+  filling the rest of the screen.</li>
+  <li><strong>Drag something.</strong> The point marked <code>P</code>, the
+  endowment marked <code>ω</code>, or any slider. Everything redraws instantly.
+  <strong>That is it. It is running.</strong></li>
+</ol>
+
+<div class="tip">
+  <p><strong>You cannot break it.</strong> Nothing you do is saved to a server and
+  nothing is permanent. If a diagram ends up in a state you do not understand,
+  reload the page — <kbd>F5</kbd>, or <kbd>⌘</kbd>+<kbd>R</kbd> on a Mac — and it
+  returns to its starting position.</p>
+</div>
+
+<h2>Which one do I want?</h2>
+
+<table>
+  <thead><tr><th>If the question is…</th><th>Open</th></tr></thead>
+  <tbody>
+    <tr><td>Why does the best bundle sit where the curves touch?</td><td>Consumer Optimum</td></tr>
+    <tr><td>Where does a demand curve actually come from?</td><td>Demand Functions</td></tr>
+    <tr><td>Is a voucher worth as much as the cash it cost?</td><td>Non-Linear Budget Constraints</td></tr>
+    <tr><td>How does an income tax change how much people work?</td><td>Labour Income Tax</td></tr>
+    <tr><td>What happens when two people trade with each other?</td><td>The Edgeworth Box</td></tr>
+  </tbody>
+</table>
+
+<h2>Does it work on a phone?</h2>
+
+<p>Yes, and on a tablet. The layout stacks into one column and drags become
+finger-drags. A laptop is more comfortable for the two-panel applets, but nothing
+is missing on a phone.</p>
+
+<!-- ============================================== 2. SHARED CONTROLS -->
+<h1 class="part"><span class="num">2</span>What every applet shares</h1>
+
+<p>The five applets were built as a family. Learn these controls once and they
+mean the same thing in all of them.</p>
+
+<div class="key">
+  <p><b>ES / EN</b> — top right. Switches the whole interface between Spanish and
+  English at any moment, including mid-demonstration. Nothing is recalculated and
+  nothing is lost.</p>
+  <p><b>Dark / Light</b> — top right. Both themes are designed separately, not
+  inverted. Use light for a projector, dark for a lecture hall.</p>
+  <p><b>The left rail</b> — every control lives here, grouped under small
+  capitalised headings. The diagram never hides a control behind a menu.</p>
+  <p><b>Sliders with a number beside them</b> — drag the slider, or click the
+  number and type an exact value, then press <kbd>Enter</kbd>. Typing is the one
+  to use when you want <em>p<sub>x</sub></em> to be exactly 2.</p>
+  <p><b>Layers</b> — a grid of checkboxes near the bottom. Each turns one thing on
+  the diagram on or off. Turning layers <em>off</em> is the most under-used
+  teaching move in these applets: a diagram with one curve on it is a diagram a
+  class can read.</p>
+  <p><b>The readout strip</b> — the row of numbers under each diagram. It always
+  describes the current position, and it updates as you drag.</p>
+</div>
+
+<h2>The coloured strip under the diagram</h2>
+
+<p>Most applets end with a short paragraph in a box with a coloured left edge.
+That is not decoration — it is the applet telling you, in words, what the current
+position means: <em>the curves are tangent</em>, <em>this is efficient but nobody
+would sign it</em>, <em>the market does not clear</em>. When you are not sure what
+you are looking at, read that box first.</p>
+
+<div class="tip">
+  <p><strong>Pinning the language in a link.</strong> Add <code>?lang=en</code> to
+  the end of any applet's address and it opens in English regardless of the
+  reader's settings; <code>?lang=es</code> does the same for Spanish. Useful when
+  you are handing one link to a whole class.</p>
+</div>
+
+<!-- ============================================ 3. CONSUMER OPTIMUM -->
+<h1 class="part"><span class="num">3</span>Consumer Optimum</h1>
+
+<p class="lead">Two goods, a budget, and preferences. The applet answers one
+question — <em>which affordable bundle does this person choose?</em> — and shows
+the same answer twice, once as the textbook diagram and once as a hill you are
+looking at from above.</p>
+
+<figure>
+  <img src="figs-manual/fig-consumer.png" alt="The Consumer Optimum applet: a 2D indifference-curve diagram on the left and a 3D utility surface on the right">
+  <figcaption>The 2D diagram and the 3D utility surface are the same model. Move
+  the bundle in either panel and the other follows.</figcaption>
+</figure>
+
+<h2>The screen, part by part</h2>
+
+<div class="key">
+  <p><b>Left panel — the plane (x, y).</b> The textbook picture: the budget line,
+  the indifference curve through the bundle, and a coloured map of utility
+  underneath.</p>
+  <p><b>Right panel — the surface z = u(x, y).</b> The same utility drawn as
+  height. The indifference curve on the left is a contour line on the right.</p>
+  <p><b>X–Z / X–Y / Y–Z / 3D.</b> Four camera buttons above the right panel. The
+  first three are flat projections; <code>3D</code> is a free view you can orbit.</p>
+  <p><b>Graphical method.</b> Three radio buttons that change what dragging does —
+  see below.</p>
+</div>
+
+<h2>Your first five minutes</h2>
+
+<ol class="steps">
+  <li><strong>Leave everything at its starting values</strong> and drag the point
+  <code>P</code> along the budget line. Watch the indifference curve through it
+  swell and shrink.</li>
+  <li><strong>Find the biggest curve you can</strong> without leaving the line.
+  Stop when the readout marked <em>Gap</em> reads close to 0%.</li>
+  <li><strong>Look at the two numbers beside it</strong>: the MRS and the price
+  ratio. At the best bundle they are equal. That equality <em>is</em> the tangency
+  condition, written as a number instead of a picture.</li>
+  <li><strong>Now click <code>X–Z</code></strong> above the right panel. The budget
+  line, lifted onto the utility surface, becomes a single arch. The top of that
+  arch is the same bundle you just found by hand.</li>
+  <li><strong>Raise the price of x</strong> with the <em>p<sub>x</sub></em> slider
+  and watch the whole picture respond.</li>
+</ol>
+
+<div class="box tip">
+  <p><strong>The move that makes it land.</strong> Step 4 is the point of the
+  second panel. "Find the best affordable bundle" is an abstract instruction;
+  "find the top of this hill" is not. Students who cannot see the tangency in the
+  flat diagram very often see it immediately in the <code>X–Z</code> view.</p>
+</div>
+
+<h2>The three graphical methods</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>What dragging does</th><th>Use it to show</th></tr></thead>
+  <tbody>
+    <tr><td><b>Pick the bundle</b></td><td>Slides <code>P</code> along the budget line</td>
+        <td>Searching for the highest reachable curve</td></tr>
+    <tr><td><b>Raise the level curve</b></td><td>Sweeps the indifference curve up and down</td>
+        <td>That the optimum is where the curve first <em>touches</em> the line</td></tr>
+    <tr><td><b>Free point</b></td><td>Moves <code>P</code> anywhere in the quadrant</td>
+        <td>Bundles that are unaffordable, or affordable but wasteful</td></tr>
+  </tbody>
+</table>
+
+<h2>Three things to try in class</h2>
+
+<div class="box">
+  <p><b>1. Perfect substitutes.</b> Type <code>x+2y</code> as the utility function.
+  The indifference curves become straight lines. Now change
+  <em>p<sub>x</sub></em> slowly: nothing happens to the choice, nothing happens,
+  nothing happens — and then the bundle jumps from one axis to the other. There is
+  no tangency anywhere; the optimum is a corner.</p>
+  <p><b>2. Perfect complements.</b> Type <code>min(x,y)</code>. The curves become
+  L-shapes and the optimum sits on the kink, where no tangent exists at all. The
+  applet reports this honestly rather than pretending to find a tangency.</p>
+  <p><b>3. The income effect alone.</b> Raise <em>m</em> and leave both prices
+  alone. The budget line slides outward without tilting, and the bundle traces the
+  income expansion path.</p>
+</div>
+
+<h2>Challenge mode</h2>
+
+<p>The <b>Challenges</b> button in the top bar turns the applet into six scored
+exercises across the standard preference families. Prices, income and the utility
+function lock while a challenge is running — otherwise the answer is to retype the
+question. Checking an answer reveals the true optimum, scores the attempt, and
+explains <em>which</em> optimality condition applied: a tangency, a kink, or a
+corner. Progress is remembered in the browser, per device.</p>
+
+<!-- ============================================ 4. DEMAND FUNCTIONS -->
+<h1 class="part"><span class="num">4</span>Demand Functions</h1>
+
+<p class="lead">Every demand curve in every textbook is the answer to a question
+nobody shows you being asked. This applet asks it in front of the class: hold
+preferences fixed, move one price, and record where the optimal bundle lands.</p>
+
+<figure>
+  <img src="figs-manual/fig-demand.png" alt="The Demand Functions applet, showing the goods plane and the demand curve being traced out">
+  <figcaption>The left panel is the familiar goods diagram. The right panel is the
+  demand curve being built out of it, one recorded point at a time.</figcaption>
+</figure>
+
+<h2>The idea, in one sentence</h2>
+
+<p>Choose a preference family, choose which variable will vary
+(<em>p<sub>x</sub></em>, <em>p<sub>y</sub></em> or <em>m</em>), then move that
+variable and record where the bundle goes. The recorded points <em>are</em> the
+demand curve.</p>
+
+<h2>Your first five minutes</h2>
+
+<ol class="steps">
+  <li><strong>Leave the family as Cobb–Douglas</strong> and check that the varying
+  variable is <em>p<sub>x</sub></em>.</li>
+  <li><strong>Make sure <em>Mark as you move</em> is ticked</strong> under
+  <em>Discover the demand</em>.</li>
+  <li><strong>Drag the <em>p<sub>x</sub></em> slider slowly</strong> from one end to
+  the other. On the left the budget line pivots and the bundle slides; on the
+  right a trail of points appears.</li>
+  <li><strong>Look at the trail.</strong> You have just derived a demand curve from
+  utility maximisation, in about fifteen seconds, without writing anything down.</li>
+  <li><strong>Press <em>Sweep</em></strong> to have the applet do the whole range
+  automatically and draw the curve properly. <em>Clear</em> empties it again.</li>
+</ol>
+
+<h2>The control that surprises people</h2>
+
+<div class="key">
+  <p><b>Which variable varies.</b> Three buttons: <em>p<sub>x</sub></em>,
+  <em>p<sub>y</sub></em>, <em>m</em>. Switching to <em>m</em> traces an
+  <em>Engel</em> curve instead of a demand curve — same machinery, different
+  question. Switching to <em>p<sub>y</sub></em> shows a cross-price relationship.
+  Most courses only ever draw the first of the three.</p>
+  <p><b>Fixed vertical axis.</b> Leave this on when comparing two families. With it
+  off the axis rescales to whatever curve is showing, and two curves that look
+  identical can be at completely different scales.</p>
+  <p><b>Price-consumption curve (PCC).</b> A layer, off by default. It draws the
+  path the <em>bundle</em> takes in the left panel while the price moves — the
+  thing the demand curve on the right is a projection of.</p>
+</div>
+
+<h2>The one every course promises and never shows</h2>
+
+<div class="box warn">
+  <p><strong>A Giffen good.</strong> Choose the fourth preference family — the one
+  written with logarithms and a floor and a ceiling. Set the varying variable to
+  <em>p<sub>x</sub></em> and sweep.</p>
+  <p>Over part of the range the demand curve <em>slopes upward</em>: the price of
+  <em>x</em> rises and the household buys <em>more</em> of it. The applet
+  highlights that stretch in its own colour so it cannot be missed.</p>
+  <p>This is not a bug and not a trick. It is what happens when a good is strongly
+  inferior and takes a large share of the budget: the income effect of the price
+  rise overwhelms the substitution effect. Most students have been told this
+  exists and have never seen one.</p>
+</div>
+
+<h2>Three things to try in class</h2>
+
+<div class="box">
+  <p><b>1. Cobb–Douglas spends a constant share.</b> Sweep <em>p<sub>x</sub></em>
+  and watch the demand curve. Then compute <em>p<sub>x</sub></em> × <em>x</em> at
+  any two recorded points: the same number both times.</p>
+  <p><b>2. Substitutes give a step.</b> Choose the linear family. The demand curve
+  is not a curve at all — it is a step: everything, then nothing, at one price.</p>
+  <p><b>3. Elasticity by eye.</b> With CES, change the parameter <em>r</em> and
+  sweep again. The demand curve visibly flattens or steepens; that shape
+  <em>is</em> the elasticity of substitution.</p>
+</div>
+
+<!-- ==================================== 5. NON-LINEAR BUDGET SETS -->
+<h1 class="part"><span class="num">5</span>Non-Linear Budget Constraints</h1>
+
+<p class="lead">Real policies almost never give people cash. They give vouchers,
+places, discounts and allowances — and each of those bends the budget line
+somewhere. This applet bends it seven different ways and asks the same question
+each time.</p>
+
+<figure>
+  <img src="figs-manual/fig-nonlinear.png" alt="The Non-Linear Budget Constraints applet, showing a kinked budget frontier and the utility along it">
+  <figcaption>The left panel shows the bent frontier; the right shows utility
+  measured <em>along</em> it, which turns "find the best point" into "find the
+  peak".</figcaption>
+</figure>
+
+<h2>The seven schemes</h2>
+
+<table>
+  <thead><tr><th>#</th><th>Scheme</th><th>What it does to the frontier</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>Simple constraint</td><td>The textbook straight line</td></tr>
+    <tr><td>1</td><td>In-kind subsidy, non-exclusive</td><td>Free up to <em>x<sub>s</sub></em>, then the market price — a kink</td></tr>
+    <tr><td>2</td><td>Partial in-kind, non-exclusive</td><td>A discount up to <em>x<sub>s</sub></em>, then full price — a shallower kink</td></tr>
+    <tr><td>3</td><td>Exclusive subsidy (public schools)</td><td>Take <em>x<sub>s</sub></em> free <b>or</b> buy at the market price — a vertical drop</td></tr>
+    <tr><td>4</td><td>Partial exclusive</td><td>A discount you forfeit entirely if you exceed the limit</td></tr>
+    <tr><td>5</td><td>Cash equivalent (full)</td><td>The same money as cash — a straight line, further out</td></tr>
+    <tr><td>6</td><td>Cash equivalent (partial)</td><td>As above, for the partial subsidy</td></tr>
+  </tbody>
+</table>
+
+<h2>The comparison the applet exists for</h2>
+
+<div class="box tip">
+  <p><strong>Scheme 1 against scheme 5.</strong> Set the scheme to <b>1</b>, then
+  set <em>Compare with</em> to <b>5</b>. Both cost whoever funds the programme
+  exactly the same. One hands over goods; the other hands over the money those
+  goods would have cost.</p>
+  <p>Now look at where the two optima sit and what utility each reaches. For most
+  preferences the cash equivalent reaches a <em>higher</em> indifference curve at
+  the same cost — the classic argument that cash beats in-kind. Then find the
+  households for which it makes no difference at all, and say why.</p>
+  <p>Scheme <b>2</b> pairs with <b>6</b> the same way.</p>
+</div>
+
+<h2>Your first five minutes</h2>
+
+<ol class="steps">
+  <li><strong>Start on scheme 0</strong> and confirm you recognise the ordinary
+  budget line and the ordinary tangency.</li>
+  <li><strong>Switch to scheme 1.</strong> The line grows a kink. Watch where the
+  optimum goes.</li>
+  <li><strong>Drag the subsidy size</strong> <em>x<sub>s</sub></em> slowly. For a
+  range of values the optimum sits <em>exactly on the kink</em> and stays there
+  while you keep dragging. That stickiness is the whole point of the diagram.</li>
+  <li><strong>Switch to scheme 3</strong>, the exclusive one. The frontier now has
+  a vertical drop, and part of it is simply unreachable.</li>
+  <li><strong>Watch the right-hand panel</strong> throughout. It plots utility
+  along the frontier, so the optimum is the highest point of a curve rather than a
+  tangency you have to spot.</li>
+</ol>
+
+<div class="box warn">
+  <p><strong>A subsidy with a negative sign is a tax.</strong> Set the subsidy rate
+  <em>s</em> below zero and the scheme becomes a tax at rate <em>τ</em> = −<em>s</em>
+  on the first <em>x<sub>s</sub></em> units. The frontier bends the other way. This
+  is the cheapest way to show that a subsidy and a tax are the same instrument with
+  opposite signs.</p>
+</div>
+
+<!-- ============================================== 6. LABOUR TAX -->
+<h1 class="part"><span class="num">6</span>Labour Income Tax</h1>
+
+<p class="lead">An income tax with brackets does something to the budget
+constraint that a flat tax never does. Which something depends entirely on
+whether the brackets are marginal or average — and the difference is far larger
+than students expect.</p>
+
+<figure>
+  <img src="figs-manual/fig-labor.png" alt="The Labour Income Tax applet, showing the consumption-leisure frontier with tax kinks">
+  <figcaption>Consumption against leisure, with the frontier bent by the tax. The
+  second panel plots net income or utility along the same frontier.</figcaption>
+</figure>
+
+<h2>The setup</h2>
+
+<p>Time is normalised to 1, so <em>L</em> is the fraction of available time worked
+and <em>ℓ</em> = 1 − <em>L</em> is leisure. Labour income is <em>Y</em> =
+<em>w</em>·<em>L</em>. Consumption affordable at labour <em>L</em> is</p>
+
+<pre>c(L) = ( m₀ + w·L − T(w·L) ) / pₓ</pre>
+
+<p>where <em>m₀</em> is non-labour income and <em>T</em> is the tax. You set three
+rates and two thresholds, both thresholds on labour income.</p>
+
+<h2>The two modes, which are the entire point</h2>
+
+<div class="key">
+  <p><b>Marginal rates.</b> Each rate applies only to the income inside its own
+  bracket. Net income stays continuous, so the frontier <b>kinks</b> — it bends,
+  but it does not break.</p>
+  <p><b>Average rates.</b> The bracket you land in sets the rate on <em>all</em> of
+  your income. Net income <b>jumps downward</b> at every threshold. Earning one
+  more unit can leave you strictly poorer. That is a <em>notch</em>, not a kink.</p>
+</div>
+
+<div class="box warn">
+  <p><strong>Run this comparison and let the number land.</strong> At the starting
+  values — wage 50, other income 10, rates 0 / 0.4 / 0.8, thresholds at 20 and 30 —
+  switch to <b>average rates</b> and look at what happens crossing the first
+  threshold. Net income falls from <b>19.99</b> to <b>12.01</b>.</p>
+  <p>The worker earned one unit more and ended up almost eight units poorer. The
+  optimum gets pinned just below the threshold, and stays pinned. This is why real
+  tax data shows people bunched immediately below a bracket edge — and why it is
+  evidence of a badly designed schedule, not of evasion.</p>
+</div>
+
+<h2>Your first five minutes</h2>
+
+<ol class="steps">
+  <li><strong>Start in marginal mode</strong> and drag the wage. Watch the frontier
+  bend at the two thresholds without ever breaking.</li>
+  <li><strong>Find a set of rates that puts the optimum exactly on a kink.</strong>
+  It is easier than it sounds — kinks attract optima over a whole range of wages.
+  The applet says <em>the optimum lands on a threshold</em> when it happens.</li>
+  <li><strong>Switch to average rates.</strong> The frontier tears open at each
+  threshold.</li>
+  <li><strong>Read the four tax numbers</strong> in the readout: gross income, tax,
+  average rate and marginal rate. In average mode watch the marginal rate do
+  something no textbook diagram shows.</li>
+  <li><strong>Switch the first panel</strong> between <em>Consumption and leisure</em>
+  and <em>Consumption and work</em>. Same model, mirrored — but students who cannot
+  read one very often read the other.</li>
+</ol>
+
+<!-- ============================================ 7. EDGEWORTH BOX -->
+<h1 class="part"><span class="num">7</span>The Edgeworth Box</h1>
+
+<p class="lead">Two people, two goods, nothing to produce: only what is already
+there to divide. The box measures the total, and every point in it is a complete
+answer to "who has what".</p>
+
+<figure>
+  <img src="figs-manual/fig-edgeworth.png" alt="The Edgeworth box applet with both sets of indifference curves, the contract curve and the improving set">
+  <figcaption>A is measured from the bottom left, B from the top right. The shaded
+  region between the two curves is the set of trades that make both better off.</figcaption>
+</figure>
+
+<h2>The one thing to get straight first</h2>
+
+<div class="box tip">
+  <p><strong>B's axes run backwards.</strong> A's bundle is read from the bottom
+  left corner, marked <b>O_A</b>, in the ordinary way. B's is read from the
+  <em>top right</em> corner, <b>O_B</b>, with both axes reversed — so B's numbers
+  increase as you move down and to the left.</p>
+  <p>Both sets of axes are drawn and numbered on the applet, deliberately, because
+  this is the single thing students get wrong. If a number in the readout looks
+  impossible, check which corner it is measured from.</p>
+</div>
+
+<h2>The screen, part by part</h2>
+
+<div class="key">
+  <p><b>Red curves</b> — A's indifference curves. <b>Blue curves</b> — B's.</p>
+  <p><b>The violet curve</b> — the contract curve: every allocation where the two
+  are tangent, and so every allocation that cannot be improved for one without
+  hurting the other.</p>
+  <p><b>The shaded region</b> — the improving set: every reallocation that makes
+  <em>both</em> strictly better off. It is empty exactly when the allocation is
+  already efficient, and watching it close is the fastest way to see why.</p>
+  <p><b>ω</b> — the endowment: what each of them starts with. Drag it in the
+  diagram, or set it with the four sliders.</p>
+  <p><b>P</b> — the current allocation. Drag it anywhere.</p>
+</div>
+
+<h2>Your first five minutes</h2>
+
+<ol class="steps">
+  <li><strong>Drag P around the box</strong> and watch the shaded region change
+  shape and size.</li>
+  <li><strong>Drag P onto the violet curve.</strong> The shaded region closes to
+  nothing. The readout marked <em>Left on table</em> goes to 0%.</li>
+  <li><strong>Read the box underneath.</strong> It now says the allocation is
+  Pareto efficient, and why.</li>
+  <li><strong>Switch the mechanism to <em>Trade from the endowment</em></strong> and
+  try to drag P far away. You cannot: the edge of the lens is a wall, because
+  neither person will accept being made worse off than they started.</li>
+  <li><strong>Switch to <em>Walrasian auction</em></strong> and move the price. Two
+  square markers appear — what each person wants to buy at that price. Hunt for
+  the price where they land on the same spot. That price clears the market.</li>
+</ol>
+
+<h2>The three economies</h2>
+
+<table>
+  <thead><tr><th>Model</th><th>Who is in it</th><th>What the diagram shows</th></tr></thead>
+  <tbody>
+    <tr><td><b>Exchange</b></td><td>Two consumers with fixed endowments</td>
+        <td>The box, the contract curve, the core</td></tr>
+    <tr><td><b>Production</b></td><td>Two consumers and a firm</td>
+        <td>A curved frontier instead of a corner; the rectangle being divided slides along it</td></tr>
+    <tr><td><b>Robinson</b></td><td>One consumer and a firm</td>
+        <td>No division to argue about: the optimum is where MRS meets MRT</td></tr>
+  </tbody>
+</table>
+
+<div class="box">
+  <p><strong>The three are one picture.</strong> The firm's technology is written
+  as a frontier, <code>(x/Fx)^c + (y/Fy)^c = 1</code>. At <em>c</em> = 1 it is a
+  straight line and the opportunity cost is constant; at <em>c</em> = 2 it is the
+  quarter-ellipse of the textbook; and as <em>c</em> grows it squares off against
+  the corner — which <em>is</em> the exchange box. Drag <em>c</em> and watch a
+  production economy turn into an exchange economy.</p>
+</div>
+
+<h2>Pareto weights, Negishi and the second welfare theorem</h2>
+
+<p>Choose the mechanism <b>Planner · weight λ</b>. The scrubber now sets a welfare
+weight, and the allocation moves along the contract curve accordingly: λ near its
+low end favours B, near its high end favours A.</p>
+
+<p>At the same time the applet computes, for that allocation, the <em>prices that
+would support it</em> and the <em>transfers</em> each person would need to afford
+their bundle at those prices. The line under the diagram says it in words —
+<em>implemented by prices (p<sub>x</sub>, p<sub>y</sub>) = (…, 1) with transfers
+T<sub>A</sub> = …, T<sub>B</sub> = …</em> — and the two transfers always sum to
+zero. That sentence is the second welfare theorem.</p>
+
+<p>The <b>Negishi</b> button then does the converse: it searches for the weight at
+which the required transfer is <em>zero</em>. At that weight nobody needs a gift,
+and the planner's allocation is exactly the competitive equilibrium.</p>
+
+<div class="box warn">
+  <p><strong>One honest warning about λ.</strong> If you give both people
+  <em>identical</em> preferences, the utility possibility frontier is a straight
+  line, and against a straight frontier every efficient allocation is supported by
+  the <em>same</em> weight. λ then cannot pick a point at all: the allocation still
+  moves, but the number sits still. The applet says so rather than hiding it — it
+  marks λ as <em>constant</em> and explains why in the caption.</p>
+  <p>This is a property of welfare weights, not a fault in the applet. Give the two
+  people different tastes — the default does — and λ works normally.</p>
+</div>
+
+<h2>Three things to try in class</h2>
+
+<div class="box">
+  <p><b>1. The core shrinks as tastes converge.</b> Make A's and B's preference
+  parameters more alike and watch the highlighted core narrow.</p>
+  <p><b>2. Drag the endowment along a price line.</b> Move ω so that its
+  <em>value</em> barely changes, and the equilibrium hardly moves. Move it to a
+  genuinely poorer point and the equilibrium moves a long way. Endowments matter
+  through their value, not their location.</p>
+  <p><b>3. Mixed families.</b> Give A Cobb–Douglas and B perfect complements. The
+  contract curve is neither family's textbook picture — which is exactly why the
+  applet lets each person choose independently.</p>
+</div>
+
+<!-- ==================================== 8. WRITING FUNCTIONS -->
+<h1 class="part"><span class="num">8</span>Writing your own utility functions</h1>
+
+<p>Every applet offers a menu of preference families with sliders for their
+parameters. Every applet <em>also</em> lets you type a function of your own —
+choose the family called <b>Typed by hand</b>, or use the text box directly.</p>
+
+<h2>The syntax, in full</h2>
+
+<table>
+  <thead><tr><th>You can write</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>+ − * / ^ ( )</code></td><td>The usual arithmetic. <code>^</code> is a power.</td></tr>
+    <tr><td><code>sqrt ln log log10 exp abs</code></td><td>Root, natural log, log, base-10 log, exponential, absolute value</td></tr>
+    <tr><td><code>min max</code></td><td>Two arguments: <code>min(x,y)</code></td></tr>
+    <tr><td><code>sin cos tan</code></td><td>Rarely useful here, but available</td></tr>
+    <tr><td><code>e pi</code></td><td>The two constants</td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <p><b>Implicit multiplication works.</b> <code>2xy</code> means
+  <code>2*x*y</code>, and <code>x^(1/3)y^(2/3)</code> parses as you would expect.</p>
+  <p><b>Powers bind tighter than a minus sign.</b> <code>-x^2</code> is
+  <code>-(x^2)</code>, as in every textbook.</p>
+  <p><b>Negative exponents need brackets.</b> Write <code>x^(-1)</code>, not
+  <code>x^-1</code>. Both are accepted, but the first is unambiguous to a reader.</p>
+</div>
+
+<h2>Worked examples</h2>
+
+<table>
+  <thead><tr><th>Preferences</th><th>Type this</th></tr></thead>
+  <tbody>
+    <tr><td>Cobb–Douglas, equal weights</td><td><code>x^0.5*y^0.5</code></td></tr>
+    <tr><td>Cobb–Douglas, favouring x</td><td><code>x^0.7*y^0.3</code></td></tr>
+    <tr><td>Perfect substitutes</td><td><code>x+2y</code></td></tr>
+    <tr><td>Perfect complements</td><td><code>min(x,y)</code></td></tr>
+    <tr><td>Leontief in fixed proportions</td><td><code>min(x/1,y/2)</code></td></tr>
+    <tr><td>Quasilinear</td><td><code>2sqrt(x)+y</code></td></tr>
+    <tr><td>Quasilinear, logarithmic</td><td><code>ln(x)+y</code></td></tr>
+    <tr><td>CES</td><td><code>(0.5x^0.5+0.5y^0.5)^(2)</code></td></tr>
+  </tbody>
+</table>
+
+<div class="box warn">
+  <p><strong>If the box turns red.</strong> The applet could not read what you
+  typed and tells you why underneath. The three usual causes: a missing closing
+  bracket; a letter other than <code>x</code> or <code>y</code> used as a variable;
+  or a function name spelled differently (<code>sqr</code> instead of
+  <code>sqrt</code>). Nothing breaks — the diagram simply keeps the last function
+  it understood until you fix the text.</p>
+</div>
+
+<!-- ==================================== 9. PUBLISHING -->
+<h1 class="part"><span class="num">9</span>Putting these on your own website</h1>
+
+<p>Each applet is one self-contained HTML file. No database, no PHP, no build
+step. A web server only has to hand the file over. That is why publishing them is
+a file-copying job and not a deployment.</p>
+
+<h2>If your hosting has cPanel</h2>
+
+<ol class="steps">
+  <li><strong>Sign in to your hosting</strong> and open <b>cPanel</b>, then
+  <b>File Manager</b>.</li>
+  <li><strong>Open the folder <code>public_html</code>.</strong> That folder
+  <em>is</em> your website: whatever sits in it is what visitors see.</li>
+  <li><strong>Upload the zip</strong> without unzipping it first. Server-side
+  extraction is far faster than uploading dozens of files individually.</li>
+  <li><strong>Right-click the zip → Extract.</strong> A folder called
+  <code>applets</code> appears.</li>
+  <li><strong>Delete the zip</strong> once it has been extracted.</li>
+  <li><strong>Visit <code>yoursite.com/applets/</code></strong> — with the trailing
+  slash. You should see the list of applets.</li>
+</ol>
+
+<div class="box tip">
+  <p><strong>Use a subfolder.</strong> Putting everything under
+  <code>/applets/</code> means your existing website is untouched: nothing
+  overwrites your homepage. Back up <code>public_html</code> before doing anything
+  more adventurous than this.</p>
+</div>
+
+<div class="box warn">
+  <p><strong>The one mistake everybody makes.</strong> If you end up with
+  <code>applets/applets/index.html</code> — a folder inside a folder of the same
+  name — the archive was extracted one level too deep. Open the inner folder,
+  select everything, move it up one level, and delete the empty folder.</p>
+</div>
+
+<h2>If your host is a drag-and-drop site builder</h2>
+
+<p>Website builders generally do not allow uploading HTML files at all. That is a
+limit of the product, not a setting you have missed. The usual way round it is to
+host the applets somewhere that does allow it — a free static host is enough,
+since these files need no server features — and then link to them from a menu item
+on your builder site.</p>
+
+<h2>Updating an applet later</h2>
+
+<ol class="steps">
+  <li>Open <code>public_html/applets/</code> and the folder of the applet you are
+  replacing.</li>
+  <li>Upload the new <code>index.html</code> and let it overwrite the old one.</li>
+  <li>Reload with a hard refresh — <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>,
+  or <kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> — so the browser fetches the new
+  file rather than reusing its cached copy.</li>
+</ol>
+
+<!-- ==================================== 10. TROUBLESHOOTING -->
+<h1 class="part"><span class="num">10</span>When something looks wrong</h1>
+
+<table>
+  <thead><tr><th>What you see</th><th>What it means</th><th>What to do</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>The diagram is blank or partly empty</td>
+      <td>The utility function is undefined over part of the box — <code>ln(x)</code>
+      has no value at <em>x</em> = 0, and <code>sqrt</code> none below it.</td>
+      <td>Nothing. That emptiness is honest. Move the domain, or use a function
+      defined there.</td>
+    </tr>
+    <tr>
+      <td>An MRS reads <code>∞</code></td>
+      <td>The indifference curve is vertical at that point — one marginal utility
+      is zero.</td>
+      <td>Normal at an edge of the diagram. Move away from the axis.</td>
+    </tr>
+    <tr>
+      <td>A curve looks jagged</td>
+      <td>Every curve is traced numerically on a sampling grid.</td>
+      <td>Nothing to fix; the numbers in the readout are computed to far higher
+      precision than the drawing.</td>
+    </tr>
+    <tr>
+      <td>Dragging feels heavy</td>
+      <td>Changing a preference parameter rebuilds everything — both utility
+      fields and every derived curve.</td>
+      <td>Normal on a slow machine. Turn off the layers you are not using.</td>
+    </tr>
+    <tr>
+      <td>The text is in the wrong language</td>
+      <td>The applet follows the link it was opened with.</td>
+      <td>Use the ES / EN buttons, or add <code>?lang=en</code> to the address.</td>
+    </tr>
+    <tr>
+      <td>Challenge progress vanished</td>
+      <td>Progress is stored per browser, per device — and private windows discard
+      it on close.</td>
+      <td>Expected. Nothing is stored on any server.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="box tip">
+  <p><strong>The universal fix.</strong> Reload the page. Every applet starts from
+  a known good state, nothing you did was saved anywhere, and no work is lost
+  because there is no work to lose.</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Los Applets de Microeconomía — Manual completo</title>
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<!-- ============================================================ PORTADA -->
+<section class="cover">
+  <div class="eyebrow">Guía docente y manual de uso</div>
+  <h1>Los Applets de Microeconomía</h1>
+  <p class="sub">Cinco diagramas interactivos para un curso de microeconomía
+  intermedia — elección del consumidor, curvas de demanda, restricciones
+  quebradas, impuesto a la renta e intercambio entre dos personas. Todos
+  funcionan en el navegador, sin instalar nada.</p>
+  <img src="figs-manual/fig-edgeworth.png" alt="El applet de la caja de Edgeworth, con las curvas de indiferencia de ambos agentes y la curva de contrato">
+  <div class="foot">
+    <p><b>Escrito para quien nunca ha usado un programa así.</b><br>
+    Cada paso está detallado. No hace falta programar nada.</p>
+    <p style="margin-top:4mm">Versión 1.0 &middot; Funciona en Windows, macOS, Linux, iPad, iPhone y Android &middot; No requiere instalación</p>
+  </div>
+</section>
+
+<!-- ============================================================== ÍNDICE -->
+<section class="toc">
+  <h2>Qué contiene este manual</h2>
+  <ol>
+    <li>Empieza aquí — la versión de sesenta segundos
+      <span class="desc">Cómo abrir uno, ahora mismo.</span></li>
+    <li>Lo que comparten todos los applets
+      <span class="desc">Los controles que significan lo mismo en los cinco.</span></li>
+    <li>Óptimo del Consumidor
+      <span class="desc">La recta de presupuesto, la curva de indiferencia y por qué se tocan.</span></li>
+    <li>Funciones de Demanda
+      <span class="desc">De dónde sale la curva de demanda — y un bien que rompe la ley de la demanda.</span></li>
+    <li>Restricciones Presupuestarias No Lineales
+      <span class="desc">Vales, subsidios y el dinero que habría costado lo mismo.</span></li>
+    <li>Impuesto a la Renta del Trabajo
+      <span class="desc">Por qué un tramo quiebra la restricción, y por qué el tramo equivocado la rompe.</span></li>
+    <li>La Caja de Edgeworth
+      <span class="desc">Dos personas, un montón de bienes y todas las formas de repartirlo.</span></li>
+    <li>Escribir tus propias funciones de utilidad
+      <span class="desc">La sintaxis completa, con ejemplos resueltos.</span></li>
+    <li>Publicarlos en tu propio sitio web
+      <span class="desc">Subirlos a jxandri.com, paso a paso.</span></li>
+    <li>Cuando algo se ve raro
+      <span class="desc">Las pocas cosas que fallan de verdad, y cómo se arregla cada una.</span></li>
+  </ol>
+</section>
+
+<!-- =================================================== 1. EMPIEZA AQUÍ -->
+<h1 class="part"><span class="num">1</span>Empieza aquí — la versión de sesenta segundos</h1>
+
+<p>Cada applet es una sola página web. No hay instalador, ni cuenta, ni
+complemento, ni descarga de nada una vez abierta la página. Todo lo que hace el
+applet — cada curva, cada número — se calcula en tu propia máquina, dentro del
+navegador, mientras miras.</p>
+
+<ol class="steps">
+  <li><strong>Haz clic en el enlace</strong> que te dieron, o doble clic en el
+  archivo <code>index.html</code> si recibiste una carpeta.</li>
+  <li>Se abre una página con un panel de control a la izquierda y uno o dos
+  diagramas ocupando el resto.</li>
+  <li><strong>Arrastra algo.</strong> El punto <code>P</code>, la dotación
+  <code>ω</code> o cualquier deslizador. Todo se redibuja al instante.
+  <strong>Ya está. Está funcionando.</strong></li>
+</ol>
+
+<div class="tip">
+  <p><strong>No lo puedes romper.</strong> Nada de lo que hagas se guarda en un
+  servidor y nada es permanente. Si un diagrama queda en un estado que no
+  entiendes, recarga la página — <kbd>F5</kbd>, o <kbd>⌘</kbd>+<kbd>R</kbd> en
+  Mac — y vuelve a su posición inicial.</p>
+</div>
+
+<h2>¿Cuál necesito?</h2>
+
+<table>
+  <thead><tr><th>Si la pregunta es…</th><th>Abre</th></tr></thead>
+  <tbody>
+    <tr><td>¿Por qué la mejor canasta está donde las curvas se tocan?</td><td>Óptimo del Consumidor</td></tr>
+    <tr><td>¿De dónde sale realmente una curva de demanda?</td><td>Funciones de Demanda</td></tr>
+    <tr><td>¿Vale un vale lo mismo que el dinero que costó?</td><td>Restricciones No Lineales</td></tr>
+    <tr><td>¿Cómo cambia un impuesto cuánto trabaja la gente?</td><td>Impuesto a la Renta del Trabajo</td></tr>
+    <tr><td>¿Qué pasa cuando dos personas comercian entre sí?</td><td>La Caja de Edgeworth</td></tr>
+  </tbody>
+</table>
+
+<h2>¿Funciona en el teléfono?</h2>
+
+<p>Sí, y en tableta. La disposición se apila en una sola columna y los arrastres
+se hacen con el dedo. Un portátil es más cómodo para los applets de dos paneles,
+pero en el teléfono no falta nada.</p>
+
+<!-- ============================================== 2. LO COMPARTIDO -->
+<h1 class="part"><span class="num">2</span>Lo que comparten todos los applets</h1>
+
+<p>Los cinco se construyeron como una familia. Aprende estos controles una vez y
+significan lo mismo en todos.</p>
+
+<div class="key">
+  <p><b>ES / EN</b> — arriba a la derecha. Cambia toda la interfaz entre español e
+  inglés en cualquier momento, incluso a mitad de una demostración. No se
+  recalcula nada y no se pierde nada.</p>
+  <p><b>Oscuro / Claro</b> — arriba a la derecha. Los dos temas están diseñados por
+  separado, no invertidos. Usa el claro para proyector y el oscuro para un aula a
+  oscuras.</p>
+  <p><b>La columna izquierda</b> — todos los controles viven ahí, agrupados bajo
+  títulos pequeños en mayúsculas. El diagrama nunca esconde un control detrás de
+  un menú.</p>
+  <p><b>Deslizadores con un número al lado</b> — arrastra el deslizador, o haz clic
+  en el número y escribe un valor exacto seguido de <kbd>Enter</kbd>. Escribir es
+  lo que quieres cuando <em>p<sub>x</sub></em> tiene que valer exactamente 2.</p>
+  <p><b>Capas</b> — una rejilla de casillas cerca del final. Cada una enciende o
+  apaga un elemento del diagrama. <em>Apagar</em> capas es el recurso didáctico más
+  desaprovechado de estos applets: un diagrama con una sola curva es un diagrama
+  que la clase puede leer.</p>
+  <p><b>La tira de lecturas</b> — la fila de números bajo cada diagrama. Siempre
+  describe la posición actual y se actualiza mientras arrastras.</p>
+</div>
+
+<h2>La franja de color bajo el diagrama</h2>
+
+<p>Casi todos los applets terminan con un párrafo en un recuadro con el borde
+izquierdo de color. No es decoración: es el applet diciéndote, con palabras, qué
+significa la posición actual — <em>las curvas son tangentes</em>, <em>es eficiente
+pero nadie lo firmaría</em>, <em>el mercado no se vacía</em>. Cuando no sepas qué
+estás viendo, lee ese recuadro primero.</p>
+
+<div class="tip">
+  <p><strong>Fijar el idioma en el enlace.</strong> Añade <code>?lang=es</code> al
+  final de la dirección de cualquier applet y se abre en español sin importar la
+  configuración de quien lo abra; <code>?lang=en</code> hace lo mismo con el
+  inglés. Útil cuando repartes un solo enlace a todo un curso.</p>
+</div>
+
+<!-- ============================================ 3. ÓPTIMO DEL CONSUMIDOR -->
+<h1 class="part"><span class="num">3</span>Óptimo del Consumidor</h1>
+
+<p class="lead">Dos bienes, un presupuesto y unas preferencias. El applet responde
+una sola pregunta — <em>¿qué canasta asequible elige esta persona?</em> — y
+muestra la misma respuesta dos veces: como el diagrama de siempre y como una
+colina vista desde arriba.</p>
+
+<figure>
+  <img src="figs-manual/fig-consumer.png" alt="El applet Óptimo del Consumidor: el diagrama 2D a la izquierda y la superficie de utilidad 3D a la derecha">
+  <figcaption>El diagrama 2D y la superficie 3D son el mismo modelo. Mueve la
+  canasta en cualquiera de los dos y el otro responde.</figcaption>
+</figure>
+
+<h2>La pantalla, parte por parte</h2>
+
+<div class="key">
+  <p><b>Panel izquierdo — el plano (x, y).</b> La imagen de siempre: la recta de
+  presupuesto, la curva de indiferencia que pasa por la canasta y un mapa de color
+  de la utilidad debajo.</p>
+  <p><b>Panel derecho — la superficie z = u(x, y).</b> La misma utilidad dibujada
+  como altura. La curva de indiferencia de la izquierda es una curva de nivel a la
+  derecha.</p>
+  <p><b>X–Z / X–Y / Y–Z / 3D.</b> Cuatro botones de cámara sobre el panel derecho.
+  Los tres primeros son proyecciones planas; <code>3D</code> es una vista libre que
+  puedes orbitar.</p>
+  <p><b>Método gráfico.</b> Tres opciones que cambian qué hace el arrastre — ver
+  abajo.</p>
+</div>
+
+<h2>Tus primeros cinco minutos</h2>
+
+<ol class="steps">
+  <li><strong>Deja todo en sus valores iniciales</strong> y arrastra el punto
+  <code>P</code> sobre la recta presupuestaria. Observa cómo la curva de
+  indiferencia que pasa por él crece y se encoge.</li>
+  <li><strong>Busca la curva más grande que puedas</strong> sin salir de la recta.
+  Detente cuando la lectura <em>Diferencia</em> se acerque a 0%.</li>
+  <li><strong>Mira los dos números de al lado</strong>: la RMS y la razón de
+  precios. En la mejor canasta son iguales. Esa igualdad <em>es</em> la condición
+  de tangencia, escrita como número en vez de como dibujo.</li>
+  <li><strong>Ahora pulsa <code>X–Z</code></strong> sobre el panel derecho. La
+  recta presupuestaria, levantada sobre la superficie de utilidad, se convierte en
+  un solo arco. La cima de ese arco es la misma canasta que acabas de encontrar a
+  mano.</li>
+  <li><strong>Sube el precio de x</strong> con el deslizador
+  <em>p<sub>x</sub></em> y observa cómo responde todo el dibujo.</li>
+</ol>
+
+<div class="box tip">
+  <p><strong>El movimiento que lo hace entender.</strong> El paso 4 es la razón de
+  ser del segundo panel. «Encuentra la mejor canasta asequible» es una instrucción
+  abstracta; «encuentra la cima de esta colina» no lo es. Los estudiantes que no
+  ven la tangencia en el diagrama plano la ven casi siempre de inmediato en la
+  vista <code>X–Z</code>.</p>
+</div>
+
+<h2>Los tres métodos gráficos</h2>
+
+<table>
+  <thead><tr><th>Método</th><th>Qué hace el arrastre</th><th>Sirve para mostrar</th></tr></thead>
+  <tbody>
+    <tr><td><b>Elegir la canasta</b></td><td>Desliza <code>P</code> por la recta presupuestaria</td>
+        <td>La búsqueda de la curva más alta alcanzable</td></tr>
+    <tr><td><b>Subir la curva de nivel</b></td><td>Sube y baja la curva de indiferencia</td>
+        <td>Que el óptimo está donde la curva <em>toca</em> la recta por primera vez</td></tr>
+    <tr><td><b>Punto libre</b></td><td>Mueve <code>P</code> por todo el cuadrante</td>
+        <td>Canastas inasequibles, o asequibles pero derrochadoras</td></tr>
+  </tbody>
+</table>
+
+<h2>Tres cosas para probar en clase</h2>
+
+<div class="box">
+  <p><b>1. Sustitutos perfectos.</b> Escribe <code>x+2y</code> como función de
+  utilidad. Las curvas de indiferencia se vuelven rectas. Ahora cambia
+  <em>p<sub>x</sub></em> despacio: no pasa nada, no pasa nada, no pasa nada — y de
+  golpe la canasta salta de un eje al otro. No hay tangencia en ninguna parte: el
+  óptimo es una esquina.</p>
+  <p><b>2. Complementarios perfectos.</b> Escribe <code>min(x,y)</code>. Las curvas
+  se vuelven ángulos rectos y el óptimo cae sobre el vértice, donde no existe
+  tangente alguna. El applet lo dice con honestidad en vez de fingir que encuentra
+  una tangencia.</p>
+  <p><b>3. El efecto renta solo.</b> Sube <em>m</em> sin tocar los precios. La
+  recta se desplaza hacia afuera sin inclinarse, y la canasta traza la senda de
+  expansión de la renta.</p>
+</div>
+
+<h2>Modo Retos</h2>
+
+<p>El botón <b>Retos</b> de la barra superior convierte el applet en seis
+ejercicios puntuados sobre las familias de preferencias habituales. Los precios,
+la renta y la función de utilidad se bloquean mientras dura el reto — de lo
+contrario la respuesta sería reescribir la pregunta. Al comprobar se revela el
+óptimo verdadero, se puntúa el intento y se explica <em>qué</em> condición de
+optimalidad se aplicó: tangencia, vértice o esquina. El progreso se recuerda en el
+navegador, por dispositivo.</p>
+
+<!-- ============================================ 4. FUNCIONES DE DEMANDA -->
+<h1 class="part"><span class="num">4</span>Funciones de Demanda</h1>
+
+<p class="lead">Toda curva de demanda de todo manual es la respuesta a una
+pregunta que nadie te muestra formulando. Este applet la formula delante de la
+clase: mantén fijas las preferencias, mueve un precio y anota dónde queda la
+canasta óptima.</p>
+
+<figure>
+  <img src="figs-manual/fig-demand.png" alt="El applet de Funciones de Demanda, con el plano de bienes y la curva de demanda trazándose">
+  <figcaption>El panel izquierdo es el diagrama de bienes de siempre. El derecho
+  es la curva de demanda construyéndose a partir de él, punto a punto.</figcaption>
+</figure>
+
+<h2>La idea, en una frase</h2>
+
+<p>Elige una familia de preferencias, elige qué variable va a moverse
+(<em>p<sub>x</sub></em>, <em>p<sub>y</sub></em> o <em>m</em>), muévela y registra
+dónde va la canasta. Los puntos registrados <em>son</em> la curva de demanda.</p>
+
+<h2>Tus primeros cinco minutos</h2>
+
+<ol class="steps">
+  <li><strong>Deja la familia en Cobb–Douglas</strong> y comprueba que la variable
+  que varía es <em>p<sub>x</sub></em>.</li>
+  <li><strong>Asegúrate de que <em>Marcar al mover</em> está activado</strong> en el
+  grupo <em>Descubrir la demanda</em>.</li>
+  <li><strong>Arrastra despacio el deslizador <em>p<sub>x</sub></em></strong> de un
+  extremo al otro. A la izquierda la recta gira y la canasta se desliza; a la
+  derecha aparece un rastro de puntos.</li>
+  <li><strong>Mira ese rastro.</strong> Acabas de derivar una curva de demanda a
+  partir de la maximización de utilidad, en unos quince segundos y sin escribir
+  nada.</li>
+  <li><strong>Pulsa <em>Barrido</em></strong> para que el applet recorra todo el
+  intervalo automáticamente y dibuje la curva completa. <em>Limpiar</em> la vacía
+  de nuevo.</li>
+</ol>
+
+<h2>El control que sorprende</h2>
+
+<div class="key">
+  <p><b>Variable que varía.</b> Tres botones: <em>p<sub>x</sub></em>,
+  <em>p<sub>y</sub></em>, <em>m</em>. Pasar a <em>m</em> traza una curva de
+  <em>Engel</em> en vez de una de demanda — la misma maquinaria, otra pregunta.
+  Pasar a <em>p<sub>y</sub></em> muestra una relación de precio cruzado. La mayoría
+  de los cursos sólo dibuja la primera de las tres.</p>
+  <p><b>Eje vertical fijo.</b> Déjalo activado cuando compares dos familias. Con él
+  desactivado el eje se reescala a la curva que haya en pantalla, y dos curvas que
+  parecen idénticas pueden estar en escalas completamente distintas.</p>
+  <p><b>Curva precio-consumo (PCC).</b> Una capa, desactivada por defecto. Dibuja
+  el camino que recorre la <em>canasta</em> en el panel izquierdo mientras el precio
+  se mueve — aquello de lo que la curva de demanda de la derecha es una
+  proyección.</p>
+</div>
+
+<h2>Lo que todo curso promete y nunca enseña</h2>
+
+<div class="box warn">
+  <p><strong>Un bien Giffen.</strong> Elige la cuarta familia de preferencias — la
+  escrita con logaritmos, un suelo y un techo. Pon la variable que varía en
+  <em>p<sub>x</sub></em> y haz un barrido.</p>
+  <p>En parte del recorrido la curva de demanda <em>tiene pendiente positiva</em>:
+  sube el precio de <em>x</em> y el hogar compra <em>más</em>. El applet resalta ese
+  tramo con su propio color para que no se pase por alto.</p>
+  <p>No es un error ni un truco. Es lo que ocurre cuando un bien es fuertemente
+  inferior y se lleva una parte grande del presupuesto: el efecto renta de la
+  subida de precio domina al efecto sustitución. A casi todos los estudiantes les
+  han dicho que esto existe y nunca han visto uno.</p>
+</div>
+
+<h2>Tres cosas para probar en clase</h2>
+
+<div class="box">
+  <p><b>1. Cobb–Douglas gasta una proporción constante.</b> Haz un barrido de
+  <em>p<sub>x</sub></em> y mira la curva. Después calcula <em>p<sub>x</sub></em> ×
+  <em>x</em> en dos puntos registrados cualesquiera: sale el mismo número.</p>
+  <p><b>2. Los sustitutos dan un escalón.</b> Elige la familia lineal. La curva de
+  demanda no es una curva: es un escalón — todo, y después nada, a un solo
+  precio.</p>
+  <p><b>3. Elasticidad a ojo.</b> Con CES, cambia el parámetro <em>r</em> y vuelve a
+  barrer. La curva se aplana o se empina a la vista; esa forma <em>es</em> la
+  elasticidad de sustitución.</p>
+</div>
+
+<!-- ==================================== 5. RESTRICCIONES NO LINEALES -->
+<h1 class="part"><span class="num">5</span>Restricciones Presupuestarias No Lineales</h1>
+
+<p class="lead">Las políticas reales casi nunca reparten dinero. Reparten vales,
+plazas, descuentos y prestaciones — y cada uno de ellos dobla la recta
+presupuestaria en algún sitio. Este applet la dobla de siete maneras distintas y
+hace siempre la misma pregunta.</p>
+
+<figure>
+  <img src="figs-manual/fig-nonlinear.png" alt="El applet de Restricciones No Lineales, con la frontera quebrada y la utilidad a lo largo de ella">
+  <figcaption>El panel izquierdo muestra la frontera doblada; el derecho, la
+  utilidad medida <em>a lo largo</em> de ella, lo que convierte «encuentra el mejor
+  punto» en «encuentra la cima».</figcaption>
+</figure>
+
+<h2>Los siete esquemas</h2>
+
+<table>
+  <thead><tr><th>#</th><th>Esquema</th><th>Qué le hace a la frontera</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>Restricción simple</td><td>La recta de siempre</td></tr>
+    <tr><td>1</td><td>Subsidio en especie, no excluyente</td><td>Gratis hasta <em>x<sub>s</sub></em>, después precio de mercado — un vértice</td></tr>
+    <tr><td>2</td><td>Parcial en especie, no excluyente</td><td>Descuento hasta <em>x<sub>s</sub></em>, después precio pleno — un vértice más suave</td></tr>
+    <tr><td>3</td><td>Subsidio excluyente (escuela pública)</td><td>Tomar <em>x<sub>s</sub></em> gratis <b>o</b> comprar a precio de mercado — una caída vertical</td></tr>
+    <tr><td>4</td><td>Parcial excluyente</td><td>Un descuento que se pierde entero si superas el límite</td></tr>
+    <tr><td>5</td><td>Equivalente en efectivo (total)</td><td>El mismo dinero en efectivo — una recta, más afuera</td></tr>
+    <tr><td>6</td><td>Equivalente en efectivo (parcial)</td><td>Lo mismo, para el subsidio parcial</td></tr>
+  </tbody>
+</table>
+
+<h2>La comparación por la que existe el applet</h2>
+
+<div class="box tip">
+  <p><strong>El esquema 1 contra el 5.</strong> Pon el esquema en <b>1</b> y después
+  <em>Comparar con</em> en <b>5</b>. Los dos le cuestan exactamente lo mismo a quien
+  financia el programa. Uno entrega bienes; el otro entrega el dinero que esos
+  bienes habrían costado.</p>
+  <p>Ahora mira dónde queda cada óptimo y qué utilidad alcanza cada uno. Para la
+  mayoría de las preferencias el equivalente en efectivo alcanza una curva de
+  indiferencia <em>más alta</em> al mismo coste — el argumento clásico de que el
+  efectivo domina a la transferencia en especie. Después busca los hogares para los
+  que da exactamente igual, y explica por qué.</p>
+  <p>El esquema <b>2</b> se empareja con el <b>6</b> de la misma forma.</p>
+</div>
+
+<h2>Tus primeros cinco minutos</h2>
+
+<ol class="steps">
+  <li><strong>Empieza en el esquema 0</strong> y confirma que reconoces la recta
+  presupuestaria y la tangencia de siempre.</li>
+  <li><strong>Pasa al esquema 1.</strong> A la recta le sale un vértice. Observa a
+  dónde va el óptimo.</li>
+  <li><strong>Arrastra despacio el tamaño del subsidio</strong> <em>x<sub>s</sub></em>.
+  Para todo un rango de valores el óptimo se queda <em>exactamente sobre el
+  vértice</em> y ahí sigue mientras arrastras. Esa pegajosidad es el sentido del
+  diagrama.</li>
+  <li><strong>Pasa al esquema 3</strong>, el excluyente. Ahora la frontera tiene una
+  caída vertical y parte de ella es sencillamente inalcanzable.</li>
+  <li><strong>Vigila el panel derecho</strong> todo el rato. Dibuja la utilidad a lo
+  largo de la frontera, así que el óptimo es el punto más alto de una curva y no
+  una tangencia que haya que adivinar.</li>
+</ol>
+
+<div class="box warn">
+  <p><strong>Un subsidio con signo negativo es un impuesto.</strong> Pon la tasa de
+  subsidio <em>s</em> por debajo de cero y el esquema se convierte en un impuesto de
+  tipo <em>τ</em> = −<em>s</em> sobre las primeras <em>x<sub>s</sub></em> unidades. La
+  frontera se dobla al revés. Es la forma más barata de mostrar que un subsidio y un
+  impuesto son el mismo instrumento con el signo cambiado.</p>
+</div>
+
+<!-- ============================================== 6. IMPUESTO -->
+<h1 class="part"><span class="num">6</span>Impuesto a la Renta del Trabajo</h1>
+
+<p class="lead">Un impuesto por tramos le hace a la restricción presupuestaria algo
+que un impuesto plano nunca hace. Qué exactamente depende por completo de si los
+tramos son marginales o medios — y la diferencia es mucho mayor de lo que los
+estudiantes esperan.</p>
+
+<figure>
+  <img src="figs-manual/fig-labor.png" alt="El applet del Impuesto a la Renta del Trabajo, con la frontera consumo-ocio quebrada por el impuesto">
+  <figcaption>Consumo contra ocio, con la frontera doblada por el impuesto. El
+  segundo panel dibuja la renta neta o la utilidad a lo largo de esa misma
+  frontera.</figcaption>
+</figure>
+
+<h2>El planteamiento</h2>
+
+<p>El tiempo se normaliza a 1, así que <em>L</em> es la fracción del tiempo
+disponible que se trabaja y <em>ℓ</em> = 1 − <em>L</em> es el ocio. La renta
+laboral es <em>Y</em> = <em>w</em>·<em>L</em>. El consumo asequible con trabajo
+<em>L</em> es</p>
+
+<pre>c(L) = ( m₀ + w·L − T(w·L) ) / pₓ</pre>
+
+<p>donde <em>m₀</em> es la renta no laboral y <em>T</em> es el impuesto. Tú fijas
+tres tipos y dos umbrales, ambos sobre la renta del trabajo.</p>
+
+<h2>Los dos modos, que son todo el asunto</h2>
+
+<div class="key">
+  <p><b>Tipos marginales.</b> Cada tipo se aplica sólo a la renta que cae dentro de
+  su propio tramo. La renta neta sigue siendo continua, así que la frontera
+  <b>se quiebra</b>: se dobla, pero no se rompe.</p>
+  <p><b>Tipos medios.</b> El tramo en el que caes fija el tipo sobre <em>toda</em>
+  tu renta. En cada umbral la renta neta <b>da un salto hacia abajo</b>. Ganar una
+  unidad más puede dejarte estrictamente más pobre. Eso es un <em>escalón</em>, no
+  un vértice.</p>
+</div>
+
+<div class="box warn">
+  <p><strong>Haz esta comparación y deja que el número aterrice.</strong> Con los
+  valores iniciales — salario 50, otra renta 10, tipos 0 / 0,4 / 0,8, umbrales en 20
+  y 30 — pasa a <b>tipos medios</b> y mira qué ocurre al cruzar el primer umbral. La
+  renta neta cae de <b>19,99</b> a <b>12,01</b>.</p>
+  <p>El trabajador ganó una unidad más y terminó casi ocho unidades más pobre. El
+  óptimo queda clavado justo debajo del umbral, y ahí se queda. Por esto los datos
+  fiscales reales muestran gente amontonada inmediatamente por debajo del borde de
+  un tramo — y por esto eso es evidencia de una escala mal diseñada, no de
+  evasión.</p>
+</div>
+
+<h2>Tus primeros cinco minutos</h2>
+
+<ol class="steps">
+  <li><strong>Empieza en modo marginal</strong> y arrastra el salario. Observa cómo
+  la frontera se dobla en los dos umbrales sin romperse nunca.</li>
+  <li><strong>Busca unos tipos que dejen el óptimo justo sobre un vértice.</strong>
+  Es más fácil de lo que parece: los vértices atraen óptimos en todo un rango de
+  salarios. El applet avisa cuando <em>el óptimo cae sobre un umbral</em>.</li>
+  <li><strong>Pasa a tipos medios.</strong> La frontera se rasga en cada umbral.</li>
+  <li><strong>Lee los cuatro números fiscales</strong> de la tira de lecturas: renta
+  bruta, impuesto, tipo medio y tipo marginal. En modo medio observa lo que hace el
+  tipo marginal, que ningún diagrama de manual enseña.</li>
+  <li><strong>Cambia el primer panel</strong> entre <em>Consumo y ocio</em> y
+  <em>Consumo y trabajo</em>. El mismo modelo, reflejado — pero quien no sabe leer
+  uno muy a menudo lee el otro.</li>
+</ol>
+
+<!-- ============================================ 7. CAJA DE EDGEWORTH -->
+<h1 class="part"><span class="num">7</span>La Caja de Edgeworth</h1>
+
+<p class="lead">Dos personas, dos bienes, nada que producir: sólo repartir lo que
+ya hay. La caja mide el total, y cada punto de ella es una respuesta completa a
+«quién tiene qué».</p>
+
+<figure>
+  <img src="figs-manual/fig-edgeworth.png" alt="El applet de la caja de Edgeworth con ambas familias de curvas, la curva de contrato y el conjunto de mejoras">
+  <figcaption>A se mide desde abajo a la izquierda; B desde arriba a la derecha. La
+  región sombreada entre las dos curvas es el conjunto de intercambios que mejoran
+  a los dos.</figcaption>
+</figure>
+
+<h2>Lo primero que hay que tener claro</h2>
+
+<div class="box tip">
+  <p><strong>Los ejes de B van al revés.</strong> La canasta de A se lee desde la
+  esquina inferior izquierda, marcada <b>O_A</b>, de la forma habitual. La de B se
+  lee desde la esquina <em>superior derecha</em>, <b>O_B</b>, con los dos ejes
+  invertidos — así que los números de B crecen al bajar y al ir hacia la
+  izquierda.</p>
+  <p>El applet dibuja y numera los dos juegos de ejes a propósito, porque esto es lo
+  único que los estudiantes equivocan siempre. Si un número de la lectura parece
+  imposible, comprueba desde qué esquina se está midiendo.</p>
+</div>
+
+<h2>La pantalla, parte por parte</h2>
+
+<div class="key">
+  <p><b>Curvas rojas</b> — las de indiferencia de A. <b>Curvas azules</b> — las de B.</p>
+  <p><b>La curva violeta</b> — la curva de contrato: todos los repartos en que ambos
+  son tangentes y, por tanto, todos los repartos que no pueden mejorarse para uno
+  sin perjudicar al otro.</p>
+  <p><b>La región sombreada</b> — el conjunto de mejoras: todo reparto que deja a
+  <em>los dos</em> estrictamente mejor. Está vacío exactamente cuando el reparto ya
+  es eficiente, y verlo cerrarse es la forma más rápida de entender por qué.</p>
+  <p><b>ω</b> — la dotación: con qué empieza cada uno. Se arrastra en el diagrama, o
+  se fija con los cuatro deslizadores.</p>
+  <p><b>P</b> — el reparto actual. Se arrastra a donde quieras.</p>
+</div>
+
+<h2>Tus primeros cinco minutos</h2>
+
+<ol class="steps">
+  <li><strong>Arrastra P por la caja</strong> y observa cómo la región sombreada
+  cambia de forma y tamaño.</li>
+  <li><strong>Arrastra P sobre la curva violeta.</strong> La región sombreada se
+  cierra del todo. La lectura <em>Sin repartir</em> llega a 0%.</li>
+  <li><strong>Lee el recuadro de abajo.</strong> Ahora dice que el reparto es
+  eficiente en el sentido de Pareto, y por qué.</li>
+  <li><strong>Cambia el mecanismo a <em>Intercambiar desde la dotación</em></strong> e
+  intenta arrastrar P muy lejos. No puedes: el borde de la lente es un muro, porque
+  ninguno de los dos acepta quedar peor que al empezar.</li>
+  <li><strong>Pasa a <em>Subasta walrasiana</em></strong> y mueve el precio. Aparecen
+  dos marcadores cuadrados — lo que cada uno quiere comprar a ese precio. Busca el
+  precio en que caen en el mismo sitio. Ese precio vacía el mercado.</li>
+</ol>
+
+<h2>Las tres economías</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Quién participa</th><th>Qué muestra el diagrama</th></tr></thead>
+  <tbody>
+    <tr><td><b>Intercambio</b></td><td>Dos consumidores con dotaciones fijas</td>
+        <td>La caja, la curva de contrato, el núcleo</td></tr>
+    <tr><td><b>Producción</b></td><td>Dos consumidores y una empresa</td>
+        <td>Una frontera curva en lugar de una esquina; el rectángulo que se reparte se desliza sobre ella</td></tr>
+    <tr><td><b>Robinson</b></td><td>Un consumidor y una empresa</td>
+        <td>No hay reparto que discutir: el óptimo está donde la RMS iguala a la RMT</td></tr>
+  </tbody>
+</table>
+
+<div class="box">
+  <p><strong>Las tres son la misma imagen.</strong> La tecnología de la empresa se
+  escribe como frontera, <code>(x/Fx)^c + (y/Fy)^c = 1</code>. Con <em>c</em> = 1 es
+  una recta y el coste de oportunidad es constante; con <em>c</em> = 2 es el cuarto
+  de elipse de los manuales; y al crecer <em>c</em> se cuadra contra la esquina —
+  que <em>es</em> la caja de intercambio. Arrastra <em>c</em> y verás una economía
+  con producción convertirse en una de intercambio puro.</p>
+</div>
+
+<h2>Pesos de Pareto, Negishi y el segundo teorema</h2>
+
+<p>Elige el mecanismo <b>Planificador · peso λ</b>. El deslizador inferior fija
+ahora un peso de bienestar, y el reparto se mueve por la curva de contrato en
+consecuencia: λ cerca de su extremo bajo favorece a B; cerca del alto, a A.</p>
+
+<p>Al mismo tiempo el applet calcula, para ese reparto, los <em>precios que lo
+sostendrían</em> y las <em>transferencias</em> que cada uno necesitaría para pagar
+su canasta a esos precios. La línea bajo el diagrama lo dice con palabras —
+<em>implementado por precios (p<sub>x</sub>, p<sub>y</sub>) = (…, 1) con
+transferencias T<sub>A</sub> = …, T<sub>B</sub> = …</em> — y las dos transferencias
+suman siempre cero. Esa frase es el segundo teorema del bienestar.</p>
+
+<p>El botón <b>Negishi</b> hace lo contrario: busca el peso con el que la
+transferencia necesaria es <em>cero</em>. Con ese peso nadie necesita un regalo, y
+el reparto del planificador es exactamente el equilibrio competitivo.</p>
+
+<div class="box warn">
+  <p><strong>Una advertencia honesta sobre λ.</strong> Si les das a los dos las
+  <em>mismas</em> preferencias, la frontera de posibilidades de utilidad es una
+  recta, y contra una recta todos los repartos eficientes están sostenidos por el
+  <em>mismo</em> peso. Entonces λ no puede señalar ningún punto: el reparto se sigue
+  moviendo, pero el número se queda quieto. El applet lo dice en vez de esconderlo —
+  marca λ como <em>constante</em> y explica el motivo en el pie del deslizador.</p>
+  <p>Es una propiedad de los pesos de bienestar, no un fallo del applet. Dales gustos
+  distintos — como hace la configuración inicial — y λ funciona con normalidad.</p>
+</div>
+
+<h2>Tres cosas para probar en clase</h2>
+
+<div class="box">
+  <p><b>1. El núcleo se encoge cuando los gustos convergen.</b> Haz que los
+  parámetros de A y de B se parezcan más y observa cómo se estrecha el núcleo
+  resaltado.</p>
+  <p><b>2. Arrastra la dotación a lo largo de una recta de precios.</b> Mueve ω de
+  modo que su <em>valor</em> apenas cambie, y el equilibrio casi no se mueve. Muévela
+  a un punto genuinamente más pobre y el equilibrio se desplaza mucho. Las
+  dotaciones importan por su valor, no por su posición.</p>
+  <p><b>3. Familias mixtas.</b> Dale a A Cobb–Douglas y a B complementarios
+  perfectos. La curva de contrato no es la imagen de manual de ninguna de las dos
+  familias — que es justamente por lo que el applet deja elegir a cada uno por
+  separado.</p>
+</div>
+
+<!-- ==================================== 8. ESCRIBIR FUNCIONES -->
+<h1 class="part"><span class="num">8</span>Escribir tus propias funciones de utilidad</h1>
+
+<p>Todos los applets ofrecen un menú de familias de preferencias con deslizadores
+para sus parámetros. Todos <em>además</em> permiten escribir una función propia:
+elige la familia <b>Escrita a mano</b>, o usa directamente la caja de texto.</p>
+
+<h2>La sintaxis, completa</h2>
+
+<table>
+  <thead><tr><th>Puedes escribir</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><code>+ − * / ^ ( )</code></td><td>La aritmética de siempre. <code>^</code> es una potencia.</td></tr>
+    <tr><td><code>sqrt ln log log10 exp abs</code></td><td>Raíz, logaritmo natural, logaritmo, logaritmo base 10, exponencial, valor absoluto</td></tr>
+    <tr><td><code>min max</code></td><td>Dos argumentos: <code>min(x,y)</code></td></tr>
+    <tr><td><code>sin cos tan</code></td><td>Poco útiles aquí, pero disponibles</td></tr>
+    <tr><td><code>e pi</code></td><td>Las dos constantes</td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <p><b>La multiplicación implícita funciona.</b> <code>2xy</code> significa
+  <code>2*x*y</code>, y <code>x^(1/3)y^(2/3)</code> se interpreta como cabe
+  esperar.</p>
+  <p><b>Las potencias se aplican antes que el signo menos.</b> <code>-x^2</code> es
+  <code>-(x^2)</code>, como en cualquier manual.</p>
+  <p><b>Los exponentes negativos necesitan paréntesis.</b> Escribe
+  <code>x^(-1)</code>, no <code>x^-1</code>. Se aceptan los dos, pero el primero no
+  admite dudas al leerlo.</p>
+</div>
+
+<h2>Ejemplos resueltos</h2>
+
+<table>
+  <thead><tr><th>Preferencias</th><th>Escribe esto</th></tr></thead>
+  <tbody>
+    <tr><td>Cobb–Douglas, pesos iguales</td><td><code>x^0.5*y^0.5</code></td></tr>
+    <tr><td>Cobb–Douglas, a favor de x</td><td><code>x^0.7*y^0.3</code></td></tr>
+    <tr><td>Sustitutos perfectos</td><td><code>x+2y</code></td></tr>
+    <tr><td>Complementarios perfectos</td><td><code>min(x,y)</code></td></tr>
+    <tr><td>Leontief en proporciones fijas</td><td><code>min(x/1,y/2)</code></td></tr>
+    <tr><td>Cuasilineal</td><td><code>2sqrt(x)+y</code></td></tr>
+    <tr><td>Cuasilineal logarítmica</td><td><code>ln(x)+y</code></td></tr>
+    <tr><td>CES</td><td><code>(0.5x^0.5+0.5y^0.5)^(2)</code></td></tr>
+  </tbody>
+</table>
+
+<div class="box warn">
+  <p><strong>Si la caja se pone roja.</strong> El applet no pudo leer lo que
+  escribiste y te dice por qué justo debajo. Las tres causas habituales: falta un
+  paréntesis de cierre; se usó como variable una letra distinta de <code>x</code> o
+  <code>y</code>; o el nombre de una función está mal escrito (<code>sqr</code> en
+  lugar de <code>sqrt</code>). No se rompe nada: el diagrama sigue usando la última
+  función que entendió hasta que corrijas el texto.</p>
+</div>
+
+<!-- ==================================== 9. PUBLICAR -->
+<h1 class="part"><span class="num">9</span>Publicarlos en tu propio sitio web</h1>
+
+<p>Cada applet es un único archivo HTML autocontenido. Sin base de datos, sin PHP,
+sin paso de compilación. El servidor sólo tiene que entregar el archivo. Por eso
+publicarlos es copiar archivos y no desplegar una aplicación.</p>
+
+<h2>Si tu alojamiento tiene cPanel</h2>
+
+<ol class="steps">
+  <li><strong>Entra en tu alojamiento</strong> y abre <b>cPanel</b> y después el
+  <b>Administrador de archivos</b>.</li>
+  <li><strong>Abre la carpeta <code>public_html</code>.</strong> Esa carpeta
+  <em>es</em> tu sitio web: lo que esté dentro es lo que ven los visitantes.</li>
+  <li><strong>Sube el zip</strong> sin descomprimirlo antes. Descomprimir en el
+  servidor es mucho más rápido que subir decenas de archivos uno a uno.</li>
+  <li><strong>Clic derecho en el zip → Extraer.</strong> Aparece una carpeta llamada
+  <code>applets</code>.</li>
+  <li><strong>Borra el zip</strong> una vez extraído.</li>
+  <li><strong>Visita <code>tusitio.com/applets/</code></strong> — con la barra final.
+  Deberías ver la lista de applets.</li>
+</ol>
+
+<div class="box tip">
+  <p><strong>Usa una subcarpeta.</strong> Poner todo bajo <code>/applets/</code>
+  significa que tu sitio actual no se toca: nada sobrescribe tu página de inicio.
+  Haz una copia de seguridad de <code>public_html</code> antes de intentar algo más
+  atrevido que esto.</p>
+</div>
+
+<div class="box warn">
+  <p><strong>El error que comete todo el mundo.</strong> Si acabas con
+  <code>applets/applets/index.html</code> — una carpeta dentro de otra con el mismo
+  nombre — el archivo se extrajo un nivel de más. Abre la carpeta interior,
+  selecciónalo todo, muévelo un nivel hacia arriba y borra la carpeta vacía.</p>
+</div>
+
+<h2>Si tu alojamiento es un creador de webs por arrastre</h2>
+
+<p>Los creadores de sitios web normalmente no permiten subir archivos HTML. Es un
+límite del producto, no un ajuste que se te haya pasado. La salida habitual es
+alojar los applets en un sitio que sí lo permita — basta con un alojamiento
+estático gratuito, porque estos archivos no necesitan ninguna función de
+servidor — y enlazarlos desde un elemento de menú de tu web.</p>
+
+<h2>Actualizar un applet más adelante</h2>
+
+<ol class="steps">
+  <li>Abre <code>public_html/applets/</code> y la carpeta del applet que vas a
+  reemplazar.</li>
+  <li>Sube el nuevo <code>index.html</code> y deja que sobrescriba al anterior.</li>
+  <li>Recarga forzando la actualización — <kbd>Ctrl</kbd>+<kbd>Mayús</kbd>+<kbd>R</kbd>,
+  o <kbd>⌘</kbd>+<kbd>Mayús</kbd>+<kbd>R</kbd> — para que el navegador pida el
+  archivo nuevo en vez de reutilizar su copia guardada.</li>
+</ol>
+
+<!-- ==================================== 10. PROBLEMAS -->
+<h1 class="part"><span class="num">10</span>Cuando algo se ve raro</h1>
+
+<table>
+  <thead><tr><th>Qué ves</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>El diagrama está vacío o falta un trozo</td>
+      <td>La función de utilidad no está definida en parte de la caja —
+      <code>ln(x)</code> no tiene valor en <em>x</em> = 0, y <code>sqrt</code> ninguno
+      por debajo.</td>
+      <td>Nada. Ese vacío es honesto. Cambia el dominio, o usa una función definida
+      ahí.</td>
+    </tr>
+    <tr>
+      <td>Una RMS marca <code>∞</code></td>
+      <td>La curva de indiferencia es vertical en ese punto: una utilidad marginal
+      vale cero.</td>
+      <td>Es normal en un borde del diagrama. Aléjate del eje.</td>
+    </tr>
+    <tr>
+      <td>Una curva se ve dentada</td>
+      <td>Todas las curvas se trazan numéricamente sobre una malla de muestreo.</td>
+      <td>Nada que arreglar; los números de la tira de lecturas se calculan con
+      mucha más precisión que el dibujo.</td>
+    </tr>
+    <tr>
+      <td>Arrastrar va pesado</td>
+      <td>Cambiar un parámetro de preferencias reconstruye todo: los dos campos de
+      utilidad y todas las curvas derivadas.</td>
+      <td>Es normal en una máquina lenta. Apaga las capas que no estés usando.</td>
+    </tr>
+    <tr>
+      <td>El texto está en el idioma equivocado</td>
+      <td>El applet obedece al enlace con el que se abrió.</td>
+      <td>Usa los botones ES / EN, o añade <code>?lang=es</code> a la dirección.</td>
+    </tr>
+    <tr>
+      <td>Se perdió el progreso de los retos</td>
+      <td>El progreso se guarda por navegador y por dispositivo — y las ventanas
+      privadas lo descartan al cerrarse.</td>
+      <td>Es lo esperado. No se guarda nada en ningún servidor.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="box tip">
+  <p><strong>La solución universal.</strong> Recarga la página. Todos los applets
+  arrancan desde un estado conocido, nada de lo que hiciste se guardó en ninguna
+  parte, y no se pierde ningún trabajo porque no hay trabajo que perder.</p>
+</div>
+
+</body>
+</html>
